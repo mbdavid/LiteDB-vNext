@@ -41,6 +41,18 @@ internal class BinaryBsonExpression : BsonExpression
             case BsonExpressionType.LessThanOrEqual:
                 return context.Collation.Compare(this.Left.Execute(context), this.Right.Execute(context)) <= 0;
 
+            case BsonExpressionType.Like:
+                return this.Left.Execute(context).AsString?.SqlLike(this.Right.Execute(context).AsString, context.Collation) ?? false;
+            case BsonExpressionType.Between:
+                var value = this.Left.Execute(context);
+                var start = (this.Right as MakeArrayBsonExpression).Items.First().Execute(context);
+                var end = (this.Right as MakeArrayBsonExpression).Items.Last().Execute(context);
+                return value >= start && value <= end;
+            case BsonExpressionType.In:
+                return this.Right.Execute(context).AsArray?.Contains(this.Left.Execute(context), context.Collation) ?? false;
+            case BsonExpressionType.Contains:
+                return this.Left.Execute(context).AsArray?.Contains(this.Right.Execute(context)) ?? false;
+
             case BsonExpressionType.Or:
                 var lOr = this.Left.Execute(context);
                 if (lOr.IsBoolean && lOr.AsBoolean) return true;
@@ -86,6 +98,16 @@ internal class BinaryBsonExpression : BsonExpression
                 return this.Left.ToString() + "<" + this.Right.ToString();
             case BsonExpressionType.LessThanOrEqual:
                 return this.Left.ToString() + "<=" + this.Right.ToString();
+
+            case BsonExpressionType.Like:
+                return this.Left.ToString() + " LIKE " + this.Right.ToString();
+            case BsonExpressionType.Between:
+                var values = this.Right as MakeArrayBsonExpression;
+                return this.Left.ToString() + " BETWEEN " + values.Items.First().ToString() + " AND " + values.Items.Last().ToString();
+            case BsonExpressionType.In:
+                return this.Left.ToString() + " IN " + this.Right.ToString();
+            case BsonExpressionType.Contains:
+                return this.Left.ToString() + " CONTAINS " + this.Right.ToString();
 
             case BsonExpressionType.Or:
                 return this.Left.ToString() + " OR " + this.Right.ToString();

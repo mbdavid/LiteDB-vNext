@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LiteDB\LiteDB\LiteDB.csproj" />
+    <ProjectReference Include="..\LiteDB\LiteDB.csproj" />
   </ItemGroup>
 
 </Project>

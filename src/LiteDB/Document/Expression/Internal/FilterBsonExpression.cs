@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-internal class MapBsonExpression : BsonExpression
+internal class FilterBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.Map;
 
@@ -8,7 +8,7 @@ internal class MapBsonExpression : BsonExpression
 
     public BsonExpression Selector { get; }
 
-    public MapBsonExpression(BsonExpression source, BsonExpression selector)
+    public FilterBsonExpression(BsonExpression source, BsonExpression selector)
     {
         this.Source = source;
         this.Selector = selector;
@@ -28,7 +28,10 @@ internal class MapBsonExpression : BsonExpression
 
                 var value = this.Selector.Execute(context);
 
-                yield return value;
+                if (value.IsBoolean && value.AsBoolean)
+                {
+                    yield return item;
+                }
 
                 context.Current = context.Root;
             }
@@ -39,6 +42,11 @@ internal class MapBsonExpression : BsonExpression
 
     public override string ToString()
     {
-        return "MAP(" + this.Source + ToString() + "=>" + this.Selector + ")";
+        var filter = this.Selector.ToString();
+
+        // if filter always returns true, use * $.items[*]
+        if (filter == "true") filter = "*";
+
+        return this.Source.ToString() + "[" + filter + "]";
     }
 }

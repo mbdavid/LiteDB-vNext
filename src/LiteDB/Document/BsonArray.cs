@@ -83,8 +83,6 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
     public void Clear() => this.RawValue.Clear();
 
-    public bool Contains(BsonValue item) => this.RawValue.Contains(item ?? BsonValue.Null);
-
     public void CopyTo(BsonValue[] array, int arrayIndex) => this.RawValue.CopyTo(array, arrayIndex);
 
     public IEnumerator<BsonValue> GetEnumerator() => this.RawValue.GetEnumerator();
@@ -96,6 +94,10 @@ public class BsonArray : BsonValue, IList<BsonValue>
     public bool Remove(BsonValue item) => this.RawValue.Remove(item);
 
     public void RemoveAt(int index) => this.RawValue.RemoveAt(index);
+
+    public bool Contains(BsonValue item) => this.RawValue.Contains(item ?? BsonValue.Null);
+
+    public bool Contains(BsonValue item, Collation collection) => this.RawValue.Any(x => collection.Compare(x, item ?? BsonValue.Null) == 0);
 
     IEnumerator IEnumerable.GetEnumerator()
     {

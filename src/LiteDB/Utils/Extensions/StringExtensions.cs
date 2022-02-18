@@ -134,7 +134,7 @@ internal static class StringExtensions
             }
             else
             {
-                if (collation.Compare(c, p) == 0)
+                if (collation.Equals(c, p))
                 {
                     patternIndex++;
                 }

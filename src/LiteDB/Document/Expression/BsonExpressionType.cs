@@ -1,7 +1,7 @@
 ﻿namespace LiteDB;
 
 /// <summary>
-/// Represent all types of BsonExpressions. Enum order are used as expression resolution priority
+/// Represent all types of BsonExpressions
 /// </summary>
 public enum BsonExpressionType : byte
 {
@@ -9,12 +9,15 @@ public enum BsonExpressionType : byte
 
     ArrayIndex = 2,
 
-    Array = 6,
-    Document = 7,
+    Array = 4,
+    Document = 5,
 
-    Parameter = 8,
-    Call = 9,
+    Parameter = 6,
+    Call = 7,
+    Root = 8,
+    Current = 9,
     Path = 10,
+
 
     Modulo = 11,
     Add = 12,
@@ -35,6 +38,8 @@ public enum BsonExpressionType : byte
 
     Or = 30,
     And = 31,
+
+    Inner = 32,
 
     Map = 40,
     Filter = 41,

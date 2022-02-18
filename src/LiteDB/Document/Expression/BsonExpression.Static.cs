@@ -6,9 +6,9 @@ public abstract partial class BsonExpression
 
     public static BsonExpression Parameter(string name) => new ParameterBsonExpression(name);
 
-    public static BsonExpression Root() => new PathBsonExpression(null, true);
+    public static BsonExpression Root() => new ScopeBsonExpression(true);
 
-    public static BsonExpression Path(string field, bool root = true) => new PathBsonExpression(field, root);
+    public static BsonExpression Current() => new ScopeBsonExpression(false);
 
     public static BsonExpression Path(BsonExpression source, string field) => new PathBsonExpression(source, field);
 
@@ -17,6 +17,12 @@ public abstract partial class BsonExpression
     public static BsonExpression Filter(BsonExpression source, BsonExpression selector) => new FilterBsonExpression(source, selector);
 
     public static BsonExpression ArrayIndex(BsonExpression array, BsonExpression index) => new ArrayIndexBsonExpression(array, index);
+
+    public static BsonExpression MakeArray(IEnumerable<BsonExpression> items) => new MakeArrayBsonExpression(items);
+
+    public static BsonExpression MakeDocument(IDictionary<string, BsonExpression> values) => new MakeDocumentBsonExpression(values);
+
+    public static BsonExpression Inner(BsonExpression inner) => new InnerBsonExpression(inner);
 
     #region BinaryBsonExpressions
 
@@ -42,6 +48,16 @@ public abstract partial class BsonExpression
     public static BsonExpression LessThan(BsonExpression left, BsonExpression right) => new BinaryBsonExpression(BsonExpressionType.LessThan, left, right);
 
     public static BsonExpression LessThanOrEqual(BsonExpression left, BsonExpression right) => new BinaryBsonExpression(BsonExpressionType.LessThanOrEqual, left, right);
+
+    public static BsonExpression Contains(BsonExpression array, BsonExpression item) => new BinaryBsonExpression(BsonExpressionType.Contains, array, item);
+
+    public static BsonExpression Between(BsonExpression value, BsonExpression start, BsonExpression end) => new BinaryBsonExpression(BsonExpressionType.Between, value, MakeArray(new[] { start, end }));
+
+    internal static BsonExpression Between(BsonExpression value, BsonExpression array) => new BinaryBsonExpression(BsonExpressionType.Between, value, array);
+
+    public static BsonExpression Like(BsonExpression str, BsonExpression item) => new BinaryBsonExpression(BsonExpressionType.Like, str, item);
+
+    public static BsonExpression In(BsonExpression item, BsonExpression array) => new BinaryBsonExpression(BsonExpressionType.In, item, array);
 
     public static BsonExpression Or(BsonExpression left, BsonExpression right) => new BinaryBsonExpression(BsonExpressionType.Or, left, right);
 

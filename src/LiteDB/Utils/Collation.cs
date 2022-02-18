@@ -6,6 +6,8 @@
 /// </summary>
 public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityComparer<BsonValue>
 {
+    private const string BINARY = "binary";
+
     private readonly CompareInfo _compareInfo;
 
     /// <summary>
@@ -21,7 +23,10 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
             (CompareOptions)Enum.Parse(typeof(CompareOptions), parts[1]) : 
             CompareOptions.None;
 
-        this.Culture = new CultureInfo(culture);
+        this.Culture = culture.Equals(BINARY, StringComparison.OrdinalIgnoreCase) ? 
+            CultureInfo.InvariantCulture :
+            new CultureInfo(culture);
+
         this.CompareOptions = compareOptions;
 
         _compareInfo = this.Culture.CompareInfo;
@@ -37,7 +42,7 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
 
     public static Collation Default = new Collation(CultureInfo.CurrentCulture.LCID, CompareOptions.IgnoreCase);
 
-    public static Collation Binary = new Collation(CultureInfo.InvariantCulture.LCID, CompareOptions.Ordinal);
+    public static Collation Binary = new Collation(CultureInfo.InvariantCulture.LCID, CompareOptions.None);
 
     /// <summary>
     /// Get database language culture
@@ -62,10 +67,16 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
     /// <summary>
     /// Compare 2 chars values using current culture/compare options
     /// </summary>
-    public int Compare(char left, char right)
+    public bool Equals(char left, char right)
     {
-        //TODO implementar o compare corretamente
-        return char.ToUpper(left) == char.ToUpper(right) ? 0 : 1;
+        if (this.CompareOptions.HasFlag(CompareOptions.IgnoreCase))
+        {
+            return char.ToUpper(left) == char.ToUpper(right);
+        }
+        else
+        {
+            return left == right;
+        }
     }
 
     public int Compare(BsonValue left, BsonValue rigth)
@@ -85,7 +96,9 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
 
     public override string ToString()
     {
-        return this.Culture.Name + 
+        var name = _compareInfo.LCID == CultureInfo.InvariantCulture.LCID ? BINARY : this.Culture.Name;
+
+        return name + 
             (this.CompareOptions == CompareOptions.None ? "" : "/" + this.CompareOptions.ToString());
     }
 }

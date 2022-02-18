@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiteDB", "LiteDB\LiteDB.csproj", "{44304C2F-1FA5-467E-8A05-B67630620625}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiteDB.Tests", "..\LiteDB.Tests\LiteDB.Tests.csproj", "{994AE496-8BC2-4ABC-9DD6-4D2A6B47171A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiteDB.Tests", "LiteDB.Tests\LiteDB.Tests.csproj", "{994AE496-8BC2-4ABC-9DD6-4D2A6B47171A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

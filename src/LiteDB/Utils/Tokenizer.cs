@@ -25,6 +25,8 @@ internal enum TokenType
     Colon,
     /// <summary> ; </summary>
     SemiColon,
+    /// <summary> =&gt; </summary>
+    Arrow,
     /// <summary> @ </summary>
     At,
     /// <summary> # </summary>
@@ -86,15 +88,6 @@ internal enum TokenType
 /// </summary>
 internal class Token
 {
-    private static readonly HashSet<string> _keywords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        "BETWEEN",
-        "LIKE",
-        "IN",
-        "AND",
-        "OR"
-    };
-
     public Token(TokenType tokenType, string value, long position)
     {
         this.Position = position;
@@ -160,32 +153,6 @@ internal class Token
         return 
             this.Type == TokenType.Word &&
             value.Equals(this.Value, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-    }
-
-    public bool IsOperand
-    {
-        get
-        {
-            switch (this.Type)
-            {
-                case TokenType.Percent:
-                case TokenType.Slash:
-                case TokenType.Asterisk:
-                case TokenType.Plus:
-                case TokenType.Minus:
-                case TokenType.Equals:
-                case TokenType.Greater:
-                case TokenType.GreaterOrEquals:
-                case TokenType.Less:
-                case TokenType.LessOrEquals:
-                case TokenType.NotEquals:
-                    return true;
-                case TokenType.Word:
-                    return _keywords.Contains(Value);
-                default:
-                    return false;
-            }
-        }
     }
 
     public override string ToString()
@@ -422,8 +389,16 @@ internal class Tokenizer
                 break;
 
             case '=':
-                token = new Token(TokenType.Equals, "=", this.Position);
                 this.ReadChar();
+                if (_char == '>')
+                {
+                    token = new Token(TokenType.Arrow, "=>", this.Position);
+                    this.ReadChar();
+                }
+                else
+                {
+                    token = new Token(TokenType.Equals, "=", this.Position);
+                }
                 break;
 
             case '>':
