@@ -508,13 +508,13 @@ namespace LiteDB
             // array navigation
             else
             {
-                // adding support for $.items[*]
+                // keeping support for $.items[*] (return same $.items)
                 if (tokenizer.LookAhead().Type == TokenType.Asterisk)
                 {
                     tokenizer.ReadToken(); // read *
                     tokenizer.ReadToken().Expect(TokenType.CloseBracket); // read ]
 
-                    return BsonExpression.Filter(source, BsonExpression.Constant(true));
+                    return source;
                 }
 
                 // get filter selector or fixed array index

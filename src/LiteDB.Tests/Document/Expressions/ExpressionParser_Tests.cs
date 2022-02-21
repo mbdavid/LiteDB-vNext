@@ -210,8 +210,8 @@ public class ExpressionParser_Tests
         }
 
         K("UPPER('john')").Should().Be("JOHN");
-        K("DOUBLE('105,99')").Should().Be(105.99); // pt-BR collation
-        K("JOIN($.items, '-')").Should().Be("1-2-10");
+        K("DOUBLE('105,99')").Should().Be(105.99); // pt-BR culture
+        K("JOIN($.items[*], '-')").Should().Be("1-2-10");
     }
 
     [Fact]
@@ -237,7 +237,10 @@ public class ExpressionParser_Tests
         K("products[price > 0]").Should().Be("$.products[@.price>0]");
         K("products[price > 0].price").Should().Be("$.products[@.price>0].price");
 
-        K("products[*]").Should().Be("$.products[*]");
+        K("products[*]").Should().Be("$.products");
+
+        K("JOIN($.items, '-')").Should().Be("JOIN($.items,\"-\")");
+        K("JOIN($.items[*], '-')").Should().Be("JOIN($.items,\"-\")");
 
 
     }

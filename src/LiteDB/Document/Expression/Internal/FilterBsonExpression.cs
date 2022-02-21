@@ -44,11 +44,6 @@ internal class FilterBsonExpression : BsonExpression
 
     public override string ToString()
     {
-        var filter = this.Selector.ToString();
-
-        // if filter always returns true, use * $.items[*]
-        if (filter == "true") filter = "*";
-
-        return this.Source.ToString() + "[" + filter + "]";
+        return this.Source.ToString() + "[" + this.Selector.ToString() + "]";
     }
 }
