@@ -12,6 +12,8 @@ public class ExpressionParser_Tests
             return BsonExpression.Create(s).Execute();
         }
 
+        var e = BsonExpression.Create("a + b.c + items[0].no");
+
         K(@"123").Should().Be(123);
         K(@"null").Should().Be(BsonValue.Null);
         K(@"15.9").Should().Be(15.9);
@@ -19,6 +21,7 @@ public class ExpressionParser_Tests
         K(@"false").Should().Be(false);
         K(@"'my string'").Should().Be("my string");
         K(@"""my string""").Should().Be("my string");
+
 
     }
 
@@ -191,6 +194,24 @@ public class ExpressionParser_Tests
         K("$.items => 1").Should().Be(new BsonArray { 1, 1 });
         K("$.items => @.age").Should().Be(new BsonArray { 20, 40 });
         K("$.items => (@.age + 10)").Should().Be(new BsonArray { 30, 50 });
+    }
+
+    [Fact]
+    public void Expressions_Method()
+    {
+        BsonValue K(string s)
+        {
+            return BsonExpression.Create(s).Execute(new BsonDocument
+            {
+                ["name"] = "david",
+                ["age"] = 44,
+                ["items"] = new BsonArray(1, 2, 10)
+            }, null, new Collation("pt-BR"));
+        }
+
+        K("UPPER('john')").Should().Be("JOHN");
+        K("DOUBLE('105,99')").Should().Be(105.99); // pt-BR collation
+        K("JOIN($.items, '-')").Should().Be("1-2-10");
     }
 
     [Fact]

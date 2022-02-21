@@ -24,6 +24,8 @@ public abstract partial class BsonExpression
 
     public static BsonExpression Inner(BsonExpression inner) => new InnerBsonExpression(inner);
 
+    public static BsonExpression Call(MethodInfo method, BsonExpression[] parameters) => new CallBsonExpression(method, parameters);
+
     #region BinaryBsonExpressions
 
     public static BsonExpression Add(BsonExpression left, BsonExpression right) => new BinaryBsonExpression(BsonExpressionType.Add, left, right);
@@ -65,10 +67,36 @@ public abstract partial class BsonExpression
 
     #endregion
 
-    public static BsonExpression Create(string expr)
-    {
-        var tokenizer = new Tokenizer(expr);
+    public static BsonExpression Create(string expr) => Create(new Tokenizer(expr));
 
+    internal static BsonExpression Create(Tokenizer tokenizer)
+    {
         return BsonExpressionParser.ParseFullExpression(tokenizer, true);
     }
+
+    #region MethodCall quick access
+
+    /// <summary>
+    /// Get all registered methods for BsonExpressions
+    /// </summary>
+    public static IEnumerable<MethodInfo> Methods => _methods.Values;
+
+    /// <summary>
+    /// Load all static methods from BsonExpressionMethods class. Use a dictionary using name + parameter count
+    /// </summary>
+    private static Dictionary<string, MethodInfo> _methods =
+        typeof(BsonExpressionMethods).GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .ToDictionary(m => m.Name.ToUpper() + "~" + m.GetParameters().Where(p => p.ParameterType != typeof(Collation)).Count());
+
+    /// <summary>
+    /// Get expression method with same name and same parameter - return null if not found
+    /// </summary>
+    internal static MethodInfo GetMethod(string name, int parameterCount)
+    {
+        var key = name.ToUpper() + "~" + parameterCount;
+
+        return _methods.GetOrDefault(key);
+    }
+
+    #endregion
 }

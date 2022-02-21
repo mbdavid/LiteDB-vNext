@@ -31,7 +31,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Document\Expression\Methods\" />
     <Folder Include="Document\Json\" />
   </ItemGroup>
 

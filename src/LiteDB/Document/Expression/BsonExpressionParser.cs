@@ -144,7 +144,7 @@ namespace LiteDB
                 TryParseArray(tokenizer, root) ??
                 TryParseParameter(tokenizer) ??
                 TryParseInnerExpression(tokenizer, root) ??
-                //TryParseMethodCall(tokenizer, context, parameters, scope) ??
+                TryParseMethodCall(tokenizer, root) ??
                 TryParsePath(tokenizer, root) ??
                 throw LiteException.UnexpectedToken(token);
         }
@@ -386,11 +386,10 @@ namespace LiteDB
             return BsonExpression.Inner(inner);
         }
 
-/*
         /// <summary>
         /// Try parse method call - return null if not method call
         /// </summary>
-        private static BsonExpression TryParseMethodCall(Tokenizer tokenizer, ExpressionContext context, BsonDocument parameters, DocumentScope scope)
+        private static BsonExpression TryParseMethodCall(Tokenizer tokenizer, bool root)
         {
             var token = tokenizer.Current;
 
@@ -401,13 +400,8 @@ namespace LiteDB
             tokenizer.ReadToken();
 
             // get static method from this class
-            var pars = new List<BsonExpression>();
+            var parameters = new List<BsonExpression>();
             var src = new StringBuilder();
-            var isImmutable = true;
-            var useSource = false;
-            var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            src.Append(token.Value.ToUpper() + "(");
 
             // method call with no parameters
             if (tokenizer.LookAhead().Type == TokenType.CloseParenthesis)
@@ -418,19 +412,9 @@ namespace LiteDB
             {
                 while (!tokenizer.CheckEOF())
                 {
-                    var parameter = ParseFullExpression(tokenizer, context, parameters, scope);
+                    var parameter = ParseFullExpression(tokenizer, root);
 
-                    // update isImmutable only when came false
-                    if (parameter.IsImmutable == false) isImmutable = false;
-                    if (parameter.UseSource) useSource = true;
-
-                    // add fields from each parameters
-                    fields.AddRange(parameter.Fields);
-
-                    pars.Add(parameter);
-
-                    // append source string
-                    src.Append(parameter.Source);
+                    parameters.Add(parameter);
 
                     // read , or )
                     var next = tokenizer.ReadToken()
@@ -438,64 +422,16 @@ namespace LiteDB
 
                     src.Append(next.Value);
 
-                    if (next.Type == TokenType.Comma) continue;
-                    break;
+                    if (next.Type != TokenType.Comma) break;
                 }
             }
 
-            var method = BsonExpression.GetMethod(token.Value, pars.Count);
+            var method = BsonExpression.GetMethod(token.Value, parameters.Count);
 
             if (method == null) throw LiteException.UnexpectedToken($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token);
 
-            // test if method are decorated with "Variable" (immutable = false)
-            if (method.GetCustomAttribute<VolatileAttribute>() != null)
-            {
-                isImmutable = false;
-            }
-
-            // method call arguments
-            var args = new List<Expression>();
-
-            if (method.GetParameters().FirstOrDefault()?.ParameterType == typeof(Collation))
-            {
-                args.Add(context.Collation);
-            }
-
-            // getting linq expression from BsonExpression for all parameters
-            foreach (var item in method.GetParameters().Where(x => x.ParameterType != typeof(Collation)).Zip(pars, (parameter, expr) => new { parameter, expr }))
-            {
-                if (item.parameter.ParameterType.IsEnumerable() == false && item.expr.IsScalar == false)
-                {
-                    // convert enumerable expresion into scalar expression
-                    args.Add(ConvertToArray(item.expr).Expression);
-                }
-                else if (item.parameter.ParameterType.IsEnumerable() && item.expr.IsScalar)
-                {
-                    // convert scalar expression into enumerable expression
-                    args.Add(ConvertToEnumerable(item.expr).Expression);
-                }
-                else
-                {
-                    args.Add(item.expr.Expression);
-                }
-            }
-
-            // special IIF case
-            if (method.Name == "IIF" && pars.Count == 3) return CreateConditionalExpression(pars[0], pars[1], pars[2]);
-
-            return new BsonExpression
-            {
-                Type = BsonExpressionType.Call,
-                Parameters = parameters,
-                IsImmutable = isImmutable,
-                UseSource = useSource,
-                IsScalar = method.ReturnType.IsEnumerable() == false,
-                Fields = fields,
-                Expression = Expression.Call(method, args.ToArray()),
-                Source = src.ToString()
-            };
+            return BsonExpression.Call(method, parameters.ToArray());
         }
-*/
 
         /// <summary>
         /// Parse JSON-Path - return null if not method call
@@ -538,6 +474,11 @@ namespace LiteDB
                 if (next.Type == TokenType.Period || next.Type == TokenType.OpenBracket)
                 {
                     expr = ParsePathArrayNavigation(expr, tokenizer);
+                }
+                else if (next.Type == TokenType.EOF)
+                {
+                    tokenizer.ReadToken(); // read eof
+                    break;
                 }
                 else
                 {

@@ -4,6 +4,12 @@ public abstract partial class BsonExpression
 {
     public abstract BsonExpressionType Type { get; }
 
+    protected virtual IEnumerable<BsonExpression> Children => new BsonExpression[0];
+
+    private string _expression = null;
+
+    public string Expression => _expression ?? (_expression = this.ToString());
+
     internal abstract BsonValue Execute(BsonExpressionContext context);
 
     public BsonValue Execute(BsonValue root = null, BsonDocument parameters = null, Collation collation = null)

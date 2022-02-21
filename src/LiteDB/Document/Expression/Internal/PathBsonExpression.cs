@@ -4,6 +4,8 @@ internal class PathBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.Path;
 
+    protected override IEnumerable<BsonExpression> Children => new[] { this.Source };
+
     public string Field { get; }
 
     public BsonExpression Source { get; }

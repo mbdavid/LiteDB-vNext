@@ -4,20 +4,22 @@ internal class InnerBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.Inner;
 
-    public BsonExpression Inner { get; }
+    protected override IEnumerable<BsonExpression> Children => new[] { this.InnerExpression };
+
+    public BsonExpression InnerExpression { get; }
 
     public InnerBsonExpression(BsonExpression inner)
     {
-        this.Inner = inner;
+        this.InnerExpression = inner;
     }
 
     internal override BsonValue Execute(BsonExpressionContext context)
     {
-        return this.Inner.Execute(context);
+        return this.InnerExpression.Execute(context);
     }
 
     public override string ToString()
     {
-        return "(" + this.Inner.ToString() + ")";
+        return "(" + this.InnerExpression.ToString() + ")";
     }
 }

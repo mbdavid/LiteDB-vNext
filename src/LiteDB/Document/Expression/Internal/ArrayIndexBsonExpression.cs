@@ -4,6 +4,8 @@ internal class ArrayIndexBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.ArrayIndex;
 
+    protected override IEnumerable<BsonExpression> Children => new[] { this.Array, this.Index };
+
     public BsonExpression Array { get; }
 
     public BsonExpression Index { get; }
@@ -16,20 +18,19 @@ internal class ArrayIndexBsonExpression : BsonExpression
 
     internal override BsonValue Execute(BsonExpressionContext context)
     {
-        var array = this.Array.Execute(context);
+        var array = this.Array.Execute(context).AsArray;
         var index = this.Index.Execute(context);
 
-        if (!array.IsArray || !index.IsNumber) return BsonValue.Null;
+        if (array == null || !index.IsNumber) return BsonValue.Null;
 
-        var arr = array.AsArray;
         var idx = index.AsInt32;
 
         // adding support for negative values (backward)
-        var i = idx < 0 ? arr.Count + idx : idx;
+        var i = idx < 0 ? array.Count + idx : idx;
 
-        if (i >= arr.Count) return BsonValue.Null;
+        if (i >= array.Count) return BsonValue.Null;
 
-        return arr[i];
+        return array[i];
     }
 
     public override string ToString()
