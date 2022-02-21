@@ -4,7 +4,7 @@ internal class MakeArrayBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.Array;
 
-    protected override IEnumerable<BsonExpression> Children => this.Items;
+    internal override IEnumerable<BsonExpression> Children => this.Items;
 
     public IEnumerable<BsonExpression> Items { get; }
 

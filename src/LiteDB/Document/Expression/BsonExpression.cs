@@ -4,11 +4,31 @@ public abstract partial class BsonExpression
 {
     public abstract BsonExpressionType Type { get; }
 
-    protected virtual IEnumerable<BsonExpression> Children => new BsonExpression[0];
+    internal virtual IEnumerable<BsonExpression> Children => new BsonExpression[0];
 
-    private string _expression = null;
 
-    public string Expression => _expression ?? (_expression = this.ToString());
+    /// <summary>
+    /// Only internal ctor (from BsonParserExpression)
+    /// </summary>
+    internal BsonExpression()
+    {
+    }
+
+    /// <summary>
+    /// Implicit string converter
+    /// </summary>
+    public static implicit operator String(BsonExpression expr)
+    {
+        return expr.ToString();
+    }
+
+    /// <summary>
+    /// Implicit string converter
+    /// </summary>
+    public static implicit operator BsonExpression(String expr)
+    {
+        return BsonExpression.Create(expr);
+    }
 
     internal abstract BsonValue Execute(BsonExpressionContext context);
 
@@ -18,20 +38,4 @@ public abstract partial class BsonExpression
 
         return Execute(context);
     }
-
-    /// <summary>
-    /// Indicate that expression evaluate to TRUE or FALSE (=, >, ...). OR and AND are not considered Predicate expressions
-    /// </summary>
-    internal bool IsPredicate =>
-        this.Type == BsonExpressionType.Equal ||
-        this.Type == BsonExpressionType.Like ||
-        this.Type == BsonExpressionType.Between ||
-        this.Type == BsonExpressionType.GreaterThan ||
-        this.Type == BsonExpressionType.GreaterThanOrEqual ||
-        this.Type == BsonExpressionType.LessThan ||
-        this.Type == BsonExpressionType.LessThanOrEqual ||
-        this.Type == BsonExpressionType.NotEqual ||
-        this.Type == BsonExpressionType.In;
-
-    // para descobrir se é imutavel: todo mundo é, exceto algumas calls. Varrer filhas?
 }

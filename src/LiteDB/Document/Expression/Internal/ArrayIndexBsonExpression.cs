@@ -4,7 +4,7 @@ internal class ArrayIndexBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.ArrayIndex;
 
-    protected override IEnumerable<BsonExpression> Children => new[] { this.Array, this.Index };
+    internal override IEnumerable<BsonExpression> Children => new[] { this.Array, this.Index };
 
     public BsonExpression Array { get; }
 

@@ -4,7 +4,7 @@ internal class FilterBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.Map;
 
-    protected override IEnumerable<BsonExpression> Children => new[] { this.Source, this.Selector };
+    internal override IEnumerable<BsonExpression> Children => new[] { this.Source, this.Selector };
 
     public BsonExpression Source { get; }
 

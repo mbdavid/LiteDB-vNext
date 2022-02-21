@@ -46,3 +46,24 @@ public enum BsonExpressionType : byte
     Sort = 42
     // Source = 30
 }
+
+public static class BsonExpressionExtensions
+{
+    /// <summary>
+    /// Returns if BsonExpressionType is a predicate (return a boolean). AND/OR are not in this list
+    /// </summary>
+    public static bool IsPredicate(this BsonExpressionType type)
+    {
+        return type == BsonExpressionType.Equal ||
+               type == BsonExpressionType.Like ||
+               type == BsonExpressionType.Between ||
+               type == BsonExpressionType.GreaterThan ||
+               type == BsonExpressionType.GreaterThanOrEqual ||
+               type == BsonExpressionType.LessThan ||
+               type == BsonExpressionType.LessThanOrEqual ||
+               type == BsonExpressionType.NotEqual ||
+               type == BsonExpressionType.In ||
+               type == BsonExpressionType.Contains;
+
+    }
+}

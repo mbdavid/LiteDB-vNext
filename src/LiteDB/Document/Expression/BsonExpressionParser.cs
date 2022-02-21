@@ -522,7 +522,7 @@ namespace LiteDB
 
                 tokenizer.ReadToken().Expect(TokenType.CloseBracket); // read close ]
 
-                if (selector.IsPredicate)
+                if (selector.Type.IsPredicate())
                 {
                     return BsonExpression.Filter(source, selector);
                 }

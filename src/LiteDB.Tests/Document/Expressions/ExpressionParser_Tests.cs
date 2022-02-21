@@ -241,7 +241,28 @@ public class ExpressionParser_Tests
 
         K("JOIN($.items, '-')").Should().Be("JOIN($.items,\"-\")");
         K("JOIN($.items[*], '-')").Should().Be("JOIN($.items,\"-\")");
+    }
 
+    [Fact]
+    public void Expressions_GetInfo()
+    {
+        BsonExpressionInfo K(string s)
+        {
+            return new BsonExpressionInfo(s);
+        }
+
+        K("$").HasRoot.Should().BeTrue();
+        K("UPPER($)").HasRoot.Should().BeTrue();
+        K("_id").HasRoot.Should().BeTrue();
+
+        K("_id").RootFields.Should().Contain("_id");
+        K("_id + name + items.sub => @.new").RootFields.Should().Contain(new[] { "_id", "name", "items" });
+        K("_id + name + items.sub => @.new").RootFields.Should().NotContain(new[] { "sub", "new" });
+
+        K("FORMAT(name, 'd')").IsImmutable.Should().BeTrue();
+        K("FORMAT(name, 'd') + NOW()").IsImmutable.Should().BeFalse();
 
     }
+
+
 }

@@ -4,7 +4,7 @@ internal class BinaryBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type { get; }
 
-    protected override IEnumerable<BsonExpression> Children => new[] { this.Left, this.Right };
+    internal override IEnumerable<BsonExpression> Children => new[] { this.Left, this.Right };
 
     public BsonExpression Left { get; }
 

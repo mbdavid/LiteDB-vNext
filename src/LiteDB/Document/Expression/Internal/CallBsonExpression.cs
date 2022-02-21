@@ -4,7 +4,7 @@ internal class CallBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.Call;
 
-    protected override IEnumerable<BsonExpression> Children => this.Parameters;
+    internal override IEnumerable<BsonExpression> Children => this.Parameters;
 
     public BsonExpression[] Parameters { get; }
 

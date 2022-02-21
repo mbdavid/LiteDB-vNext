@@ -4,7 +4,7 @@ internal class InnerBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.Inner;
 
-    protected override IEnumerable<BsonExpression> Children => new[] { this.InnerExpression };
+    internal override IEnumerable<BsonExpression> Children => new[] { this.InnerExpression };
 
     public BsonExpression InnerExpression { get; }
 

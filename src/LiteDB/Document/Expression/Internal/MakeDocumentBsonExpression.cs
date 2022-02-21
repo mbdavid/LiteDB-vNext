@@ -4,7 +4,7 @@ internal class MakeDocumentBsonExpression : BsonExpression
 {
     public override BsonExpressionType Type => BsonExpressionType.Document;
 
-    protected override IEnumerable<BsonExpression> Children => this.Values.Values;
+    internal override IEnumerable<BsonExpression> Children => this.Values.Values;
 
     public IDictionary<string, BsonExpression> Values { get; }
 
