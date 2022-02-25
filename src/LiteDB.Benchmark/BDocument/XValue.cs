@@ -30,41 +30,28 @@ namespace LiteDB.Benchmark.BDocument
         MaxValue = 14
     }
 
-    public class XValue : IComparable<XValue>
+    public class XValue
     {
-        private Int32 Int32Value { get; }
-        private Int64 Int64Value { get; }
-        private Double DoubleValue { get; }
-        private Decimal DecimalValue { get; }
-        private String StringValue { get; }
-        private Boolean BooleanValue { get; }
-        private Guid GuidValue { get; }
-        private DateTime DateTimeValue { get; }
-
         public XType Type { get; }
+
+        private byte[] _data;
 
         public XValue(Int32 value)
         {
-            this.Type = XType.Int32;
-            this.Int32Value = value;
+            Type = XType.Int32;
+
+            _data = BitConverter.GetBytes(value);
         }
 
         public int CompareTo(XValue other)
         {
-            if (this.Type == XType.Int32 && other.Type == XType.Int32)
-            {
-                return this.Int32Value.CompareTo(other.Int32Value);
-            }
-
-            throw new NotImplementedException();
-               
+            return BitConverter.ToInt32(_data).CompareTo(BitConverter.ToInt32(other._data));
         }
-
 
         // Int32
         public static implicit operator Int32(XValue value)
         {
-            return value.Int32Value;
+            return BitConverter.ToInt32(value._data);
         }
 
         // Int32

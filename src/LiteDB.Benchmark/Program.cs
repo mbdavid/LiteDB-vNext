@@ -4,13 +4,10 @@ using BenchmarkDotNet.Running;
 using LiteDB.Benchmark.BDocument;
 using LiteDB.Benchmark.Tests;
 
-//IBValue a = new BInt(1);
-//IBValue b = new BInt(10);
-//
+XValue a = new XValue(1);
+XValue b = new XValue(10);
+
 //Console.WriteLine(a.CompareTo(b));
-
-
-IBValue a = new BInt(1);
 
 
 //BenchmarkRunner.Run<BsonValueCompareTests>();
