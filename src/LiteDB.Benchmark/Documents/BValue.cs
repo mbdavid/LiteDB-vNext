@@ -18,12 +18,16 @@ namespace LiteDB.Benchmark.BDocument
     public interface IBValue : IComparable<IBValue>
     {
         BType Type { get; }
+
+        int AsInt32 { get; }
     }
 
     public abstract class BValue<T> : IBValue
     {
         public abstract T Value { get; }
         public abstract BType Type { get; }
+
+        public int AsInt32 => (this as BInt).Value;
 
         public abstract int CompareTo(IBValue? other);
     }
@@ -41,7 +45,12 @@ namespace LiteDB.Benchmark.BDocument
 
         public override int CompareTo(IBValue? other)
         {
-            return (other as BInt).Value;
+            if (other is BInt otherInt32)
+            {
+                return this.Value.CompareTo(otherInt32.Value);
+            }
+
+            throw new NotImplementedException();
         }
 
         // Int32

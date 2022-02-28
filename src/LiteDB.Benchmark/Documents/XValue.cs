@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -32,26 +33,36 @@ namespace LiteDB.Benchmark.BDocument
 
     public class XValue
     {
-        public XType Type { get; }
-
         private byte[] _data;
 
         public XValue(Int32 value)
         {
-            Type = XType.Int32;
+            _data = new byte[5];
 
-            _data = BitConverter.GetBytes(value);
+            _data[0] = (byte)XType.Int32;
+
+            _data[1] = (byte)(value >> 24);
+            _data[2] = (byte)(value >> 16);
+            _data[3] = (byte)(value >> 8);
+            _data[4] = (byte)value;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ToInt32()
+        {
+            return _data[1] | (_data[2] << 8) | (_data[3] << 16) | (_data[4] << 24);
+        }
+
 
         public int CompareTo(XValue other)
         {
-            return BitConverter.ToInt32(_data).CompareTo(BitConverter.ToInt32(other._data));
+            return this.ToInt32().CompareTo(other.ToInt32());
         }
 
         // Int32
         public static implicit operator Int32(XValue value)
         {
-            return BitConverter.ToInt32(value._data);
+            return value.ToInt32();
         }
 
         // Int32

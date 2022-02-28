@@ -538,7 +538,7 @@ public class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
             case BsonType.MaxValue:
                 return 0;
 
-            //case BsonType.Int32: return this.AsInt32.CompareTo(other.AsInt32);
+            case BsonType.Int32: return this.AsInt32.CompareTo(other.AsInt32);
             case BsonType.Int64: return this.AsInt64.CompareTo(other.AsInt64);
             case BsonType.Double: return this.AsDouble.CompareTo(other.AsDouble);
             case BsonType.Decimal: return this.AsDecimal.CompareTo(other.AsDecimal);

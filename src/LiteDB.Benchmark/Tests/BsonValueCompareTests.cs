@@ -23,8 +23,8 @@ namespace LiteDB.Benchmark.Tests
         public BsonValue _bsonIntA = 1;
         public BsonValue _bsonIntB = 10;
 
-        public BInt _bIntA = (BInt)1;
-        public BInt _bIntB = (BInt)10;
+        public IBValue _bIntA = (BInt)1;
+        public IBValue _bIntB = (BInt)10;
 
         public XValue _xIntA = new(10);
         public XValue _xIntB = new(10);
