@@ -30,6 +30,11 @@ namespace LiteDB.Benchmark.Tests
         [Benchmark]
         public int BsonValue_Int() => new BsonValue(10);
 
+//        [Benchmark]
+//        public BsonDocument BsonValue_Document() => new BsonDocument();
+//        [Benchmark]
+//        public BsonDocument BsonValue_DocumentWithId() => new BsonDocument { ["_id"] = 1 };
+
         // (init)1.72ns - 24b - 0.0029gen0
         [Benchmark]
         public int BValue_Int() => new BInt(10);

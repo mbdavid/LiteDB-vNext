@@ -15,25 +15,19 @@ namespace LiteDB.Benchmark.BDocument
         Document
     }
 
-    public interface IBValue : IComparable<IBValue>
+    public abstract class BValue : IComparable<BValue>
     {
-        BType Type { get; }
-
-        int AsInt32 { get; }
-    }
-
-    public abstract class BValue<T> : IBValue
-    {
-        public abstract T Value { get; }
         public abstract BType Type { get; }
 
         public int AsInt32 => (this as BInt).Value;
 
-        public abstract int CompareTo(IBValue? other);
+        public abstract int CompareTo(BValue? other);
     }
 
-    public class BInt : BValue<int>
+    public class BInt : BValue, IComparable<BInt>
     {
+        public int Value { get; }
+
         public BInt(int value)
         {
             this.Value = value;
@@ -41,9 +35,7 @@ namespace LiteDB.Benchmark.BDocument
 
         public override BType Type => BType.Int32;
 
-        public override int Value { get; }
-
-        public override int CompareTo(IBValue? other)
+        public override int CompareTo(BValue? other)
         {
             if (other is BInt otherInt32)
             {
@@ -51,6 +43,11 @@ namespace LiteDB.Benchmark.BDocument
             }
 
             throw new NotImplementedException();
+        }
+
+        public int CompareTo(BInt? other)
+        {
+            return this.Value.CompareTo(other.Value);
         }
 
         // Int32
@@ -66,5 +63,4 @@ namespace LiteDB.Benchmark.BDocument
         }
 
     }
-
 }
