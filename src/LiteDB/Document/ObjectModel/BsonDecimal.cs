@@ -20,10 +20,10 @@ public class BsonDecimal : BsonValue, IComparable<BsonDecimal>, IEquatable<BsonD
     {
         if (other == null) return 1;
 
+        if (other is BsonDecimal otherDecimal) return this.Value.CompareTo(otherDecimal.Value);
         if (other is BsonInt32 otherInt32) return this.Value.CompareTo(otherInt32.Value);
         if (other is BsonInt64 otherInt64) return this.Value.CompareTo(otherInt64.Value);
-
-        // compare to other numbers types
+        if (other is BsonDouble otherDouble) return this.Value.CompareTo(otherDouble.Value);
 
         return this.CompareType(other);
     }
@@ -46,7 +46,7 @@ public class BsonDecimal : BsonValue, IComparable<BsonDecimal>, IEquatable<BsonD
 
     public static bool operator ==(BsonDecimal lhs, BsonDecimal rhs) => lhs.Equals(rhs);
 
-    public static bool operator !=(BsonDecimal lhs, BsonInt32 rhs) => !lhs.Equals(rhs);
+    public static bool operator !=(BsonDecimal lhs, BsonDecimal rhs) => !lhs.Equals(rhs);
 
     #endregion
 

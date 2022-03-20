@@ -20,10 +20,10 @@ public class BsonDouble : BsonValue, IComparable<BsonDouble>, IEquatable<BsonDou
     {
         if (other == null) return 1;
 
-        if (other is BsonInt32 otherInt32) return otherInt32.Value this.Value.CompareTo();
+        if (other is BsonDouble otherDouble) return this.Value.CompareTo(otherDouble.Value);
+        if (other is BsonInt32 otherInt32) return this.Value.CompareTo(otherInt32.Value);
         if (other is BsonInt64 otherInt64) return this.Value.CompareTo(otherInt64.Value);
-
-        // compare to other numbers types
+        if (other is BsonDecimal otherDecimal) return this.Value.CompareTo(otherDecimal.Value);
 
         return this.CompareType(other);
     }
