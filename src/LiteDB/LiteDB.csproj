@@ -31,7 +31,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Document\Json\" />
+    <Compile Remove="Document\Expression\**" />
+    <Compile Remove="Document\Json\**" />
+    <EmbeddedResource Remove="Document\Expression\**" />
+    <EmbeddedResource Remove="Document\Json\**" />
+    <None Remove="Document\Expression\**" />
+    <None Remove="Document\Json\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Utils\Extensions\StringExtensions.cs" />
   </ItemGroup>
 
 </Project>

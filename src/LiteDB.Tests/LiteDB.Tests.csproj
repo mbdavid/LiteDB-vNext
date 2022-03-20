@@ -16,6 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Document\Expressions\**" />
+    <EmbeddedResource Remove="Document\Expressions\**" />
+    <None Remove="Document\Expressions\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="6.5.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
@@ -29,6 +35,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LiteDB\LiteDB.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Document\" />
   </ItemGroup>
 
 </Project>

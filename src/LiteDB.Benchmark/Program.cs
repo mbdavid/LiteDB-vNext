@@ -1,14 +1,12 @@
-﻿// See https://aka.ms/new-console-template for more information
-using BenchmarkDotNet.Running;
+﻿global using BenchmarkDotNet.Attributes;
+global using BenchmarkDotNet.Running;
 
-using LiteDB.Benchmark.BDocument;
-using LiteDB.Benchmark.Tests;
-
-//IBValue a = (BInt)1;
-//IBValue b = (BInt)10;
-//
-//Console.WriteLine(a.CompareTo(b));
+using LiteDB;
+using LiteDB.Benchmark;
 
 
-BenchmarkRunner.Run<BsonValueCompareTests>();
+BsonValue a = BsonValue.MaxValue;
+
+;
+//BenchmarkRunner.Run<BsonValueCompareTests>();
 //BenchmarkRunner.Run<BsonValueCompareMemoryTests>();

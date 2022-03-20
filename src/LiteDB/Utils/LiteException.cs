@@ -154,10 +154,10 @@ public class LiteException : Exception
         return new LiteException(INVALID_UPDATE_FIELD, "'{0}' can't be modified in UPDATE command.", field);
     }
 
-    internal static LiteException IndexDuplicateKey(string field, BsonExpression key)
-    {
-        return new LiteException(INDEX_DUPLICATE_KEY, "Cannot insert duplicate key in unique index '{0}'. The duplicate value is '{1}'.", field, key);
-    }
+    //internal static LiteException IndexDuplicateKey(string field, BsonExpression key)
+    //{
+        //return new LiteException(INDEX_DUPLICATE_KEY, "Cannot insert duplicate key in unique index '{0}'. The duplicate value is '{1}'.", field, key);
+    //}
 
     internal static LiteException InvalidIndexKey(string text)
     {
@@ -246,10 +246,10 @@ public class LiteException : Exception
         };
     }
 
-    internal static LiteException InvalidDataType(string field, BsonExpression value)
-    {
-        return new LiteException(INVALID_DATA_TYPE, "Invalid BSON data type '{0}' on field '{1}'.", value.Type, field);
-    }
+    //internal static LiteException InvalidDataType(string field, BsonExpression value)
+    //{
+        //return new LiteException(INVALID_DATA_TYPE, "Invalid BSON data type '{0}' on field '{1}'.", value.Type, field);
+    //}
 
     internal static LiteException PropertyReadWrite(PropertyInfo prop)
     {
