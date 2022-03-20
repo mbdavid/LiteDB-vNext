@@ -28,18 +28,18 @@ public class BsonNull : BsonValue, IComparable<BsonNull>, IEquatable<BsonNull>
         return 0; // singleton
     }
 
-    public bool Equals(BsonNull rhs)
+    public bool Equals(BsonNull other)
     {
-        if (rhs is null) return false;
+        if (other is null) return false;
 
         return true;
     }
 
     #region Explicit operators
 
-    public static bool operator ==(BsonNull lhs, BsonNull rhs) => lhs.Equals(rhs);
+    public static bool operator ==(BsonNull left, BsonNull right) => left.Equals(right);
 
-    public static bool operator !=(BsonNull lhs, BsonNull rhs) => !lhs.Equals(rhs);
+    public static bool operator !=(BsonNull left, BsonNull right) => !left.Equals(right);
 
     #endregion
 
@@ -47,7 +47,7 @@ public class BsonNull : BsonValue, IComparable<BsonNull>, IEquatable<BsonNull>
 
     public override int GetHashCode() => this.Type.GetHashCode();
 
-    public override bool Equals(object obj) => this.Equals(obj as BsonNull);
+    public override bool Equals(object other) => this.Equals(other as BsonNull);
 
     public override string ToString() => "[Null]";
 

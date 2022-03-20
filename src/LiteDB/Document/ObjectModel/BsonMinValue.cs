@@ -28,18 +28,18 @@ public class BsonMaxValue : BsonValue, IComparable<BsonMaxValue>, IEquatable<Bso
         return 0; // singleton
     }
 
-    public bool Equals(BsonMaxValue rhs)
+    public bool Equals(BsonMaxValue other)
     {
-        if (rhs is null) return false;
+        if (other is null) return false;
 
         return true;
     }
 
     #region Explicit operators
 
-    public static bool operator ==(BsonMaxValue lhs, BsonMaxValue rhs) => lhs.Equals(rhs);
+    public static bool operator ==(BsonMaxValue left, BsonMaxValue right) => left.Equals(right);
 
-    public static bool operator !=(BsonMaxValue lhs, BsonMaxValue rhs) => !lhs.Equals(rhs);
+    public static bool operator !=(BsonMaxValue left, BsonMaxValue right) => !left.Equals(right);
 
     #endregion
 
@@ -47,7 +47,7 @@ public class BsonMaxValue : BsonValue, IComparable<BsonMaxValue>, IEquatable<Bso
 
     public override int GetHashCode() => this.Type.GetHashCode();
 
-    public override bool Equals(object obj) => this.Equals(obj as BsonMaxValue);
+    public override bool Equals(object other) => this.Equals(other as BsonMaxValue);
 
     public override string ToString() => "[MaxValue]";
 

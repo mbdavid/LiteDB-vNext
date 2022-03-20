@@ -38,18 +38,18 @@ public class BsonString : BsonValue, IComparable<BsonString>, IEquatable<BsonStr
         return this.Value.CompareTo(other.Value);
     }
 
-    public bool Equals(BsonString rhs)
+    public bool Equals(BsonString other)
     {
-        if (rhs is null) return false;
+        if (other is null) return false;
 
-        return this.Value == rhs.Value;
+        return this.Value == other.Value;
     }
 
     #region Explicit operators
 
-    public static bool operator ==(BsonString lhs, BsonString rhs) => lhs.Equals(rhs);
+    public static bool operator ==(BsonString left, BsonString right) => left.Equals(right);
 
-    public static bool operator !=(BsonString lhs, BsonString rhs) => !lhs.Equals(rhs);
+    public static bool operator !=(BsonString left, BsonString right) => !left.Equals(right);
 
     #endregion
 
@@ -65,7 +65,7 @@ public class BsonString : BsonValue, IComparable<BsonString>, IEquatable<BsonStr
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object obj) => this.Value.Equals(obj);
+    public override bool Equals(object other) => this.Equals(other as BsonString);
 
     public override string ToString() => this.Value;
 

@@ -35,18 +35,18 @@ public class BsonInt32 : BsonValue, IComparable<BsonInt32>, IEquatable<BsonInt32
         return this.Value.CompareTo(other.Value);
     }
 
-    public bool Equals(BsonInt32 rhs)
+    public bool Equals(BsonInt32 other)
     {
-        if (rhs is null) return false;
+        if (other is null) return false;
 
-        return this.Value == rhs.Value;
+        return this.Value == other.Value;
     }
 
     #region Explicit operators
 
-    public static bool operator ==(BsonInt32 lhs, BsonInt32 rhs) => lhs.Equals(rhs);
+    public static bool operator ==(BsonInt32 left, BsonInt32 right) => left.Equals(right);
 
-    public static bool operator !=(BsonInt32 lhs, BsonInt32 rhs) => !lhs.Equals(rhs);
+    public static bool operator !=(BsonInt32 left, BsonInt32 right) => !left.Equals(right);
 
     #endregion
 
@@ -62,7 +62,7 @@ public class BsonInt32 : BsonValue, IComparable<BsonInt32>, IEquatable<BsonInt32
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object obj) => this.Value.Equals(obj);
+    public override bool Equals(object other) => this.Value.Equals(other);
 
     public override string ToString() => this.Value.ToString();
 

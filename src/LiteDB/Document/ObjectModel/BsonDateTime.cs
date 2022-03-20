@@ -5,6 +5,8 @@
 /// </summary>
 public class BsonDateTime : BsonValue, IComparable<BsonDateTime>, IEquatable<BsonDateTime>
 {
+    public static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     public DateTime Value { get; }
 
     public BsonDateTime(DateTime value)

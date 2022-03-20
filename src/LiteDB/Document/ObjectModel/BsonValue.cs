@@ -7,8 +7,6 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 {
     #region Static object creator helper
 
-    public static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
     public static readonly BsonValue MinValue = new BsonMinValue();
 
     public static readonly BsonValue Null = new BsonNull();
@@ -27,6 +25,23 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     /// </summary>
     public abstract int GetBytesCount();
 
+
+    /// <summary>
+    /// Get how many bytes one single element will used in BSON format
+    /// </summary>
+    protected int GetBytesCountElement(string key, BsonValue value)
+    {
+        // check if data type is variant
+        var variant = value.Type == BsonType.String || value.Type == BsonType.Binary || value.Type == BsonType.Guid;
+
+        return
+            1 + // element type
+            Encoding.UTF8.GetByteCount(key) + // CString
+            1 + // CString \0
+            value.GetBytesCount() +
+            (variant ? 5 : 0); // bytes.Length + 0x??
+    }
+
     #region Implement IComparable
 
     public int CompareTo(BsonValue other) => this.CompareTo(other, Collation.Binary);
@@ -36,14 +51,15 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     protected int CompareType(BsonValue other)
     {
         var result = this.Type.CompareTo(other.Type);
+
         return result < 0 ? -1 : result > 0 ? +1 : 0;
     }
 
     #endregion
 
-    public bool Equals(BsonValue rhs) => this.Equals((object)rhs);
+    public bool Equals(BsonValue other) => this.Equals((object)other);
 
-    public abstract override bool Equals(object obj);
+    public abstract override bool Equals(object other);
 
     public abstract override int GetHashCode();
 
@@ -53,33 +69,33 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public virtual Int32 AsInt32 => (this as BsonInt32)?.Value ?? default(Int32);
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual Int64 AsInt64 => ((BsonInt64)this).Value;
+    public virtual Int64 AsInt64 => (this as BsonInt64)?.Value ?? default(Int64);
 
     #endregion
 
     #region Explicit Operators
 
-    public static bool operator <(BsonValue lhs, BsonValue rhs)
+    public static bool operator <(BsonValue left, BsonValue right)
     {
-        if (lhs is null && rhs is null) return false;
-        if (lhs is null) return true;
-        if (rhs is null) return false;
+        if (left is null && right is null) return false;
+        if (left is null) return true;
+        if (right is null) return false;
 
-        return lhs.CompareTo(rhs) < 0;
+        return left.CompareTo(right) < 0;
     }
 
-    public static bool operator >(BsonValue lhs, BsonValue rhs) => !(lhs < rhs);
+    public static bool operator >(BsonValue left, BsonValue right) => !(left < right);
 
-    public static bool operator <=(BsonValue lhs, BsonValue rhs)
+    public static bool operator <=(BsonValue left, BsonValue right)
     {
-        if (lhs is null && rhs is null) return false;
-        if (lhs is null) return true;
-        if (rhs is null) return false;
+        if (left is null && right is null) return false;
+        if (left is null) return true;
+        if (right is null) return false;
 
-        return lhs.CompareTo(rhs) <= 0;
+        return left.CompareTo(right) <= 0;
     }
 
-    public static bool operator >=(BsonValue lhs, BsonValue rhs) => !(lhs < rhs);
+    public static bool operator >=(BsonValue left, BsonValue right) => !(left < right);
 
     #endregion
 

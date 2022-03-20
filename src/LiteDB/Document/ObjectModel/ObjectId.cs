@@ -37,7 +37,7 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// </summary>
     public DateTime CreationTime
     {
-        get { return BsonValue.UnixEpoch.AddSeconds(this.Timestamp); }
+        get { return BsonDateTime.UnixEpoch.AddSeconds(this.Timestamp); }
     }
 
     #endregion
@@ -313,7 +313,7 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// </summary>
     public static ObjectId NewObjectId()
     {
-        var timestamp = (long)Math.Floor((DateTime.UtcNow - BsonValue.UnixEpoch).TotalSeconds);
+        var timestamp = (long)Math.Floor((DateTime.UtcNow - BsonDateTime.UnixEpoch).TotalSeconds);
         var inc = Interlocked.Increment(ref _increment) & 0x00ffffff;
 
         return new ObjectId((int)timestamp, _machine, _pid, inc);

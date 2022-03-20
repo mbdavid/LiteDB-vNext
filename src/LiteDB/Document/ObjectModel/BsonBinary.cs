@@ -34,18 +34,18 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
         return this.Value.BinaryCompareTo(other.Value);
     }
 
-    public bool Equals(BsonBinary rhs)
+    public bool Equals(BsonBinary other)
     {
-        if (rhs is null) return false;
+        if (other is null) return false;
 
-        return this.Value.BinaryCompareTo(rhs.Value) == 0;
+        return this.Value.BinaryCompareTo(other.Value) == 0;
     }
 
     #region Explicit operators
 
-    public static bool operator ==(BsonBinary lhs, BsonBinary rhs) => lhs.Equals(rhs);
+    public static bool operator ==(BsonBinary left, BsonBinary right) => left.Equals(right);
 
-    public static bool operator !=(BsonBinary lhs, BsonBinary rhs) => !lhs.Equals(rhs);
+    public static bool operator !=(BsonBinary left, BsonBinary right) => !left.Equals(right);
 
     #endregion
 
@@ -61,7 +61,7 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object obj) => this.Value.Equals(obj);
+    public override bool Equals(object other) => this.Value.Equals(other);
 
     public override string ToString() => String.Join(",",  this.Value.Select(x => x.ToString()));
 

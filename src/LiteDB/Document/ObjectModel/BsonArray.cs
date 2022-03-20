@@ -1,146 +1,140 @@
-﻿//namespace LiteDB;
-//public class BsonArray : BsonValue, IList<BsonValue>
-//{
-//    public BsonArray()
-//        : base(BsonType.Array, new List<BsonValue>())
-//    {
-//    }
+﻿namespace LiteDB;
 
-//    public BsonArray(List<BsonValue> array)
-//        : this()
-//    {
-//        if (array == null) throw new ArgumentNullException(nameof(array));
+/// <summary>
+/// Represent a array of BsonValue in Bson object model
+/// </summary>
+public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray>, IList<BsonValue>
+{
+    private readonly List<BsonValue> _value;
 
-//        this.AddRange(array);
-//    }
+    public IReadOnlyList<BsonValue> Value => _value;
 
-//    public BsonArray(params BsonValue[] array)
-//        : this()
-//    {
-//        if (array == null) throw new ArgumentNullException(nameof(array));
+    public BsonArray() : this(0)
+    {
+    }
 
-//        this.AddRange(array);
-//    }
+    public BsonArray(int capacity)
+    {
+        _value = new List<BsonValue>(capacity);
+    }
 
-//    public BsonArray(IEnumerable<BsonValue> items)
-//        : this()
-//    {
-//        if (items == null) throw new ArgumentNullException(nameof(items));
+    public override BsonType Type => BsonType.Array;
 
-//        this.AddRange(items);
-//    }
+    public int Count => _value.Count;
 
-//    public new IList<BsonValue> RawValue => (IList<BsonValue>)base.RawValue;
+    public bool IsReadOnly => false;
 
-//    public override BsonValue this[int index]
-//    {
-//        get
-//        {
-//            return this.RawValue[index];
-//        }
-//        set
-//        {
-//            this.RawValue[index] = value ?? BsonValue.Null;
-//        }
-//    }
+    public BsonValue this[int index] { get => _value[index]; set => _value[index] = value; }
 
-//    public int Count => this.RawValue.Count;
+    public override int GetBytesCount()
+    {
+        var length = 5;
 
-//    public bool IsReadOnly => false;
+        for (var i = 0; i < _value.Count; i++)
+        {
+            length += this.GetBytesCountElement(i.ToString(), _value[i]);
+        }
 
-//    public void Add(BsonValue item) => this.RawValue.Add(item ?? BsonValue.Null);
+        return length;
+    }
 
-//    public void AddRange<TCollection>(TCollection collection)
-//        where TCollection : ICollection<BsonValue>
-//    {
-//        if(collection == null)
-//            throw new ArgumentNullException(nameof(collection));
+    public override int CompareTo(BsonValue other, Collation collation)
+    {
+        if (other == null) return 1;
 
-//        var list = (List<BsonValue>)base.RawValue;
+        if (other is BsonGuid otherGuid) return this.CompareTo(otherGuid, collation);
 
-//        var listEmptySpace = list.Capacity - list.Count;
-//        if (listEmptySpace < collection.Count)
-//        {
-//            list.Capacity += collection.Count;
-//        }
+        return this.CompareType(other);
+    }
 
-//        foreach (var bsonValue in collection)
-//        {
-//            list.Add(bsonValue ?? Null);    
-//        }
-            
-//    }
-        
-//    public void AddRange(IEnumerable<BsonValue> items)
-//    {
-//        if (items == null) throw new ArgumentNullException(nameof(items));
+    private int CompareTo(BsonArray other, Collation collation)
+    {
+        // lhs and rhs might be subclasses of BsonArray
+        using (var lhsEnumerator = this.GetEnumerator())
+        using (var rhsEnumerator = other.GetEnumerator())
+        {
+            while (true)
+            {
+                var lhsHasNext = lhsEnumerator.MoveNext();
+                var rhsHasNext = rhsEnumerator.MoveNext();
 
-//        foreach (var item in items)
-//        {
-//            this.Add(item ?? BsonValue.Null);
-//        }
-//    }
+                if (!lhsHasNext && !rhsHasNext) return 0;
+                if (!lhsHasNext) return -1;
+                if (!rhsHasNext) return 1;
 
-//    public void Clear() => this.RawValue.Clear();
+                var lhsValue = lhsEnumerator.Current;
+                var rhsValue = rhsEnumerator.Current;
 
-//    public void CopyTo(BsonValue[] array, int arrayIndex) => this.RawValue.CopyTo(array, arrayIndex);
+                var result = lhsValue.CompareTo(rhsValue, collation);
 
-//    public IEnumerator<BsonValue> GetEnumerator() => this.RawValue.GetEnumerator();
+                if (result != 0) return result;
+            }
+        }
+    }
 
-//    public int IndexOf(BsonValue item) => this.RawValue.IndexOf(item ?? BsonValue.Null);
+    public int CompareTo(BsonArray other)
+    {
+        if (other == null) return 1;
 
-//    public void Insert(int index, BsonValue item) => this.RawValue.Insert(index, item ?? BsonValue.Null);
+        return this.CompareTo(other, Collation.Default);
+    }
 
-//    public bool Remove(BsonValue item) => this.RawValue.Remove(item);
+    public bool Equals(BsonArray other)
+    {
+        if (other is null) return false;
 
-//    public void RemoveAt(int index) => this.RawValue.RemoveAt(index);
+        return this.CompareTo(other) == 0;
+    }
 
-//    public bool Contains(BsonValue item) => this.RawValue.Contains(item ?? BsonValue.Null);
+    #region Explicit operators
 
-//    public bool Contains(BsonValue item, Collation collection) => this.RawValue.Any(x => collection.Compare(x, item ?? BsonValue.Null) == 0);
+    public static bool operator ==(BsonArray left, BsonArray right) => left.Equals(right);
 
-//    IEnumerator IEnumerable.GetEnumerator()
-//    {
-//        foreach (var value in this.RawValue)
-//        {
-//            yield return value;
-//        }
-//    }
+    public static bool operator !=(BsonArray left, BsonArray right) => !left.Equals(right);
 
-//    public override int CompareTo(BsonValue other)
-//    {
-//        // if types are different, returns sort type order
-//        if (other.Type != BsonType.Array) return this.Type.CompareTo(other.Type);
+    #endregion
 
-//        var otherArray = other.AsArray;
+    #region Implicit Ctor
 
-//        var result = 0;
-//        var i = 0;
-//        var stop = Math.Min(this.Count, otherArray.Count);
+    //    public static implicit operator Guid(BsonGuid value) => value.Value;
 
-//        // compare each element
-//        for (; 0 == result && i < stop; i++)
-//            result = this[i].CompareTo(otherArray[i]);
+    //    public static implicit operator BsonGuid(Guid value) => new BsonGuid(value);
 
-//        if (result != 0) return result;
-//        if (i == this.Count) return i == otherArray.Count ? 0 : -1;
-//        return 1;
-//    }
+    #endregion
 
-//    private int _length;
+    #region IList implementation
 
-//    internal override int GetBytesCount(bool recalc)
-//    {
-//        if (recalc == false && _length > 0) return _length;
+    public int IndexOf(BsonValue item) => _value.IndexOf(item);
 
-//        var length = 5;
-//        var array = this.RawValue;
-            
-//        for (var i = 0; i < array.Count; i++)
-//        {
-//            length += this.GetBytesCountElement(i.ToString(), array[i]);
-//        }
+    public void Insert(int index, BsonValue item) => _value.Insert(index, item ?? BsonValue.Null);
 
-//        return _length = length;
-//    }
-//}
+    public void RemoveAt(int index) => _value.RemoveAt(index);
+
+    public void Add(BsonValue item) => _value.Add(item ?? BsonValue.Null);
+
+    public void Clear() => _value.Clear();
+
+    public bool Contains(BsonValue item) => _value.Contains(item ?? BsonValue.Null);
+
+    public bool Contains(BsonValue item, Collation collection) => _value.Any(x => collection.Compare(x, item ?? BsonValue.Null) == 0);
+
+    public void CopyTo(BsonValue[] array, int arrayIndex) => _value.CopyTo(array, arrayIndex);
+
+    public bool Remove(BsonValue item) => _value.Remove(item ?? BsonValue.Null);
+
+    public IEnumerator<BsonValue> GetEnumerator() => _value.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => _value.GetEnumerator();
+
+    #endregion
+
+    #region GetHashCode, Equals, ToString override
+
+    public override int GetHashCode() => this.Value.GetHashCode();
+
+    public override bool Equals(object other) => this.Value.Equals(other);
+
+    public override string ToString() => this.Value.ToString();
+
+    #endregion
+}

@@ -28,18 +28,18 @@ public class BsonMinValue : BsonValue, IComparable<BsonMinValue>, IEquatable<Bso
         return 0; // singleton
     }
 
-    public bool Equals(BsonMinValue rhs)
+    public bool Equals(BsonMinValue other)
     {
-        if (rhs is null) return false;
+        if (other is null) return false;
 
         return true;
     }
 
     #region Explicit operators
 
-    public static bool operator ==(BsonMinValue lhs, BsonMinValue rhs) => lhs.Equals(rhs);
+    public static bool operator ==(BsonMinValue left, BsonMinValue right) => left.Equals(right);
 
-    public static bool operator !=(BsonMinValue lhs, BsonMinValue rhs) => !lhs.Equals(rhs);
+    public static bool operator !=(BsonMinValue left, BsonMinValue right) => !left.Equals(right);
 
     #endregion
 
@@ -47,7 +47,7 @@ public class BsonMinValue : BsonValue, IComparable<BsonMinValue>, IEquatable<Bso
 
     public override int GetHashCode() => this.Type.GetHashCode();
 
-    public override bool Equals(object obj) => this.Equals(obj as BsonMinValue);
+    public override bool Equals(object other) => this.Equals(other as BsonMaxValue);
 
     public override string ToString() => "[MinValue]";
 
