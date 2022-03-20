@@ -1,7 +1,7 @@
 ﻿namespace LiteDB;
 
 /// <summary>
-/// Represent an integer value in Bson object model
+/// Represent a double value in Bson object model
 /// </summary>
 public class BsonDouble : BsonValue, IComparable<BsonDouble>, IEquatable<BsonDouble>
 {

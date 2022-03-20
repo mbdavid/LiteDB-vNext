@@ -1,7 +1,7 @@
 ﻿namespace LiteDB;
 
 /// <summary>
-/// Represent an String value in Bson object model
+/// Represent a String value in Bson object model
 /// </summary>
 public class BsonString : BsonValue, IComparable<BsonString>, IEquatable<BsonString>
 {
