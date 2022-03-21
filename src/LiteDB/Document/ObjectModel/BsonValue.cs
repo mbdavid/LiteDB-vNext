@@ -65,13 +65,43 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     #region Convert types
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual String AsString => (this as BsonString)?.Value ?? default;
+    public virtual BsonArray AsArray => (this as BsonArray) ?? throw new InvalidCastException($"BsonValue must be an Array value. Current value type: {this.Type}");
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual Int32 AsInt32 => (this as BsonInt32)?.Value ?? default;
+    public virtual BsonDocument AsDocument => (this as BsonDocument) ?? throw new InvalidCastException($"BsonValue must be a Document value. Current value type: {this.Type}");
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual Int64 AsInt64 => (this as BsonInt64)?.Value ?? default;
+    public virtual byte[] AsBinary => (this as BsonBinary)?.Value ?? throw new InvalidCastException($"BsonValue must be a Binary value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual bool AsBoolean => (this as BsonBoolean)?.Value ?? throw new InvalidCastException($"BsonValue must be a Boolean value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual string AsString => (this as BsonString)?.Value ?? throw new InvalidCastException($"BsonValue must be a String value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual int AsInt32 => (this as BsonInt32)?.Value ?? throw new InvalidCastException($"BsonValue must be an Int32 value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual long AsInt64 => (this as BsonInt64)?.Value ?? throw new InvalidCastException($"BsonValue must be an Int64 value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual ulong AsTimestamp => (this as BsonTimestamp)?.Value ?? throw new InvalidCastException($"BsonValue must be a Timestamp value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual double AsDouble => (this as BsonDouble)?.Value ?? throw new InvalidCastException($"BsonValue must be a Double value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual decimal AsDecimal => (this as BsonDecimal)?.Value ?? throw new InvalidCastException($"BsonValue must be a Decimal value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual DateTime AsDateTime => (this as BsonDateTime)?.Value ?? throw new InvalidCastException($"BsonValue must be a DateTime value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual ObjectId AsObjectId => (this as BsonObjectId)?.Value ?? throw new InvalidCastException($"BsonValue must be a ObjectId value. Current value type: {this.Type}");
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual Guid AsGuid => (this as BsonGuid)?.Value ?? throw new InvalidCastException($"BsonValue must be a Guid value. Current value type: {this.Type}");
 
     #endregion
 
@@ -101,6 +131,28 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     #endregion
 
+    #region Index "this" property
+
+    /// <summary>
+    /// Get/Set a field for document. Fields are case sensitive - Works only when value are document
+    /// </summary>
+    public virtual BsonValue this[string name]
+    {
+        get => throw new InvalidCastException($"BsonValue must be a Document. Current type: {this.Type}");
+        set => throw new InvalidCastException($"BsonValue must be a Document. Current type: {this.Type}");
+    }
+
+    /// <summary>
+    /// Get/Set value in array position. Works only when value are array
+    /// </summary>
+    public virtual BsonValue this[int index]
+    {
+        get => throw new InvalidCastException($"BsonValue must be an Array. Current type: {this.Type}");
+        set => throw new InvalidCastException($"BsonValue must be an Array. Current type: {this.Type}");
+    }
+
+    #endregion
+
     #region Implicit Ctor
 
     // Int32
@@ -108,10 +160,45 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     public static implicit operator BsonValue(Int32 value) => new BsonInt32(value);
 
+    // Int64
+    public static implicit operator Int64(BsonValue value) => value.AsInt64;
+
+    public static implicit operator BsonValue(Int64 value) => new BsonInt64(value);
+
+    // Timestamp
+    public static implicit operator UInt64(BsonValue value) => value.AsTimestamp;
+
+    public static implicit operator BsonValue(UInt64 value) => new BsonTimestamp(value);
+
+    // Double
+    public static implicit operator Double(BsonValue value) => value.AsDouble;
+
+    public static implicit operator BsonValue(Double value) => new BsonDouble(value);
+
+    // Decimal
+    public static implicit operator Decimal(BsonValue value) => value.AsDecimal;
+
+    public static implicit operator BsonValue(Decimal value) => new BsonDecimal(value);
+
     // String
     public static implicit operator String(BsonValue value) => value.AsString;
 
-    public static implicit operator BsonValue(String value) => new BsonString(value);
+    public static implicit operator BsonValue(String value) => value is null ? BsonValue.Null : value.Length == 0 ? BsonString.Emtpy : new BsonString(value);
+
+    // Binary
+    public static implicit operator byte[](BsonValue value) => value.AsBinary;
+
+    public static implicit operator BsonValue(byte[] value) => new BsonBinary(value);
+
+    // Guid
+    public static implicit operator Guid(BsonValue value) => value.AsGuid;
+
+    public static implicit operator BsonValue(Guid value) => new BsonGuid(value);
+
+    // Boolean
+    public static implicit operator Boolean(BsonValue value) => value.AsBoolean;
+
+    public static implicit operator BsonValue(Boolean value) => value ? BsonBoolean.True : BsonBoolean.False;
 
     #endregion
 

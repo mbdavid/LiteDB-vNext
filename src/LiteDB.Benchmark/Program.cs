@@ -8,7 +8,11 @@ using LiteDB.Benchmark;
 BsonDocument d = new()
 {
     ["_id"] = 1,
-    ["name"] = "John"
+    ["name"] = "John",
+    ["nulo"] = null,
+    ["bool"] = true,
+    ["max"] = BsonValue.MaxValue,
+    ["arr"] = new BsonArray { 1, "2", null }
 };
 
 

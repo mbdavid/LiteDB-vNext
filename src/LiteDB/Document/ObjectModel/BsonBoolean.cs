@@ -5,12 +5,8 @@
 /// </summary>
 public class BsonBoolean : BsonValue, IComparable<BsonBoolean>, IEquatable<BsonBoolean>
 {
-    private static BsonBoolean _true = new BsonBoolean(true);
-    private static BsonBoolean _false = new BsonBoolean(false);
-
-    public static BsonBoolean True => _true;
-
-    public static BsonBoolean False => _false;
+    public static BsonBoolean True = new BsonBoolean(true);
+    public static BsonBoolean False = new BsonBoolean(false);
 
     public bool Value { get; }
 
@@ -62,7 +58,7 @@ public class BsonBoolean : BsonValue, IComparable<BsonBoolean>, IEquatable<BsonB
 
     public static implicit operator Boolean(BsonBoolean value) => value.Value;
 
-    public static implicit operator BsonBoolean(Boolean value) => new BsonBoolean(value);
+    public static implicit operator BsonBoolean(Boolean value) => value ? True : False;
 
     #endregion
 

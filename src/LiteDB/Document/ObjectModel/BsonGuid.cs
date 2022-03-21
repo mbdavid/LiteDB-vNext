@@ -5,9 +5,7 @@
 /// </summary>
 public class BsonGuid : BsonValue, IComparable<BsonGuid>, IEquatable<BsonGuid>
 {
-    private static BsonGuid _empty = new BsonGuid(Guid.Empty);
-
-    public static BsonGuid Empty => _empty;
+    public static BsonGuid Empty = new BsonGuid(Guid.Empty);
 
     public Guid Value { get; }
 

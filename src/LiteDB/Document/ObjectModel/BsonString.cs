@@ -5,9 +5,7 @@
 /// </summary>
 public class BsonString : BsonValue, IComparable<BsonString>, IEquatable<BsonString>
 {
-    private static BsonString _empty = new BsonString("");
-
-    public static BsonString Emtpy => _empty;
+    public static BsonString Emtpy = new BsonString("");
 
     public string Value { get; }
 
@@ -61,7 +59,14 @@ public class BsonString : BsonValue, IComparable<BsonString>, IEquatable<BsonStr
 
     public static implicit operator String(BsonString value) => value.Value;
 
-    public static implicit operator BsonString(String value) => new BsonString(value);
+    public static implicit operator BsonString(String value)
+    {
+        if (value == null) throw new ArgumentNullException(nameof(value));
+
+        if (value.Length == 0) return Emtpy;
+
+        return new BsonString(value);
+    }
 
     #endregion
 
