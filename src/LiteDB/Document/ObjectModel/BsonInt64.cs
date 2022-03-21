@@ -16,6 +16,8 @@ public class BsonInt64 : BsonValue, IComparable<BsonInt64>, IEquatable<BsonInt64
 
     public override int GetBytesCount() => sizeof(Int64);
 
+    #region Implement IComparable and IEquatable
+
     public override int CompareTo(BsonValue other, Collation collation)
     {
         if (other == null) return 1;
@@ -41,6 +43,8 @@ public class BsonInt64 : BsonValue, IComparable<BsonInt64>, IEquatable<BsonInt64
 
         return this.Value == other.Value;
     }
+
+    #endregion
 
     #region Explicit operators
 

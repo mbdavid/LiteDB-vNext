@@ -22,6 +22,8 @@ public class BsonObjectId : BsonValue, IComparable<BsonObjectId>, IEquatable<Bso
 
     public override int GetBytesCount() => 12;
 
+    #region Implement IComparable and IEquatable
+
     public override int CompareTo(BsonValue other, Collation collation)
     {
         if (other == null) return 1;
@@ -44,6 +46,8 @@ public class BsonObjectId : BsonValue, IComparable<BsonObjectId>, IEquatable<Bso
 
         return this.Value.CompareTo(other.Value) == 0;
     }
+
+    #endregion
 
     #region Explicit operators
 

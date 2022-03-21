@@ -1,162 +1,170 @@
-﻿//namespace LiteDB;
+﻿namespace LiteDB;
 
-//public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
-//{
-//    public BsonDocument()
-//        : base(BsonType.Document, new Dictionary<string, BsonValue>(StringComparer.OrdinalIgnoreCase))
-//    {
-//    }
+/// <summary>
+/// Represent a document (list of key-values of BsonValue) in Bson object model
+/// </summary>
+public class BsonDocument : BsonValue, IComparable<BsonDocument>, IEquatable<BsonDocument>, IDictionary<string, BsonValue>
+{
+    private readonly Dictionary<string, BsonValue> _value;
 
-//    public BsonDocument(ConcurrentDictionary<string, BsonValue> dict)
-//        : this()
-//    {
-//        if (dict == null) throw new ArgumentNullException(nameof(dict));
+    public IReadOnlyDictionary<string, BsonValue> Value => _value;
 
-//        foreach(var element in dict)
-//        {
-//            this.Add(element);
-//        }
-//    }
+    public BsonDocument() : this(0)
+    {
+    }
 
-//    public BsonDocument(IDictionary<string, BsonValue> dict)
-//        : this()
-//    {
-//        if (dict == null) throw new ArgumentNullException(nameof(dict));
+    public BsonDocument(int capacity)
+    {
+        _value = new Dictionary<string, BsonValue>(capacity, StringComparer.OrdinalIgnoreCase);
+    }
 
-//        foreach (var element in dict)
-//        {
-//            this.Add(element);
-//        }
-//    }
+    public override BsonType Type => BsonType.Document;
 
-//    public new IDictionary<string, BsonValue> RawValue => base.RawValue as IDictionary<string, BsonValue>;
+    public override int GetBytesCount()
+    {
+        var length = 5;
 
-//    /// <summary>
-//    /// Get/Set position of this document inside database. It's filled when used in Find operation.
-//    /// </summary>
-//    internal PageAddress RawId { get; set; } = PageAddress.Empty;
+        foreach (var element in _value)
+        {
+            length += this.GetBytesCountElement(element.Key, element.Value);
+        }
 
-//    /// <summary>
-//    /// Get/Set a field for document. Fields are case sensitive
-//    /// </summary>
-//    public override BsonValue this[string key]
-//    {
-//        get
-//        {
-//            return this.RawValue.GetOrDefault(key, BsonValue.Null);
-//        }
-//        set
-//        {
-//            this.RawValue[key] = value ?? BsonValue.Null;
-//        }
-//    }
+        return length;
+    }
 
-//    #region CompareTo
+    /// <summary>
+    /// Get all document elements - Return "_id" as first of all (if exists)
+    /// </summary>
+    public IEnumerable<KeyValuePair<string, BsonValue>> GetElements()
+    {
+        if (_value.TryGetValue("_id", out var id))
+        {
+            yield return new KeyValuePair<string, BsonValue>("_id", id);
+        }
 
-//    public override int CompareTo(BsonValue other)
-//    {
-//        // if types are different, returns sort type order
-//        if (other.Type != BsonType.Document) return this.Type.CompareTo(other.Type);
+        foreach (var item in _value.Where(x => x.Key != "_id"))
+        {
+            yield return item;
+        }
+    }
 
-//        var thisKeys = this.Keys.ToArray();
-//        var thisLength = thisKeys.Length;
+    #region Implement IComparable and IEquatable
 
-//        var otherDoc = other.AsDocument;
-//        var otherKeys = otherDoc.Keys.ToArray();
-//        var otherLength = otherKeys.Length;
+    public override int CompareTo(BsonValue other, Collation collation)
+    {
+        if (other == null) return 1;
 
-//        var result = 0;
-//        var i = 0;
-//        var stop = Math.Min(thisLength, otherLength);
+        if (other is BsonDocument otherDocument) return this.CompareTo(otherDocument, collation);
 
-//        for (; 0 == result && i < stop; i++)
-//            result = this[thisKeys[i]].CompareTo(otherDoc[thisKeys[i]]);
+        return this.CompareType(other);
+    }
 
-//        // are different
-//        if (result != 0) return result;
+    private int CompareTo(BsonDocument other, Collation collation)
+    {
+        var thisKeys = this.Keys.ToArray();
+        var thisLength = thisKeys.Length;
 
-//        // test keys length to check which is bigger
-//        if (i == thisLength) return i == otherLength ? 0 : -1;
+        var otherKeys = other.Keys.ToArray();
+        var otherLength = otherKeys.Length;
 
-//        return 1;
-//    }
+        var result = 0;
+        var i = 0;
+        var stop = Math.Min(thisLength, otherLength);
 
-//    #endregion
+        for (; 0 == result && i < stop; i++)
+            result = this[thisKeys[i]].CompareTo(other[thisKeys[i]], collation);
 
-//    #region IDictionary
+        // are different
+        if (result != 0) return result;
 
-//    public ICollection<string> Keys => this.RawValue.Keys;
+        // test keys length to check which is bigger
+        if (i == thisLength) return i == otherLength ? 0 : -1;
 
-//    public ICollection<BsonValue> Values => this.RawValue.Values;
+        return 1;
+    }
 
-//    public int Count => this.RawValue.Count;
+    public int CompareTo(BsonDocument other)
+    {
+        if (other == null) return 1;
 
-//    public bool IsReadOnly => false;
+        return this.CompareTo(other, Collation.Binary);
+    }
 
-//    public bool ContainsKey(string key) => this.RawValue.ContainsKey(key);
+    public bool Equals(BsonDocument other)
+    {
+        if (other is null) return false;
 
-//    /// <summary>
-//    /// Get all document elements - Return "_id" as first of all (if exists)
-//    /// </summary>
-//    public IEnumerable<KeyValuePair<string, BsonValue>> GetElements()
-//    {
-//        if(this.RawValue.TryGetValue("_id", out var id))
-//        {
-//            yield return new KeyValuePair<string, BsonValue>("_id", id);
-//        }
+        return this.CompareTo(other) == 0;
+    }
 
-//        foreach(var item in this.RawValue.Where(x => x.Key != "_id"))
-//        {
-//            yield return item;
-//        }
-//    }
+    #endregion
 
-//    public void Add(string key, BsonValue value) => this.RawValue.Add(key, value ?? BsonValue.Null);
+    #region Explicit operators
 
-//    public bool Remove(string key) => this.RawValue.Remove(key);
+    public static bool operator ==(BsonDocument left, BsonDocument right) => left.Equals(right);
 
-//    public void Clear() => this.RawValue.Clear();
+    public static bool operator !=(BsonDocument left, BsonDocument right) => !left.Equals(right);
 
-//    public bool TryGetValue(string key, out BsonValue value) => this.RawValue.TryGetValue(key, out value);
+    #endregion
 
-//    public void Add(KeyValuePair<string, BsonValue> item) => this.Add(item.Key, item.Value);
+    #region Implicit Ctor
 
-//    public bool Contains(KeyValuePair<string, BsonValue> item) => this.RawValue.Contains(item);
+    //    public static implicit operator Guid(BsonGuid value) => value.Value;
 
-//    public bool Remove(KeyValuePair<string, BsonValue> item) => this.Remove(item.Key);
+    //    public static implicit operator BsonGuid(Guid value) => new BsonGuid(value);
 
-//    public IEnumerator<KeyValuePair<string, BsonValue>> GetEnumerator() => this.RawValue.GetEnumerator();
+    #endregion
 
-//    IEnumerator IEnumerable.GetEnumerator() => this.RawValue.GetEnumerator();
+    #region IDictionary implementation
 
-//    public void CopyTo(KeyValuePair<string, BsonValue>[] array, int arrayIndex)
-//    {
-//        ((ICollection<KeyValuePair<string, BsonValue>>)this.RawValue).CopyTo(array, arrayIndex);
-//    }
+    public ICollection<string> Keys => _value.Keys;
 
-//    public void CopyTo(BsonDocument other)
-//    {
-//        foreach(var element in this)
-//        {
-//            other[element.Key] = element.Value;
-//        }
-//    }
+    public ICollection<BsonValue> Values => _value.Values;
 
-//    #endregion
+    public int Count => _value.Count;
 
-//    private int _length = 0;
+    public bool IsReadOnly => false;
 
-//    internal override int GetBytesCount(bool recalc)
-//    {
-//        if (recalc == false && _length > 0) return _length;
+    public BsonValue this[string key]
+    {
+        get => _value.GetOrDefault(key, BsonValue.Null); 
+        set => _value[key] = value ?? BsonValue.Null;
+    }
 
-//        var length = 5;
+    public void Add(string key, BsonValue value) => _value.Add(key, value ?? BsonValue.Null);
 
-//        foreach(var element in this.RawValue)
-//        {
-//            length += this.GetBytesCountElement(element.Key, element.Value);
-//        }
+    public bool ContainsKey(string key) => _value.ContainsKey(key);
 
-//        return _length = length;
-//    }
-//}
+    public bool Remove(string key) => _value.Remove(key); 
+
+    public bool TryGetValue(string key, out BsonValue value) => _value.TryGetValue(key, out value);
+
+    public void Add(KeyValuePair<string, BsonValue> item) => _value.Add(item.Key, item.Value ?? BsonValue.Null);
+
+    public void Clear() => _value.Clear();
+
+    public bool Contains(KeyValuePair<string, BsonValue> item) => _value.Contains(item);
+
+    public void CopyTo(KeyValuePair<string, BsonValue>[] array, int arrayIndex)
+    {
+        ((ICollection<KeyValuePair<string, BsonValue>>)_value).CopyTo(array, arrayIndex);
+    }
+
+    public bool Remove(KeyValuePair<string, BsonValue> item) => _value.Remove(item.Key);
+
+    public IEnumerator<KeyValuePair<string, BsonValue>> GetEnumerator() => _value.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => _value.GetEnumerator();
+
+    #endregion
+
+    #region GetHashCode, Equals, ToString override
+
+    public override int GetHashCode() => this.Value.GetHashCode();
+
+    public override bool Equals(object other) => this.Value.Equals(other);
+
+    public override string ToString() => this.Value.ToString();
+
+    #endregion
+}

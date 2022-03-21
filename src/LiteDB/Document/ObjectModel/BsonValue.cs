@@ -25,7 +25,6 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     /// </summary>
     public abstract int GetBytesCount();
 
-
     /// <summary>
     /// Get how many bytes one single element will used in BSON format
     /// </summary>
@@ -66,10 +65,13 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     #region Convert types
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual Int32 AsInt32 => (this as BsonInt32)?.Value ?? default(Int32);
+    public virtual String AsString => (this as BsonString)?.Value ?? default;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual Int64 AsInt64 => (this as BsonInt64)?.Value ?? default(Int64);
+    public virtual Int32 AsInt32 => (this as BsonInt32)?.Value ?? default;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public virtual Int64 AsInt64 => (this as BsonInt64)?.Value ?? default;
 
     #endregion
 
@@ -105,6 +107,11 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public static implicit operator Int32(BsonValue value) => value.AsInt32;
 
     public static implicit operator BsonValue(Int32 value) => new BsonInt32(value);
+
+    // String
+    public static implicit operator String(BsonValue value) => value.AsString;
+
+    public static implicit operator BsonValue(String value) => new BsonString(value);
 
     #endregion
 

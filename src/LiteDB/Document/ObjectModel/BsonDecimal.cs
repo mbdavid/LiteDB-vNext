@@ -16,6 +16,8 @@ public class BsonDecimal : BsonValue, IComparable<BsonDecimal>, IEquatable<BsonD
 
     public override int GetBytesCount() => sizeof(Decimal);
 
+    #region Implement IComparable and IEquatable
+
     public override int CompareTo(BsonValue other, Collation collation)
     {
         if (other == null) return 1;
@@ -41,6 +43,8 @@ public class BsonDecimal : BsonValue, IComparable<BsonDecimal>, IEquatable<BsonD
 
         return this.Value == other.Value;
     }
+
+    #endregion
 
     #region Explicit operators
 

@@ -23,6 +23,8 @@ public class BsonBoolean : BsonValue, IComparable<BsonBoolean>, IEquatable<BsonB
 
     public override int GetBytesCount() => sizeof(bool);
 
+    #region Implement IComparable and IEquatable
+
     public override int CompareTo(BsonValue other, Collation collation)
     {
         if (other == null) return 1;
@@ -45,6 +47,8 @@ public class BsonBoolean : BsonValue, IComparable<BsonBoolean>, IEquatable<BsonB
 
         return this.Value == other.Value;
     }
+
+    #endregion
 
     #region Explicit operators
 

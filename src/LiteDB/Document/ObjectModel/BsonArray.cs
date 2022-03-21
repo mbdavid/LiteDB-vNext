@@ -18,13 +18,13 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
         _value = new List<BsonValue>(capacity);
     }
 
+    public BsonArray(IEnumerable<BsonValue> values)
+        : this(0)
+    {
+        this.AddRange(values);
+    }
+
     public override BsonType Type => BsonType.Array;
-
-    public int Count => _value.Count;
-
-    public bool IsReadOnly => false;
-
-    public BsonValue this[int index] { get => _value[index]; set => _value[index] = value; }
 
     public override int GetBytesCount()
     {
@@ -38,6 +38,18 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
         return length;
     }
 
+    public void AddRange(IEnumerable<BsonValue> items)
+    {
+        if (items == null) throw new ArgumentNullException(nameof(items));
+
+        foreach (var item in items)
+        {
+            this.Add(item ?? BsonValue.Null);
+        }
+    }
+
+    #region Implement IComparable and IEquatable
+
     public override int CompareTo(BsonValue other, Collation collation)
     {
         if (other == null) return 1;
@@ -50,22 +62,22 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
     private int CompareTo(BsonArray other, Collation collation)
     {
         // lhs and rhs might be subclasses of BsonArray
-        using (var lhsEnumerator = this.GetEnumerator())
-        using (var rhsEnumerator = other.GetEnumerator())
+        using (var leftEnumerator = this.GetEnumerator())
+        using (var rightEnumerator = other.GetEnumerator())
         {
             while (true)
             {
-                var lhsHasNext = lhsEnumerator.MoveNext();
-                var rhsHasNext = rhsEnumerator.MoveNext();
+                var leftHasNext = leftEnumerator.MoveNext();
+                var rightHasNext = rightEnumerator.MoveNext();
 
-                if (!lhsHasNext && !rhsHasNext) return 0;
-                if (!lhsHasNext) return -1;
-                if (!rhsHasNext) return 1;
+                if (!leftHasNext && !rightHasNext) return 0;
+                if (!leftHasNext) return -1;
+                if (!rightHasNext) return 1;
 
-                var lhsValue = lhsEnumerator.Current;
-                var rhsValue = rhsEnumerator.Current;
+                var leftValue = leftEnumerator.Current;
+                var rightValue = rightEnumerator.Current;
 
-                var result = lhsValue.CompareTo(rhsValue, collation);
+                var result = leftValue.CompareTo(rightValue, collation);
 
                 if (result != 0) return result;
             }
@@ -76,7 +88,7 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
     {
         if (other == null) return 1;
 
-        return this.CompareTo(other, Collation.Default);
+        return this.CompareTo(other, Collation.Binary);
     }
 
     public bool Equals(BsonArray other)
@@ -85,6 +97,8 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
 
         return this.CompareTo(other) == 0;
     }
+
+    #endregion
 
     #region Explicit operators
 
@@ -103,6 +117,12 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
     #endregion
 
     #region IList implementation
+
+    public int Count => _value.Count;
+
+    public bool IsReadOnly => false;
+
+    public BsonValue this[int index] { get => _value[index]; set => _value[index] = value; }
 
     public int IndexOf(BsonValue item) => _value.IndexOf(item);
 

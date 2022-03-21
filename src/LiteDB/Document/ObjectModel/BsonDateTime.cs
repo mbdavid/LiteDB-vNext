@@ -18,6 +18,8 @@ public class BsonDateTime : BsonValue, IComparable<BsonDateTime>, IEquatable<Bso
 
     public override int GetBytesCount() => 8;
 
+    #region Implement IComparable and IEquatable
+
     public override int CompareTo(BsonValue other, Collation collation)
     {
         if (other == null) return 1;
@@ -40,6 +42,8 @@ public class BsonDateTime : BsonValue, IComparable<BsonDateTime>, IEquatable<Bso
 
         return this.Value.CompareTo(rhs.Value) == 0;
     }
+
+    #endregion
 
     #region Explicit operators
 

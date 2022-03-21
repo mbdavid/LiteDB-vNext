@@ -5,7 +5,13 @@ using LiteDB;
 using LiteDB.Benchmark;
 
 
-BsonValue a = BsonValue.MaxValue;
+BsonDocument d = new()
+{
+    ["_id"] = 1,
+    ["name"] = "John"
+};
+
+
 
 ;
 //BenchmarkRunner.Run<BsonValueCompareTests>();

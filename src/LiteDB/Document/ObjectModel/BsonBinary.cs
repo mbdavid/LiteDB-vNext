@@ -18,6 +18,8 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
 
     public override int GetBytesCount() => this.Value.Length;
 
+    #region Implement IComparable and IEquatable
+
     public override int CompareTo(BsonValue other, Collation collation)
     {
         if (other == null) return 1;
@@ -40,6 +42,8 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
 
         return this.Value.BinaryCompareTo(other.Value) == 0;
     }
+
+    #endregion
 
     #region Explicit operators
 
