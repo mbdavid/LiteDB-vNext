@@ -4,7 +4,7 @@ public class JsonWriter
 {
     private readonly static IFormatProvider _numberFormat = CultureInfo.InvariantCulture.NumberFormat;
 
-    private TextWriter _writer;
+    private readonly TextWriter _writer;
     private int _indent;
     private string _spacer = "";
 
@@ -86,6 +86,10 @@ public class JsonWriter
 
             case BsonType.Int64:
                 this.WriteExtendDataType("$numberLong", value.AsInt64.ToString(_numberFormat));
+                break;
+
+            case BsonType.UInt64:
+                this.WriteExtendDataType("$numberULong", value.AsUInt64.ToString(_numberFormat));
                 break;
 
             case BsonType.Decimal:

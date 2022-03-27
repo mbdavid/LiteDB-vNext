@@ -9,7 +9,7 @@ public class JsonReader
 
     private Tokenizer _tokenizer = null;
 
-    public long Position { get { return _tokenizer.Position; } }
+    public long Position => _tokenizer.Position;
 
     public JsonReader(TextReader reader)
     {
@@ -64,6 +64,7 @@ public class JsonReader
     internal BsonValue ReadValue(Token token)
     {
         var value = token.Value;
+
         switch (token.Type)
         {
             case TokenType.String: return value;
@@ -81,16 +82,16 @@ public class JsonReader
                     break;
             case TokenType.Int:
                 if (Int32.TryParse(value, NumberStyles.Any, _numberFormat, out int result))
-                    return new BsonValue(result);
+                    return result;
                 else
-                    return new BsonValue(Int64.Parse(value, NumberStyles.Any, _numberFormat));
-            case TokenType.Double: return new BsonValue(Convert.ToDouble(value, _numberFormat));
+                    return Int64.Parse(value, NumberStyles.Any, _numberFormat);
+            case TokenType.Double: return Convert.ToDouble(value, _numberFormat);
             case TokenType.Word:
                 switch (value.ToLower())
                 {
                     case "null": return BsonValue.Null;
-                    case "true": return true;
-                    case "false": return false;
+                    case "true": return BsonBoolean.True;
+                    case "false": return BsonBoolean.False;
                     default: throw LiteException.UnexpectedToken(token);
                 }
         }
@@ -167,12 +168,13 @@ public class JsonReader
 
         switch (key)
         {
-            case "$binary": val = new BsonValue(Convert.FromBase64String(value)); break;
-            case "$oid": val = new BsonValue(new ObjectId(value)); break;
-            case "$guid": val = new BsonValue(new Guid(value)); break;
-            case "$date": val = new BsonValue(DateTime.Parse(value).ToLocalTime()); break;
-            case "$numberLong": val = new BsonValue(Convert.ToInt64(value, _numberFormat)); break;
-            case "$numberDecimal": val = new BsonValue(Convert.ToDecimal(value, _numberFormat)); break;
+            case "$binary": val = Convert.FromBase64String(value); break;
+            case "$oid": val = new ObjectId(value); break;
+            case "$guid": val = new Guid(value); break;
+            case "$date": val = DateTime.Parse(value).ToLocalTime(); break;
+            case "$numberLong": val = Convert.ToInt64(value, _numberFormat); break;
+            case "$numberULong": val = Convert.ToUInt64(value, _numberFormat); break;
+            case "$numberDecimal": val = Convert.ToDecimal(value, _numberFormat); break;
             case "$minValue": val = BsonValue.MinValue; break;
             case "$maxValue": val = BsonValue.MaxValue; break;
 

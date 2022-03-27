@@ -86,7 +86,7 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public virtual long AsInt64 => (this as BsonInt64)?.Value ?? throw new InvalidCastException($"BsonValue must be an Int64 value. Current value type: {this.Type}");
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual ulong AsTimestamp => (this as BsonUInt64)?.Value ?? throw new InvalidCastException($"BsonValue must be a Timestamp value. Current value type: {this.Type}");
+    public virtual ulong AsUInt64 => (this as BsonUInt64)?.Value ?? throw new InvalidCastException($"BsonValue must be a UInt64 value. Current value type: {this.Type}");
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public virtual double AsDouble => (this as BsonDouble)?.Value ?? throw new InvalidCastException($"BsonValue must be a Double value. Current value type: {this.Type}");
@@ -165,8 +165,8 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     public static implicit operator BsonValue(Int64 value) => new BsonInt64(value);
 
-    // Timestamp
-    public static implicit operator UInt64(BsonValue value) => value.AsTimestamp;
+    // UInt64
+    public static implicit operator UInt64(BsonValue value) => value.AsUInt64;
 
     public static implicit operator BsonValue(UInt64 value) => new BsonUInt64(value);
 
@@ -199,6 +199,16 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public static implicit operator Boolean(BsonValue value) => value.AsBoolean;
 
     public static implicit operator BsonValue(Boolean value) => value ? BsonBoolean.True : BsonBoolean.False;
+
+    // ObjectId
+    public static implicit operator ObjectId(BsonValue value) => value.AsObjectId;
+
+    public static implicit operator BsonValue(ObjectId value) => new BsonObjectId(value);
+
+    // DateTime
+    public static implicit operator DateTime(BsonValue value) => value.AsDateTime;
+
+    public static implicit operator BsonValue(DateTime value) => new BsonDateTime(value);
 
     #endregion
 

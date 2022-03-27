@@ -4,11 +4,11 @@
 /// Represents a page address inside a page structure - index could be byte offset position OR index in a list (6 bytes)
 /// </summary>
 [DebuggerStepThrough]
-internal struct PageAddress
+internal struct PageAddress : IEquatable<PageAddress>
 {
     public const int SIZE = 5;
 
-    public static PageAddress Empty = new PageAddress(uint.MaxValue, byte.MaxValue);
+    public static PageAddress Empty = new (uint.MaxValue, byte.MaxValue);
 
     /// <summary>
     /// PageID (4 bytes)
@@ -25,21 +25,21 @@ internal struct PageAddress
     /// </summary>
     public bool IsEmpty => this.PageID == uint.MaxValue && this.Index == byte.MaxValue;
 
-    public override bool Equals(object obj)
-    {
-        var other = (PageAddress)obj;
+    public override bool Equals(object other) => this.Equals((PageAddress)other);
 
+    public bool Equals(PageAddress other)
+    {
         return this.PageID == other.PageID && this.Index == other.Index;
     }
 
-    public static bool operator ==(PageAddress lhs, PageAddress rhs)
+    public static bool operator ==(PageAddress left, PageAddress right)
     {
-        return lhs.PageID == rhs.PageID && lhs.Index == rhs.Index;
+        return left.PageID == right.PageID && left.Index == right.Index;
     }
 
-    public static bool operator !=(PageAddress lhs, PageAddress rhs)
+    public static bool operator !=(PageAddress left, PageAddress right)
     {
-        return !(lhs == rhs);
+        return !(left == right);
     }
 
     public override int GetHashCode()
@@ -63,15 +63,4 @@ internal struct PageAddress
     {
         return this.IsEmpty ? "(empty)" : this.PageID.ToString().PadLeft(4, '0') + ":" + this.Index.ToString().PadLeft(2, '0');
     }
-
-    //public BsonValue ToBsonValue()
-    //{
-    //    if (this.IsEmpty) return BsonValue.Null;
-
-    //    return new BsonDocument
-    //    {
-    //        ["pageID"] = (int)this.PageID,
-    //        ["index"] = (int)this.Index
-    //    };
-    //}
 }
