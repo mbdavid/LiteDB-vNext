@@ -5,7 +5,7 @@
 /// </summary>
 public class BsonString : BsonValue, IComparable<BsonString>, IEquatable<BsonString>
 {
-    public static BsonString Emtpy = new BsonString("");
+    public static BsonString Emtpy = new("");
 
     public string Value { get; }
 

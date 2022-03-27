@@ -9,9 +9,7 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
 
     public BsonBinary(byte[] value)
     {
-        if (value == null) throw new ArgumentNullException(nameof(value));
-
-        this.Value = value;
+        this.Value = value ?? throw new ArgumentNullException(nameof(value));
     }
 
     public override BsonType Type => BsonType.Binary;
@@ -57,7 +55,7 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
 
     public static implicit operator byte[](BsonBinary value) => value.Value;
 
-    public static implicit operator BsonBinary(byte[] value) => new BsonBinary(value);
+    public static implicit operator BsonBinary(byte[] value) => new (value);
 
     #endregion
 
@@ -65,7 +63,7 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object other) => this.Value.Equals(other);
+    public override bool Equals(object other) => this.Equals(other as BsonBinary);
 
     public override string ToString() => String.Join(",",  this.Value.Select(x => x.ToString()));
 

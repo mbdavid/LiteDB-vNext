@@ -5,9 +5,7 @@
 /// </summary>
 public class BsonObjectId : BsonValue, IComparable<BsonObjectId>, IEquatable<BsonObjectId>
 {
-    private static BsonObjectId _empty = new BsonObjectId(ObjectId.Empty);
-
-    public static BsonObjectId Empty => _empty;
+    public static BsonObjectId Empty = new (ObjectId.Empty);
 
     public ObjectId Value { get; }
 
@@ -61,7 +59,7 @@ public class BsonObjectId : BsonValue, IComparable<BsonObjectId>, IEquatable<Bso
 
     public static implicit operator ObjectId(BsonObjectId value) => value.Value;
 
-    public static implicit operator BsonObjectId(ObjectId value) => new BsonObjectId(value);
+    public static implicit operator BsonObjectId(ObjectId value) => new (value);
 
     #endregion
 

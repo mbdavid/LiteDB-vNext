@@ -15,7 +15,7 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
 
     public BsonArray(int capacity)
     {
-        _value = new List<BsonValue>(capacity);
+        _value = new(capacity);
     }
 
     public BsonArray(IEnumerable<BsonValue> values)
@@ -108,21 +108,13 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
 
     #endregion
 
-    #region Implicit Ctor
-
-    //    public static implicit operator Guid(BsonGuid value) => value.Value;
-
-    //    public static implicit operator BsonGuid(Guid value) => new BsonGuid(value);
-
-    #endregion
-
     #region IList implementation
 
     public int Count => _value.Count;
 
     public bool IsReadOnly => false;
 
-    public BsonValue this[int index] { get => _value[index]; set => _value[index] = value; }
+    public override BsonValue this[int index] { get => _value[index]; set => _value[index] = value; }
 
     public int IndexOf(BsonValue item) => _value.IndexOf(item);
 
@@ -152,7 +144,7 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object other) => this.Value.Equals(other);
+    public override bool Equals(object other) => this.Equals(other as BsonArray);
 
     public override string ToString() => this.Value.ToString();
 

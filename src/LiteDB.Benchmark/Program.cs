@@ -15,8 +15,5 @@ BsonDocument d = new()
     ["arr"] = new BsonArray { 1, "2", null }
 };
 
-
-
-;
-//BenchmarkRunner.Run<BsonValueCompareTests>();
+// Run<BsonValueCompareTests>();
 //BenchmarkRunner.Run<BsonValueCompareMemoryTests>();

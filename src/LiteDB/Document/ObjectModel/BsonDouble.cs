@@ -25,6 +25,7 @@ public class BsonDouble : BsonValue, IComparable<BsonDouble>, IEquatable<BsonDou
         if (other is BsonDouble otherDouble) return this.Value.CompareTo(otherDouble.Value);
         if (other is BsonInt32 otherInt32) return this.Value.CompareTo(otherInt32.Value);
         if (other is BsonInt64 otherInt64) return this.Value.CompareTo(otherInt64.Value);
+        if (other is BsonUInt64 otherUInt64) return this.Value.CompareTo(otherUInt64.Value);
         if (other is BsonDecimal otherDecimal) return this.Value.CompareTo(otherDecimal.Value);
 
         return this.CompareType(other);
@@ -58,7 +59,7 @@ public class BsonDouble : BsonValue, IComparable<BsonDouble>, IEquatable<BsonDou
 
     public static implicit operator Double(BsonDouble value) => value.Value;
 
-    public static implicit operator BsonDouble(Double value) => new BsonDouble(value);
+    public static implicit operator BsonDouble(Double value) => new (value);
 
     #endregion
 
@@ -66,7 +67,7 @@ public class BsonDouble : BsonValue, IComparable<BsonDouble>, IEquatable<BsonDou
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object other) => this.Value.Equals(other);
+    public override bool Equals(object other) => this.Equals(other as BsonDouble);
 
     public override string ToString() => this.Value.ToString();
 

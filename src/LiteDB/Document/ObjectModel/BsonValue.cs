@@ -86,7 +86,7 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public virtual long AsInt64 => (this as BsonInt64)?.Value ?? throw new InvalidCastException($"BsonValue must be an Int64 value. Current value type: {this.Type}");
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual ulong AsTimestamp => (this as BsonTimestamp)?.Value ?? throw new InvalidCastException($"BsonValue must be a Timestamp value. Current value type: {this.Type}");
+    public virtual ulong AsTimestamp => (this as BsonUInt64)?.Value ?? throw new InvalidCastException($"BsonValue must be a Timestamp value. Current value type: {this.Type}");
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public virtual double AsDouble => (this as BsonDouble)?.Value ?? throw new InvalidCastException($"BsonValue must be a Double value. Current value type: {this.Type}");
@@ -168,7 +168,7 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     // Timestamp
     public static implicit operator UInt64(BsonValue value) => value.AsTimestamp;
 
-    public static implicit operator BsonValue(UInt64 value) => new BsonTimestamp(value);
+    public static implicit operator BsonValue(UInt64 value) => new BsonUInt64(value);
 
     // Double
     public static implicit operator Double(BsonValue value) => value.AsDouble;

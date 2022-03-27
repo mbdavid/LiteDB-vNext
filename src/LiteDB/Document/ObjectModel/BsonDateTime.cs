@@ -5,7 +5,7 @@
 /// </summary>
 public class BsonDateTime : BsonValue, IComparable<BsonDateTime>, IEquatable<BsonDateTime>
 {
-    public static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    public static readonly DateTime UnixEpoch = new (1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     public DateTime Value { get; }
 
@@ -36,20 +36,20 @@ public class BsonDateTime : BsonValue, IComparable<BsonDateTime>, IEquatable<Bso
         return this.Value.CompareTo(other.Value);
     }
 
-    public bool Equals(BsonDateTime rhs)
+    public bool Equals(BsonDateTime other)
     {
-        if (rhs is null) return false;
+        if (other is null) return false;
 
-        return this.Value.CompareTo(rhs.Value) == 0;
+        return this.Value.CompareTo(other.Value) == 0;
     }
 
     #endregion
 
     #region Explicit operators
 
-    public static bool operator ==(BsonDateTime lhs, BsonDateTime rhs) => lhs.Equals(rhs);
+    public static bool operator ==(BsonDateTime left, BsonDateTime right) => left.Equals(right);
 
-    public static bool operator !=(BsonDateTime lhs, BsonDateTime rhs) => !lhs.Equals(rhs);
+    public static bool operator !=(BsonDateTime left, BsonDateTime right) => !left.Equals(right);
 
     #endregion
 
@@ -57,7 +57,7 @@ public class BsonDateTime : BsonValue, IComparable<BsonDateTime>, IEquatable<Bso
 
     public static implicit operator DateTime(BsonDateTime value) => value.Value;
 
-    public static implicit operator BsonDateTime(DateTime value) => new BsonDateTime(value);
+    public static implicit operator BsonDateTime(DateTime value) => new (value);
 
     #endregion
 
@@ -65,7 +65,7 @@ public class BsonDateTime : BsonValue, IComparable<BsonDateTime>, IEquatable<Bso
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object obj) => this.Value.Equals(obj);
+    public override bool Equals(object other) => this.Equals(other as BsonDateTime);
 
     public override string ToString() => this.Value.ToString();
 

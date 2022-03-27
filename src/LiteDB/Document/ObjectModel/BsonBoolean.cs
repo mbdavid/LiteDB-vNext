@@ -5,8 +5,8 @@
 /// </summary>
 public class BsonBoolean : BsonValue, IComparable<BsonBoolean>, IEquatable<BsonBoolean>
 {
-    public static BsonBoolean True = new BsonBoolean(true);
-    public static BsonBoolean False = new BsonBoolean(false);
+    public static readonly BsonBoolean True = new (true);
+    public static readonly BsonBoolean False = new (false);
 
     public bool Value { get; }
 

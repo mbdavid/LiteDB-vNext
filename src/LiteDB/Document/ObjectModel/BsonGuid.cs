@@ -67,7 +67,7 @@ public class BsonGuid : BsonValue, IComparable<BsonGuid>, IEquatable<BsonGuid>
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object other) => this.Value.Equals(other);
+    public override bool Equals(object other) => this.Equals(other as BsonGuid);
 
     public override string ToString() => this.Value.ToString();
 

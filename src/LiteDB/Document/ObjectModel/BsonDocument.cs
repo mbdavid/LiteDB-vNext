@@ -15,7 +15,7 @@ public class BsonDocument : BsonValue, IComparable<BsonDocument>, IEquatable<Bso
 
     public BsonDocument(int capacity)
     {
-        _value = new Dictionary<string, BsonValue>(capacity, StringComparer.OrdinalIgnoreCase);
+        _value = new (capacity, StringComparer.OrdinalIgnoreCase);
     }
 
     public override BsonType Type => BsonType.Document;
@@ -39,7 +39,7 @@ public class BsonDocument : BsonValue, IComparable<BsonDocument>, IEquatable<Bso
     {
         if (_value.TryGetValue("_id", out var id))
         {
-            yield return new KeyValuePair<string, BsonValue>("_id", id);
+            yield return new ("_id", id);
         }
 
         foreach (var item in _value.Where(x => x.Key != "_id"))
@@ -107,14 +107,6 @@ public class BsonDocument : BsonValue, IComparable<BsonDocument>, IEquatable<Bso
 
     #endregion
 
-    #region Implicit Ctor
-
-    //    public static implicit operator Guid(BsonGuid value) => value.Value;
-
-    //    public static implicit operator BsonGuid(Guid value) => new BsonGuid(value);
-
-    #endregion
-
     #region IDictionary implementation
 
     public ICollection<string> Keys => _value.Keys;
@@ -125,7 +117,7 @@ public class BsonDocument : BsonValue, IComparable<BsonDocument>, IEquatable<Bso
 
     public bool IsReadOnly => false;
 
-    public BsonValue this[string key]
+    public override BsonValue this[string key]
     {
         get => _value.GetOrDefault(key, BsonValue.Null); 
         set => _value[key] = value ?? BsonValue.Null;
@@ -162,7 +154,7 @@ public class BsonDocument : BsonValue, IComparable<BsonDocument>, IEquatable<Bso
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    public override bool Equals(object other) => this.Value.Equals(other);
+    public override bool Equals(object other) => this.Equals(other as BsonDocument);
 
     public override string ToString() => this.Value.ToString();
 

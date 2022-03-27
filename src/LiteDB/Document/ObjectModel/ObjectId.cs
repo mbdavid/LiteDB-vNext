@@ -8,7 +8,7 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// <summary>
     /// A zero 12-bytes ObjectId
     /// </summary>
-    public static ObjectId Empty => new ObjectId();
+    public static ObjectId Empty => new ();
 
     #region Properties
 
@@ -224,37 +224,37 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
 
     #region Operators
 
-    public static bool operator ==(ObjectId lhs, ObjectId rhs)
+    public static bool operator ==(ObjectId left, ObjectId right)
     {
-        if (lhs is null) return rhs is null;
-        if (rhs is null) return false; // don't check type because sometimes different types can be ==
+        if (left is null) return right is null;
+        if (right is null) return false; // don't check type because sometimes different types can be ==
 
-        return lhs.Equals(rhs);
+        return left.Equals(right);
     }
 
-    public static bool operator !=(ObjectId lhs, ObjectId rhs)
+    public static bool operator !=(ObjectId left, ObjectId right)
     {
-        return !(lhs == rhs);
+        return !(left == right);
     }
 
-    public static bool operator >=(ObjectId lhs, ObjectId rhs)
+    public static bool operator >=(ObjectId left, ObjectId right)
     {
-        return lhs.CompareTo(rhs) >= 0;
+        return left.CompareTo(right) >= 0;
     }
 
-    public static bool operator >(ObjectId lhs, ObjectId rhs)
+    public static bool operator >(ObjectId left, ObjectId right)
     {
-        return lhs.CompareTo(rhs) > 0;
+        return left.CompareTo(right) > 0;
     }
 
-    public static bool operator <(ObjectId lhs, ObjectId rhs)
+    public static bool operator <(ObjectId left, ObjectId right)
     {
-        return lhs.CompareTo(rhs) < 0;
+        return left.CompareTo(right) < 0;
     }
 
-    public static bool operator <=(ObjectId lhs, ObjectId rhs)
+    public static bool operator <=(ObjectId left, ObjectId right)
     {
-        return lhs.CompareTo(rhs) <= 0;
+        return left.CompareTo(right) <= 0;
     }
 
     #endregion
@@ -268,43 +268,35 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     // static constructor
     static ObjectId()
     {
-        _machine = (GetMachineHash() +
-#if HAVE_APP_DOMAIN
-            AppDomain.CurrentDomain.Id
-#else
-            10000 // Magic number
-#endif   
-            ) & 0x00ffffff;
         _increment = (new Random()).Next();
 
         try
         {
+            _machine = (GetMachineHash() +
+                AppDomain.CurrentDomain.Id)
+                & 0x00ffffff;
+
             _pid = (short)GetCurrentProcessId();
         }
-        catch (SecurityException)
+        catch (Exception)
         {
-            _pid = 0;
+            var rnd = new Random();
+
+            _machine = rnd.Next();
+            _pid = (short)rnd.Next(1, 10000);
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int GetCurrentProcessId()
     {
-#if HAVE_PROCESS
         return Process.GetCurrentProcess().Id;
-#else
-        return (new Random()).Next(0, 5000); // Any same number for this process
-#endif
     }
 
     private static int GetMachineHash()
     {
-        var hostName =
-#if HAVE_ENVIRONMENT
-            Environment.MachineName; // use instead of Dns.HostName so it will work offline
-#else
-            "SOMENAME";
-#endif
+        var hostName = Environment.MachineName; // use instead of Dns.HostName so it will work offline
+
         return 0x00ffffff & hostName.GetHashCode(); // use first 3 bytes of hash
     }
 
@@ -316,7 +308,7 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
         var timestamp = (long)Math.Floor((DateTime.UtcNow - BsonDateTime.UnixEpoch).TotalSeconds);
         var inc = Interlocked.Increment(ref _increment) & 0x00ffffff;
 
-        return new ObjectId((int)timestamp, _machine, _pid, inc);
+        return new ((int)timestamp, _machine, _pid, inc);
     }
 
     #endregion

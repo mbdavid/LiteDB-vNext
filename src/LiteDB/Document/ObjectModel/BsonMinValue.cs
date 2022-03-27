@@ -1,15 +1,15 @@
 ﻿namespace LiteDB;
 
 /// <summary>
-/// Represent a max value constant in Bson object model
+/// Represent a min value constant in Bson object model
 /// </summary>
-public class BsonMaxValue : BsonValue, IComparable<BsonMaxValue>, IEquatable<BsonMaxValue>
+public class BsonMinValue : BsonValue, IComparable<BsonMinValue>, IEquatable<BsonMinValue>
 {
-    public BsonMaxValue()
+    public BsonMinValue()
     {
     }
 
-    public override BsonType Type => BsonType.MaxValue;
+    public override BsonType Type => BsonType.MinValue;
 
     public override int GetBytesCount() => 0;
 
@@ -18,19 +18,19 @@ public class BsonMaxValue : BsonValue, IComparable<BsonMaxValue>, IEquatable<Bso
     public override int CompareTo(BsonValue other, Collation collation)
     {
         if (other == null) return 1;
-        if (other is BsonMaxValue) return 0;
+        if (other is BsonMinValue) return 0;
 
-        return 1; // all types are lower than MaxValue
+        return -1; // all types are heigher than MinValue
     }
 
-    public int CompareTo(BsonMaxValue other)
+    public int CompareTo(BsonMinValue other)
     {
         if (other == null) return 1;
 
         return 0; // singleton
     }
 
-    public bool Equals(BsonMaxValue other)
+    public bool Equals(BsonMinValue other)
     {
         if (other is null) return false;
 
@@ -41,9 +41,9 @@ public class BsonMaxValue : BsonValue, IComparable<BsonMaxValue>, IEquatable<Bso
 
     #region Explicit operators
 
-    public static bool operator ==(BsonMaxValue left, BsonMaxValue right) => left.Equals(right);
+    public static bool operator ==(BsonMinValue left, BsonMinValue right) => left.Equals(right);
 
-    public static bool operator !=(BsonMaxValue left, BsonMaxValue right) => !left.Equals(right);
+    public static bool operator !=(BsonMinValue left, BsonMinValue right) => !left.Equals(right);
 
     #endregion
 
@@ -53,7 +53,7 @@ public class BsonMaxValue : BsonValue, IComparable<BsonMaxValue>, IEquatable<Bso
 
     public override bool Equals(object other) => this.Equals(other as BsonMaxValue);
 
-    public override string ToString() => "[MaxValue]";
+    public override string ToString() => "[MinValue]";
 
     #endregion
 }
