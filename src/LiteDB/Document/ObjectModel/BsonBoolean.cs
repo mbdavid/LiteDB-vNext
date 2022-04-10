@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a Boolean value in Bson object model
 /// </summary>
-public class BsonBoolean : BsonValue, IComparable<BsonBoolean>, IEquatable<BsonBoolean>
+public class BsonBoolean : BsonValue
 {
     public static readonly BsonBoolean True = new (true);
     public static readonly BsonBoolean False = new (false);
@@ -19,7 +19,9 @@ public class BsonBoolean : BsonValue, IComparable<BsonBoolean>, IEquatable<BsonB
 
     public override int GetBytesCount() => sizeof(bool);
 
-    #region Implement IComparable and IEquatable
+    public override int GetHashCode() => this.Value.GetHashCode();
+
+    #region Implement CompareTo
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
@@ -30,45 +32,29 @@ public class BsonBoolean : BsonValue, IComparable<BsonBoolean>, IEquatable<BsonB
         return this.CompareType(other);
     }
 
-    public int CompareTo(BsonBoolean other)
-    {
-        if (other == null) return 1;
-
-        return this.Value.CompareTo(other.Value);
-    }
-
-    public bool Equals(BsonBoolean other)
-    {
-        if (other is null) return false;
-
-        return this.Value == other.Value;
-    }
-
-    #endregion
-
-    #region Explicit operators
-
-    public static bool operator ==(BsonBoolean left, BsonBoolean right) => left.Equals(right);
-
-    public static bool operator !=(BsonBoolean left, BsonBoolean right) => !left.Equals(right);
-
     #endregion
 
     #region Implicit Ctor
 
-    public static implicit operator Boolean(BsonBoolean value) => value.Value;
+    public static implicit operator bool(BsonBoolean value) => value.Value;
 
-    public static implicit operator BsonBoolean(Boolean value) => value ? True : False;
+    public static implicit operator BsonBoolean(bool value) => value ? True : False;
 
     #endregion
 
     #region GetHashCode, Equals, ToString override
 
-    public override int GetHashCode() => this.Value.GetHashCode();
+    public override bool ToBoolean() => this.Value;
 
-    public override bool Equals(object other) => this.Value.Equals(other);
+    public override int ToInt32() => this.Value ? 1 : 0;
 
-    public override string ToString() => this.Value.ToString();
+    public override long ToInt64() => this.Value ? 1 : 0;
+
+    public override double ToDouble() => this.Value ? 1 : 0;
+
+    public override decimal ToDecimal() => this.Value ? 1 : 0;
+
+    public override string ToString() => this.Value.ToString(CultureInfo.InvariantCulture.NumberFormat);
 
     #endregion
 }

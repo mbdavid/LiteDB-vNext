@@ -223,7 +223,7 @@ internal partial class BsonExpressionMethods
     {
         if (format.IsString)
         {
-            return string.Format("{0:" +  format.AsString + "}", value.RawValue);
+            //TODO return string.Format("{0:" +  format.AsString + "}", value.RawValue);
         }
 
         return BsonValue.Null;

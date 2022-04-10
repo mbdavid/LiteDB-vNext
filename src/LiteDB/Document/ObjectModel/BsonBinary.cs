@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a Binary value (byte array) in Bson object model
 /// </summary>
-public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBinary>
+public class BsonBinary : BsonValue
 {
     public byte[] Value { get; }
 
@@ -16,38 +16,16 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
 
     public override int GetBytesCount() => this.Value.Length;
 
-    #region Implement IComparable and IEquatable
+    public override int GetHashCode() => this.Value.GetHashCode();
+
+    #region Implement CompareTo
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
-        if (other == null) return 1;
-
         if (other is BsonBinary otherBinary) return this.Value.BinaryCompareTo(otherBinary.Value);
 
         return this.CompareType(other);
     }
-
-    public int CompareTo(BsonBinary other)
-    {
-        if (other == null) return 1;
-
-        return this.Value.BinaryCompareTo(other.Value);
-    }
-
-    public bool Equals(BsonBinary other)
-    {
-        if (other is null) return false;
-
-        return this.Value.BinaryCompareTo(other.Value) == 0;
-    }
-
-    #endregion
-
-    #region Explicit operators
-
-    public static bool operator ==(BsonBinary left, BsonBinary right) => left.Equals(right);
-
-    public static bool operator !=(BsonBinary left, BsonBinary right) => !left.Equals(right);
 
     #endregion
 
@@ -59,13 +37,9 @@ public class BsonBinary : BsonValue, IComparable<BsonBinary>, IEquatable<BsonBin
 
     #endregion
 
-    #region GetHashCode, Equals, ToString override
+    #region Convert Types
 
-    public override int GetHashCode() => this.Value.GetHashCode();
-
-    public override bool Equals(object other) => this.Equals(other as BsonBinary);
-
-    public override string ToString() => String.Join(",",  this.Value.Select(x => x.ToString()));
+    public override string ToString() => "[" + String.Join(",",  this.Value.Select(x => x.ToString())) + "]";
 
     #endregion
 }

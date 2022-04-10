@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a array of BsonValue in Bson object model
 /// </summary>
-public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray>, IList<BsonValue>
+public class BsonArray : BsonValue, IList<BsonValue>
 {
     private readonly List<BsonValue> _value;
 
@@ -38,6 +38,8 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
         return length;
     }
 
+    public override int GetHashCode() => this.Value.GetHashCode();
+
     public void AddRange(IEnumerable<BsonValue> items)
     {
         if (items == null) throw new ArgumentNullException(nameof(items));
@@ -48,63 +50,37 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
         }
     }
 
-    #region Implement IComparable and IEquatable
+    #region Implement CompareTo
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
-        if (other == null) return 1;
+        if (other is BsonArray otherArray)
+        {
+            // lhs and rhs might be subclasses of BsonArray
+            using (var leftEnumerator = this.GetEnumerator())
+            using (var rightEnumerator = otherArray.GetEnumerator())
+            {
+                while (true)
+                {
+                    var leftHasNext = leftEnumerator.MoveNext();
+                    var rightHasNext = rightEnumerator.MoveNext();
 
-        if (other is BsonGuid otherGuid) return this.CompareTo(otherGuid, collation);
+                    if (!leftHasNext && !rightHasNext) return 0;
+                    if (!leftHasNext) return -1;
+                    if (!rightHasNext) return 1;
+
+                    var leftValue = leftEnumerator.Current;
+                    var rightValue = rightEnumerator.Current;
+
+                    var result = leftValue.CompareTo(rightValue, collation);
+
+                    if (result != 0) return result;
+                }
+            }
+        }
 
         return this.CompareType(other);
     }
-
-    private int CompareTo(BsonArray other, Collation collation)
-    {
-        // lhs and rhs might be subclasses of BsonArray
-        using (var leftEnumerator = this.GetEnumerator())
-        using (var rightEnumerator = other.GetEnumerator())
-        {
-            while (true)
-            {
-                var leftHasNext = leftEnumerator.MoveNext();
-                var rightHasNext = rightEnumerator.MoveNext();
-
-                if (!leftHasNext && !rightHasNext) return 0;
-                if (!leftHasNext) return -1;
-                if (!rightHasNext) return 1;
-
-                var leftValue = leftEnumerator.Current;
-                var rightValue = rightEnumerator.Current;
-
-                var result = leftValue.CompareTo(rightValue, collation);
-
-                if (result != 0) return result;
-            }
-        }
-    }
-
-    public int CompareTo(BsonArray other)
-    {
-        if (other == null) return 1;
-
-        return this.CompareTo(other, Collation.Binary);
-    }
-
-    public bool Equals(BsonArray other)
-    {
-        if (other is null) return false;
-
-        return this.CompareTo(other) == 0;
-    }
-
-    #endregion
-
-    #region Explicit operators
-
-    public static bool operator ==(BsonArray left, BsonArray right) => left.Equals(right);
-
-    public static bool operator !=(BsonArray left, BsonArray right) => !left.Equals(right);
 
     #endregion
 
@@ -140,13 +116,9 @@ public class BsonArray : BsonValue, IComparable<BsonArray>, IEquatable<BsonArray
 
     #endregion
 
-    #region GetHashCode, Equals, ToString override
+    #region Convert Types
 
-    public override int GetHashCode() => this.Value.GetHashCode();
-
-    public override bool Equals(object other) => this.Equals(other as BsonArray);
-
-    public override string ToString() => this.Value.ToString();
+    public override string ToString() => "[" + String.Join(",", _value.Select(x => x.ToString())) + "]";
 
     #endregion
 }

@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a Guid value in Bson object model
 /// </summary>
-public class BsonGuid : BsonValue, IComparable<BsonGuid>, IEquatable<BsonGuid>
+public class BsonGuid : BsonValue
 {
     public static BsonGuid Empty = new BsonGuid(Guid.Empty);
 
@@ -20,38 +20,16 @@ public class BsonGuid : BsonValue, IComparable<BsonGuid>, IEquatable<BsonGuid>
 
     public override int GetBytesCount() => 16;
 
-    #region Implement IComparable and IEquatable
+    public override int GetHashCode() => this.Value.GetHashCode();
+
+    #region Implement CompareTo
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
-        if (other == null) return 1;
-
         if (other is BsonGuid otherGuid) return this.Value.CompareTo(otherGuid.Value);
 
         return this.CompareType(other);
     }
-
-    public int CompareTo(BsonGuid other)
-    {
-        if (other == null) return 1;
-
-        return this.Value.CompareTo(other.Value);
-    }
-
-    public bool Equals(BsonGuid other)
-    {
-        if (other is null) return false;
-
-        return this.Value.CompareTo(other.Value) == 0;
-    }
-
-    #endregion
-
-    #region Explicit operators
-
-    public static bool operator ==(BsonGuid left, BsonGuid right) => left.Equals(right);
-
-    public static bool operator !=(BsonGuid left, BsonGuid right) => !left.Equals(right);
 
     #endregion
 
@@ -63,11 +41,7 @@ public class BsonGuid : BsonValue, IComparable<BsonGuid>, IEquatable<BsonGuid>
 
     #endregion
 
-    #region GetHashCode, Equals, ToString override
-
-    public override int GetHashCode() => this.Value.GetHashCode();
-
-    public override bool Equals(object other) => this.Equals(other as BsonGuid);
+    #region Convert Types
 
     public override string ToString() => this.Value.ToString();
 

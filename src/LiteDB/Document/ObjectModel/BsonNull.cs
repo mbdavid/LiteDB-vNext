@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a null value constant in Bson object model (BsonNull is a valid value)
 /// </summary>
-public class BsonNull : BsonValue, IComparable<BsonNull>, IEquatable<BsonNull>
+public class BsonNull : BsonValue
 {
     public BsonNull()
     {
@@ -13,45 +13,20 @@ public class BsonNull : BsonValue, IComparable<BsonNull>, IEquatable<BsonNull>
 
     public override int GetBytesCount() => 0;
 
-    #region Implement IComparable and IEquatable
+    public override int GetHashCode() => this.Type.GetHashCode();
+
+    #region Implement CompareTo
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
-        if (other == null) return 1;
         if (other is BsonNull) return 0;
 
         return this.CompareType(other);
     }
 
-    public int CompareTo(BsonNull other)
-    {
-        if (other == null) return 1;
-
-        return 0; // singleton
-    }
-
-    public bool Equals(BsonNull other)
-    {
-        if (other is null) return false;
-
-        return true;
-    }
-
     #endregion
 
-    #region Explicit operators
-
-    public static bool operator ==(BsonNull left, BsonNull right) => left.Equals(right);
-
-    public static bool operator !=(BsonNull left, BsonNull right) => !left.Equals(right);
-
-    #endregion
-
-    #region GetHashCode, Equals, ToString override
-
-    public override int GetHashCode() => this.Type.GetHashCode();
-
-    public override bool Equals(object other) => this.Equals(other as BsonNull);
+    #region Convert Types
 
     public override string ToString() => "[Null]";
 

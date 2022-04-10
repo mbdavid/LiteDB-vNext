@@ -82,7 +82,7 @@ namespace LiteDB
                 // special BETWEEN "AND" read
                 if (op.EndsWith("BETWEEN", StringComparison.OrdinalIgnoreCase))
                 {
-                    var and = tokenizer.ReadToken(true).Expect("AND");
+                    tokenizer.ReadToken(true).Expect("AND");
 
                     var end = ParseSingleExpression(tokenizer, root);
 
@@ -255,9 +255,7 @@ namespace LiteDB
         {
             if (tokenizer.Current.Type == TokenType.String)
             {
-                var str = new BsonValue(tokenizer.Current.Value);
-
-                return BsonExpression.Constant(str);
+                return BsonExpression.Constant(tokenizer.Current.Value);
             }
 
             return null;

@@ -18,7 +18,6 @@ public enum BsonExpressionType : byte
     Current = 9,
     Path = 10,
 
-
     Modulo = 11,
     Add = 12,
     Subtract = 13,

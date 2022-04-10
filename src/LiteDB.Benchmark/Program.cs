@@ -4,16 +4,13 @@ global using BenchmarkDotNet.Running;
 using LiteDB;
 using LiteDB.Benchmark;
 
+BsonValue a = DateTime.Today;
+BsonValue b = "oi";
 
-BsonDocument d = new()
-{
-    ["_id"] = 1,
-    ["name"] = "John",
-    ["nulo"] = null,
-    ["bool"] = true,
-    ["max"] = BsonValue.MaxValue,
-    ["arr"] = new BsonArray { 1, "2", null }
-};
+BsonValue c = a + b;
+
+Console.WriteLine(c.ToString());
+Console.WriteLine(c.Type);
 
 // Run<BsonValueCompareTests>();
-//BenchmarkRunner.Run<BsonValueCompareMemoryTests>();
+//BenchmarkRunner.Run<BsonValueCompareTests>();

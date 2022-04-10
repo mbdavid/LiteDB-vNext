@@ -11,7 +11,6 @@ public enum BsonType : byte
 
     Int32 = 2,
     Int64 = 3,
-    UInt64 = 4,
     Double = 5,
     Decimal = 6,
 

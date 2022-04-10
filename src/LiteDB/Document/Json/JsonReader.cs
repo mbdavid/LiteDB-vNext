@@ -173,7 +173,6 @@ public class JsonReader
             case "$guid": val = new Guid(value); break;
             case "$date": val = DateTime.Parse(value).ToLocalTime(); break;
             case "$numberLong": val = Convert.ToInt64(value, _numberFormat); break;
-            case "$numberULong": val = Convert.ToUInt64(value, _numberFormat); break;
             case "$numberDecimal": val = Convert.ToDecimal(value, _numberFormat); break;
             case "$minValue": val = BsonValue.MinValue; break;
             case "$maxValue": val = BsonValue.MaxValue; break;

@@ -56,9 +56,9 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     #endregion
 
-    public bool Equals(BsonValue other) => this.Equals((object)other);
+    public bool Equals(BsonValue other) => other is not null && this.CompareTo(other) == 0;
 
-    public abstract override bool Equals(object other);
+    public override bool Equals(object other) => this.Equals((BsonValue)other);
 
     public abstract override int GetHashCode();
 
@@ -86,9 +86,6 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public virtual long AsInt64 => (this as BsonInt64)?.Value ?? throw new InvalidCastException($"BsonValue must be an Int64 value. Current value type: {this.Type}");
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public virtual ulong AsUInt64 => (this as BsonUInt64)?.Value ?? throw new InvalidCastException($"BsonValue must be a UInt64 value. Current value type: {this.Type}");
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public virtual double AsDouble => (this as BsonDouble)?.Value ?? throw new InvalidCastException($"BsonValue must be a Double value. Current value type: {this.Type}");
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -106,6 +103,88 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     #endregion
 
     #region Explicit Operators
+
+    public static bool operator ==(BsonValue left, BsonValue right) => left.Equals(right);
+
+    public static bool operator !=(BsonValue left, BsonValue right) => !left.Equals(right);
+
+    public static BsonValue operator +(BsonValue left, BsonValue right)
+    {
+        // if both sides are string, concat
+        if (left.IsString && right.IsString)
+        {
+            return left.AsString + right.AsString;
+        }
+        // if any sides are string, concat casting both to string
+        else if (left.IsString || right.IsString)
+        {
+            return left.ToString() + right.ToString();
+        }
+        // if any side are DateTime and another is number, add days in date
+        else if (left.IsDateTime && right.IsNumber)
+        {
+            return left.AsDateTime.AddDays(right.ToDouble());
+        }
+        else if (left.IsNumber && right.IsDateTime)
+        {
+            return right.AsDateTime.AddDays(left.ToDouble());
+        }
+        // if both sides are number, add as math
+        else if (left.IsNumber && right.IsNumber)
+        {
+            if (left.IsDecimal || right.IsDecimal)
+            {
+                return left.ToDecimal() + right.ToDecimal();
+            }
+            else if (left.IsDouble || right.IsDouble)
+            {
+                return left.ToDouble() + right.ToDouble();
+            }
+            else if (left.IsInt64 || right.IsInt64)
+            {
+                return left.ToInt64() + right.ToInt64();
+            }
+            else if (left.IsInt32 || right.IsInt32)
+            {
+                return left.ToInt32() + right.ToInt32();
+            }
+        }
+
+        return BsonValue.Null;
+    }
+
+    public static BsonValue operator -(BsonValue left, BsonValue right)
+    {
+        if (left.IsDateTime && right.IsNumber)
+        {
+            return left.AsDateTime.AddDays(-right.ToDouble());
+        }
+        else if (left.IsNumber && right.IsDateTime)
+        {
+            return right.AsDateTime.AddDays(-left.ToDouble());
+        }
+        else if (left.IsNumber && right.IsNumber)
+        {
+            if (left.IsDecimal || right.IsDecimal)
+            {
+                return left.ToDecimal() - right.ToDecimal();
+            }
+            else if (left.IsDouble || right.IsDouble)
+            {
+                return left.ToDouble() - right.ToDouble();
+            }
+            else if (left.IsInt64 || right.IsInt64)
+            {
+                return left.ToInt64() - right.ToInt64();
+            }
+            else if (left.IsInt32 || right.IsInt32)
+            {
+                return left.ToInt32() - right.ToInt32();
+            }
+        }
+
+        return BsonValue.Null;
+    }
 
     public static bool operator <(BsonValue left, BsonValue right)
     {
@@ -164,11 +243,6 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public static implicit operator Int64(BsonValue value) => value.AsInt64;
 
     public static implicit operator BsonValue(Int64 value) => new BsonInt64(value);
-
-    // UInt64
-    public static implicit operator UInt64(BsonValue value) => value.AsUInt64;
-
-    public static implicit operator BsonValue(UInt64 value) => new BsonUInt64(value);
 
     // Double
     public static implicit operator Double(BsonValue value) => value.AsDouble;
@@ -261,6 +335,20 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public bool IsMaxValue => this.Type == BsonType.MaxValue;
+
+    #endregion
+
+    #region Convert Types
+
+    public virtual bool ToBoolean() => true;
+
+    public virtual int ToInt32() => throw new NotSupportedException($"{this.Type} does not support ToInt32.");
+
+    public virtual long ToInt64() => throw new NotSupportedException($"{this.Type} does not support ToInt32.");
+
+    public virtual double ToDouble() => throw new NotSupportedException($"{this.Type} does not support ToDouble.");
+
+    public virtual decimal ToDecimal() => throw new NotSupportedException($"{this.Type} does not support ToDecimal.");
 
     #endregion
 

@@ -3,73 +3,57 @@
 /// <summary>
 /// Represent an Int64 value in Bson object model
 /// </summary>
-public class BsonInt64 : BsonValue, IComparable<BsonInt64>, IEquatable<BsonInt64>
+public class BsonInt64 : BsonValue
 {
-    public Int64 Value { get; }
+    public long Value { get; }
 
-    public BsonInt64(Int64 value)
+    public BsonInt64(long value)
     {
         this.Value = value;
     }
 
     public override BsonType Type => BsonType.Int64;
 
-    public override int GetBytesCount() => sizeof(Int64);
+    public override int GetBytesCount() => sizeof(long);
 
-    #region Implement IComparable and IEquatable
+    public override int GetHashCode() => this.Value.GetHashCode();
+
+    #region Implement CompareTo
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
-        if (other == null) return 1;
-
         if (other is BsonInt64 otherInt64) return this.Value.CompareTo(otherInt64.Value);
-        if (other is BsonInt32 otherInt32) return this.Value.CompareTo(otherInt32.Value);
-        if (other is BsonUInt64 otherUInt64) return this.Value.CompareTo(otherUInt64.Value);
+        if (other is BsonInt32 otherInt32) return this.Value.CompareTo(otherInt32.ToInt64());
         if (other is BsonDouble otherDouble) return this.Value.CompareTo(otherDouble.Value);
         if (other is BsonDecimal otherDecimal) return this.Value.CompareTo(otherDecimal.Value);
 
         return this.CompareType(other);
     }
 
-    public int CompareTo(BsonInt64 other)
-    {
-        if (other == null) return 1;
-
-        return this.Value.CompareTo(other.Value);
-    }
-
-    public bool Equals(BsonInt64 other)
-    {
-        if (other is null) return false;
-
-        return this.Value == other.Value;
-    }
-
-    #endregion
-
-    #region Explicit operators
-
-    public static bool operator ==(BsonInt64 left, BsonInt64 right) => left.Equals(right);
-
-    public static bool operator !=(BsonInt64 left, BsonInt64 right) => !left.Equals(right);
-
     #endregion
 
     #region Implicit Ctor
 
-    public static implicit operator Int64(BsonInt64 value) => value.Value;
+    public static implicit operator long(BsonInt64 value) => value.Value;
 
-    public static implicit operator BsonInt64(Int64 value) => new (value);
+    public static implicit operator BsonInt64(long value) => new (value);
 
     #endregion
 
-    #region GetHashCode, Equals, ToString override
 
-    public override int GetHashCode() => this.Value.GetHashCode();
+    #region Convert Types
 
-    public override bool Equals(object other) => this.Equals(other as BsonInt64);
+    public override bool ToBoolean() => this.Value != 0;
 
-    public override string ToString() => this.Value.ToString();
+    public override int ToInt32() => Convert.ToInt32(this.Value);
+
+    public override long ToInt64() => this.Value;
+
+    public override double ToDouble() => this.Value;
+
+    public override decimal ToDecimal() => this.Value;
+
+    public override string ToString() => this.Value.ToString(CultureInfo.InvariantCulture.NumberFormat);
 
     #endregion
 }
