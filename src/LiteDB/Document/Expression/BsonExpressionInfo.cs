@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-public class BsonExpressionInfo
+internal class BsonExpressionInfo
 {
     public bool HasRoot { get; }
 
