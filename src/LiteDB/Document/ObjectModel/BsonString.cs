@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a String value in Bson object model
 /// </summary>
-public class BsonString : BsonValue
+internal class BsonString : BsonValue
 {
     public static BsonString Emtpy = new("");
 

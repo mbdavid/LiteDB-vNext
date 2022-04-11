@@ -3,9 +3,9 @@
 /// <summary>
 /// Represent a Guid value in Bson object model
 /// </summary>
-public class BsonGuid : BsonValue
+internal class BsonGuid : BsonValue
 {
-    public static BsonGuid Empty = new BsonGuid(Guid.Empty);
+    public static BsonGuid Empty = new (Guid.Empty);
 
     public Guid Value { get; }
 
@@ -30,14 +30,6 @@ public class BsonGuid : BsonValue
 
         return this.CompareType(other);
     }
-
-    #endregion
-
-    #region Implicit Ctor
-
-    public static implicit operator Guid(BsonGuid value) => value.Value;
-
-    public static implicit operator BsonGuid(Guid value) => new BsonGuid(value);
 
     #endregion
 

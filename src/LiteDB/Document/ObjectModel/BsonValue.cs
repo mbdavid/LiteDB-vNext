@@ -7,10 +7,19 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 {
     #region Static object creator helper
 
+    /// <summary>
+    /// Represent a BsonMinValue instance
+    /// </summary>
     public static readonly BsonValue MinValue = new BsonMinValue();
 
+    /// <summary>
+    /// Represent a BsonNull instance
+    /// </summary>
     public static readonly BsonValue Null = new BsonNull();
 
+    /// <summary>
+    /// Represent a BsonMaxValue instance
+    /// </summary>
     public static readonly BsonValue MaxValue = new BsonMaxValue();
 
     #endregion
@@ -43,10 +52,23 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     #region Implement IComparable
 
+    /// <summary>
+    /// Compare two BsonValues with same type (convert numeric types). 
+    /// Compare BsonType order if different types 
+    /// Use Binary Collation to string compares
+    /// </summary>
     public int CompareTo(BsonValue other) => this.CompareTo(other, Collation.Binary);
 
+    /// <summary>
+    /// Compare two BsonValues with same type (convert numeric types). 
+    /// Compare BsonType order if different types 
+    /// Use custom Collation to string compares
+    /// </summary>
     public abstract int CompareTo(BsonValue other, Collation collation);
 
+    /// <summary>
+    /// Compare 2 diferent BsonTypes to know order precedence
+    /// </summary>
     protected int CompareType(BsonValue other)
     {
         var result = this.Type.CompareTo(other.Type);

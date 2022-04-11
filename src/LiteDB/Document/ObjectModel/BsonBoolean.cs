@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a Boolean value in Bson object model
 /// </summary>
-public class BsonBoolean : BsonValue
+internal class BsonBoolean : BsonValue
 {
     public static readonly BsonBoolean True = new (true);
     public static readonly BsonBoolean False = new (false);
@@ -25,8 +25,6 @@ public class BsonBoolean : BsonValue
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
-        if (other == null) return 1;
-
         if (other is BsonBoolean otherBoolean) return this.Value.CompareTo(otherBoolean.Value);
 
         return this.CompareType(other);
@@ -34,15 +32,7 @@ public class BsonBoolean : BsonValue
 
     #endregion
 
-    #region Implicit Ctor
-
-    public static implicit operator bool(BsonBoolean value) => value.Value;
-
-    public static implicit operator BsonBoolean(bool value) => value ? True : False;
-
-    #endregion
-
-    #region GetHashCode, Equals, ToString override
+    #region Convert Types
 
     public override bool ToBoolean() => this.Value;
 

@@ -3,12 +3,8 @@
 /// <summary>
 /// Represent a max value constant in Bson object model
 /// </summary>
-public class BsonMaxValue : BsonValue
+internal class BsonMaxValue : BsonValue
 {
-    public BsonMaxValue()
-    {
-    }
-
     public override BsonType Type => BsonType.MaxValue;
 
     public override int GetBytesCount() => 0;

@@ -32,14 +32,6 @@ public class BsonInt32 : BsonValue
 
     #endregion
 
-    #region Implicit Ctor
-
-    public static implicit operator int(BsonInt32 value) => value.Value;
-
-    public static implicit operator BsonInt32(int value) => new (value);
-
-    #endregion
-
     #region Convert Types
 
     public override bool ToBoolean() => this.Value != 0;

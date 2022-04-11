@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent an Int64 value in Bson object model
 /// </summary>
-public class BsonInt64 : BsonValue
+internal class BsonInt64 : BsonValue
 {
     public long Value { get; }
 
@@ -31,15 +31,6 @@ public class BsonInt64 : BsonValue
     }
 
     #endregion
-
-    #region Implicit Ctor
-
-    public static implicit operator long(BsonInt64 value) => value.Value;
-
-    public static implicit operator BsonInt64(long value) => new (value);
-
-    #endregion
-
 
     #region Convert Types
 

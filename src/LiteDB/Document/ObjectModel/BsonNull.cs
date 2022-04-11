@@ -3,12 +3,8 @@
 /// <summary>
 /// Represent a null value constant in Bson object model (BsonNull is a valid value)
 /// </summary>
-public class BsonNull : BsonValue
+internal class BsonNull : BsonValue
 {
-    public BsonNull()
-    {
-    }
-
     public override BsonType Type => BsonType.Null;
 
     public override int GetBytesCount() => 0;

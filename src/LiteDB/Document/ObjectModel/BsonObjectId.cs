@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent an ObjectId value (12 bytes sequencial guid-like) in Bson object model
 /// </summary>
-public class BsonObjectId : BsonValue
+internal class BsonObjectId : BsonValue
 {
     public static BsonObjectId Empty = new (ObjectId.Empty);
 
@@ -28,14 +28,6 @@ public class BsonObjectId : BsonValue
 
         return this.CompareType(other);
     }
-
-    #endregion
-
-    #region Implicit Ctor
-
-    public static implicit operator ObjectId(BsonObjectId value) => value.Value;
-
-    public static implicit operator BsonObjectId(ObjectId value) => new (value);
 
     #endregion
 

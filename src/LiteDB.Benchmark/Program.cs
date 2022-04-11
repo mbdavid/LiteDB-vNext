@@ -8,13 +8,12 @@ using System.Diagnostics;
 
 try
 {
-    BsonInt32 a = 10;
-    BsonDouble b = 20;
+    var a = new BsonDocument { ["_id"] = 1, ["name"] = "John" };
+    var b = new BsonDocument { ["_id"] = 1, ["name"] = "John" };
 
-    var c = a + b;
+    var c = a == b;
 
     Console.WriteLine(c.ToString());
-    Console.WriteLine(c.Type);
 
 }
 catch (Exception ex)
@@ -26,4 +25,4 @@ catch (Exception ex)
 
 
 // Run<BsonValueCompareTests>();
-BenchmarkRunner.Run<AutoPropertyCompareTests>();
+//BenchmarkRunner.Run<AutoPropertyCompareTests>();

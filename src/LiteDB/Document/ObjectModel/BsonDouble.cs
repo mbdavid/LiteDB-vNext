@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a double value in Bson object model
 /// </summary>
-public class BsonDouble : BsonValue
+internal class BsonDouble : BsonValue
 {
     public double Value { get; }
 
@@ -29,14 +29,6 @@ public class BsonDouble : BsonValue
 
         return this.CompareType(other);
     }
-
-    #endregion
-
-    #region Implicit Ctor
-
-    public static implicit operator double(BsonDouble value) => value.Value;
-
-    public static implicit operator BsonDouble(double value) => new (value);
 
     #endregion
 

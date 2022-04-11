@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent an integer value in Bson object model
 /// </summary>
-public class BsonDecimal : BsonValue
+internal class BsonDecimal : BsonValue
 {
     public decimal Value { get; }
 
@@ -29,14 +29,6 @@ public class BsonDecimal : BsonValue
 
         return this.CompareType(other);
     }
-
-    #endregion
-
-    #region Implicit Ctor
-
-    public static implicit operator decimal(BsonDecimal value) => value.Value;
-
-    public static implicit operator BsonDecimal(decimal value) => new (value);
 
     #endregion
 

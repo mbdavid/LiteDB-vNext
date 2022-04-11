@@ -3,12 +3,8 @@
 /// <summary>
 /// Represent a min value constant in Bson object model
 /// </summary>
-public class BsonMinValue : BsonValue
+internal class BsonMinValue : BsonValue
 {
-    public BsonMinValue()
-    {
-    }
-
     public override BsonType Type => BsonType.MinValue;
 
     public override int GetBytesCount() => 0;
