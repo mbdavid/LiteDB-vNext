@@ -34,21 +34,7 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     /// </summary>
     public abstract int GetBytesCount();
 
-    /// <summary>
-    /// Get how many bytes one single element will used in BSON format
-    /// </summary>
-    protected int GetBytesCountElement(string key, BsonValue value)
-    {
-        // check if data type is variant
-        var variant = value.Type == BsonType.String || value.Type == BsonType.Binary || value.Type == BsonType.Guid;
-
-        return
-            1 + // element type
-            Encoding.UTF8.GetByteCount(key) + // CString
-            1 + // CString \0
-            value.GetBytesCount() +
-            (variant ? 5 : 0); // bytes.Length + 0x??
-    }
+    public abstract override int GetHashCode();
 
     #region Implement IComparable
 
@@ -78,11 +64,13 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     #endregion
 
+    #region IEquatable
+
     public bool Equals(BsonValue other) => other is not null && this.CompareTo(other) == 0;
 
     public override bool Equals(object other) => this.Equals((BsonValue)other);
 
-    public abstract override int GetHashCode();
+    #endregion
 
     #region Convert types
 
@@ -449,4 +437,23 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     #endregion
 
+    #region Static Helpers
+
+    /// <summary>
+    /// Get how many bytes one single element will used in BSON format
+    /// </summary>
+    internal static int GetBytesCountElement(string key, BsonValue value)
+    {
+        // check if data type is variant
+        var variant = value.Type == BsonType.String || value.Type == BsonType.Binary || value.Type == BsonType.Guid;
+
+        return
+            1 + // element type
+            Encoding.UTF8.GetByteCount(key) + // CString
+            1 + // CString \0
+            value.GetBytesCount() +
+            (variant ? 5 : 0); // bytes.Length + 0x??
+    }
+
+    #endregion
 }

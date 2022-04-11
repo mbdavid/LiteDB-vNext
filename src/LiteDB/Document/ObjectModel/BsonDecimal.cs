@@ -18,7 +18,7 @@ internal class BsonDecimal : BsonValue
 
     public override int GetHashCode() => this.Value.GetHashCode();
 
-    #region Implement IComparable
+    #region Implement CompareTo
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
