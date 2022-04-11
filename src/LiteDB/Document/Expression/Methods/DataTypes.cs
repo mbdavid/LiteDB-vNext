@@ -58,7 +58,7 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsNumber)
         {
-            return value.AsInt32;
+            return value.ToInt32();
         }
         else if(value.IsString)
         {
@@ -78,11 +78,11 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsNumber)
         {
-            return value.AsInt64;
+            return value.ToInt64();
         }
         else if(value.IsString)
         {
-            if (Int64.TryParse(value.AsString, out var val))
+            if (long.TryParse(value.AsString, out var val))
             {
                 return val;
             }
@@ -98,11 +98,11 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsNumber)
         {
-            return value.AsDouble;
+            return value.ToDouble();
         }
         else if(value.IsString)
         {
-            if (Double.TryParse(value.AsString, NumberStyles.Any, collation.Culture.NumberFormat, out var val))
+            if (double.TryParse(value.AsString, NumberStyles.Any, collation.Culture.NumberFormat, out var val))
             {
                 return val;
             }
@@ -118,13 +118,13 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsNumber)
         {
-            return value.AsDouble;
+            return value.ToDouble();
         }
         else if(value.IsString && culture.IsString)
         {
             var c = new CultureInfo(culture.AsString); // en-US
 
-            if (Double.TryParse(value.AsString, NumberStyles.Any, c.NumberFormat, out var val))
+            if (double.TryParse(value.AsString, NumberStyles.Any, c.NumberFormat, out var val))
             {
                 return val;
             }
@@ -140,11 +140,11 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsNumber)
         {
-            return value.AsDecimal;
+            return value.ToDecimal();
         }
         else if(value.IsString)
         {
-            if (Decimal.TryParse(value.AsString, NumberStyles.Any, collation.Culture.NumberFormat, out var val))
+            if (decimal.TryParse(value.AsString, NumberStyles.Any, collation.Culture.NumberFormat, out var val))
             {
                 return val;
             }
@@ -160,13 +160,13 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsNumber)
         {
-            return value.AsDecimal;
+            return value.ToDecimal();
         }
         else if(value.IsString && culture.IsString)
         {
             var c = new CultureInfo(culture.AsString); // en-US
 
-            if (Decimal.TryParse(value.AsString, NumberStyles.Any, c.NumberFormat, out var val))
+            if (decimal.TryParse(value.AsString, NumberStyles.Any, c.NumberFormat, out var val))
             {
                 return val;
             }
@@ -181,8 +181,8 @@ internal partial class BsonExpressionMethods
     public static BsonValue STRING(BsonValue value)
     {
         return
-            value.IsNull ? "" :
-            value.IsString ? value.AsString :
+            value.IsNull ? BsonString.Emtpy :
+            value.IsString ? value :
             value.ToString();
     }
 
@@ -393,7 +393,7 @@ internal partial class BsonExpressionMethods
     {
         if (year.IsNumber && month.IsNumber && day.IsNumber)
         {
-            return new DateTime(year.AsInt32, month.AsInt32, day.AsInt32);
+            return new DateTime(year.ToInt32(), month.ToInt32(), day.ToInt32());
         }
 
         return BsonValue.Null;
@@ -406,7 +406,7 @@ internal partial class BsonExpressionMethods
     {
         if (year.IsNumber && month.IsNumber && day.IsNumber)
         {
-            return new DateTime(year.AsInt32, month.AsInt32, day.AsInt32, 0, 0, 0, DateTimeKind.Utc);
+            return new DateTime(year.ToInt32(), month.ToInt32(), day.ToInt32(), 0, 0, 0, DateTimeKind.Utc);
         }
 
         return BsonValue.Null;

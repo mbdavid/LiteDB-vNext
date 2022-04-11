@@ -186,6 +186,81 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
         return BsonValue.Null;
     }
 
+    public static BsonValue operator *(BsonValue left, BsonValue right)
+    {
+        if (left.IsNumber && right.IsNumber)
+        {
+            if (left.IsDecimal || right.IsDecimal)
+            {
+                return left.ToDecimal() * right.ToDecimal();
+            }
+            else if (left.IsDouble || right.IsDouble)
+            {
+                return left.ToDouble() * right.ToDouble();
+            }
+            else if (left.IsInt64 || right.IsInt64)
+            {
+                return left.ToInt64() * right.ToInt64();
+            }
+            else if (left.IsInt32 || right.IsInt32)
+            {
+                return left.ToInt32() * right.ToInt32();
+            }
+        }
+
+        return BsonValue.Null;
+    }
+
+    public static BsonValue operator /(BsonValue left, BsonValue right)
+    {
+        if (left.IsNumber && right.IsNumber)
+        {
+            if (left.IsDecimal || right.IsDecimal)
+            {
+                return left.ToDecimal() / right.ToDecimal();
+            }
+            else if (left.IsDouble || right.IsDouble)
+            {
+                return left.ToDouble() / right.ToDouble();
+            }
+            else if (left.IsInt64 || right.IsInt64)
+            {
+                return left.ToInt64() / right.ToInt64();
+            }
+            else if (left.IsInt32 || right.IsInt32)
+            {
+                return left.ToInt32() / right.ToInt32();
+            }
+        }
+
+        return BsonValue.Null;
+    }
+
+    public static BsonValue operator %(BsonValue left, BsonValue right)
+    {
+        if (left.IsNumber && right.IsNumber)
+        {
+            if (left.IsDecimal || right.IsDecimal)
+            {
+                return left.ToDecimal() % right.ToDecimal();
+            }
+            else if (left.IsDouble || right.IsDouble)
+            {
+                return left.ToDouble() % right.ToDouble();
+            }
+            else if (left.IsInt64 || right.IsInt64)
+            {
+                return left.ToInt64() % right.ToInt64();
+            }
+            else if (left.IsInt32 || right.IsInt32)
+            {
+                return left.ToInt32() % right.ToInt32();
+            }
+        }
+
+        return BsonValue.Null;
+    }
+
     public static bool operator <(BsonValue left, BsonValue right)
     {
         if (left is null && right is null) return false;
@@ -235,29 +310,29 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     #region Implicit Ctor
 
     // Int32
-    public static implicit operator Int32(BsonValue value) => value.AsInt32;
+    public static implicit operator int(BsonValue value) => value.AsInt32;
 
-    public static implicit operator BsonValue(Int32 value) => new BsonInt32(value);
+    public static implicit operator BsonValue(int value) => new BsonInt32(value);
 
     // Int64
-    public static implicit operator Int64(BsonValue value) => value.AsInt64;
+    public static implicit operator long(BsonValue value) => value.AsInt64;
 
-    public static implicit operator BsonValue(Int64 value) => new BsonInt64(value);
+    public static implicit operator BsonValue(long value) => new BsonInt64(value);
 
     // Double
-    public static implicit operator Double(BsonValue value) => value.AsDouble;
+    public static implicit operator double(BsonValue value) => value.AsDouble;
 
-    public static implicit operator BsonValue(Double value) => new BsonDouble(value);
+    public static implicit operator BsonValue(double value) => new BsonDouble(value);
 
     // Decimal
-    public static implicit operator Decimal(BsonValue value) => value.AsDecimal;
+    public static implicit operator decimal(BsonValue value) => value.AsDecimal;
 
-    public static implicit operator BsonValue(Decimal value) => new BsonDecimal(value);
+    public static implicit operator BsonValue(decimal value) => new BsonDecimal(value);
 
     // String
-    public static implicit operator String(BsonValue value) => value.AsString;
+    public static implicit operator string(BsonValue value) => value.AsString;
 
-    public static implicit operator BsonValue(String value) => value is null ? BsonValue.Null : value.Length == 0 ? BsonString.Emtpy : new BsonString(value);
+    public static implicit operator BsonValue(string value) => value is null ? BsonValue.Null : value.Length == 0 ? BsonString.Emtpy : new BsonString(value);
 
     // Binary
     public static implicit operator byte[](BsonValue value) => value.AsBinary;
@@ -270,9 +345,9 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public static implicit operator BsonValue(Guid value) => new BsonGuid(value);
 
     // Boolean
-    public static implicit operator Boolean(BsonValue value) => value.AsBoolean;
+    public static implicit operator bool(BsonValue value) => value.AsBoolean;
 
-    public static implicit operator BsonValue(Boolean value) => value ? BsonBoolean.True : BsonBoolean.False;
+    public static implicit operator BsonValue(bool value) => value ? BsonBoolean.True : BsonBoolean.False;
 
     // ObjectId
     public static implicit operator ObjectId(BsonValue value) => value.AsObjectId;

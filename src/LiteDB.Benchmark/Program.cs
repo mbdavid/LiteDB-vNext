@@ -4,13 +4,26 @@ global using BenchmarkDotNet.Running;
 using LiteDB;
 using LiteDB.Benchmark;
 
-BsonValue a = DateTime.Today;
-BsonValue b = "oi";
+using System.Diagnostics;
 
-BsonValue c = a + b;
+try
+{
+    BsonInt32 a = 10;
+    BsonDouble b = 20;
 
-Console.WriteLine(c.ToString());
-Console.WriteLine(c.Type);
+    var c = a + b;
+
+    Console.WriteLine(c.ToString());
+    Console.WriteLine(c.Type);
+
+}
+catch (Exception ex)
+{
+    Console.WriteLine(ex.Demystify().ToString());
+    //Console.WriteLine("-----------------------------------------");
+    //Console.WriteLine(ex.ToString());
+}
+
 
 // Run<BsonValueCompareTests>();
-//BenchmarkRunner.Run<BsonValueCompareTests>();
+BenchmarkRunner.Run<AutoPropertyCompareTests>();

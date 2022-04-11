@@ -88,7 +88,7 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsString && search.IsString && startIndex.IsNumber)
         {
-            return value.AsString.IndexOf(search.AsString, startIndex.AsInt32);
+            return value.AsString.IndexOf(search.AsString, startIndex.ToInt32());
         }
 
         return BsonValue.Null;
@@ -101,7 +101,7 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsString && startIndex.IsNumber)
         {
-            return value.AsString.Substring(startIndex.AsInt32);
+            return value.AsString.Substring(startIndex.ToInt32());
         }
 
         return BsonValue.Null;
@@ -114,7 +114,7 @@ internal partial class BsonExpressionMethods
     {
         if (value.IsString && startIndex.IsNumber && length.IsNumber)
         {
-            return value.AsString.Substring(startIndex.AsInt32, length.AsInt32);
+            return value.AsString.Substring(startIndex.ToInt32(), length.ToInt32());
         }
 
         return BsonValue.Null;
@@ -144,7 +144,7 @@ internal partial class BsonExpressionMethods
 
             if (string.IsNullOrEmpty(c)) throw new ArgumentOutOfRangeException(nameof(paddingChar));
 
-            return value.AsString.PadLeft(totalWidth.AsInt32, c[0]);
+            return value.AsString.PadLeft(totalWidth.ToInt32(), c[0]);
         }
 
         return BsonValue.Null;
@@ -161,7 +161,7 @@ internal partial class BsonExpressionMethods
 
             if (string.IsNullOrEmpty(c)) throw new ArgumentOutOfRangeException(nameof(paddingChar));
 
-            return value.AsString.PadRight(totalWidth.AsInt32, c[0]);
+            return value.AsString.PadRight(totalWidth.ToInt32(), c[0]);
         }
 
         return BsonValue.Null;
@@ -223,7 +223,18 @@ internal partial class BsonExpressionMethods
     {
         if (format.IsString)
         {
-            //TODO return string.Format("{0:" +  format.AsString + "}", value.RawValue);
+            var fmt = "{0:" + format.AsString + "}";
+
+            switch (value.Type)
+            {
+                case BsonType.String: return string.Format(fmt, value.AsString);
+                case BsonType.Int32: return string.Format(fmt, value.AsInt32);
+                case BsonType.Int64: return string.Format(fmt, value.AsInt64);
+                case BsonType.Double: return string.Format(fmt, value.AsDouble);
+                case BsonType.Decimal: return string.Format(fmt, value.AsDecimal);
+                case BsonType.DateTime: return string.Format(fmt, value.AsDateTime);
+                case BsonType.Guid: return string.Format(fmt, value.AsGuid);
+            }
         }
 
         return BsonValue.Null;

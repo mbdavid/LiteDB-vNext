@@ -39,7 +39,7 @@ public class BsonBinary : BsonValue
 
     #region Convert Types
 
-    public override string ToString() => "[" + String.Join(",",  this.Value.Select(x => x.ToString())) + "]";
+    public override string ToString() => "[" + Convert.ToBase64String(this.Value) + "]";
 
     #endregion
 }
