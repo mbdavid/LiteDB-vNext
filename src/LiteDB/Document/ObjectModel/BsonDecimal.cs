@@ -5,6 +5,10 @@
 /// </summary>
 internal class BsonDecimal : BsonValue
 {
+    public static BsonDecimal Zero = new(0);
+    public static BsonDecimal One = new(1);
+    public static BsonDecimal MinusOne = new(-1);
+
     public decimal Value { get; }
 
     public BsonDecimal(decimal value)

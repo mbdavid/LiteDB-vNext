@@ -5,6 +5,10 @@
 /// </summary>
 internal class BsonDouble : BsonValue
 {
+    public static BsonDouble Zero = new(0);
+    public static BsonDouble One = new(1);
+    public static BsonDouble MinusOne = new(-1);
+
     public double Value { get; }
 
     public BsonDouble(double value)

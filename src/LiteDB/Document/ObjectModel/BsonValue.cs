@@ -5,7 +5,7 @@
 /// </summary>
 public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 {
-    #region Static object creator helper
+    #region Single instance Min/Max/Null
 
     /// <summary>
     /// Represent a BsonMinValue instance
@@ -322,27 +322,57 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     // Int32
     public static implicit operator int(BsonValue value) => value.AsInt32;
 
-    public static implicit operator BsonValue(int value) => new BsonInt32(value);
+    public static implicit operator BsonValue(int value) => value switch
+    {
+        -1 => BsonInt32.MinusOne,
+        0 => BsonInt32.Zero,
+        1 => BsonInt32.One,
+        _ => new BsonInt32(value),
+    };
 
     // Int64
     public static implicit operator long(BsonValue value) => value.AsInt64;
 
-    public static implicit operator BsonValue(long value) => new BsonInt64(value);
+    public static implicit operator BsonValue(long value) => value switch
+    {
+        -1 => BsonInt64.MinusOne,
+        0 => BsonInt64.Zero,
+        1 => BsonInt64.One,
+        _ => new BsonInt64(value),
+    };
 
     // Double
     public static implicit operator double(BsonValue value) => value.AsDouble;
 
-    public static implicit operator BsonValue(double value) => new BsonDouble(value);
+    public static implicit operator BsonValue(double value) => value switch
+    {
+        -1 => BsonDouble.MinusOne,
+        0 => BsonDouble.Zero,
+        1 => BsonDouble.One,
+        _ => new BsonDouble(value),
+    };
 
     // Decimal
     public static implicit operator decimal(BsonValue value) => value.AsDecimal;
 
-    public static implicit operator BsonValue(decimal value) => new BsonDecimal(value);
+    public static implicit operator BsonValue(decimal value) => value switch
+    {
+        -1 => BsonDecimal.MinusOne,
+        0 => BsonDecimal.Zero,
+        1 => BsonDecimal.One,
+        _ => new BsonDecimal(value),
+    };
 
     // String
     public static implicit operator string(BsonValue value) => value.AsString;
 
-    public static implicit operator BsonValue(string value) => value is null ? BsonValue.Null : value.Length == 0 ? BsonString.Emtpy : new BsonString(value);
+    public static implicit operator BsonValue(string value) => value switch
+    {
+        null => BsonValue.Null,
+        "" => BsonString.Emtpy,
+        "_id" => BsonString.Id,
+        _ => new BsonString(value)
+    };
 
     // Binary
     public static implicit operator byte[](BsonValue value) => value.AsBinary;
@@ -352,7 +382,7 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     // Guid
     public static implicit operator Guid(BsonValue value) => value.AsGuid;
 
-    public static implicit operator BsonValue(Guid value) => new BsonGuid(value);
+    public static implicit operator BsonValue(Guid value) => value == Guid.Empty ? BsonGuid.Empty : new BsonGuid(value);
 
     // Boolean
     public static implicit operator bool(BsonValue value) => value.AsBoolean;
@@ -362,7 +392,7 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     // ObjectId
     public static implicit operator ObjectId(BsonValue value) => value.AsObjectId;
 
-    public static implicit operator BsonValue(ObjectId value) => new BsonObjectId(value);
+    public static implicit operator BsonValue(ObjectId value) => value == ObjectId.Empty ? BsonObjectId.Empty : new BsonObjectId(value);
 
     // DateTime
     public static implicit operator DateTime(BsonValue value) => value.AsDateTime;
@@ -395,9 +425,6 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     public bool IsDecimal => this.Type == BsonType.Decimal;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public bool IsNumber => this.IsInt32 || this.IsInt64 || this.IsDouble || this.IsDecimal;
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public bool IsBinary => this.Type == BsonType.Binary;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -420,6 +447,13 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public bool IsMaxValue => this.Type == BsonType.MaxValue;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public bool IsNumber =>
+        this.Type == BsonType.Int32 ||
+        this.Type == BsonType.Int64 ||
+        this.Type == BsonType.Double ||
+        this.Type == BsonType.Decimal;
 
     #endregion
 

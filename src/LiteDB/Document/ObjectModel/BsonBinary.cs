@@ -29,14 +29,6 @@ public class BsonBinary : BsonValue
 
     #endregion
 
-    #region Implicit Ctor
-
-    public static implicit operator byte[](BsonBinary value) => value.Value;
-
-    public static implicit operator BsonBinary(byte[] value) => new (value);
-
-    #endregion
-
     #region Convert Types
 
     public override string ToString() => "[" + Convert.ToBase64String(this.Value) + "]";

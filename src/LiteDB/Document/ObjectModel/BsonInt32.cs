@@ -5,6 +5,10 @@
 /// </summary>
 public class BsonInt32 : BsonValue
 {
+    public static BsonInt32 Zero = new(0);
+    public static BsonInt32 One = new(1);
+    public static BsonInt32 MinusOne = new(-1);
+
     public int Value { get; }
 
     public BsonInt32(int value)

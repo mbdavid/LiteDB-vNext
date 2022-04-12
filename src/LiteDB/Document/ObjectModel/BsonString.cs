@@ -7,6 +7,8 @@ internal class BsonString : BsonValue
 {
     public static BsonString Emtpy = new("");
 
+    public static BsonString Id = new("_id");
+
     public string Value { get; }
 
     public BsonString(string value)
