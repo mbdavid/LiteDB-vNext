@@ -11,20 +11,20 @@ public enum BsonType : byte
 
     Int32 = 2,
     Int64 = 3,
-    Double = 5,
-    Decimal = 6,
+    Double = 4,
+    Decimal = 5,
 
-    String = 7,
+    String = 6,
 
-    Document = 8,
-    Array = 9,
+    Document = 7,
+    Array = 8,
 
-    Binary = 10,
-    ObjectId = 11,
-    Guid = 12,
+    Binary = 9,
+    ObjectId = 10,
+    Guid = 11,
 
-    Boolean = 13,
-    DateTime = 14,
+    Boolean = 12,
+    DateTime = 13,
 
-    MaxValue = 15
+    MaxValue = 14
 }

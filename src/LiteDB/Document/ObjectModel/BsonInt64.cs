@@ -5,6 +5,10 @@
 /// </summary>
 internal class BsonInt64 : BsonValue
 {
+    public static BsonInt64 Zero = new(0);
+    public static BsonInt64 One = new(1);
+    public static BsonInt64 MinusOne = new(-1);
+
     public long Value { get; }
 
     public BsonInt64(long value)

@@ -32,7 +32,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
         for (var i = 0; i < _value.Count; i++)
         {
-            length += this.GetBytesCountElement(i.ToString(), _value[i]);
+            length += BsonValue.GetBytesCountElement(i.ToString(), _value[i]);
         }
 
         return length;

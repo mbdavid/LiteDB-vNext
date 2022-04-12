@@ -31,7 +31,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 
         foreach (var element in _value)
         {
-            length += this.GetBytesCountElement(element.Key, element.Value);
+            length += BsonValue.GetBytesCountElement(element.Key, element.Value);
         }
 
         return length;
