@@ -15,26 +15,34 @@ public interface ILiteEngine : IAsyncDisposable
     /// </summary>
     int State { get; }
 
+    /// <summary>
+    /// Retorna a exception que tirou o banco do ar (null caso ok e limpa no open())
+    /// </summary>
+    Exception FatalException { get; }
+
+    /// <summary>
+    /// abre os arquivos, carrega header, faz recovery, e deixa o estado do banco pronto pra uso
+    /// </summary>
     Task OpenAsync();
 
-    Task<bool> CreateCollection(string name, object options);
-    Task<bool> DropCollection(string name);
+    Task<bool> CreateCollectionAsync(string name, object options);
+    Task<bool> DropCollectionAsync(string name);
 
     /// <summary>
     /// Retorna o _id
     /// </summary>
-    Task<object> InsertAsync(string collection, object document, int autoId = 0);
-    Task<object> UpdateAsync(string collection, object document);
-    Task<int> UpsertAsync(string collection, object document, int autoId = 0);
-    Task<object> DeleteAsync(string collection, object id);
+    Task<BsonValue> InsertAsync(string collection, BsonDocument document, int autoId);
+    Task<bool> UpdateAsync(string collection, BsonDocument document);
+    Task<int> UpsertAsync(string collection, BsonDocument document, int autoId);
+    Task<bool> DeleteAsync(string collection, BsonValue id);
 
-    Task<object> BulkAsync(IEnumerable<object> operations, int bulkSize = 1000);
+    Task<object> BulkAsync(IList<object> operations);
 
-    Task<bool> CreateIndexAsync(string collection, string name, string expression, bool unique);
+    Task<bool> CreateIndexAsync(string collection, string name, BsonExpression expression, bool unique);
     Task<bool> DropIndexAsync(string collection, string name);
 
-    Task<object> QueryAsync(string collection, object query, int buffer = 1024);
-    Task<object> FetchAsync(Guid cursorId);
+    Task<Guid> QueryAsync(string collection, object query, int buffer = 1024);
+    Task<Guid> FetchAsync(Guid cursorId);
 
     /// <summary>
     /// 

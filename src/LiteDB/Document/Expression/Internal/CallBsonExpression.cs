@@ -10,12 +10,15 @@ internal class CallBsonExpression : BsonExpression
 
     public MethodInfo Method { get; }
 
+    public bool IsImmutable { get; }
+
     private readonly bool _collation;
 
     public CallBsonExpression(MethodInfo method, BsonExpression[] parameters)
     {
         this.Method = method;
         this.Parameters = parameters;
+        this.IsImmutable = method.GetCustomAttribute<VolatileAttribute>() == null;
 
         _collation = method.GetParameters().FirstOrDefault()?.ParameterType == typeof(Collation);
     }

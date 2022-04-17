@@ -47,7 +47,7 @@ internal class BsonExpressionInfo
         {
             var call = (CallBsonExpression)expr;
 
-            if (call.Method.GetCustomAttribute<VolatileAttribute>() != null)
+            if (call.IsImmutable == false)
             {
                 isImmutable = false;
             }

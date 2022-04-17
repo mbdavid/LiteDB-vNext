@@ -12,10 +12,10 @@ using System.Diagnostics;
 
 try
 {
-    BsonValue a = 100;
-    BsonValue b = 200;
+    var a = BsonValue.MaxValue!;
+    var b = BsonValue.MinValue!;
 
-    var c = a + b;
+    var c = Object.ReferenceEquals(a, b);
 
     
 
@@ -31,4 +31,4 @@ catch (Exception ex)
 
 
 // Run<BsonValueCompareTests>();
-BenchmarkRunner.Run<BsonExpressionTests>();
+//BenchmarkRunner.Run<BsonExpressionTests>();

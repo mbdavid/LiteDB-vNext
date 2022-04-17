@@ -80,6 +80,7 @@ internal static class BufferExtensions
         }
 
         bytesCount = 0;
+
         return null;
     }
 

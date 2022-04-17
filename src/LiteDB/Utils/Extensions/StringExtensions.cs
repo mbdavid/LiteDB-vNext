@@ -2,11 +2,6 @@
 
 internal static class StringExtensions
 {
-    public static bool IsNullOrWhiteSpace(this string str)
-    {
-        return str == null || str.Trim().Length == 0;
-    }
-
     /// <summary>
     /// Test if string is simple word pattern ([a-Z$_])
     /// </summary>
@@ -33,18 +28,17 @@ internal static class StringExtensions
     {
         var data = Encoding.UTF8.GetBytes(value);
 
-        using (var sha = SHA1.Create())
+        using var sha = SHA1.Create();
+
+        var hashData = sha.ComputeHash(data);
+        var hash = new StringBuilder();
+
+        foreach (var b in hashData)
         {
-            var hashData = sha.ComputeHash(data);
-            var hash = new StringBuilder();
-
-            foreach (var b in hashData)
-            {
-                hash.Append(b.ToString("X2"));
-            }
-
-            return hash.ToString();
+            hash.Append(b.ToString("X2"));
         }
+
+        return hash.ToString();
     }
 
     /// <summary>
