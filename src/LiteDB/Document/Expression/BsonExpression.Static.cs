@@ -2,6 +2,8 @@
 
 public abstract partial class BsonExpression
 {
+    private static readonly ConcurrentDictionary<string, BsonExpression> _cache = new(StringComparer.OrdinalIgnoreCase);
+
     public static BsonExpression Constant(BsonValue value) => new ConstantBsonExpression(value);
 
     public static BsonExpression Parameter(string name) => new ParameterBsonExpression(name);
@@ -67,7 +69,10 @@ public abstract partial class BsonExpression
 
     #endregion
 
-    public static BsonExpression Create(string expr) => Create(new Tokenizer(expr));
+    public static BsonExpression Create(string expr)
+    {
+        return _cache.GetOrAdd(expr, e => Create(new Tokenizer(e)));
+    }
 
     internal static BsonExpression Create(Tokenizer tokenizer)
     {

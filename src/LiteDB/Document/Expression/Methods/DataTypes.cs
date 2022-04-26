@@ -62,7 +62,7 @@ internal partial class BsonExpressionMethods
         }
         else if(value.IsString)
         {
-            if (Int32.TryParse(value.AsString, out var val))
+            if (int.TryParse(value.AsString, out var val))
             {
                 return val;
             }
@@ -278,28 +278,7 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue BOOLEAN(BsonValue value)
     {
-        if (value.IsBoolean)
-        {
-            return value.AsBoolean;
-        }
-        else
-        {
-            var val = false;
-            var isBool = false;
-
-            try
-            {
-                val = Convert.ToBoolean(value.AsString);
-                isBool = true;
-            }
-            catch
-            {
-            }
-
-            if (isBool) return val;
-        }
-
-        return BsonValue.Null;
+        return value.ToBoolean();
     }
 
     /// <summary>

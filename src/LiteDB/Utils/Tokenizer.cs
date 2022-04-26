@@ -171,19 +171,21 @@ internal class Tokenizer
 {
     private TextReader _reader;
     private char _char = '\0';
+    private Token _current = null;
     private Token _ahead = null;
     private bool _eof = false;
+    private long _position = 0;
 
     public bool EOF => _eof && _ahead == null;
-    public long Position { get; private set; }
-    public Token Current { get; private set; }
+    public long Position => _position;
+    public Token Current => _current;
 
     /// <summary>
     /// If EOF throw an invalid token exception (used in while()) otherwise return "false" (not EOF)
     /// </summary>
     public bool CheckEOF()
     {
-        if (_eof) throw LiteException.UnexpectedToken(this.Current);
+        if (_eof) throw LiteException.UnexpectedToken(_current);
 
         return false;
     }
@@ -197,7 +199,7 @@ internal class Tokenizer
     {
         _reader = reader;
 
-        this.Position = 0;
+        _position = 0;
         this.ReadChar();
     }
 
@@ -223,7 +225,7 @@ internal class Tokenizer
 
         var c = _reader.Read();
 
-        this.Position++;
+        _position++;
 
         if (c == -1)
         {
@@ -263,7 +265,7 @@ internal class Tokenizer
     {
         if (_ahead == null)
         {
-            return this.Current = this.ReadNext(eatWhitespace);
+            return _current = this.ReadNext(eatWhitespace);
         }
 
         if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
@@ -271,9 +273,9 @@ internal class Tokenizer
             _ahead = this.ReadNext(eatWhitespace);
         }
 
-        this.Current = _ahead;
+        _current = _ahead;
         _ahead = null;
-        return this.Current;
+        return _current;
     }
 
     /// <summary>
@@ -286,7 +288,7 @@ internal class Tokenizer
 
         if (_eof)
         {
-            return new Token(TokenType.EOF, null, this.Position);
+            return new Token(TokenType.EOF, null, _position);
         }
 
         Token token = null;
@@ -294,72 +296,72 @@ internal class Tokenizer
         switch (_char)
         {
             case '{':
-                token = new Token(TokenType.OpenBrace, "{", this.Position);
+                token = new Token(TokenType.OpenBrace, "{", _position);
                 this.ReadChar();
                 break;
 
             case '}':
-                token = new Token(TokenType.CloseBrace, "}", this.Position);
+                token = new Token(TokenType.CloseBrace, "}", _position);
                 this.ReadChar();
                 break;
 
             case '[':
-                token = new Token(TokenType.OpenBracket, "[", this.Position);
+                token = new Token(TokenType.OpenBracket, "[", _position);
                 this.ReadChar();
                 break;
 
             case ']':
-                token = new Token(TokenType.CloseBracket, "]", this.Position);
+                token = new Token(TokenType.CloseBracket, "]", _position);
                 this.ReadChar();
                 break;
 
             case '(':
-                token = new Token(TokenType.OpenParenthesis, "(", this.Position);
+                token = new Token(TokenType.OpenParenthesis, "(", _position);
                 this.ReadChar();
                 break;
 
             case ')':
-                token = new Token(TokenType.CloseParenthesis, ")", this.Position);
+                token = new Token(TokenType.CloseParenthesis, ")", _position);
                 this.ReadChar();
                 break;
 
             case ',':
-                token = new Token(TokenType.Comma, ",", this.Position);
+                token = new Token(TokenType.Comma, ",", _position);
                 this.ReadChar();
                 break;
 
             case ':':
-                token = new Token(TokenType.Colon, ":", this.Position);
+                token = new Token(TokenType.Colon, ":", _position);
                 this.ReadChar();
                 break;
 
             case ';':
-                token = new Token(TokenType.SemiColon, ";", this.Position);
+                token = new Token(TokenType.SemiColon, ";", _position);
                 this.ReadChar();
                 break;
 
             case '@':
-                token = new Token(TokenType.At, "@", this.Position);
+                token = new Token(TokenType.At, "@", _position);
                 this.ReadChar();
                 break;
 
             case '#':
-                token = new Token(TokenType.Hashtag, "#", this.Position);
+                token = new Token(TokenType.Hashtag, "#", _position);
                 this.ReadChar();
                 break;
 
             case '~':
-                token = new Token(TokenType.Til, "~", this.Position);
+                token = new Token(TokenType.Til, "~", _position);
                 this.ReadChar();
                 break;
 
             case '.':
-                token = new Token(TokenType.Period, ".", this.Position);
+                token = new Token(TokenType.Period, ".", _position);
                 this.ReadChar();
                 break;
 
             case '&':
-                token = new Token(TokenType.Ampersand, "&", this.Position);
+                token = new Token(TokenType.Ampersand, "&", _position);
                 this.ReadChar();
                 break;
 
@@ -367,11 +369,11 @@ internal class Tokenizer
                 this.ReadChar();
                 if (IsWordChar(_char, true))
                 {
-                    token = new Token(TokenType.Word, "$" + this.ReadWord(), this.Position);
+                    token = new Token(TokenType.Word, "$" + this.ReadWord(), _position);
                 }
                 else
                 {
-                    token = new Token(TokenType.Dollar, "$", this.Position);
+                    token = new Token(TokenType.Dollar, "$", _position);
                 }
                 break;
 
@@ -379,12 +381,12 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '=')
                 {
-                    token = new Token(TokenType.NotEquals, "!=", this.Position);
+                    token = new Token(TokenType.NotEquals, "!=", _position);
                     this.ReadChar();
                 }
                 else
                 {
-                    token = new Token(TokenType.Exclamation, "!", this.Position);
+                    token = new Token(TokenType.Exclamation, "!", _position);
                 }
                 break;
 
@@ -392,12 +394,12 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '>')
                 {
-                    token = new Token(TokenType.Arrow, "=>", this.Position);
+                    token = new Token(TokenType.Arrow, "=>", _position);
                     this.ReadChar();
                 }
                 else
                 {
-                    token = new Token(TokenType.Equals, "=", this.Position);
+                    token = new Token(TokenType.Equals, "=", _position);
                 }
                 break;
 
@@ -405,12 +407,12 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '=')
                 {
-                    token = new Token(TokenType.GreaterOrEquals, ">=", this.Position);
+                    token = new Token(TokenType.GreaterOrEquals, ">=", _position);
                     this.ReadChar();
                 }
                 else
                 {
-                    token = new Token(TokenType.Greater, ">", this.Position);
+                    token = new Token(TokenType.Greater, ">", _position);
                 }
                 break;
 
@@ -418,12 +420,12 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '=')
                 {
-                    token = new Token(TokenType.LessOrEquals, "<=", this.Position);
+                    token = new Token(TokenType.LessOrEquals, "<=", _position);
                     this.ReadChar();
                 }
                 else
                 {
-                    token = new Token(TokenType.Less, "<", this.Position);
+                    token = new Token(TokenType.Less, "<", _position);
                 }
                 break;
 
@@ -436,37 +438,37 @@ internal class Tokenizer
                 }
                 else
                 {
-                    token = new Token(TokenType.Minus, "-", this.Position);
+                    token = new Token(TokenType.Minus, "-", _position);
                 }
                 break;
 
             case '+':
-                token = new Token(TokenType.Plus, "+", this.Position);
+                token = new Token(TokenType.Plus, "+", _position);
                 this.ReadChar();
                 break;
 
             case '*':
-                token = new Token(TokenType.Asterisk, "*", this.Position);
+                token = new Token(TokenType.Asterisk, "*", _position);
                 this.ReadChar();
                 break;
 
             case '/':
-                token = new Token(TokenType.Slash, "/", this.Position);
+                token = new Token(TokenType.Slash, "/", _position);
                 this.ReadChar();
                 break;
             case '\\':
-                token = new Token(TokenType.Backslash, @"\", this.Position);
+                token = new Token(TokenType.Backslash, @"\", _position);
                 this.ReadChar();
                 break;
 
             case '%':
-                token = new Token(TokenType.Percent, "%", this.Position);
+                token = new Token(TokenType.Percent, "%", _position);
                 this.ReadChar();
                 break;
 
             case '\"':
             case '\'':
-                token = new Token(TokenType.String, this.ReadString(_char), this.Position);
+                token = new Token(TokenType.String, this.ReadString(_char), _position);
                 break;
 
             case '0':
@@ -481,7 +483,7 @@ internal class Tokenizer
             case '9':
                 var dbl = false;
                 var number = this.ReadNumber(ref dbl);
-                token = new Token(dbl ? TokenType.Double : TokenType.Int, number, this.Position);
+                token = new Token(dbl ? TokenType.Double : TokenType.Int, number, _position);
                 break;
 
             case ' ':
@@ -494,14 +496,14 @@ internal class Tokenizer
                     sb.Append(_char);
                     this.ReadChar();
                 }
-                token = new Token(TokenType.Whitespace, sb.ToString(), this.Position);
+                token = new Token(TokenType.Whitespace, sb.ToString(), _position);
                 break;
 
             default:
                 // test if first char is an word 
                 if (IsWordChar(_char, true))
                 {
-                    token = new Token(TokenType.Word, this.ReadWord(), this.Position);
+                    token = new Token(TokenType.Word, this.ReadWord(), _position);
                 }
                 else
                 {
@@ -510,7 +512,7 @@ internal class Tokenizer
                 break;
         }
 
-        return token ?? new Token(TokenType.Unknown, _char.ToString(), this.Position);
+        return token ?? new Token(TokenType.Unknown, _char.ToString(), _position);
     }
 
     /// <summary>
@@ -667,6 +669,6 @@ internal class Tokenizer
 
     public override string ToString()
     {
-        return this.Current?.ToString() + " [ahead: " + _ahead?.ToString() + "] - position: " + this.Position;
+        return _current?.ToString() + " [ahead: " + _ahead?.ToString() + "] - position: " + _position;
     }
 }

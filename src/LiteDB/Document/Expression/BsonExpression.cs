@@ -6,7 +6,6 @@ public abstract partial class BsonExpression
 
     internal virtual IEnumerable<BsonExpression> Children => new BsonExpression[0];
 
-
     /// <summary>
     /// Only internal ctor (from BsonParserExpression)
     /// </summary>
@@ -17,18 +16,12 @@ public abstract partial class BsonExpression
     /// <summary>
     /// Implicit string converter
     /// </summary>
-    public static implicit operator String(BsonExpression expr)
-    {
-        return expr.ToString();
-    }
+    public static implicit operator string(BsonExpression expr) => expr.ToString();
 
     /// <summary>
     /// Implicit string converter
     /// </summary>
-    public static implicit operator BsonExpression(String expr)
-    {
-        return BsonExpression.Create(expr);
-    }
+    public static implicit operator BsonExpression(string expr) => BsonExpression.Create(expr);
 
     internal abstract BsonValue Execute(BsonExpressionContext context);
 

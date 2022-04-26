@@ -1,4 +1,8 @@
-﻿global using BenchmarkDotNet.Attributes;
+﻿//extern alias LiteDBv5;
+
+//global using v5 = LiteDBv5::LiteDB;
+
+global using BenchmarkDotNet.Attributes;
 global using BenchmarkDotNet.Running;
 
 using LiteDB;
@@ -27,10 +31,12 @@ Console.WriteLine(ab.ToArray());
 
 try
 {
-    var a = new BsonDocument { ["_id"] = 1, ["name"] = "John" };
-    var b = new BsonDocument { ["_id"] = 1, ["name"] = "John" };
+    var a = BsonValue.MaxValue!;
+    var b = BsonValue.MinValue!;
 
-    var c = a == b;
+    var c = Object.ReferenceEquals(a, b);
+
+    
 
     Console.WriteLine(c.ToString());
 
@@ -44,4 +50,4 @@ catch (Exception ex)
 
 
 // Run<BsonValueCompareTests>();
-//BenchmarkRunner.Run<AutoPropertyCompareTests>();
+//BenchmarkRunner.Run<BsonExpressionTests>();

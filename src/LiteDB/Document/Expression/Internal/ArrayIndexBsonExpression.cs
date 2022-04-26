@@ -18,15 +18,16 @@ internal class ArrayIndexBsonExpression : BsonExpression
 
     internal override BsonValue Execute(BsonExpressionContext context)
     {
-        var array = this.Array.Execute(context).AsArray;
-        var index = this.Index.Execute(context);
+        var arr = this.Array.Execute(context);
+        var idx = this.Index.Execute(context);
 
-        if (array == null || !index.IsNumber) return BsonValue.Null;
+        if (!arr.IsArray || !idx.IsNumber) return BsonValue.Null;
 
-        var idx = index.AsInt32;
+        var index = idx.AsInt32;
+        var array = arr.AsArray;
 
         // adding support for negative values (backward)
-        var i = idx < 0 ? array.Count + idx : idx;
+        var i = index < 0 ? array.Count + index : index;
 
         if (i >= array.Count) return BsonValue.Null;
 
