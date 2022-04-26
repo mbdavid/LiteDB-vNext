@@ -15,6 +15,7 @@ global using System.Security;
 global using System.Diagnostics;
 global using System.Security.Cryptography;
 global using System.Reflection;
+global using System.Buffers;
 
 
 global using LiteDB.Engine;
