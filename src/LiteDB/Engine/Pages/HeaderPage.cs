@@ -56,6 +56,7 @@ internal class HeaderPage : BasePage
     {
         var span = buffer.Span;
 
+        // read info and file version
         var info = span.ReadString(P_HEADER_INFO, HEADER_INFO.Length);
         var ver = span.ReadByte(P_FILE_VERSION);
 

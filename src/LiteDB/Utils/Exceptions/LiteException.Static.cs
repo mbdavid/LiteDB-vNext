@@ -29,12 +29,4 @@ public partial class LiteException
             Position = position
         };
     }
-
-
-    //
-    // ### Critical errors
-    //
-
-    internal static LiteException ERR_INVALID_DATABASE() =>
-        new(900, $"File is not a valid LiteDB database format or contains a invalid password.");
 }
