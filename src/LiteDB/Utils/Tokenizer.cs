@@ -106,7 +106,7 @@ internal class Token
     {
         if (this.Type != type)
         {
-            throw LiteException.UnexpectedToken(this);
+            throw ERR_UNEXPECTED_TOKEN(this);
         }
 
         return this;
@@ -119,7 +119,7 @@ internal class Token
     {
         if (this.Type != type1 && this.Type != type2)
         {
-            throw LiteException.UnexpectedToken(this);
+            throw ERR_UNEXPECTED_TOKEN(this);
         }
 
         return this;
@@ -132,7 +132,7 @@ internal class Token
     {
         if (this.Type != type1 && this.Type != type2 && this.Type != type3)
         {
-            throw LiteException.UnexpectedToken(this);
+            throw ERR_UNEXPECTED_TOKEN(this);
         }
 
         return this;
@@ -142,7 +142,7 @@ internal class Token
     {
         if (!this.Is(value, ignoreCase))
         {
-            throw LiteException.UnexpectedToken(this, value);
+            throw ERR_UNEXPECTED_TOKEN(this, value);
         }
 
         return this;
@@ -185,7 +185,7 @@ internal class Tokenizer
     /// </summary>
     public bool CheckEOF()
     {
-        if (_eof) throw LiteException.UnexpectedToken(_current);
+        if (_eof) throw ERR_UNEXPECTED_TOKEN(_current);
 
         return false;
     }

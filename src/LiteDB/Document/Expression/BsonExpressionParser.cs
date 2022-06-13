@@ -146,7 +146,7 @@ namespace LiteDB
                 TryParseInnerExpression(tokenizer, root) ??
                 TryParseMethodCall(tokenizer, root) ??
                 TryParsePath(tokenizer, root) ??
-                throw LiteException.UnexpectedToken(token);
+                throw ERR_UNEXPECTED_TOKEN(token);
         }
 
         #region Constants
@@ -426,7 +426,7 @@ namespace LiteDB
 
             var method = BsonExpression.GetMethod(token.Value, parameters.Count);
 
-            if (method == null) throw LiteException.UnexpectedToken($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token);
+            if (method == null) throw ERR_UNEXPECTED_TOKEN($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token);
 
             return BsonExpression.Call(method, parameters.ToArray());
         }

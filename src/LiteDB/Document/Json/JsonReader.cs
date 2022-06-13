@@ -7,7 +7,7 @@ public class JsonReader
 {
     private readonly static IFormatProvider _numberFormat = CultureInfo.InvariantCulture.NumberFormat;
 
-    private Tokenizer _tokenizer = null;
+    private readonly Tokenizer _tokenizer;
 
     public long Position => _tokenizer.Position;
 
@@ -92,11 +92,11 @@ public class JsonReader
                     case "null": return BsonValue.Null;
                     case "true": return BsonBoolean.True;
                     case "false": return BsonBoolean.False;
-                    default: throw LiteException.UnexpectedToken(token);
+                    default: throw ERR_UNEXPECTED_TOKEN(token);
                 }
         }
 
-        throw LiteException.UnexpectedToken(token);
+        throw LiteException.ERR_UNEXPECTED_TOKEN(token);
     }
 
     private BsonValue ReadObject()

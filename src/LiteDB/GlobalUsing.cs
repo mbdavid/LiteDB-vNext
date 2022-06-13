@@ -15,7 +15,13 @@ global using System.Security;
 global using System.Diagnostics;
 global using System.Security.Cryptography;
 global using System.Reflection;
+global using System.Buffers.Binary;
+
 
 
 global using LiteDB.Engine;
 global using static LiteDB.Constants;
+global using static LiteDB.LiteException;
+
+[assembly: InternalsVisibleTo("LiteDB.Tests")]
+[assembly: InternalsVisibleTo("LiteDB.Benchmark")]

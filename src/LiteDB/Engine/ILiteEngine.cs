@@ -3,7 +3,7 @@
 /// <summary>
 /// 
 /// </summary>
-public interface ILiteEngine : IAsyncDisposable
+public interface ILiteEngine : IDisposable
 {
     /// <summary>
     /// Descreve em qual situação o banco está
@@ -32,8 +32,7 @@ public interface ILiteEngine : IAsyncDisposable
     /// Retorna o _id
     /// </summary>
     Task<BsonValue> InsertAsync(string collection, BsonDocument document, int autoId);
-    Task<bool> UpdateAsync(string collection, BsonDocument document);
-    Task<int> UpsertAsync(string collection, BsonDocument document, int autoId);
+    Task<bool> UpdateAsync(string collection, BsonValue id, BsonExpression modify);
     Task<bool> DeleteAsync(string collection, BsonValue id);
 
     Task<object> BulkAsync(IList<object> operations);
