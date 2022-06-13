@@ -19,6 +19,7 @@ internal static class StringExtensions
 
     public static string TrimToNull(this string str)
     {
+        //TODO: improve with span
         var v = str.Trim();
 
         return v.Length == 0 ? null : v;
@@ -26,6 +27,7 @@ internal static class StringExtensions
 
     public static string Sha1(this string value)
     {
+        //TODO: improve with shared array
         var data = Encoding.UTF8.GetBytes(value);
 
         using var sha = SHA1.Create();
@@ -44,7 +46,7 @@ internal static class StringExtensions
     /// <summary>
     /// Implement SqlLike in C# string - based on
     /// https://stackoverflow.com/a/8583383/3286260
-    /// I remove support for [ and ] to avoid missing close brackets
+    /// I removed support for [ and ] to avoid missing close brackets
     /// </summary>
     public static bool SqlLike(this string str, string pattern, Collation collation)
     {
