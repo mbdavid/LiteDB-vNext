@@ -18,28 +18,35 @@ internal class HeaderPage : BasePage
 
     #region Buffer Field Positions
 
-    public const int P_HEADER_INFO = 5;  // 5-32 (27 bytes)
-    public const int P_FILE_VERSION = 33; // 33-33 (1 byte)
-    private const int P_CREATION_TIME = 34; // 34-42 (8 bytes)
-    private const int P_LAST_PAGE_ID = 43; // 43-47 (4 bytes)
+    private const int P_CREATION_TIME = 5; // 5-13 (8 bytes)
+    private const int P_LAST_PAGE_ID = 14; // 14-18 (4 bytes)
+
+    public const int P_HEADER_INFO = 32;  // 32-58 (27 bytes)
+    public const int P_FILE_VERSION = 59; // 59-59 (1 byte)
 
     #endregion
 
     /// <summary>
     /// DateTime when database was created [8 bytes]
     /// </summary>
-    public DateTime CreationTime { get; }
+    public DateTime CreationTime { get; } = DateTime.UtcNow;
 
     /// <summary>
     /// Get last physical page ID created [4 bytes]
     /// </summary>
     public uint LastPageID { get; private set; } = uint.MaxValue;
 
+    /// <summary>
+    /// Create new HeaderPage instance
+    /// </summary>
     public HeaderPage(Memory<byte> buffer, uint pageID)
         : base(buffer, pageID, PageType.Header)
     {
-        // initialize page version
-        this.CreationTime = DateTime.UtcNow;
+        var span = buffer.Span;
+
+        // fixed content - can update buffer (header do not use shared cache)
+        span.Write(HEADER_INFO, P_HEADER_INFO);
+        span.Write(FILE_VERSION, P_FILE_VERSION);
     }
 
     /// <summary>
@@ -50,7 +57,11 @@ internal class HeaderPage : BasePage
     {
         var span = buffer.Span;
 
-        // read info and file version
+        // read header
+        this.CreationTime = span.ReadDateTime(P_CREATION_TIME);
+        this.LastPageID = span.ReadUInt32(P_LAST_PAGE_ID);
+
+        // read content: info and file version
         var info = span.ReadString(P_HEADER_INFO, HEADER_INFO.Length);
         var ver = span.ReadByte(P_FILE_VERSION);
 
@@ -58,9 +69,6 @@ internal class HeaderPage : BasePage
         {
             throw ERR_INVALID_DATABASE();
         }
-
-        this.CreationTime = span.ReadDateTime(P_CREATION_TIME);
-        this.LastPageID = span.ReadUInt32(P_LAST_PAGE_ID);
     }
 
     public override Memory<byte> GetBufferWrite()
@@ -69,8 +77,6 @@ internal class HeaderPage : BasePage
         var span = buffer.Span;
 
         // update header
-        span.Write(HEADER_INFO, P_HEADER_INFO);
-        span.Write(FILE_VERSION, P_FILE_VERSION);
         span.Write(this.CreationTime, P_CREATION_TIME);
         span.Write(this.LastPageID, P_LAST_PAGE_ID);
 
