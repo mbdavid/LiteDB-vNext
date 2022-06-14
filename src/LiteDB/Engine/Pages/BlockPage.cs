@@ -7,14 +7,13 @@ internal class BlockPage : BasePage
 {
     private readonly BlockPageHeader _header;
 
-    private BlockPageHeader _writeHeader = null;
-    private IMemoryOwner<byte> _writeBuffer = null;
+    private BlockPageHeader _headerWrite = null;
 
     #region Buffer Field Positions
 
-    public const int P_COL_ID = 19; // 19-19 [byte]
-    public const int P_TRANSACTION_ID = 14; // 14-17 [uint]
-    public const int P_IS_CONFIRMED = 18; // 18-18 [byte]
+    public const int P_COL_ID = 5; // 5-5 [byte]
+    public const int P_TRANSACTION_ID = 6; // 6-10 [uint]
+    public const int P_IS_CONFIRMED = 11; // 11-11 [byte]
 
     #endregion
 
@@ -43,10 +42,10 @@ internal class BlockPage : BasePage
     public BlockPage(Memory<byte> buffer, uint pageID, PageType pageType, byte colID)
         : base(buffer, pageID, pageType)
     {
+        var span = buffer.Span;
+
         // ColID never change
         this.ColID = colID;
-        this.TransactionID = 0;
-        this.IsConfirmed = false;
 
         // initialize an empty header
         _header = new BlockPageHeader();
@@ -69,45 +68,34 @@ internal class BlockPage : BasePage
         _header = new BlockPageHeader(span);
     }
 
-    #region Write Operations
-
     /// <summary>
-    /// Initialize _writeBuffer and _writeHeader on first write use
+    /// Inicialize write header with a copy of read header
     /// </summary>
-    private void InitializeWrite()
+    protected override void InitializeWrite()
     {
-        if (_writeHeader == null) return;
+        base.InitializeWrite();
 
-        // create new instance of header based on clean buffer
-        _writeHeader = new BlockPageHeader(_header);
-
-        // rent buffer
-        _writeBuffer = PageMemoryPool.Rent();
-
-        // copy content from clean buffer to write buffer
-        _buffer.CopyTo(_writeBuffer.Memory);
+        _headerWrite = new BlockPageHeader(_header);
     }
 
     /// <summary>
-    /// Update write buffer with write header (and adicional props) and returns
+    /// Get updated write buffer
     /// </summary>
-    public Memory<byte> GetDirtyBuffer()
+    public override Memory<byte> GetBufferWrite()
     {
-        if (_header == null || _writeBuffer == null) throw new InvalidOperationException("Current page has no dirty header/buffer");
+        var buffer = base.GetBufferWrite();
+        var span = buffer.Span;
 
-        var span = _writeBuffer.Memory.Span;
-
-        // update header props outside BlockPageHeader
+        // update header props
         span.Write(this.ColID, P_COL_ID);
         span.Write(this.TransactionID, P_TRANSACTION_ID);
         span.Write(this.IsConfirmed, P_IS_CONFIRMED);
 
-        _header.Update(_writeBuffer.Memory.Span);
+        // update header instance
+        _headerWrite.Update(span);
 
-        return _writeBuffer.Memory;
+        return buffer;
     }
-
-    #endregion
 
     #region Blocks Operations
 
@@ -118,7 +106,7 @@ internal class BlockPage : BasePage
     {
         if (readOnly) return _buffer.Span;
 
-        if (_writeHeader != null) return _writeBuffer.Memory.Span;
+        if (_headerWrite != null) return _bufferWrite.Memory.Span;
 
         return _buffer.Span;
     }
@@ -160,8 +148,8 @@ internal class BlockPage : BasePage
         // initialize dirty buffer and dirty header (once)
         this.InitializeWrite();
 
-        var span = _writeBuffer.Memory.Span;
-        var header = _writeHeader;
+        var span = _bufferWrite.Memory.Span;
+        var header = _headerWrite;
 
         var isNewInsert = index == byte.MaxValue;
 

@@ -21,8 +21,7 @@ internal class HeaderPage : BasePage
     public const int P_HEADER_INFO = 5;  // 5-32 (27 bytes)
     public const int P_FILE_VERSION = 33; // 33-33 (1 byte)
     private const int P_CREATION_TIME = 34; // 34-42 (8 bytes)
-
-    private const int P_PRAGMAS = 32; // 32-8191 (?? bytes)
+    private const int P_LAST_PAGE_ID = 43; // 43-47 (4 bytes)
 
     #endregion
 
@@ -31,21 +30,16 @@ internal class HeaderPage : BasePage
     /// </summary>
     public DateTime CreationTime { get; }
 
+    /// <summary>
+    /// Get last physical page ID created [4 bytes]
+    /// </summary>
+    public uint LastPageID { get; private set; } = uint.MaxValue;
+
     public HeaderPage(Memory<byte> buffer, uint pageID)
         : base(buffer, pageID, PageType.Header)
     {
-        var span = buffer.Span;
-
         // initialize page version
         this.CreationTime = DateTime.UtcNow;
-
-        // initialize pragmas
-        //this.Pragmas = new EnginePragmas(this);
-
-        // writing direct into buffer in Ctor() because there is no change later (write once)
-        span.Write(HEADER_INFO, P_HEADER_INFO);
-        span.Write(FILE_VERSION, P_FILE_VERSION);
-        span.Write(this.CreationTime, P_CREATION_TIME);
     }
 
     /// <summary>
@@ -66,5 +60,20 @@ internal class HeaderPage : BasePage
         }
 
         this.CreationTime = span.ReadDateTime(P_CREATION_TIME);
+        this.LastPageID = span.ReadUInt32(P_LAST_PAGE_ID);
+    }
+
+    public override Memory<byte> GetBufferWrite()
+    {
+        var buffer = base.GetBufferWrite();
+        var span = buffer.Span;
+
+        // update header
+        span.Write(HEADER_INFO, P_HEADER_INFO);
+        span.Write(FILE_VERSION, P_FILE_VERSION);
+        span.Write(this.CreationTime, P_CREATION_TIME);
+        span.Write(this.LastPageID, P_LAST_PAGE_ID);
+
+        return buffer;
     }
 }
