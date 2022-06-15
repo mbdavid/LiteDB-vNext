@@ -13,19 +13,20 @@ internal class MemoryCache
     /// </summary>
     public MemoryCachePage GetPage(long position)
     {
-        if (_cache.TryGetValue(position, out MemoryCachePage page))
-        {
-            page.Rent();
+        var page = _cache.GetOrAdd(position, p => new MemoryCachePage());
 
-            return page;
-        }
+        page.Rent();
 
-        return null;
+        return page;
     }
 
     public MemoryCachePage NewPage()
     {
-        return new MemoryCachePage();
+        var page = new MemoryCachePage();
+
+        page.Rent();
+
+        return page;
     }
 
     public void AddPage(long position, MemoryCachePage page)

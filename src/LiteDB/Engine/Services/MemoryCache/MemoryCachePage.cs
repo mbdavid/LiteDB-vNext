@@ -6,12 +6,16 @@
 /// </summary>
 internal class MemoryCachePage : IDisposable
 {
-    private int _sharedCounter = 1;
+    /// <summary>
+    /// Contains how many people are sharing this page for read
+    /// </summary>
+    private int _sharedCounter = 0;
 
-    public int ShareCounter { get; private set; } = 1;
+    public int ShareCounter => _sharedCounter; 
     public long Timestamp { get; private set; } = DateTime.UtcNow.Ticks;
-    public readonly Memory<byte> Buffer;
     public BasePage Page { get; set; }
+
+    public readonly Memory<byte> Buffer;
 
     private readonly byte[] _bufferArray;
 

@@ -6,7 +6,7 @@
 internal class BasePage : IDisposable
 {
     /// <summary>
-    /// Memory cache service to create write memory pages before write on disk
+    /// Memory cache service to create write memory pages before first change
     /// </summary>
     protected readonly MemoryCache _cache;
 
@@ -45,6 +45,11 @@ internal class BasePage : IDisposable
     /// If true any change operation InitializeWrite()
     /// </summary>
     public bool IsDirty => _writeBuffer != null;
+
+    /// <summary>
+    /// Indicate current page has created by new (no input buffer)
+    /// </summary>
+    public bool IsNew => _readBuffer.IsEmpty == false;
 
     /// <summary>
     /// Create a new BasePage with an empty buffer. Write PageID and PageType on buffer
@@ -109,6 +114,19 @@ internal class BasePage : IDisposable
         return buffer;
     }
 
+    /// <summary>
+    /// Apply changes in writeBuffer in _readBuffer and dispose _writeBuffer
+    /// </summary>
+    public void ApplyChanges()
+    {
+        ENSURE(_readBuffer.IsEmpty && _writeBuffer != null, "ApplyChanges on page is valid only when page has no input and has changes");
+
+        _readBuffer = _writeBuffer.Buffer;
+
+        // set to null but reference still in _readBuffer
+        _writeBuffer = null;
+    }
+
     #endregion
 
     #region Static Helpers
@@ -129,10 +147,10 @@ internal class BasePage : IDisposable
         return GetPagePosition((uint)pageID);
     }
 
+    #endregion
+
     public void Dispose()
     {
-        throw new NotImplementedException();
+        _writeBuffer?.Dispose();
     }
-
-    #endregion
 }
