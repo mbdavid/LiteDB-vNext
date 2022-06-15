@@ -23,9 +23,9 @@ internal class MemoryCache
         return null;
     }
 
-    public MemoryCache NewPage()
+    public MemoryCachePage NewPage()
     {
-        return new MemoryCache();
+        return new MemoryCachePage();
     }
 
     public void AddPage(long position, MemoryCachePage page)
@@ -34,7 +34,6 @@ internal class MemoryCache
 
         ENSURE(!added, $"This page position {position} already in memory cache");
     }
-
 
     public int CleanUp()
     {

@@ -3,10 +3,24 @@
 /// <summary>
 /// Base page implement minimal page layer width read buffers
 /// </summary>
-internal class BasePage
+internal class BasePage : IDisposable
 {
-    protected Memory<byte> _buffer;
-    protected IMemoryOwner<byte> _bufferWrite;
+    /// <summary>
+    /// Memory cache service to create write memory pages before write on disk
+    /// </summary>
+    protected readonly MemoryCache _cache;
+
+    /// <summary>
+    /// Read buffer from disk or cache. It's concurrent read free
+    /// Will be Memory[byte].Empty if empty new page
+    /// </summary>
+    protected Memory<byte> _readBuffer;
+
+    /// <summary>
+    /// Created only use first write operation
+    /// Changes on BasePage must be one same thread (Not Thread Safe). Only one writer per time
+    /// </summary>
+    protected MemoryCachePage _writeBuffer;
 
     #region Buffer Field Positions
 
@@ -28,16 +42,17 @@ internal class BasePage
     public PageType PageType { get; set; }
 
     /// <summary>
-    /// If true, this page contains data changes on buffer (page must saved)
+    /// If true any change operation InitializeWrite()
     /// </summary>
-    public bool IsDirty { get; set; } = false;
+    public bool IsDirty => _writeBuffer != null;
 
     /// <summary>
     /// Create a new BasePage with an empty buffer. Write PageID and PageType on buffer
     /// </summary>
-    public BasePage(Memory<byte> buffer, uint pageID, PageType pageType)
+    public BasePage(MemoryCache cache, uint pageID, PageType pageType)
     {
-        _buffer = buffer;
+        _cache = cache;
+        _readBuffer = Memory<byte>.Empty;
 
         // initialize
         this.PageID = pageID;
@@ -47,9 +62,10 @@ internal class BasePage
     /// <summary>
     /// Create BasePage instance based on buffer content
     /// </summary>
-    public BasePage(Memory<byte> buffer)
+    public BasePage(MemoryCache cache, Memory<byte> buffer)
     {
-        _buffer = buffer;
+        _cache = cache;
+        _readBuffer = buffer;
 
         var span = buffer.Span;
 
@@ -64,15 +80,16 @@ internal class BasePage
     /// </summary>
     protected virtual void InitializeWrite()
     {
-        if (this.IsDirty == true) return;
+        if (_writeBuffer != null) return;
 
         // rent buffer
-        _bufferWrite = null; // PageMemoryPool.Rent();
+        _writeBuffer = _cache.NewPage();
 
-        // copy content from clean buffer to write buffer
-        _buffer.CopyTo(_bufferWrite.Memory);
-
-        this.IsDirty = true;
+        // copy content from clean buffer to write buffer (if exists)
+        if (!_readBuffer.IsEmpty)
+        {
+            _readBuffer.CopyTo(_writeBuffer.Buffer);
+        }
     }
 
     /// <summary>
@@ -82,7 +99,7 @@ internal class BasePage
     {
         if (this.IsDirty == false) throw new InvalidOperationException("Current page has no dirty buffer");
 
-        var buffer = _bufferWrite.Memory;
+        var buffer = _writeBuffer.Buffer;
         var span = buffer.Span;
 
         // writing direct into buffer in Ctor() because there is no change later (write once)
@@ -110,6 +127,11 @@ internal class BasePage
     public static long GetPagePosition(int pageID)
     {
         return GetPagePosition((uint)pageID);
+    }
+
+    public void Dispose()
+    {
+        throw new NotImplementedException();
     }
 
     #endregion

@@ -39,11 +39,9 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Create a new BlockPage
     /// </summary>
-    public BlockPage(Memory<byte> buffer, uint pageID, PageType pageType, byte colID)
-        : base(buffer, pageID, pageType)
+    public BlockPage(MemoryCache cache, uint pageID, PageType pageType, byte colID)
+        : base(cache, pageID, pageType)
     {
-        var span = buffer.Span;
-
         // ColID never change
         this.ColID = colID;
 
@@ -54,8 +52,8 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Load BlockPage from buffer memory
     /// </summary>
-    public BlockPage(Memory<byte> buffer)
-        : base(buffer)
+    public BlockPage(MemoryCache cache, Memory<byte> buffer)
+        : base(cache, buffer)
     {
         var span = buffer.Span;
 
@@ -104,11 +102,11 @@ internal class BlockPage : BasePage
     /// </summary>
     private Span<byte> GetSpan(bool readOnly)
     {
-        if (readOnly) return _buffer.Span;
+        if (readOnly) return _readBuffer.Span;
 
-        if (_headerWrite != null) return _bufferWrite.Memory.Span;
+        if (_headerWrite != null) return _writeBuffer.Buffer.Span;
 
-        return _buffer.Span;
+        return _readBuffer.Span;
     }
 
     /// <summary>
@@ -148,7 +146,7 @@ internal class BlockPage : BasePage
         // initialize dirty buffer and dirty header (once)
         this.InitializeWrite();
 
-        var span = _bufferWrite.Memory.Span;
+        var span = _writeBuffer.Buffer.Span;
         var header = _headerWrite;
 
         var isNewInsert = index == byte.MaxValue;
