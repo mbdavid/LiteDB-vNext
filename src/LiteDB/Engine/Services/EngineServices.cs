@@ -31,6 +31,7 @@ internal class EngineServices : IDisposable
 
     public void Dispose()
     {
+        this.Header?.Dispose();
         this.Disk?.Dispose();
 
         this.Header = null;

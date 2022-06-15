@@ -13,25 +13,40 @@ internal class MemoryCache
     /// </summary>
     public MemoryCachePage GetPage(long position)
     {
-        var page = _cache.GetOrAdd(position, p => new MemoryCachePage());
+        var found = _cache.TryGetValue(position, out MemoryCachePage page);
 
-        page.Rent();
+        if (found)
+        {
+            page.Rent();
 
-        return page;
+            return page;
+        }
+
+        return null;
     }
 
-    public MemoryCachePage NewPage()
+    /// <summary>
+    /// Return a page to cache after a GetPage
+    /// </summary>
+    public void ReturnPage(long position)
     {
-        var page = new MemoryCachePage();
+        var found = _cache.TryGetValue(position, out MemoryCachePage page);
 
-        page.Rent();
+        ENSURE(!found, $"This page position {position} are not in cache");
 
-        return page;
+        page.Return();
     }
 
-    public void AddPage(long position, MemoryCachePage page)
+    /// <summary>
+    /// Add a new page to cache. Must have unique Position. Page must be clean 
+    /// </summary>
+    public void AddPage(long position, BasePage page)
     {
-        var added = _cache.TryAdd(position, page);
+        ENSURE(page.IsDirty == false, "Page must be clean to be added on cache");
+
+        var cached = new MemoryCachePage(page);
+
+        var added = _cache.TryAdd(position, cached);
 
         ENSURE(!added, $"This page position {position} already in memory cache");
     }

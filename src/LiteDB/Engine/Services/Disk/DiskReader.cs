@@ -21,7 +21,7 @@ internal class DiskReader : IDisposable
     /// <summary>
     /// Read a page direct from disk. Do not use memory or cache. Returns false if page doesn't exists
     /// </summary>
-    public async Task<bool> ReadPageAsync(Memory<byte> buffer, long position, CancellationToken cancellationToken)
+    public async Task<bool> ReadPageAsync(Memory<byte> buffer, long position, CancellationToken cancellationToken = default)
     {
         ENSURE(buffer.Length == PAGE_SIZE, $"Page memory buffer must have {PAGE_SIZE} length");
 

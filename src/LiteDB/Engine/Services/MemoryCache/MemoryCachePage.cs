@@ -4,7 +4,7 @@
 /// Each memory cache page represent a shared buffer with PAGE_SIZE. 
 /// Implements IDisposable when page
 /// </summary>
-internal class MemoryCachePage : IDisposable
+internal class MemoryCachePage
 {
     /// <summary>
     /// Contains how many people are sharing this page for read
@@ -13,17 +13,11 @@ internal class MemoryCachePage : IDisposable
 
     public int ShareCounter => _sharedCounter; 
     public long Timestamp { get; private set; } = DateTime.UtcNow.Ticks;
-    public BasePage Page { get; set; }
+    public BasePage Page { get; }
 
-    public readonly Memory<byte> Buffer;
-
-    private readonly byte[] _bufferArray;
-
-    public MemoryCachePage()
+    public MemoryCachePage(BasePage page)
     {
-        _bufferArray = ArrayPool<byte>.Shared.Rent(PAGE_SIZE);
-
-        this.Buffer = new Memory<byte>(_bufferArray, 0, PAGE_SIZE);
+        this.Page = page;
     }
 
     public void Rent()
@@ -38,12 +32,5 @@ internal class MemoryCachePage : IDisposable
         Interlocked.Decrement(ref _sharedCounter);
 
         ENSURE(_sharedCounter < 0, "ShareCounter cached page must be large than 0");
-    }
-
-    public void Dispose()
-    {
-        ENSURE(_sharedCounter == 0, $"MemoryCachePage dispose with SharedCounter = {_sharedCounter}");
-
-        ArrayPool<byte>.Shared.Return(_bufferArray);
     }
 }

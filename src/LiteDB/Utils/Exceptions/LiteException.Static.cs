@@ -8,6 +8,9 @@ public partial class LiteException
     internal static LiteException ERR_FILE_NOT_FOUND(string filename) =>
         new(1, $"File '{filename}' not found.");
 
+
+    #region ERR_UNEXPECTED_TOKEN
+
     internal static LiteException ERR_UNEXPECTED_TOKEN(Token token, string expected = null)
     {
         var position = (token?.Position - (token?.Value?.Length ?? 0)) ?? 0;
@@ -29,4 +32,6 @@ public partial class LiteException
             Position = position
         };
     }
+
+    #endregion
 }

@@ -52,7 +52,7 @@ internal class DiskService : IDisposable
     /// <summary>
     /// Write all pages buffers into disk DATA and flush after saved
     /// </summary>
-    public async Task WriteDataAsync(IEnumerable<PageLocation> pages, CancellationToken cancellationToken)
+    public async Task WriteDataAsync(IEnumerable<PageLocation> pages, CancellationToken cancellationToken = default)
     {
         var stream = _streamPool.Writer;
 
@@ -68,6 +68,8 @@ internal class DiskService : IDisposable
                 ENSURE(_logEndPosition != 0, dataPosition >= _logStartPosition, "Data pages must be saved before LOG");
 
                 //TODO: faz CRC8 aqui?
+
+                stream.Position = dataPosition;
 
                 await stream.WriteAsync(page.Buffer, cancellationToken);
             }
@@ -90,7 +92,7 @@ internal class DiskService : IDisposable
     /// Will update all PageLocation with final disk (log) position
     /// It´s thread safe
     /// </summary>
-    public async Task WriteLogAsync(PageLocation[] pages, CancellationToken cancellationToken)
+    public async Task WriteLogAsync(PageLocation[] pages, CancellationToken cancellationToken = default)
     {
         ENSURE(_logStartPosition > 0, "Disk WAL not initialized");
 
