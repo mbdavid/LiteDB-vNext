@@ -6,21 +6,16 @@
 internal class BasePage : IDisposable
 {
     /// <summary>
-    /// Memory cache service to create write memory pages before first change
-    /// </summary>
-    protected readonly MemoryCache _cache;
-
-    /// <summary>
     /// Read buffer from disk or cache. It's concurrent read free
     /// Will be Memory[byte].Empty if empty new page
     /// </summary>
-    protected Memory<byte> _readBuffer;
+    protected IMemoryOwner<byte> _readBuffer;
 
     /// <summary>
     /// Created only use first write operation
     /// Changes on BasePage must be one same thread (Not Thread Safe). Only one writer per time
     /// </summary>
-    protected MemoryCachePage _writeBuffer;
+    protected IMemoryOwner<byte> _writeBuffer;
 
     #region Buffer Field Positions
 
@@ -47,32 +42,33 @@ internal class BasePage : IDisposable
     public bool IsDirty => _writeBuffer != null;
 
     /// <summary>
-    /// Indicate current page has created by new (no input buffer)
-    /// </summary>
-    public bool IsNew => _readBuffer.IsEmpty == false;
-
-    /// <summary>
     /// Create a new BasePage with an empty buffer. Write PageID and PageType on buffer
     /// </summary>
-    public BasePage(MemoryCache cache, uint pageID, PageType pageType)
+    public BasePage(uint pageID, PageType pageType)
     {
-        _cache = cache;
-        _readBuffer = Memory<byte>.Empty;
+        _readBuffer = new BufferPage(true);
+        _writeBuffer = _readBuffer;
 
         // initialize
         this.PageID = pageID;
         this.PageType = pageType;
+
+        // write fixed data
+        var span = _readBuffer.Memory.Span;
+
+        span.Write(this.PageID, P_PAGE_ID);
+        span.Write((byte)this.PageType, P_PAGE_TYPE);
     }
 
     /// <summary>
     /// Create BasePage instance based on buffer content
     /// </summary>
-    public BasePage(MemoryCache cache, Memory<byte> buffer)
+    public BasePage(IMemoryOwner<byte> buffer)
     {
-        _cache = cache;
         _readBuffer = buffer;
+        _writeBuffer = null;
 
-        var span = buffer.Span;
+        var span = buffer.Memory.Span;
 
         this.PageID = span.ReadUInt32(P_PAGE_ID);
         this.PageType = (PageType)span.ReadByte(P_PAGE_TYPE);
@@ -88,13 +84,10 @@ internal class BasePage : IDisposable
         if (_writeBuffer != null) return;
 
         // rent buffer
-        _writeBuffer = _cache.NewPage();
+        _writeBuffer = new BufferPage(false);
 
         // copy content from clean buffer to write buffer (if exists)
-        if (!_readBuffer.IsEmpty)
-        {
-            _readBuffer.CopyTo(_writeBuffer.Buffer);
-        }
+        _readBuffer.Memory.CopyTo(_writeBuffer.Memory);
     }
 
     /// <summary>
@@ -104,27 +97,21 @@ internal class BasePage : IDisposable
     {
         if (this.IsDirty == false) throw new InvalidOperationException("Current page has no dirty buffer");
 
-        var buffer = _writeBuffer.Buffer;
-        var span = buffer.Span;
-
-        // writing direct into buffer in Ctor() because there is no change later (write once)
-        span.Write(this.PageID, P_PAGE_ID);
-        span.Write((byte)this.PageType, P_PAGE_TYPE);
-
-        return buffer;
+        return _writeBuffer.Memory;
     }
 
     /// <summary>
-    /// Apply changes in writeBuffer in _readBuffer and dispose _writeBuffer
+    /// Dispose both
     /// </summary>
-    public void ApplyChanges()
+    public void Dispose()
     {
-        ENSURE(_readBuffer.IsEmpty && _writeBuffer != null, "ApplyChanges on page is valid only when page has no input and has changes");
+        if (_readBuffer == _writeBuffer)
+        {
+            _readBuffer?.Dispose();
+        }
 
-        _readBuffer = _writeBuffer.Buffer;
-
-        // set to null but reference still in _readBuffer
-        _writeBuffer = null;
+        _readBuffer.Dispose();
+        _writeBuffer?.Dispose();
     }
 
     #endregion
@@ -149,8 +136,4 @@ internal class BasePage : IDisposable
 
     #endregion
 
-    public void Dispose()
-    {
-        _writeBuffer?.Dispose();
-    }
 }

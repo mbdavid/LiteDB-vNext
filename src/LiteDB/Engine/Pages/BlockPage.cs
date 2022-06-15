@@ -39,11 +39,16 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Create a new BlockPage
     /// </summary>
-    public BlockPage(MemoryCache cache, uint pageID, PageType pageType, byte colID)
-        : base(cache, pageID, pageType)
+    public BlockPage(uint pageID, PageType pageType, byte colID)
+        : base(pageID, pageType)
     {
         // ColID never change
         this.ColID = colID;
+
+        // write unchanged data
+        var span = _writeBuffer.Memory.Span;
+
+        span.Write(this.ColID, P_COL_ID);
 
         // initialize an empty header
         _header = new BlockPageHeader();
@@ -52,10 +57,10 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Load BlockPage from buffer memory
     /// </summary>
-    public BlockPage(MemoryCache cache, Memory<byte> buffer)
-        : base(cache, buffer)
+    public BlockPage(IMemoryOwner<byte> buffer)
+        : base(buffer)
     {
-        var span = buffer.Span;
+        var span = buffer.Memory.Span;
 
         // initialize variables with buffer data
         this.ColID = span.ReadByte(P_COL_ID);
@@ -85,7 +90,6 @@ internal class BlockPage : BasePage
         var span = buffer.Span;
 
         // update header props
-        span.Write(this.ColID, P_COL_ID);
         span.Write(this.TransactionID, P_TRANSACTION_ID);
         span.Write(this.IsConfirmed, P_IS_CONFIRMED);
 
@@ -102,11 +106,11 @@ internal class BlockPage : BasePage
     /// </summary>
     private Span<byte> GetSpan(bool readOnly)
     {
-        if (readOnly) return _readBuffer.Span;
+        if (readOnly) return _readBuffer.Memory.Span;
 
-        if (_headerWrite != null) return _writeBuffer.Buffer.Span;
+        if (_headerWrite != null) return _writeBuffer.Memory.Span;
 
-        return _readBuffer.Span;
+        return _readBuffer.Memory.Span;
     }
 
     /// <summary>
@@ -146,7 +150,7 @@ internal class BlockPage : BasePage
         // initialize dirty buffer and dirty header (once)
         this.InitializeWrite();
 
-        var span = _writeBuffer.Buffer.Span;
+        var span = _writeBuffer.Memory.Span;
         var header = _headerWrite;
 
         var isNewInsert = index == byte.MaxValue;

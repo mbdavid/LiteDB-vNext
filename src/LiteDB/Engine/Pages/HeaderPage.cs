@@ -39,18 +39,27 @@ internal class HeaderPage : BasePage
     /// <summary>
     /// Create new HeaderPage instance
     /// </summary>
-    public HeaderPage(MemoryCache cache)
-        : base(cache, 0, PageType.Header)
+    public HeaderPage()
+        : base(0, PageType.Header)
     {
+        var span = _writeBuffer.Memory.Span;
+
+        // update header
+        span.Write(this.CreationTime, P_CREATION_TIME);
+
+        // fixed content - can update buffer (header do not use shared cache)
+        span.Write(HEADER_INFO, P_HEADER_INFO);
+        span.Write(FILE_VERSION, P_FILE_VERSION);
+
     }
 
     /// <summary>
     /// Load HeaderPage from buffer page
     /// </summary>
-    public HeaderPage(MemoryCache cache, Memory<byte> buffer)
-        : base(cache, buffer)
+    public HeaderPage(IMemoryOwner<byte> buffer)
+        : base(buffer)
     {
-        var span = buffer.Span;
+        var span = _readBuffer.Memory.Span;
 
         // read header
         this.CreationTime = span.ReadDateTime(P_CREATION_TIME);
@@ -72,12 +81,7 @@ internal class HeaderPage : BasePage
         var span = buffer.Span;
 
         // update header
-        span.Write(this.CreationTime, P_CREATION_TIME);
         span.Write(this.LastPageID, P_LAST_PAGE_ID);
-
-        // fixed content - can update buffer (header do not use shared cache)
-        span.Write(HEADER_INFO, P_HEADER_INFO);
-        span.Write(FILE_VERSION, P_FILE_VERSION);
 
         return buffer;
     }
