@@ -25,33 +25,36 @@ public interface ILiteEngine : IDisposable
     /// </summary>
     Task OpenAsync();
 
-    Task<bool> CreateCollectionAsync(string name, object options);
-    Task<bool> DropCollectionAsync(string name);
+    Task ShutdownAsync(bool forced, Exception exception);
 
-    /// <summary>
-    /// Retorna o _id
-    /// </summary>
-    Task<BsonValue> InsertAsync(string collection, BsonDocument document, int autoId);
-    Task<bool> UpdateAsync(string collection, BsonValue id, BsonExpression modify);
-    Task<bool> DeleteAsync(string collection, BsonValue id);
+    /*
 
-    Task<object> BulkAsync(IList<object> operations);
+        Task<bool> CreateCollectionAsync(string name, object options);
+        Task<bool> DropCollectionAsync(string name);
 
-    Task<bool> CreateIndexAsync(string collection, string name, BsonExpression expression, bool unique);
-    Task<bool> DropIndexAsync(string collection, string name);
+        /// <summary>
+        /// Retorna o _id
+        /// </summary>
+        Task<BsonValue> InsertAsync(string collection, BsonDocument document, int autoId);
+        Task<bool> UpdateAsync(string collection, BsonValue id, BsonExpression modify);
+        Task<bool> DeleteAsync(string collection, BsonValue id);
 
-    Task<Guid> QueryAsync(string collection, object query, int buffer = 1024);
-    Task<Guid> FetchAsync(Guid cursorId);
+        Task<object> BulkAsync(IList<object> operations);
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="forced">Invalidate all pending cursors.</param>
-    /// <returns></returns>
-    Task<int> CheckpointAsync(bool forced);
-    Task<int> RebuildAsync(object options);
-    Task<bool> SetPragmaAsync(string name, object value);
+        Task<bool> CreateIndexAsync(string collection, string name, BsonExpression expression, bool unique);
+        Task<bool> DropIndexAsync(string collection, string name);
 
-    Task ShutdownAsync(bool forced);
+        Task<Guid> QueryAsync(string collection, object query, int buffer = 1024);
+        Task<Guid> FetchAsync(Guid cursorId);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="forced">Invalidate all pending cursors.</param>
+        /// <returns></returns>
+        Task<int> CheckpointAsync(bool forced);
+        Task<int> RebuildAsync(object options);
+        Task<bool> SetPragmaAsync(string name, object value);
+    */
 
 }

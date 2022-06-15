@@ -50,7 +50,7 @@ internal class BlockPageHeader
     /// </summary>
     public int FreeBytes => this.ItemsCount == byte.MaxValue ?
         0 :
-        PAGE_SIZE - PAGE_HEADER_SIZE - this.UsedBytes - this.FooterSize;
+        PAGE_CONTENT_SIZE - this.UsedBytes - this.FooterSize;
 
     /// <summary>
     /// Get how many bytes are used in footer page at this moment

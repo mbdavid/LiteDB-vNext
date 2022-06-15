@@ -1,34 +1,10 @@
-﻿//extern alias LiteDBv5;
-
-//global using v5 = LiteDBv5::LiteDB;
-
-global using BenchmarkDotNet.Attributes;
-global using BenchmarkDotNet.Running;
-
-using LiteDB;
-using LiteDB.Benchmark;
-
-using System.Diagnostics;
-
-try
+﻿
+for(var i = 26000; i < 27000; i++)
 {
-    var a = BsonValue.MaxValue!;
-    var b = BsonValue.MinValue!;
+    DiskService.GetLocation((uint)i, out var pfs, out var ext, out var pid);
 
-    var c = Object.ReferenceEquals(a, b);
-
-    
-
-    Console.WriteLine(c.ToString());
-
+    Console.WriteLine($"{i}: ({pfs}:{ext}:{pid})");
 }
-catch (Exception ex)
-{
-    Console.WriteLine(ex.Demystify().ToString());
-    //Console.WriteLine("-----------------------------------------");
-    //Console.WriteLine(ex.ToString());
-}
-
 
 // Run<BsonValueCompareTests>();
 //BenchmarkRunner.Run<BsonExpressionTests>();

@@ -67,7 +67,7 @@ internal class BasePage
         if (this.IsDirty == true) return;
 
         // rent buffer
-        _bufferWrite = PageMemoryPool.Rent();
+        _bufferWrite = null; // PageMemoryPool.Rent();
 
         // copy content from clean buffer to write buffer
         _buffer.CopyTo(_bufferWrite.Memory);
