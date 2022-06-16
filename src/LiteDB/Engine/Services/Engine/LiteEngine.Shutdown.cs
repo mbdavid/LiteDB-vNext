@@ -39,7 +39,7 @@ public partial class LiteEngine //: ILiteEngine
         if (header.IsDirty)
         {
             // header page stores direct into Data space (do not use log)
-            await disk.WriteDataAsync(new[] { new PageLocation(header.GetBufferWrite(), header.PageID) }, cancellationToken);
+            await disk.WriteDataAsync(new[] { new PageDataLocation(header.PageID, header.GetBufferWrite()) }, cancellationToken);
         }
     }
 }

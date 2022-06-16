@@ -19,16 +19,16 @@ internal class DiskService : IDisposable
 
     public bool IsNew { get; }
 
-    public DiskService(EngineSettings settings)
+    public DiskService(IStreamFactory streamFactory, bool readOnly)
     { 
-        // get new stream factory based on settings
-        _streamFactory = settings.CreateDataFactory();
+        // get new stream factory based on EngineSettings
+        _streamFactory = streamFactory;
 
         // create stream pool
-        _streamPool = new StreamPool(_streamFactory, settings.ReadOnly);
+        _streamPool = new StreamPool(_streamFactory, readOnly);
 
         // checks if is a new file
-        this.IsNew = settings.ReadOnly == false && _streamPool.Writer.Length == 0;
+        this.IsNew = readOnly == false && _streamPool.Writer.Length == 0;
 
         // will be update later
         _logStartPosition = 0;
@@ -52,7 +52,7 @@ internal class DiskService : IDisposable
     /// <summary>
     /// Write all pages buffers into disk DATA and flush after saved
     /// </summary>
-    public async Task WriteDataAsync(IEnumerable<PageLocation> pages, CancellationToken cancellationToken = default)
+    public async Task WriteDataAsync(IEnumerable<PageDataLocation> pages, CancellationToken cancellationToken = default)
     {
         var stream = _streamPool.Writer;
 
@@ -92,7 +92,7 @@ internal class DiskService : IDisposable
     /// Will update all PageLocation with final disk (log) position
     /// It´s thread safe
     /// </summary>
-    public async Task WriteLogAsync(PageLocation[] pages, CancellationToken cancellationToken = default)
+    public async Task WriteLogAsync(IEnumerable<PageLogLocation> pages, CancellationToken cancellationToken = default)
     {
         ENSURE(_logStartPosition > 0, "Disk WAL not initialized");
 
@@ -105,9 +105,11 @@ internal class DiskService : IDisposable
         {
             var position = _logEndPosition;
 
-            for (var i = 0; i < pages.Length; i++)
+            using var cursor = pages.GetEnumerator();
+
+            while (cursor.MoveNext())
             {
-                var page = pages[i];
+                var page = cursor.Current;
 
                 var dataPosition = BasePage.GetPagePosition(page.PageID);
 
@@ -138,12 +140,13 @@ internal class DiskService : IDisposable
                 await stream.WriteAsync(page.Buffer, cancellationToken);
 
                 position += PAGE_SIZE;
+
             }
 
             // flush data into disk
             await stream.FlushAsync(cancellationToken);
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
             throw ERR_DISK_WRITE_FAILURE(ex);
         }

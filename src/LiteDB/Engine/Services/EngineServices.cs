@@ -17,6 +17,8 @@ internal class EngineServices : IDisposable
 
     public DiskService Disk { get; set; }
 
+    public AsyncReaderWriterLock Locker { get; set; }
+
     public object CreateSnapshot()
     {
         throw new NotImplementedException();

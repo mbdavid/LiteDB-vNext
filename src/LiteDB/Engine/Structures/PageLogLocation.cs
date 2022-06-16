@@ -1,31 +1,31 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
-/// Represent a location on disk with Memory buffer
+/// Represent a location on log disk with Memory buffer
 /// </summary>
 [DebuggerStepThrough]
-internal struct PageLocation
+internal struct PageLogLocation
 {
     /// <summary>
-    /// Location on disk (in bytes)
+    /// Location on log disk - used to trasport after write on wal (MaxValue == empty)
     /// </summary>
     public long Position;
 
     /// <summary>
     /// PageID
     /// </summary>
-    public uint PageID;
+    public readonly uint PageID;
 
     /// <summary>
     /// Memory buffer instance
     /// </summary>
-    public Memory<byte> Buffer;
+    public readonly Memory<byte> Buffer;
 
-    public PageLocation(Memory<byte> buffer, uint pageID)
+    public PageLogLocation(uint pageID, Memory<byte> buffer)
     {
+        this.Position = long.MaxValue; // empty
         this.PageID = pageID;
         this.Buffer = buffer;
-        this.Position = long.MaxValue; // empty
     }
 
     public override string ToString()
