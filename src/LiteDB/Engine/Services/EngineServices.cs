@@ -35,10 +35,12 @@ internal class EngineServices : IDisposable
     {
         this.Header?.Dispose();
         this.Disk?.Dispose();
+        this.Locker?.Dispose();
 
         this.Header = null;
         this.Cache = null;
         this.Disk = null;
+        this.Locker = null;
 
         this.State = EngineState.Close;
     }

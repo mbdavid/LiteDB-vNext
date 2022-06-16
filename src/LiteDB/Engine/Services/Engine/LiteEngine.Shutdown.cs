@@ -2,7 +2,7 @@
 
 public partial class LiteEngine //: ILiteEngine
 {
-    public async Task ShutdownAsync(bool force, CancellationToken cancellationToken = default)
+    public async Task ShutdownAsync(CancellationToken cancellationToken = default)
     {
         if (_services.State == EngineState.Shutdown) return;
         if (_services.State == EngineState.Close) throw new InvalidOperationException($"Engine is Closed.");
@@ -10,18 +10,22 @@ public partial class LiteEngine //: ILiteEngine
         // set shutdown state before any change
         _services.State = EngineState.Shutdown;
 
-        // lock
+        var locker = _services.Locker;
+
+        // requires exclusive mode
+        await locker.AcquireWriterLock(cancellationToken);
 
         try
         {
-            // update fps in disk
+            // update fps on disk
 
-            // update header in disk
+            // update header on disk
             await this.WriteHeaderDiskAsync(cancellationToken);
         }
         finally
         {
-            // unlock
+            // release exclusive mode
+            locker.ReleaseWriterLock();
 
             // Dispose() all services and set State = Closed
             _services.Dispose();

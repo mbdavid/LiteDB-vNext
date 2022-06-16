@@ -44,9 +44,8 @@ public partial class LiteEngine //: ILiteEngine
         finally
         {
             _services.Locker.ReleaseReaderLock();
+
+            _services.Dispose();
         }
-
-
-
     }
 }
