@@ -5,6 +5,8 @@
 /// </summary>
 internal class BufferPage : IMemoryOwner<byte>
 {
+    public static byte[] Empty { get; } = new byte[PAGE_SIZE];
+
     private readonly byte[] _source;
 
     public Memory<byte> Memory { get; }

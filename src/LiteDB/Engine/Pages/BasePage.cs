@@ -56,8 +56,8 @@ internal class BasePage : IDisposable
         // write fixed data
         var span = _readBuffer.Memory.Span;
 
-        span.Write(this.PageID, P_PAGE_ID);
-        span.Write((byte)this.PageType, P_PAGE_TYPE);
+        span[P_PAGE_ID..].WriteUInt32(this.PageID);
+        span[P_PAGE_TYPE] = (byte)this.PageType;
     }
 
     /// <summary>
@@ -70,8 +70,8 @@ internal class BasePage : IDisposable
 
         var span = buffer.Memory.Span;
 
-        this.PageID = span.ReadUInt32(P_PAGE_ID);
-        this.PageType = (PageType)span.ReadByte(P_PAGE_TYPE);
+        this.PageID = span[P_PAGE_ID..].ReadUInt32();
+        this.PageType = (PageType)span[P_PAGE_TYPE];
     }
 
     #region Write Operations

@@ -7,6 +7,8 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 {
     private readonly Dictionary<string, BsonValue> _value;
 
+    private int _length = -1;
+
     public IReadOnlyDictionary<string, BsonValue> Value => _value;
 
     public BsonDocument() : this(0)
@@ -34,7 +36,16 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
             length += BsonValue.GetBytesCountElement(element.Key, element.Value);
         }
 
+        _length = length;
+
         return length;
+    }
+
+    internal int GetBytesCountCached()
+    {
+        if (_length >= 0) return _length;
+
+        return this.GetBytesCount();
     }
 
     /// <summary>

@@ -21,6 +21,11 @@ internal class Constants
     public const int PAGE_CONTENT_SIZE = PAGE_SIZE - PAGE_HEADER_SIZE;
 
     /// <summary>
+    /// Get a full empty array with PAGE_SIZE (do not change any value - shared instance)
+    /// </summary>
+    public static readonly byte[] PAGE_EMPTY_BUFFER = new byte[PAGE_SIZE];
+
+    /// <summary>
     /// Bytes used in encryption salt
     /// </summary>
     public const int ENCRYPTION_SALT_SIZE = 16;

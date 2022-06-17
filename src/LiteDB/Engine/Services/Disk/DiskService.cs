@@ -6,8 +6,6 @@
 /// </summary>
 internal class DiskService : IDisposable
 {
-    private static readonly byte[] EMPTY_PAGE = new byte[PAGE_SIZE];
-
     private readonly SemaphoreSlim _locker = new (1, 1);
 
     private readonly IStreamFactory _streamFactory;
@@ -120,7 +118,7 @@ internal class DiskService : IDisposable
                     if (IsPfsPageID((uint)(position / PAGE_SIZE)) == false)
                     {
                         // must write a empty page because empty pages also are encrypted (if case)
-                        await stream.WriteAsync(EMPTY_PAGE, 0, PAGE_SIZE, cancellationToken);
+                        await stream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE, cancellationToken);
                     }
 
                     position += PAGE_SIZE;

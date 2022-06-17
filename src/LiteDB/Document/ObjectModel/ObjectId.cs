@@ -88,29 +88,27 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// <summary>
     /// Initializes a new instance of the ObjectId class from byte array.
     /// </summary>
-    public ObjectId(byte[] bytes, int startIndex = 0)
+    public ObjectId(Span<byte> span)
     {
-        if (bytes == null) throw new ArgumentNullException(nameof(bytes));
-
         this.Timestamp = 
-            (bytes[startIndex + 0] << 24) + 
-            (bytes[startIndex + 1] << 16) + 
-            (bytes[startIndex + 2] << 8) + 
-            bytes[startIndex + 3];
+            (span[0] << 24) + 
+            (span[1] << 16) + 
+            (span[2] << 8) + 
+            span[3];
 
         this.Machine = 
-            (bytes[startIndex + 4] << 16) + 
-            (bytes[startIndex + 5] << 8) + 
-            bytes[startIndex + 6];
+            (span[4] << 16) + 
+            (span[5] << 8) + 
+            span[6];
 
         this.Pid = (short)
-            ((bytes[startIndex + 7] << 8) + 
-            bytes[startIndex + 8]);
+            ((span[7] << 8) + 
+            span[8]);
 
         this.Increment = 
-            (bytes[startIndex + 9] << 16) + 
-            (bytes[startIndex + 10] << 8) + 
-            bytes[startIndex + 11];
+            (span[9] << 16) + 
+            (span[10] << 8) + 
+            span[11];
     }
 
     /// <summary>
@@ -190,27 +188,31 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// <summary>
     /// Represent ObjectId as 12 bytes array
     /// </summary>
-    public void ToByteArray(byte[] bytes, int startIndex)
+    public bool TryWriteBytes(Span<byte> span)
     {
-        bytes[startIndex + 0] = (byte)(this.Timestamp >> 24);
-        bytes[startIndex + 1] = (byte)(this.Timestamp >> 16);
-        bytes[startIndex + 2] = (byte)(this.Timestamp >> 8);
-        bytes[startIndex + 3] = (byte)(this.Timestamp);
-        bytes[startIndex + 4] = (byte)(this.Machine >> 16);
-        bytes[startIndex + 5] = (byte)(this.Machine >> 8);
-        bytes[startIndex + 6] = (byte)(this.Machine);
-        bytes[startIndex + 7] = (byte)(this.Pid >> 8);
-        bytes[startIndex + 8] = (byte)(this.Pid);
-        bytes[startIndex + 9] = (byte)(this.Increment >> 16);
-        bytes[startIndex + 10] = (byte)(this.Increment >> 8);
-        bytes[startIndex + 11] = (byte)(this.Increment);
+        if (span.Length < 12) return false;
+
+        span[0] = (byte)(this.Timestamp >> 24);
+        span[1] = (byte)(this.Timestamp >> 16);
+        span[2] = (byte)(this.Timestamp >> 8);
+        span[3] = (byte)(this.Timestamp);
+        span[4] = (byte)(this.Machine >> 16);
+        span[5] = (byte)(this.Machine >> 8);
+        span[6] = (byte)(this.Machine);
+        span[7] = (byte)(this.Pid >> 8);
+        span[8] = (byte)(this.Pid);
+        span[9] = (byte)(this.Increment >> 16);
+        span[10] = (byte)(this.Increment >> 8);
+        span[11] = (byte)(this.Increment);
+
+        return true;
     }
 
     public byte[] ToByteArray()
     {
         var bytes = new byte[12];
 
-        this.ToByteArray(bytes, 0);
+        this.TryWriteBytes(bytes.AsSpan());
 
         return bytes;
     }

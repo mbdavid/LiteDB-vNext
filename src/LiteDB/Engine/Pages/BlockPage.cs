@@ -48,7 +48,7 @@ internal class BlockPage : BasePage
         // write unchanged data
         var span = _writeBuffer.Memory.Span;
 
-        span.Write(this.ColID, P_COL_ID);
+        span[P_COL_ID] = this.ColID;
 
         // initialize an empty header
         _header = new BlockPageHeader();
@@ -63,9 +63,9 @@ internal class BlockPage : BasePage
         var span = buffer.Memory.Span;
 
         // initialize variables with buffer data
-        this.ColID = span.ReadByte(P_COL_ID);
-        this.TransactionID = span.ReadUInt32(P_TRANSACTION_ID);
-        this.IsConfirmed = span.ReadBool(P_IS_CONFIRMED);
+        this.ColID = span[P_COL_ID];
+        this.TransactionID = span[P_TRANSACTION_ID..].ReadUInt32();
+        this.IsConfirmed = span[P_IS_CONFIRMED] != 0;
 
         // load header page with buffer data
         _header = new BlockPageHeader(span);
@@ -90,8 +90,8 @@ internal class BlockPage : BasePage
         var span = buffer.Span;
 
         // update header props
-        span.Write(this.TransactionID, P_TRANSACTION_ID);
-        span.Write(this.IsConfirmed, P_IS_CONFIRMED);
+        span[P_TRANSACTION_ID..].WriteUInt32(this.TransactionID);
+        span[P_IS_CONFIRMED] = this.IsConfirmed ? (byte)1 : (byte)0;
 
         // update header instance
         _headerWrite.Update(span);
@@ -125,8 +125,8 @@ internal class BlockPage : BasePage
         var lengthAddr = CalcLengthAddr(index);
 
         // read segment position/length
-        var position = span.ReadUInt16(positionAddr);
-        var length = span.ReadUInt16(lengthAddr);
+        var position = span[positionAddr..2].ReadUInt16();
+        var length = span[lengthAddr..2].ReadUInt16();
 
         // return buffer slice with content only data
         return span[position..length];
@@ -189,17 +189,17 @@ internal class BlockPage : BasePage
         var positionAddr = CalcPositionAddr(index);
         var lengthAddr = CalcLengthAddr(index);
 
-        ENSURE(span.ReadUInt16(positionAddr) == 0, "slot position must be empty before use");
-        ENSURE(span.ReadUInt16(lengthAddr) == 0, "slot length must be empty before use");
+        ENSURE(span[positionAddr..2].ReadUInt16() == 0, "slot position must be empty before use");
+        ENSURE(span[lengthAddr..2].ReadUInt16() == 0, "slot length must be empty before use");
 
         // get next free position in page
         var position = header.NextFreePosition;
 
         // write this page position in my position address
-        span.Write(position, positionAddr);
+        span[positionAddr..2].WriteUInt16(position);
 
         // write page segment length in my length address
-        span.Write(bytesLength, lengthAddr);
+        span[lengthAddr..2].WriteUInt16(bytesLength);
 
         // update next free position and counters
         header.ItemsCount++;

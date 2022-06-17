@@ -6,6 +6,7 @@
 public class BsonArray : BsonValue, IList<BsonValue>
 {
     private readonly List<BsonValue> _value;
+    private int _length = -1;
 
     public IReadOnlyList<BsonValue> Value => _value;
 
@@ -35,7 +36,16 @@ public class BsonArray : BsonValue, IList<BsonValue>
             length += BsonValue.GetBytesCountElement(i.ToString(), _value[i]);
         }
 
+        _length = length; // copy to cache (reused in BsonWriter)
+
         return length;
+    }
+
+    internal int GetBytesCountCached()
+    {
+        if (_length >= 0) return _length;
+
+        return this.GetBytesCount();
     }
 
     public override int GetHashCode() => this.Value.GetHashCode();

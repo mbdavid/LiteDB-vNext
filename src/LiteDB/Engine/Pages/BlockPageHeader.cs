@@ -73,11 +73,11 @@ internal class BlockPageHeader
     /// </summary>
     public BlockPageHeader(Span<byte> span)
     {
-        this.ItemsCount = span.ReadByte(P_ITEMS_COUNT);
-        this.UsedBytes = span.ReadUInt16(P_USED_BYTES);
-        this.FragmentedBytes = span.ReadUInt16(P_FRAGMENTED_BYTES);
-        this.NextFreePosition = span.ReadUInt16(P_NEXT_FREE_POSITION);
-        this.HighestIndex = span.ReadByte(P_HIGHEST_INDEX);
+        this.ItemsCount = span[P_ITEMS_COUNT];
+        this.UsedBytes = span[P_USED_BYTES..2].ReadUInt16();
+        this.FragmentedBytes = span[P_FRAGMENTED_BYTES..2].ReadUInt16();
+        this.NextFreePosition = span[P_NEXT_FREE_POSITION..2].ReadUInt16();
+        this.HighestIndex = span[P_HIGHEST_INDEX];
     }
 
     /// <summary>
@@ -94,11 +94,11 @@ internal class BlockPageHeader
 
     public void Update(Span<byte> span)
     {
-        span.Write(this.ItemsCount, P_ITEMS_COUNT);
-        span.Write(this.UsedBytes, P_USED_BYTES);
-        span.Write(this.FragmentedBytes, P_FRAGMENTED_BYTES);
-        span.Write(this.NextFreePosition, P_NEXT_FREE_POSITION);
-        span.Write(this.HighestIndex, P_HIGHEST_INDEX);
+        span[P_ITEMS_COUNT] = this.ItemsCount;
+        span[P_USED_BYTES..2].WriteUInt16(this.UsedBytes);
+        span[P_FRAGMENTED_BYTES..2].WriteUInt16(this.FragmentedBytes);
+        span[P_NEXT_FREE_POSITION..2].WriteUInt16(this.NextFreePosition);
+        span[P_HIGHEST_INDEX] = this.HighestIndex;
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ internal class BlockPageHeader
         for (byte index = _startIndex; index <= this.HighestIndex; index++)
         {
             var positionAddr = BlockPage.CalcPositionAddr(index);
-            var position = span.ReadUInt16(positionAddr);
+            var position = span[positionAddr..2].ReadUInt16();
 
             // if position = 0 means this slot are not used
             if (position == 0)

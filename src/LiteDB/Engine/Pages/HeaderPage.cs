@@ -45,11 +45,11 @@ internal class HeaderPage : BasePage
         var span = _writeBuffer.Memory.Span;
 
         // update header
-        span.Write(this.CreationTime, P_CREATION_TIME);
+        span.WriteDateTime(this.CreationTime);
 
         // fixed content - can update buffer (header do not use shared cache)
-        span.Write(HEADER_INFO, P_HEADER_INFO);
-        span.Write(FILE_VERSION, P_FILE_VERSION);
+        span[P_HEADER_INFO..].WriteString(HEADER_INFO);
+        span[P_FILE_VERSION] = FILE_VERSION;
 
     }
 
@@ -62,12 +62,12 @@ internal class HeaderPage : BasePage
         var span = _readBuffer.Memory.Span;
 
         // read header
-        this.CreationTime = span.ReadDateTime(P_CREATION_TIME);
-        this.LastPageID = span.ReadUInt32(P_LAST_PAGE_ID);
+        this.CreationTime = span[P_CREATION_TIME..8].ReadDateTime();
+        this.LastPageID = span[P_LAST_PAGE_ID..4].ReadUInt32();
 
         // read content: info and file version
-        var info = span.ReadString(P_HEADER_INFO, HEADER_INFO.Length);
-        var ver = span.ReadByte(P_FILE_VERSION);
+        var info = span[P_HEADER_INFO..HEADER_INFO.Length].ReadString();
+        var ver = span[P_FILE_VERSION];
 
         if (string.CompareOrdinal(info, HEADER_INFO) != 0 || ver != FILE_VERSION)
         {
@@ -81,7 +81,7 @@ internal class HeaderPage : BasePage
         var span = buffer.Span;
 
         // update header
-        span.Write(this.LastPageID, P_LAST_PAGE_ID);
+        span[P_LAST_PAGE_ID..4].WriteUInt32(this.LastPageID);
 
         return buffer;
     }

@@ -4,78 +4,58 @@ internal static class SpanExtensions
 {
     #region Read Extensions
 
-    public static bool ReadBool(this Span<byte> span, int offset)
+    public static Int16 ReadInt16(this Span<byte> span)
     {
-        return span[offset] != 0;
+        return BinaryPrimitives.ReadInt16LittleEndian(span);
     }
 
-    public static byte ReadByte(this Span<byte> span, int offset)
+    public static UInt16 ReadUInt16(this Span<byte> span)
     {
-        return span[offset];
+        return BinaryPrimitives.ReadUInt16LittleEndian(span);
     }
 
-    public static Int16 ReadInt16(this Span<byte> span, int offset)
+    public static Int32 ReadInt32(this Span<byte> span)
     {
-        return BinaryPrimitives.ReadInt16LittleEndian(span[offset..]);
+        return BinaryPrimitives.ReadInt32LittleEndian(span);
     }
 
-    public static UInt16 ReadUInt16(this Span<byte> span, int offset)
+    public static UInt32 ReadUInt32(this Span<byte> span)
     {
-        return BinaryPrimitives.ReadUInt16LittleEndian(span[offset..]);
+        return BinaryPrimitives.ReadUInt32LittleEndian(span);
     }
 
-    public static Int32 ReadInt32(this Span<byte> span, int offset)
+    public static Int64 ReadInt64(this Span<byte> span)
     {
-        return BinaryPrimitives.ReadInt32LittleEndian(span[offset..]);
+        return BinaryPrimitives.ReadInt64LittleEndian(span);
     }
 
-    public static UInt32 ReadUInt32(this Span<byte> span, int offset)
+    public static double ReadDouble(this Span<byte> span)
     {
-        return BinaryPrimitives.ReadUInt32LittleEndian(span[offset..]);
+        return BitConverter.ToDouble(span);
     }
 
-    public static Int64 ReadInt64(this Span<byte> span, int offset)
+    public static Decimal ReadDecimal(this Span<byte> span)
     {
-        return BinaryPrimitives.ReadInt64LittleEndian(span[offset..]);
-    }
-
-    public static double ReadDouble(this Span<byte> span, int offset)
-    {
-        return BitConverter.ToDouble(span[offset..]);
-    }
-
-    public static Decimal ReadDecimal(this Span<byte> span, int offset)
-    {
-        var a = span.ReadInt32(offset);
-        var b = span.ReadInt32(offset + 4);
-        var c = span.ReadInt32(offset + 8);
-        var d = span.ReadInt32(offset + 12);
+        var a = span.ReadInt32();
+        var b = span[4..].ReadInt32();
+        var c = span[8..].ReadInt32();
+        var d = span[12..].ReadInt32();
         return new Decimal(new int[] { a, b, c, d });
     }
 
-    public static ObjectId ReadObjectId(this Span<byte> span, int offset)
+    public static ObjectId ReadObjectId(this Span<byte> span)
     {
-        var timestamp = span.ReadInt32(offset);
-        var machine = span.ReadInt32(offset + 4);
-        var pid = span.ReadInt16(offset + 8);
-        var increment = span.ReadInt32(offset + 10);
-
-        return new ObjectId(timestamp, machine, pid, increment);
+        return new ObjectId(span);
     }
 
-    public static Guid ReadGuid(this Span<byte> span, int offset)
+    public static Guid ReadGuid(this Span<byte> span)
     {
-        return new Guid(span[offset..]);
+        return new Guid(span);
     }
 
-    public static byte[] ReadBytes(this Span<byte> span, int offset, int count)
+    public static DateTime ReadDateTime(this Span<byte> span)
     {
-        return span[offset..count].ToArray();
-    }
-
-    public static DateTime ReadDateTime(this Span<byte> span, int offset)
-    {
-        var ticks = span.ReadInt64(offset);
+        var ticks = span.ReadInt64();
 
         if (ticks == 0) return DateTime.MinValue;
         if (ticks == 3155378975999999999) return DateTime.MaxValue;
@@ -83,14 +63,14 @@ internal static class SpanExtensions
         return new DateTime(ticks, DateTimeKind.Utc);
     }
 
-    public static PageAddress ReadPageAddress(this Span<byte> span, int offset)
+    public static PageAddress ReadPageAddress(this Span<byte> span)
     {
-        return new PageAddress(span.ReadUInt32(offset), span[offset + 4]);
+        return new PageAddress(span.ReadUInt32(), span[4]);
     }
 
-    public static string ReadString(this Span<byte> span, int offset, int count)
+    public static string ReadString(this Span<byte> span)
     {
-        return Encoding.UTF8.GetString(span[offset..count]);
+        return Encoding.UTF8.GetString(span);
     }
 
     /// <summary>
@@ -148,87 +128,74 @@ internal static class SpanExtensions
 
     #region Write Extensions
 
-    public static void Write(this Span<byte> span, bool value, int offset)
+    public static void WriteInt16(this Span<byte> span, Int16 value)
     {
-        span[offset] = value ? (byte)1 : (byte)0;
+        BinaryPrimitives.WriteInt16LittleEndian(span, value);
     }
 
-    public static void Write(this Span<byte> span, byte value, int offset)
+    public static void WriteUInt16(this Span<byte> span, UInt16 value)
     {
-        span[offset] = value;
+        BinaryPrimitives.WriteUInt16LittleEndian(span, value);
     }
 
-    public static void Write(this Span<byte> span, Int16 value, int offset)
+    public static void WriteInt32(this Span<byte> span, Int32 value)
     {
-        BinaryPrimitives.WriteInt16LittleEndian(span[offset..], value);
+        BinaryPrimitives.WriteInt32LittleEndian(span, value);
     }
 
-    public static void Write(this Span<byte> span, UInt16 value, int offset)
+    public static void WriteUInt32(this Span<byte> span, UInt32 value)
     {
-        BinaryPrimitives.WriteUInt16LittleEndian(span[offset..], value);
+        BinaryPrimitives.WriteUInt32LittleEndian(span, value);
     }
 
-    public static void Write(this Span<byte> span, Int32 value, int offset)
+    public static void WriteInt64(this Span<byte> span, Int64 value)
     {
-        BinaryPrimitives.WriteInt32LittleEndian(span[offset..], value);
+        BinaryPrimitives.WriteInt64LittleEndian(span, value);
     }
 
-    public static void Write(this Span<byte> span, UInt32 value, int offset)
+    public static void WriteDouble(this Span<byte> span, Double value)
     {
-        BinaryPrimitives.WriteUInt32LittleEndian(span[offset..], value);
+        MemoryMarshal.Write(span, ref value);
     }
 
-    public static void Write(this Span<byte> span, Int64 value, int offset)
-    {
-        BinaryPrimitives.WriteInt64LittleEndian(span[offset..], value);
-    }
-
-    public static void Write(this Span<byte> span, Double value, int offset)
-    {
-        MemoryMarshal.Write(span[offset..], ref value);
-    }
-
-    public static void Write(this Span<byte> buffer, Decimal value, int offset)
+    public static void WriteDecimal(this Span<byte> buffer, Decimal value)
     {
         var bits = Decimal.GetBits(value);
-        buffer.Write(bits[0], offset);
-        buffer.Write(bits[1], offset + 4);
-        buffer.Write(bits[2], offset + 8);
-        buffer.Write(bits[3], offset + 12);
+        buffer.WriteInt32(bits[0]);
+        buffer[4..].WriteInt32(bits[1]);
+        buffer[8..].WriteInt32(bits[2]);
+        buffer[12..].WriteInt32(bits[3]);
     }
 
-    public static void Write(this Span<byte> buffer, DateTime value, int offset)
+    public static void WriteDateTime(this Span<byte> buffer, DateTime value)
     {
-        buffer.Write(value.ToUniversalTime().Ticks, offset);
+        buffer.WriteInt64(value.ToUniversalTime().Ticks);
     }
 
-    public static void Write(this Span<byte> span, PageAddress value, int offset)
+    public static void WritePageAddress(this Span<byte> span, PageAddress value)
     {
-        span.Write(value.PageID, offset);
-        span.Write(value.Index, offset + 4);
+        span.WriteUInt32(value.PageID);
+        span[4] = value.Index;
     }
 
-    public static void Write(this Span<byte> span, Guid value, int offset)
+    public static void WriteGuid(this Span<byte> span, Guid value)
     {
-        value.ToByteArray().CopyTo(span[offset..]);
+        if (value.TryWriteBytes(span) == false) throw new ArgumentException("Span too small for Guid");
     }
 
-    public static void Write(this Span<byte> span, ObjectId value, int offset)
+    public static void WriteObjectId(this Span<byte> span, ObjectId value)
     {
-        span.Write(value.Timestamp, offset);
-        span.Write(value.Machine, offset + 4);
-        span.Write(value.Pid, offset + 8);
-        span.Write(value.Increment, offset + 10);
+        value.TryWriteBytes(span);
     }
 
-    public static void Write(this Span<byte> span, byte[] value, int offset)
+    public static void WriteBytes(this Span<byte> span, byte[] value)
     {
-        value.CopyTo(span[offset..]);
+        value.CopyTo(span);
     }
 
-    public static void Write(this Span<byte> span, string value, int offset)
+    public static void WriteString(this Span<byte> span, string value)
     {
-        Encoding.UTF8.GetBytes(value.AsSpan(), span[offset..]);
+        Encoding.UTF8.GetBytes(value.AsSpan(), span);
     }
 
     /// <summary>
