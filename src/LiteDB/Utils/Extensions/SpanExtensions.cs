@@ -89,6 +89,14 @@ internal static class SpanExtensions
         return Encoding.UTF8.GetString(span[0..i]);
     }
 
+    public static int ReadVariantLength(this Span<byte> span, out int length)
+    {
+        //TODO:Sombrio - implementar
+        // ler dentro do span os bytes 1, 2, (3-4) conforme tamanho do length
+        length = 1; // retornar quantos bytes foram usados na leitura do length
+        return 0; // tamanho total do conteudo (string|byte[])
+    }
+
     #endregion
 
     #region Write Extensions
@@ -170,6 +178,14 @@ internal static class SpanExtensions
         Encoding.UTF8.GetBytes(value.AsSpan(), span);
 
         span[length] = 0;
+    }
+
+    public static void WriteVariantLength(this Span<byte> span, int dataLength, out int length)
+    {
+        //TODO:Sombrio - implementar
+        // dataLength contem o total (em inteiro) de quantos bytes tem a string|byte[]
+        // deve ser gravado os bytes 1,2,(3-4) no span[0] span[1]..
+        length = 1; // quanto bytes foram usados para gravar o length
     }
 
     #endregion
