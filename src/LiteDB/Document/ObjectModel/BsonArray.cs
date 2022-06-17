@@ -29,7 +29,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
     public override int GetBytesCount()
     {
-        var length = 5;
+        var length = 4;
 
         for (var i = 0; i < _value.Count; i++)
         {

@@ -29,7 +29,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 
     public override int GetBytesCount()
     {
-        var length = 5;
+        var length = 4;
 
         foreach (var element in _value)
         {
