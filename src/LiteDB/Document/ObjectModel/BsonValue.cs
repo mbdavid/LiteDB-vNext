@@ -471,4 +471,15 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     #endregion
 
+    #region Static Helpers
+
+    internal static int GetVariantLength(int dataLength)
+    {
+        //TODO: Sombrio
+        // deve retornar quantos bytes (1,2,4) uma quantidade de dados iria ocupar
+        return 1;
+    }
+
+    #endregion
+
 }
