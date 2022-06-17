@@ -471,23 +471,4 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     #endregion
 
-    #region Static Helpers
-
-    /// <summary>
-    /// Get how many bytes one single element will used in BSON format
-    /// </summary>
-    internal static int GetBytesCountElement(string key, BsonValue value)
-    {
-        // check if data type is variant
-        var variant = value.Type == BsonType.String || value.Type == BsonType.Binary;
-
-        return
-            1 + // element type
-            Encoding.UTF8.GetByteCount(key) + // CString
-            1 + // CString \0
-            value.GetBytesCount() +
-            (variant ? 4 : 0); // bytes.Length + 0x??
-    }
-
-    #endregion
 }

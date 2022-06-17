@@ -17,7 +17,7 @@ internal class BsonBoolean : BsonValue
 
     public override BsonType Type => BsonType.Boolean;
 
-    public override int GetBytesCount() => sizeof(bool);
+    public override int GetBytesCount() => 0; // use 2 different BsonTypeCode for true|false
 
     public override int GetHashCode() => this.Value.GetHashCode();
 

@@ -33,7 +33,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
         for (var i = 0; i < _value.Count; i++)
         {
-            length += BsonValue.GetBytesCountElement(i.ToString(), _value[i]);
+            length += GetBytesCountElement(_value[i]);
         }
 
         _length = length; // copy to cache (reused in BsonWriter)
@@ -129,6 +129,24 @@ public class BsonArray : BsonValue, IList<BsonValue>
     #region Convert Types
 
     public override string ToString() => "[" + String.Join(",", _value.Select(x => x.ToString())) + "]";
+
+    #endregion
+
+    #region Static Helpers
+
+    /// <summary>
+    /// Get how many bytes one single element will used in BSON format
+    /// </summary>
+    internal static int GetBytesCountElement(BsonValue value)
+    {
+        // check if data type is variant
+        var variant = value.Type == BsonType.String || value.Type == BsonType.Binary;
+
+        return
+            1 + // element type
+            value.GetBytesCount() +
+            (variant ? 4 : 0); // bytes.Length Int32
+    }
 
     #endregion
 }

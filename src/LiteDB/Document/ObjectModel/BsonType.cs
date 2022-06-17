@@ -22,9 +22,9 @@ public enum BsonType : byte
     Binary = 9,
     ObjectId = 10,
     Guid = 11,
+    DateTime = 12,
+    Boolean = 13,
+    // 13 reserved for (true|false)
 
-    Boolean = 12,
-    DateTime = 13,
-
-    MaxValue = 14
+    MaxValue = 31
 }

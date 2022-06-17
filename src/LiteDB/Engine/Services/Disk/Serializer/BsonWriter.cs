@@ -8,125 +8,142 @@ public class BsonWriter
     {
     }
 
-    public static Span<byte> WriteDocument(Span<byte> span, BsonDocument document)
+    public static void WriteDocument(Span<byte> span, BsonDocument document, out int length)
     {
-        span.WriteInt32(document.GetBytesCountCached());
-
-        span = span[4..];
+        var offset = 4; // skip WriteInt32(length)
 
         foreach (var el in document.GetElements())
         {
-            span = WriteElement(span, el.Key, el.Value);
+            // write key as CString (\0)
+            span[offset..].WriteCString(el.Key, out var keyLength);
+
+            offset += keyLength;
+
+            WriteValue(span[offset..], el.Value, out var valueOffset);
+
+            offset += valueOffset;
         }
 
-        return span;
+        length = offset;
+
+        span.WriteInt32(length);
     }
 
-    public static Span<byte> WriteArray(Span<byte> span, BsonArray array)
+    public static void WriteArray(Span<byte> span, BsonArray array, out int length)
     {
-        span.WriteInt32(array.GetBytesCountCached());
-
-        span = span[4..];
+        var offset = 4; // skip WriteInt32(length)
 
         for (var i = 0; i < array.Count; i++)
         {
-            span = WriteElement(span, i.ToString(), array[i] ?? BsonValue.Null);
+            WriteValue(span[offset..], array[i] ?? BsonValue.Null, out var valueLength);
+
+            offset += valueLength;
         }
 
-        return span;
+        length = offset;
+
+        span.WriteInt32(length);
     }
 
-    private static Span<byte> WriteElement(Span<byte> span, string key, BsonValue value)
+    /// <summary>
+    /// Write DataTypeCode + Value. Returns length (including dataType byte code)
+    /// </summary>
+    private static void WriteValue(Span<byte> span, BsonValue value, out int length)
     {
         switch (value.Type)
         {
             case BsonType.Double:
-                span = WriteElementKey(span, value.Type, key);
-                span.WriteDouble(value.AsDouble);
-                return span[8..];
+                span[0] = (byte)BsonTypeCode.Double;
+                span[1..].WriteDouble(value.AsDouble);
+                length = 1 + 8;
+                break;
 
             case BsonType.String:
-                span = WriteElementKey(span, value.Type, key);
+                span[0] = (byte)BsonTypeCode.String;
                 var strLength = Encoding.UTF8.GetByteCount(value.AsString);
                 span.WriteInt32(strLength);
-                span[4..strLength].WriteString(value.AsString);
-                return span[(4 + strLength)..];
+                span[5..].WriteString(value.AsString);
+                length = 1 + strLength + 4;
+                break;
 
             case BsonType.Document:
-                span = WriteElementKey(span, value.Type, key);
-                span = WriteDocument(span, value.AsDocument);
-                return span;
+                span[0] = (byte)BsonTypeCode.Document;
+                WriteDocument(span, value.AsDocument, out var docLength);
+                length = 1 + docLength;
+                break;
 
             case BsonType.Array:
-                span = WriteElementKey(span, value.Type, key);
-                span = WriteArray(span, value.AsArray);
-                return span;
+                span[0] = (byte)BsonTypeCode.Array;
+                WriteArray(span[1..], value.AsArray, out var arrayLength);
+                length = 1 + arrayLength;
+                break;
 
             case BsonType.Binary:
-                span = WriteElementKey(span, value.Type, key);
-                span.WriteBytes(value.AsBinary);
-                return span[value.AsBinary.Length..];
+                span[0] = (byte)BsonTypeCode.Binary;
+                var binaryLength = value.AsBinary.Length;
+                span[1..].WriteInt32(binaryLength);
+                span[1..binaryLength].WriteBytes(value.AsBinary);
+                length = 1 + binaryLength;
+                break;
 
             case BsonType.Guid:
-                span = WriteElementKey(span, value.Type, key);
-                span.WriteGuid(value.AsGuid);
-                return span[16..];
+                span[0] = (byte)BsonTypeCode.Guid;
+                span[1..].WriteGuid(value.AsGuid);
+                length = 1 + 16;
+                break;
 
             case BsonType.ObjectId:
-                span = WriteElementKey(span, value.Type, key);
-                span.WriteObjectId(value.AsObjectId);
-                return span[12..];
+                span[0] = (byte)BsonTypeCode.ObjectId;
+                span[1..].WriteObjectId(value.AsObjectId);
+                length = 1 + 12;
+                break;
 
             case BsonType.Boolean:
-                span = WriteElementKey(span, value.Type, key);
-                span[0] = value.AsBoolean ? (byte)1 : (byte)0;
-                return span[1..];
+                span[0] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
+                length = 1;
+                break;
 
             case BsonType.DateTime:
-                span = WriteElementKey(span, value.Type, key);
-                span.WriteDateTime(value.AsDateTime);
-                return span[8..];
+                span[0] = (byte)BsonTypeCode.DateTime;
+                span[1..].WriteDateTime(value.AsDateTime);
+                length = 1 + 8;
+                break;
 
             case BsonType.Null:
-                return WriteElementKey(span, value.Type, key);
+                span[0] = (byte)BsonTypeCode.Null;
+                length = 1;
+                break;
 
             case BsonType.Int32:
-                span = WriteElementKey(span, value.Type, key);
-                span.WriteInt32(value.AsInt32);
-                return span[4..];
+                span[0] = (byte)BsonTypeCode.Int32;
+                span[1..].WriteInt32(value.AsInt32);
+                length = 1 + 4;
+                break;
 
             case BsonType.Int64:
-                span = WriteElementKey(span, value.Type, key);
-                span.WriteInt64(value.AsInt64);
-                return span[8..];
+                span[0] = (byte)BsonTypeCode.Int64;
+                span[1..].WriteInt64(value.AsInt64);
+                length = 1 + 8;
+                break;
 
             case BsonType.Decimal:
-                span = WriteElementKey(span, value.Type, key);
-                span.WriteDecimal(value.AsDecimal);
-                return span[16..];
+                span[0] = (byte)BsonTypeCode.Decimal;
+                span[1..].WriteDecimal(value.AsDecimal);
+                length = 1 + 16;
+                break;
 
             case BsonType.MinValue:
-                return WriteElementKey(span, value.Type, key);
+                span[0] = (byte)BsonTypeCode.MinValue;
+                length = 1;
+                break;
 
             case BsonType.MaxValue:
-                return WriteElementKey(span, value.Type, key);
+                span[0] = (byte)BsonTypeCode.MaxValue;
+                length = 1;
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(BsonValue.Type));
         }
-
-        throw new ArgumentException();
-    }
-
-    /// <summary>
-    /// Write on buffer a dataType and key element. Returns new span in sequence
-    /// </summary>
-    private static Span<byte> WriteElementKey(Span<byte> span, BsonType dataType, string key)
-    {
-        span[0] = (byte)dataType;
-        span[1..].WriteString(key);
-
-        var keyLength = Encoding.UTF8.GetByteCount(key);
-
-        span[keyLength + 1] = (byte)'\0';
-
-        return span[(1 + keyLength + 1)..]; // dataType + string + \0
     }
 }

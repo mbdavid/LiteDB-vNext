@@ -16,6 +16,6 @@ public class BsonWriterTests
     public void SerializeV7()
     {
         var data = new byte[_doc.GetBytesCount()];
-        BsonWriter.WriteDocument(data.AsSpan(), _doc);
+        BsonWriter.WriteDocument(data.AsSpan(), _doc, out _);
     }
 }

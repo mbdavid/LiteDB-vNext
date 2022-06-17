@@ -33,7 +33,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 
         foreach (var element in _value)
         {
-            length += BsonValue.GetBytesCountElement(element.Key, element.Value);
+            length += GetBytesCountElement(element.Key, element.Value);
         }
 
         _length = length;
@@ -145,6 +145,26 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     #region Convert Types
 
     public override string ToString() => "{" + String.Join(",", this.GetElements().Select(x => x.Key + ":" + x.Value.ToString())) + "}";
+
+    #endregion
+
+    #region Static Helpers
+
+    /// <summary>
+    /// Get how many bytes one single element will used in BSON format
+    /// </summary>
+    internal static int GetBytesCountElement(string key, BsonValue value)
+    {
+        // check if data type is variant
+        var variant = value.Type == BsonType.String || value.Type == BsonType.Binary;
+
+        return
+            Encoding.UTF8.GetByteCount(key) + // CString
+            1 + // CString \0
+            1 + // element type
+            value.GetBytesCount() +
+            (variant ? 4 : 0); // bytes.Length Int32
+    }
 
     #endregion
 }

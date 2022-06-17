@@ -53,14 +53,16 @@ internal static class SpanExtensions
         return new Guid(span);
     }
 
-    public static DateTime ReadDateTime(this Span<byte> span)
+    public static DateTime ReadDateTime(this Span<byte> span, bool utc = true)
     {
         var ticks = span.ReadInt64();
 
         if (ticks == 0) return DateTime.MinValue;
         if (ticks == 3155378975999999999) return DateTime.MaxValue;
 
-        return new DateTime(ticks, DateTimeKind.Utc);
+        var utcDate = new DateTime(ticks, DateTimeKind.Utc);
+
+        return utc ? utcDate : utcDate.ToLocalTime();
     }
 
     public static PageAddress ReadPageAddress(this Span<byte> span)
@@ -73,57 +75,20 @@ internal static class SpanExtensions
         return Encoding.UTF8.GetString(span);
     }
 
-    /// <summary>
-    /// Read any BsonValue. Use 1 byte for data type, 1 byte for length (optional), 0-255 bytes to value. 
-    /// For document or array, use BufferReader
-    /// </summary>
-/*
-    public static BsonValue ReadIndexKey(this Span<byte> span, int offset)
+    public static string ReadCString(this Span<byte> span, out int length)
     {
-        ExtendedLengthHelper.ReadLength(buffer[offset++], buffer[offset], out var type, out var len);
+        var i = 0;
 
-        switch (type)
+        while(span[i] != 0)
         {
-            case BsonType.Null: return BsonValue.Null;
-
-            case BsonType.Int32: return buffer.ReadInt32(offset);
-            case BsonType.Int64: return buffer.ReadInt64(offset);
-            case BsonType.Double: return buffer.ReadDouble(offset);
-            case BsonType.Decimal: return buffer.ReadDecimal(offset);
-
-            case BsonType.String:
-                offset++; // for byte length
-                return buffer.ReadString(offset, len);
-
-            case BsonType.Document:
-                using (var r = new BufferReader(buffer))
-                {
-                    r.Skip(offset); // skip first byte for value.Type
-                    return r.ReadDocument();
-                }
-            case BsonType.Array:
-                using (var r = new BufferReader(buffer))
-                {
-                    r.Skip(offset); // skip first byte for value.Type
-                    return r.ReadArray();
-                }
-
-            case BsonType.Binary:
-                offset++; // for byte length
-                return buffer.ReadBytes(offset, len);
-            case BsonType.ObjectId: return buffer.ReadObjectId(offset);
-            case BsonType.Guid: return buffer.ReadGuid(offset);
-
-            case BsonType.Boolean: return buffer[offset] != 0;
-            case BsonType.DateTime: return buffer.ReadDateTime(offset);
-
-            case BsonType.MinValue: return BsonValue.MinValue;
-            case BsonType.MaxValue: return BsonValue.MaxValue;
-
-            default: throw new NotImplementedException();
+            i++;
         }
+
+        length = i + 1;
+
+        return Encoding.UTF8.GetString(span[0..i]);
     }
-*/
+
     #endregion
 
     #region Write Extensions
@@ -198,78 +163,14 @@ internal static class SpanExtensions
         Encoding.UTF8.GetBytes(value.AsSpan(), span);
     }
 
-    /// <summary>
-    /// Wrtie any BsonValue. Use 1 byte for data type, 1 byte for length (optional), 0-255 bytes to value. 
-    /// For document or array, use BufferWriter
-    /// </summary>
-    /*
-    public static void WriteIndexKey(this Span<byte> buffer, BsonValue value, int offset)
+    public static void WriteCString(this Span<byte> span, string value, out int length)
     {
-        DEBUG(IndexNode.GetKeyLength(value, true) <= MAX_INDEX_KEY_LENGTH, $"index key must have less than {MAX_INDEX_KEY_LENGTH} bytes");
+        length = Encoding.UTF8.GetByteCount(value) + 1; // '\0'
 
-        if (value.IsString)
-        {
-            var str = value.AsString;
-            var strLength = (ushort)Encoding.UTF8.GetByteCount(str);
+        Encoding.UTF8.GetBytes(value.AsSpan(), span);
 
-            ExtendedLengthHelper.WriteLength(BsonType.String, strLength, out var typeByte, out var lengthByte);
-
-            buffer[offset++] = typeByte;
-            buffer[offset++] = lengthByte;
-            buffer.Write(str, offset);
-        }
-        else if(value.IsBinary)
-        {
-            var arr = value.AsBinary;
-
-            ExtendedLengthHelper.WriteLength(BsonType.Binary, (ushort)arr.Length, out var typeByte, out var lengthByte);
-
-            buffer[offset++] = typeByte;
-            buffer[offset++] = lengthByte;
-            buffer.Write(arr, offset);
-        }
-        else
-        {
-            buffer[offset++] = (byte)value.Type;
-
-            switch (value.Type)
-            {
-                case BsonType.Null:
-                case BsonType.MinValue:
-                case BsonType.MaxValue:
-                    break;
-
-                case BsonType.Int32: buffer.Write(value.AsInt32, offset); break;
-                case BsonType.Int64: buffer.Write(value.AsInt64, offset); break;
-                case BsonType.Double: buffer.Write(value.AsDouble, offset); break;
-                case BsonType.Decimal: buffer.Write(value.AsDecimal, offset); break;
-
-                case BsonType.Document:
-                    using (var w = new BufferWriter(buffer))
-                    {
-                        w.Skip(offset); // skip offset from buffer
-                        w.WriteDocument(value.AsDocument, true);
-                    }
-                    break;
-                case BsonType.Array:
-                    using (var w = new BufferWriter(buffer))
-                    {
-                        w.Skip(offset); // skip offset from buffer
-                        w.WriteArray(value.AsArray, true);
-                    }
-                    break;
-
-                case BsonType.ObjectId: buffer.Write(value.AsObjectId, offset); break;
-                case BsonType.Guid: buffer.Write(value.AsGuid, offset); break;
-
-                case BsonType.Boolean: buffer[offset] = (value.AsBoolean) ? (byte)1 : (byte)0; break;
-                case BsonType.DateTime: buffer.Write(value.AsDateTime, offset); break;
-
-                default: throw new NotImplementedException();
-            }
-        }
+        span[length] = 0;
     }
-    */
 
     #endregion
 }
