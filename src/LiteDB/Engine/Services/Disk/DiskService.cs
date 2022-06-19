@@ -162,9 +162,9 @@ internal class DiskService : IDisposable
     }
 
     public static void GetLocation(uint pageID, 
-        out uint pfsID, // pageID from PFS
-        out int extendID, // ExtendIndex inside PFS page
-        out int pageIndex) // PageIndex inside extend content
+        out uint pfsPageID, // PfsID (começa em 0, 1, 2, 3)
+        out int extendIndex, // ExtendID (começa em 0, 1, ..., 1631, 1632, 1633, ...)
+        out int pageIndex) // PageIndex inside extend content (0, 1, 2, 3, 4, 5, 6, 7)
     {
         // test if is non-mapped page in PFS
         if (pageID <= PFS_FIRST_PAGE_ID || IsPfsPageID(pageID))

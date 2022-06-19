@@ -8,41 +8,57 @@ public class BsonReader
     {
     }
 
-    public static BsonDocument ReadDocument(Span<byte> span, out int length)
+    /// <summary>
+    /// Read a document inside span buffer. 
+    /// Use filds to select custom fields only (on root document only)
+    /// Skip will skip document read (just update length output)
+    /// Returns length document size
+    /// </summary>
+    public static BsonDocument ReadDocument(Span<byte> span, HashSet<string> fields, bool skip, out int length)
     {
         var doc = new BsonDocument();
+        var remaining = fields == null || fields.Count == 0 ? null : fields;
 
         length = span.ReadInt32();
 
+        if (skip) return null;
+
         var offset = 4; // skip ReadInt32() for length
 
-        while (offset < length)
+        while (offset < length && (remaining == null || remaining?.Count > 0))
         {
             var key = span[offset..].ReadCString(out var keyLength);
 
             offset += keyLength;
 
-            var value = ReadValue(span[offset..], out var valueLength);
+            var fieldSkip = remaining != null && remaining.Contains(key) == false;
+
+            var value = ReadValue(span[offset..], fieldSkip, out var valueLength);
 
             offset += valueLength;
 
-            doc.Add(key, value);
+            if (fieldSkip == false)
+            {
+                doc.Add(key, value);
+            }
         }
 
         return doc;
     }
 
-    public static BsonArray ReadArray(Span<byte> span, out int length)
+    public static BsonArray ReadArray(Span<byte> span, bool skip, out int length)
     {
         var array = new BsonArray();
 
         length = span.ReadInt32();
 
+        if (skip) return null;
+
         var offset = 4; // skip ReadInt32() for length
 
         while (offset < length)
         {
-            var value = ReadValue(span[offset..], out var valueLength);
+            var value = ReadValue(span[offset..], false, out var valueLength);
 
             array.Add(value);
 
@@ -52,7 +68,7 @@ public class BsonReader
         return array;
     }
 
-    private static BsonValue ReadValue(Span<byte> span, out int length)
+    private static BsonValue ReadValue(Span<byte> span, bool skip, out int length)
     {
         var type = (BsonTypeCode)span[0];
 
@@ -60,71 +76,71 @@ public class BsonReader
         {
             case BsonTypeCode.Double:
                 length = 1 + 8;
-                return span[1..].ReadDouble();
+                return skip ? null : span[1..].ReadDouble();
 
             case BsonTypeCode.String:
                 var strLength = span.ReadInt32();
                 length = 1 + 4 + strLength;
-                return span[5..(5 + strLength)].ReadString();
+                return skip ? null : span[5..(5 + strLength)].ReadString();
 
             case BsonTypeCode.Document:
-                var doc = ReadDocument(span[1..], out var docLength);
+                var doc = ReadDocument(span[1..], null, skip, out var docLength);
                 length = 1 + docLength;
                 return doc;
 
             case BsonTypeCode.Array:
-                var array = ReadArray(span[1..], out var arrLength);
+                var array = ReadArray(span[1..], skip, out var arrLength);
                 length = 1 + arrLength;
                 return array;
 
             case BsonTypeCode.Binary:
                 var bytesLength = span[1..].ReadInt32();
                 length = 1 + 4 + bytesLength;
-                return span[5..(5 + bytesLength)].ToArray();
+                return skip ? null : span[5..(5 + bytesLength)].ToArray();
 
             case BsonTypeCode.Guid:
                 length = 1 + 16;
-                return span[1..].ReadGuid();
+                return skip ? null : span[1..].ReadGuid();
 
             case BsonTypeCode.ObjectId:
                 length = 1 + 12;
-                return span[1..].ReadObjectId();
+                return skip ? null : span[1..].ReadObjectId();
 
             case BsonTypeCode.True:
                 length = 1;
-                return BsonBoolean.True;
+                return skip ? null : BsonBoolean.True;
 
             case BsonTypeCode.False:
                 length = 1;
-                return BsonBoolean.False;
+                return skip ? null : BsonBoolean.False;
 
             case BsonTypeCode.DateTime:
                 length = 1 + 8;
-                return span[1..].ReadDateTime();
+                return skip ? null : span[1..].ReadDateTime();
 
             case BsonTypeCode.Null:
                 length = 1;
-                return BsonNull.Null;
+                return skip ? null : BsonNull.Null;
 
             case BsonTypeCode.Int32:
                 length = 1 + 4;
-                return span[1..].ReadInt32();
+                return skip ? null : span[1..].ReadInt32();
 
             case BsonTypeCode.Int64:
                 length = 1 + 8;
-                return span[1..].ReadInt64();
+                return skip ? null : span[1..].ReadInt64();
 
             case BsonTypeCode.Decimal:
                 length = 1 + 16;
-                return span[1..].ReadDecimal();
+                return skip ? null : span[1..].ReadDecimal();
 
             case BsonTypeCode.MinValue:
                 length = 1;
-                return BsonMinValue.MinValue;
+                return skip ? null : BsonMinValue.MinValue;
 
             case BsonTypeCode.MaxValue:
                 length = 1;
-                return BsonMaxValue.MaxValue;
+                return skip ? null : BsonMaxValue.MaxValue;
         }
 
         throw new ArgumentException();

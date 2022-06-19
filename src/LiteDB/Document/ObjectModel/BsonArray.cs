@@ -41,7 +41,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
         return length;
     }
 
-    internal int GetBytesCountCached()
+    internal override int GetBytesCountCached()
     {
         if (_length >= 0) return _length;
 
@@ -144,7 +144,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
         return
             1 + // element type
-            value.GetBytesCount() +
+            value.GetBytesCountCached() +
             (variant ? 4 : 0); // bytes.Length Int32
     }
 

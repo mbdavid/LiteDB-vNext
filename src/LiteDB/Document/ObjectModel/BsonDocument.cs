@@ -41,7 +41,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
         return length;
     }
 
-    internal int GetBytesCountCached()
+    internal override int GetBytesCountCached()
     {
         if (_length >= 0) return _length;
 
@@ -162,7 +162,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
             Encoding.UTF8.GetByteCount(key) + // CString
             1 + // CString \0
             1 + // element type
-            value.GetBytesCount() +
+            value.GetBytesCountCached() +
             (variant ? 4 : 0); // bytes.Length Int32
     }
 

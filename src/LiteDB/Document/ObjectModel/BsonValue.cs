@@ -34,6 +34,12 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     /// </summary>
     public abstract int GetBytesCount();
 
+    /// <summary>
+    /// Use cached count in documents with subdocuments (or array with sub array/documents)
+    /// This method are override only in BsonDocument and BsonArray to cache results in a length variable
+    /// </summary>
+    internal virtual int GetBytesCountCached() => this.GetBytesCount();
+
     public abstract override int GetHashCode();
 
     #region Implement IComparable
