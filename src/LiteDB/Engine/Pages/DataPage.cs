@@ -27,10 +27,10 @@ internal class DataPage : BlockPage
     /// </summary>
     public Span<byte> GetDataBlock(byte index, bool readOnly, out DataBlock dataBlock)
     {
-        var block = base.Get(index, readOnly, out var location);
+        var block = base.Get(index, readOnly);
         var rowID = new PageAddress(this.PageID, index);
 
-        dataBlock = new DataBlock(block, rowID, location);
+        dataBlock = new DataBlock(block, rowID);
 
         return block[DataBlock.P_BUFFER..block.Length];
     }
@@ -44,11 +44,11 @@ internal class DataPage : BlockPage
         var bytesLength = (ushort)(span.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
 
         // get block from PageBlock
-        var block = base.Insert(bytesLength, out var index, out var location);
+        var block = base.Insert(bytesLength, out var index);
 
         var rowID = new PageAddress(this.PageID, index);
 
-        var dataBlock = new DataBlock(span, rowID, location, extend, PageAddress.Empty);
+        var dataBlock = new DataBlock(span, rowID, extend, PageAddress.Empty);
 
         // copy content from span source to block right position 
         span.CopyTo(block[DataBlock.P_BUFFER..block.Length]);
@@ -64,10 +64,7 @@ internal class DataPage : BlockPage
         // get required bytes this update
         var bytesLength = (ushort)(span.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
 
-        var block = base.Update(dataBlock.RowID.Index, bytesLength, out var location);
-
-        // update dataBlock location (can be changed)
-        dataBlock.Location = location;
+        var block = base.Update(dataBlock.RowID.Index, bytesLength);
 
         // copy content from span source to block right position 
         span.CopyTo(block[DataBlock.P_BUFFER..block.Length]);
@@ -78,12 +75,9 @@ internal class DataPage : BlockPage
     /// </summary>
     public void UpdateNextBlock(DataBlock dataBlock, PageAddress nextBlock)
     {
-        var span = _writeBuffer.Memory.Span;
+        var span = base.Get(dataBlock.RowID.Index, false);
 
-        // get full page block from _writer using Location
-        var block = span[dataBlock.Location.Position..(dataBlock.Location.Position + dataBlock.Location.Length)];
-
-        dataBlock.UpdateNextBlock(nextBlock, block);
+        dataBlock.UpdateNextBlock(nextBlock, span);
     }
 
     /// <summary>

@@ -104,7 +104,7 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Get a page block item based on index slot
     /// </summary>
-    public Span<byte> Get(byte index, bool readOnly, out BlockLocation location)
+    public Span<byte> Get(byte index, bool readOnly)
     {
         // get read
         var span = readOnly ? _readBuffer.Memory.Span :
@@ -119,9 +119,6 @@ internal class BlockPage : BasePage
         var position = span[positionAddr..2].ReadUInt16();
         var length = span[lengthAddr..2].ReadUInt16();
 
-        // return block location inside page (start position + length)
-        location = new BlockLocation(position, length);
-
         // return buffer slice with content only data
         return span[position..length];
     }
@@ -129,17 +126,17 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Get a new page segment for this length content
     /// </summary>
-    public Span<byte> Insert(ushort bytesLength, out byte index, out BlockLocation location)
+    public Span<byte> Insert(ushort bytesLength, out byte index)
     {
         index = byte.MaxValue;
 
-        return this.InternalInsert(bytesLength, ref index, out location);
+        return this.InternalInsert(bytesLength, ref index);
     }
 
     /// <summary>
     /// Get a new page segment for this length content using fixed index
     /// </summary>
-    private Span<byte> InternalInsert(ushort bytesLength, ref byte index, out BlockLocation location)
+    private Span<byte> InternalInsert(ushort bytesLength, ref byte index)
     {
         // initialize dirty buffer and dirty header (once)
         this.InitializeWrite();
@@ -201,9 +198,6 @@ internal class BlockPage : BasePage
         header.NextFreePosition += bytesLength;
 
         ENSURE(position + bytesLength <= (PAGE_SIZE - (header.HighestIndex + 1) * BlockPageHeader.SLOT_SIZE), "new buffer slice could not override footer area");
-
-        // create new block location for all block area
-        location = new BlockLocation(index, bytesLength);
 
         // create page segment based new inserted segment
         return span[position..(position + bytesLength)];
@@ -281,7 +275,7 @@ internal class BlockPage : BasePage
     /// Update segment bytes with new data. Current page must have bytes enougth for this new size. Index will not be changed
     /// Update will try use same segment to store. If not possible, write on end of page (with possible Defrag operation)
     /// </summary>
-    public Span<byte> Update(byte index, ushort bytesLength, out BlockLocation location)
+    public Span<byte> Update(byte index, ushort bytesLength)
     {
         ENSURE(bytesLength > 0, "must update more than 0 bytes");
 
@@ -309,8 +303,6 @@ internal class BlockPage : BasePage
         // best situation: same length
         if (bytesLength == length)
         {
-            location = new BlockLocation(position, length);
-
             return span[position..(position + length)];
         }
         // when new length are less than original length (will fit in current segment)
@@ -336,9 +328,10 @@ internal class BlockPage : BasePage
             span[lengthAddr..].WriteUInt16(bytesLength);
 
             // clear fragment bytes
-            span[(position + bytesLength)..(position + bytesLength + diff)].Fill(0);
+            var clearStart = position + bytesLength;
+            var clearEnd = clearStart + diff;
 
-            location = new BlockLocation(position, bytesLength);
+            span[clearStart..clearEnd].Fill(0);
 
             return span[position..(position + bytesLength)];
         }
@@ -367,7 +360,7 @@ internal class BlockPage : BasePage
             span[lengthAddr..].WriteUInt16(0);
 
             // call insert
-            return this.InternalInsert(bytesLength, ref index, out location);
+            return this.InternalInsert(bytesLength, ref index);
         }
     }
 

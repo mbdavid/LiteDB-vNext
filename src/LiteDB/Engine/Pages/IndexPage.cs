@@ -27,10 +27,10 @@ internal class IndexPage : BlockPage
     /// </summary>
     public IndexNode GetIndexNode(byte index, bool readOnly)
     {
-        var block = base.Get(index, readOnly, out );
-        var position = new PageAddress(this.PageID, index);
+        var block = base.Get(index, readOnly);
+        var rowID = new PageAddress(this.PageID, index);
 
-        var node = new IndexNode(position, block);
+        var node = new IndexNode(block, rowID);
 
         return node;
     }
@@ -49,13 +49,33 @@ internal class IndexPage : BlockPage
     }
 
     /// <summary>
+    /// Update NextNode pointer (update in buffer too). Also, set page as dirty
+    /// </summary>
+    public void SetNextNode(IndexNode node, PageAddress value)
+    {
+        var block = base.Get(node.RowID.Index, false);
+
+        node.SetNextNode(value, block);
+    }
+
+    /// <summary>
     /// Update Prev[index] pointer (update in buffer too). Also, set page as dirty
     /// </summary>
     public void SetPrev(IndexNode node, byte level, PageAddress prevValue)
     {
-        //var block = base.Get(node., false);
-        //
-        //node.SetNext(level, prevValue, span);
+        var block = base.Get(node.RowID.Index, false);
+
+        node.SetPrev(level, prevValue, block);
+    }
+
+    /// <summary>
+    /// Update Next[index] pointer (update in buffer too). Also, set page as dirty
+    /// </summary>
+    public void SetNext(IndexNode node, byte level, PageAddress nextValue)
+    {
+        var block = base.Get(node.RowID.Index, false);
+
+        node.SetNext(level, nextValue, block);
     }
 
     /// <summary>

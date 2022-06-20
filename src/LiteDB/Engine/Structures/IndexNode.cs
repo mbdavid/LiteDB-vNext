@@ -21,11 +21,6 @@ internal struct IndexNode
     private static int P_KEY(byte level) => P_PREV_NEXT + (level * PageAddress.SIZE * 2); // just after NEXT
 
     /// <summary>
-    /// Location of this index node inside page (based on page buffer)
-    /// </summary>
-    public BlockLocation Location { get; set; }
-
-    /// <summary>
     /// RowID of this node inside a IndexPage (not persist)
     /// </summary>
     public PageAddress RowID { get; }
@@ -68,10 +63,9 @@ internal struct IndexNode
     /// <summary>
     /// Read index node from page block
     /// </summary>
-    public IndexNode(Span<byte> span, PageAddress rowID, BlockLocation location)
+    public IndexNode(Span<byte> span, PageAddress rowID)
     {
         this.RowID = rowID;
-        this.Location = location;
         this.Slot = span[P_SLOT];
         this.Level = span[P_LEVEL];
         this.DataBlock = span[P_DATA_BLOCK..].ReadPageAddress();

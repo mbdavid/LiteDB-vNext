@@ -13,11 +13,6 @@ internal struct DataBlock
     public const int P_BUFFER = 6;       // 06-EOF [bytes[]]
 
     /// <summary>
-    /// Get position inside page (start..length)
-    /// </summary>
-    public BlockLocation Location { get; set; }
-
-    /// <summary>
     /// Block RowID
     /// </summary>
     public PageAddress RowID { get; }
@@ -35,10 +30,9 @@ internal struct DataBlock
     /// <summary>
     /// Read new DataBlock from filled page block
     /// </summary>
-    public DataBlock(Span<byte> span, PageAddress rowID, BlockLocation location)
+    public DataBlock(Span<byte> span, PageAddress rowID)
     {
         this.RowID = rowID;
-        this.Location = location;
 
         // byte 00: Extend
         this.Extend = span[P_EXTEND] != 0;
@@ -50,10 +44,9 @@ internal struct DataBlock
     /// <summary>
     /// Create new DataBlock and fill into buffer
     /// </summary>
-    public DataBlock(Span<byte> span, PageAddress rowID, BlockLocation location, bool extend, PageAddress nextBlock)
+    public DataBlock(Span<byte> span, PageAddress rowID, bool extend, PageAddress nextBlock)
     {
         this.RowID = rowID;
-        this.Location = location;
 
         this.NextBlock = nextBlock;
         this.Extend = extend;
