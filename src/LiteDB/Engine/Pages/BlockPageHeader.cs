@@ -107,6 +107,11 @@ internal class BlockPageHeader
     private byte _startIndex = 0;
 
     /// <summary>
+    /// Reset index used in GetFreeIndex (in delete block)
+    /// </summary>
+    public void ResetStartIndex() => _startIndex = 0;
+
+    /// <summary>
     /// Get a free index slot in this page
     /// </summary>
     public byte GetFreeIndex(Span<byte> span)

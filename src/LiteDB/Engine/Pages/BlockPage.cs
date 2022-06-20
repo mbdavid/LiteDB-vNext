@@ -102,23 +102,14 @@ internal class BlockPage : BasePage
     #region Blocks Operations
 
     /// <summary>
-    /// Get read or write buffer
-    /// </summary>
-    private Span<byte> GetSpan(bool readOnly)
-    {
-        if (readOnly) return _readBuffer.Memory.Span;
-
-        if (_headerWrite != null) return _writeBuffer.Memory.Span;
-
-        return _readBuffer.Memory.Span;
-    }
-
-    /// <summary>
     /// Get a page block item based on index slot
     /// </summary>
     public Span<byte> Get(byte index, bool readOnly, out BlockLocation location)
     {
-        var span = this.GetSpan(readOnly);
+        // get read
+        var span = readOnly ? _readBuffer.Memory.Span :
+            _writeBuffer != null ? _writeBuffer.Memory.Span :
+            _readBuffer.Memory.Span;
 
         // read slot address
         var positionAddr = CalcPositionAddr(index);
@@ -272,7 +263,7 @@ internal class BlockPage : BasePage
         }
 
         // reset start index (used in GetFreeIndex)
-        _startIndex = 0;
+        header.ResetStartIndex();
 
         // if there is no more blocks in page, clean FragmentedBytes and NextFreePosition
         if (header.ItemsCount == 0)

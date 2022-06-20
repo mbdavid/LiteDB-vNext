@@ -27,7 +27,7 @@ internal class IndexPage : BlockPage
     /// </summary>
     public IndexNode GetIndexNode(byte index, bool readOnly)
     {
-        var block = base.Get(index, readOnly);
+        var block = base.Get(index, readOnly, out );
         var position = new PageAddress(this.PageID, index);
 
         var node = new IndexNode(position, block);

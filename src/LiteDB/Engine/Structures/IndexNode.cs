@@ -21,9 +21,14 @@ internal struct IndexNode
     private static int P_KEY(byte level) => P_PREV_NEXT + (level * PageAddress.SIZE * 2); // just after NEXT
 
     /// <summary>
-    /// Position of this node inside a IndexPage (not persist)
+    /// Location of this index node inside page (based on page buffer)
     /// </summary>
-    public PageAddress Position { get; }
+    public BlockLocation Location { get; set; }
+
+    /// <summary>
+    /// RowID of this node inside a IndexPage (not persist)
+    /// </summary>
+    public PageAddress RowID { get; }
 
     /// <summary>
     /// Index slot reference in CollectionIndex [1 byte]
@@ -63,9 +68,10 @@ internal struct IndexNode
     /// <summary>
     /// Read index node from page block
     /// </summary>
-    public IndexNode(PageAddress position, Span<byte> span)
+    public IndexNode(Span<byte> span, PageAddress rowID, BlockLocation location)
     {
-        this.Position = position;
+        this.RowID = rowID;
+        this.Location = location;
         this.Slot = span[P_SLOT];
         this.Level = span[P_LEVEL];
         this.DataBlock = span[P_DATA_BLOCK..].ReadPageAddress();
@@ -93,7 +99,7 @@ internal struct IndexNode
     /// </summary>
     public IndexNode(PageAddress position, Span<byte> span, byte slot, byte level, BsonValue key, PageAddress dataBlock)
     {
-        this.Position = position;
+        this.RowID = position;
         this.Slot = slot;
         this.Level = level;
         this.DataBlock = dataBlock;
@@ -124,7 +130,7 @@ internal struct IndexNode
     /// </summary>
     public IndexNode(BsonDocument doc)
     {
-        this.Position = new PageAddress(0, 0);
+        this.RowID = new PageAddress(0, 0);
         this.Slot = 0;
         this.Level = 0;
         this.DataBlock = PageAddress.Empty;
@@ -214,6 +220,6 @@ internal struct IndexNode
 
     public override string ToString()
     {
-        return $"Pos: [{this.Position}] - Key: {this.Key}";
+        return $"Pos: [{this.RowID}] - Key: {this.Key}";
     }
 }
