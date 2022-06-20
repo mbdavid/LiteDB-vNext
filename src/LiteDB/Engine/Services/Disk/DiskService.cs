@@ -115,7 +115,7 @@ internal class DiskService : IDisposable
                 while (position < dataPosition)
                 {
                     // checks if position are no a FPS page
-                    if (IsPfsPageID((uint)(position / PAGE_SIZE)) == false)
+                    if (AllocationMapPage.IsAllocationMapPageID((uint)(position / PAGE_SIZE)) == false)
                     {
                         // must write a empty page because empty pages also are encrypted (if case)
                         await stream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE, cancellationToken);
@@ -125,7 +125,7 @@ internal class DiskService : IDisposable
                 }
 
                 // checks if current position is not a PFS page
-                if (IsPfsPageID((uint)(position / PAGE_SIZE)))
+                if (AllocationMapPage.IsAllocationMapPageID((uint)(position / PAGE_SIZE)))
                 {
                     position += PAGE_SIZE;
                 }
@@ -152,40 +152,6 @@ internal class DiskService : IDisposable
         {
             _locker.Release();
         }
-    }
-
-    public static bool IsPfsPageID(uint pageID)
-    {
-        var pfsId = pageID - PFS_FIRST_PAGE_ID;
-
-        return pfsId % PFS_STEP_SIZE == 0;
-    }
-
-    public static void GetLocation(uint pageID, 
-        out uint pfsPageID, // PfsID (começa em 0, 1, 2, 3)
-        out int extendIndex, // ExtendID (começa em 0, 1, ..., 1631, 1632, 1633, ...)
-        out int pageIndex) // PageIndex inside extend content (0, 1, 2, 3, 4, 5, 6, 7)
-    {
-        // test if is non-mapped page in PFS
-        if (pageID <= PFS_FIRST_PAGE_ID || IsPfsPageID(pageID))
-        {
-            pfsPageID = uint.MaxValue;
-            extendIndex = -1;
-            pageIndex = -1;
-
-            return;
-        }
-
-        var pfsId = pageID - PFS_FIRST_PAGE_ID;
-        var aux = pfsId - (pfsId / PFS_STEP_SIZE + 1);
-
-        pfsPageID = pfsId / PFS_STEP_SIZE * PFS_STEP_SIZE + PFS_FIRST_PAGE_ID;
-        extendIndex = (int)(aux / PFS_EXTEND_SIZE) % (PAGE_CONTENT_SIZE / PFS_BYTES_PER_EXTEND);
-        pageIndex = (int)(aux % PFS_EXTEND_SIZE);
-
-        ENSURE(IsPfsPageID(pfsPageID), $"Page {pfsPageID} is not a valid PFS");
-        ENSURE(extendIndex < PFS_EXTEND_COUNT, $"Extend {extendIndex} must be less than {PFS_EXTEND_COUNT}");
-        ENSURE(pageIndex < PFS_EXTEND_SIZE, $"Page index {pageIndex} must be less than {PFS_EXTEND_SIZE}");
     }
 
     public void Dispose()

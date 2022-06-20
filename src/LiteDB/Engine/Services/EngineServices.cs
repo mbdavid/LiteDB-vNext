@@ -19,6 +19,10 @@ internal class EngineServices : IDisposable
 
     public AsyncReaderWriterLock Locker { get; set; }
 
+    public WalIndexService WalIndex { get; set; }
+
+    public AllocationMapService AllocationMap { get; set; }
+
     public object CreateSnapshot()
     {
         throw new NotImplementedException();
@@ -36,11 +40,14 @@ internal class EngineServices : IDisposable
         this.Header?.Dispose();
         this.Disk?.Dispose();
         this.Locker?.Dispose();
+        this.AllocationMap?.Dispose();
 
         this.Header = null;
         this.Cache = null;
         this.Disk = null;
         this.Locker = null;
+        this.WalIndex = null;
+        this.AllocationMap = null;
 
         this.State = EngineState.Close;
     }
