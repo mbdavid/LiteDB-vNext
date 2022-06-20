@@ -1,19 +1,38 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
+/// Represent AllocationMap service to monitor free page size and page extends. Shuld be store in disk before dispose
 /// </summary>
 internal class AllocationMapService : IDisposable
 {
     private List<AllocationMapPage> _pages = new();
 
-    public void Update(uint pageID, PageType pageType, byte colID, ushort freeSpace)
+    /// <summary>
+    /// Update map using pageID to found each allocation map page/page location must be changed
+    /// Tests colID to be the same as extend (if extend colID == 0, set this colID else trow)
+    /// Tests pageType to be the same as pageType (if pageType == 0, set this pageType else throw)
+    /// </summary>
+    public void UpdateMap(uint pageID, PageType pageType, byte colID, ushort freeSpace)
     {
         // testa pageType e colID no ENSURE
     }
 
+    /// <summary>
+    /// Get a existing page for this collection with at least "length" free size. Returns MaxValue if not found (need create new)
+    /// </summary>
     public uint GetFreePageID(byte coldID, PageType type, int length)
     {
-        // busca ou cria uma nova (tanto novo extend como nova allocation page)!
+        // busca uma pagina que contenha o espaço necessário
+        // lock
+        return 0;
+    }
+
+    /// <summary>
+    /// Create a new Page in allocation map pages. Create extends/new pages if needed. Return new PageID allocated and if this new page is the LastPageID of datafile
+    /// </summary>
+    public uint NewPageID(byte colID, PageType type, out bool isLastPageID)
+    {
+        isLastPageID = false;
         // lock
         return 0;
     }

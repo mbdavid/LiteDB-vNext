@@ -42,4 +42,24 @@ internal class EnsureCheck
             }
         }
     }
+
+    /// <summary>
+    /// Ensure condition is true, otherwise throw exception (check contract) [Works in DEBUG mode]
+    /// </summary>
+    [DebuggerHidden]
+    [Conditional("DEBUG")]
+    public static void DEBUG(bool conditional, string message = null)
+    {
+        if (conditional == false)
+        {
+            if (Debugger.IsAttached)
+            {
+                Debug.Fail(message);
+            }
+            else
+            {
+                throw ERR_ENSURE(message);
+            }
+        }
+    }
 }

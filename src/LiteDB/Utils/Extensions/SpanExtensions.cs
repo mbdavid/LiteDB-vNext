@@ -189,4 +189,19 @@ internal static class SpanExtensions
     }
 
     #endregion
+
+    #region Check Methods
+
+    public static bool IsFullZero(this Span<byte> span)
+    {
+        //TODO: pode ser otimizado?
+        for(var i = 0; i < span.Length; i++)
+        {
+            if (span[i] != 0) return false;
+        }
+
+        return true;
+    }
+
+    #endregion
 }

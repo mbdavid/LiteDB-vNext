@@ -264,7 +264,7 @@ internal class BlockPage : BasePage
         {
             ENSURE(header.HighestIndex == byte.MaxValue, "if there is no items, HighestIndex must be clear");
             ENSURE(header.UsedBytes == 0, "should be no bytes used in clean page");
-            //DEBUG(span[PAGE_HEADER_SIZE..PAGE_CONTENT_SIZE]., "all content area must be 0");
+            DEBUG(span[PAGE_HEADER_SIZE..PAGE_CONTENT_SIZE].IsFullZero(), "all content area must be 0");
 
             header.NextFreePosition = PAGE_HEADER_SIZE;
             header.FragmentedBytes = 0;

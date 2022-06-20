@@ -78,7 +78,7 @@ public partial class LiteEngine //: ILiteEngine
     private async Task CreateNewDatabase(CancellationToken cancellationToken = default)
     {
         using var header = new HeaderPage();
-        using var allocationMap = new AllocationMapPage(PFS_FIRST_PAGE_ID);
+        using var allocationMap = new AllocationMapPage(AMP_FIRST_PAGE_ID);
         using var masterPage = new BlockPage(MASTER_PAGE_ID, PageType.Data, MASTER_COL_ID);
 
         var content = new BsonDocument(); //TODO: inicializar
