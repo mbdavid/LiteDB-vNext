@@ -31,6 +31,16 @@ internal class Constants
     public const int ENCRYPTION_SALT_SIZE = 16;
 
     /// <summary>
+    /// Get first DataPage from $master
+    /// </summary>
+    public const int MASTER_PAGE_ID = 2;
+
+    /// <summary>
+    /// Get colID for $master document
+    /// </summary>
+    public const byte MASTER_COL_ID = byte.MaxValue;
+
+    /// <summary>
     /// Represent how many pages each extend will allocate in PFS
     /// </summary>
     public const int PFS_FIRST_PAGE_ID = 2;

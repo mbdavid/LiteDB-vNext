@@ -17,12 +17,12 @@ public interface ILiteEngine : IDisposable
     /// <summary>
     /// Retorna o _id
     /// </summary>
-    Task<BsonValue> InsertAsync(string collection, ICollection<BsonDocument> documents, int autoId);
-    Task<bool> UpdateAsync(string collection, ICollection<BsonDocument> documents);
-    Task<bool> DeleteAsync(string collection, ICollection<BsonValue> ids);
+    Task<BsonValue> InsertAsync(byte colID, ICollection<(int Index, BsonExpression Expr, bool Unique)> indexes, ICollection<BsonDocument> documents, int autoId);
+    Task<bool> UpdateAsync(byte colID, ICollection<BsonDocument> documents);
+    Task<bool> DeleteAsync(byte colID, ICollection<BsonValue> ids);
 
-    Task<object> BulkAsync(IList<object> operations);
-    Task<Guid> QueryAsync(string collection, object query, int buffer = 1024);
+    Task<object> BulkAsync(ICollection<object> operations);
+    //Task<Guid> QueryAsync(PageAddress headerNode, object query, int buffer = 1024);
     Task<Guid> FetchAsync(Guid cursorId);
 
     #endregion

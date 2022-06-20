@@ -28,15 +28,14 @@ internal class AllocationMapPage : BasePage
     {
         this.InitializeWrite();
 
-        // marca no buffer, remove do array
+        // marca no buffer, remove do array de _emptyExtends
 
         return 0; // retorna a extendID criada (considera o PageID?)
     }
 
-    public void SetAllocation(byte colID, uint pageID, PageType pageType, int freeSpace)
+    public void Update(byte colID, uint pageID, PageType pageType, int freeSpace)
     {
         this.InitializeWrite();
-
         // usado no foreach depois de salvar em disco as paginas
     }
 

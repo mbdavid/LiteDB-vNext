@@ -11,9 +11,10 @@ internal class AllocationMapService : IDisposable
         // testa pageType e colID no ENSURE
     }
 
-    public uint GetFreePage(byte coldID, PageType type, int length)
+    public uint GetFreePageID(byte coldID, PageType type, int length)
     {
         // busca ou cria uma nova (tanto novo extend como nova allocation page)!
+        // lock
         return 0;
     }
 
