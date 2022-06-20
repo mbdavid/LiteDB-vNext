@@ -13,9 +13,14 @@ internal struct DataBlock
     public const int P_BUFFER = 6;       // 06-EOF [bytes[]]
 
     /// <summary>
-    /// Position block inside page
+    /// Get position inside page (start..length)
     /// </summary>
-    public PageAddress Position { get; }
+    public BlockLocation Location { get; set; }
+
+    /// <summary>
+    /// Block RowID
+    /// </summary>
+    public PageAddress RowID { get; }
 
     /// <summary>
     /// Indicate if this data block is first block (false) or extend block (true)
@@ -30,9 +35,10 @@ internal struct DataBlock
     /// <summary>
     /// Read new DataBlock from filled page block
     /// </summary>
-    public DataBlock(PageAddress position, Span<byte> span)
+    public DataBlock(Span<byte> span, PageAddress rowID, BlockLocation location)
     {
-        this.Position = position;
+        this.RowID = rowID;
+        this.Location = location;
 
         // byte 00: Extend
         this.Extend = span[P_EXTEND] != 0;
@@ -44,9 +50,10 @@ internal struct DataBlock
     /// <summary>
     /// Create new DataBlock and fill into buffer
     /// </summary>
-    public DataBlock(PageAddress position, Span<byte> span, bool extend, PageAddress nextBlock)
+    public DataBlock(Span<byte> span, PageAddress rowID, BlockLocation location, bool extend, PageAddress nextBlock)
     {
-        this.Position = position;
+        this.RowID = rowID;
+        this.Location = location;
 
         this.NextBlock = nextBlock;
         this.Extend = extend;
@@ -62,12 +69,11 @@ internal struct DataBlock
     {
         this.NextBlock = nextBlock;
 
-        // update segment buffer with NextBlock (uint + byte)
         span[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
     }
 
     public override string ToString()
     {
-        return $"Pos: [{this.Position}] - Ext: [{this.Extend}] - Next: [{this.NextBlock}]";
+        return $"Pos: [{this.RowID}] - Ext: [{this.Extend}] - Next: [{this.NextBlock}]";
     }
 }

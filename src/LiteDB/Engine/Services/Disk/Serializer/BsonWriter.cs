@@ -48,7 +48,7 @@ public class BsonWriter
     /// <summary>
     /// Write DataTypeCode + Value. Returns length (including dataType byte code)
     /// </summary>
-    private static void WriteValue(Span<byte> span, BsonValue value, out int length)
+    public static void WriteValue(Span<byte> span, BsonValue value, out int length)
     {
         switch (value.Type)
         {

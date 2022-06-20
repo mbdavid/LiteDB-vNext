@@ -68,7 +68,7 @@ public class BsonReader
         return array;
     }
 
-    private static BsonValue ReadValue(Span<byte> span, bool skip, out int length)
+    public static BsonValue ReadValue(Span<byte> span, bool skip, out int length)
     {
         var type = (BsonTypeCode)span[0];
 
