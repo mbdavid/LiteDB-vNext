@@ -94,14 +94,14 @@ internal static class SpanExtensions
         else if ((span[0] & 0b11000000) == 128) // first bit is 1 but second is 0
         {
             length = 2;
-            var value = span.ReadUInt16();
+            var value = BinaryPrimitives.ReadUInt16BigEndian(span);
             var number = value & 0b01111111_11111111;
             return number;
         }
         else
         {
             length = 4;
-            var value = span.ReadUInt32();
+            var value = BinaryPrimitives.ReadUInt32BigEndian(span);
             var number = value & 0b00111111_11111111_11111111_11111111;
             return (int)number;
         }
@@ -192,6 +192,9 @@ internal static class SpanExtensions
         length = varLen + strLength;
     }
 
+    /// <summary>
+    /// Write dataLen using 1, 2 or 4 bytes to store length
+    /// </summary>
     public static void WriteVariantLength(this Span<byte> span, int dataLength, out int varLen)
     {
         varLen = BsonValue.GetVariantLength(dataLength);
@@ -204,13 +207,13 @@ internal static class SpanExtensions
         {
             var op = 0b10000000_00000000;
             var number = (ushort)(dataLength | op);
-            span.WriteUInt16(number);
+            BinaryPrimitives.WriteUInt16BigEndian(span, number);
         }
         else
         {
             var op = 0b11000000_00000000_00000000_00000000;
             var number = (((uint)dataLength) | op);
-            span.WriteUInt32(number);
+            BinaryPrimitives.WriteUInt32BigEndian(span, number);
         }
     }
 

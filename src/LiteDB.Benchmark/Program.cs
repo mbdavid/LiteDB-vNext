@@ -15,19 +15,14 @@
 var buffer = new byte[4];
 
 // testando os valores na escrita e leitura
-for(var i = 192; i < 2000; i++)
+for(var i = 0; i < 20_000_000; i++)
 {
     var span = buffer.AsSpan();
 
     span.Fill(0);
 
-    // implementar aqui!
     span.WriteVariantLength(i, out int lengthWrite);
 
-    //    Console.WriteLine($"i:{i} - {Convert.ToString(span.ReadUInt16(), 2).PadLeft(8 * BsonValue.GetVariantLength(span.ReadUInt16()), '0')}");
-    ;
-
-    // implementar aqui!
     var read = span.ReadVariantLength(out var lengthRead);
 
     ENSURE(i == read);
