@@ -86,10 +86,26 @@ internal static class SpanExtensions
 
     public static int ReadVariantLength(this Span<byte> span, out int length)
     {
-        //TODO:Sombrio - implementar
-        // ler dentro do span os bytes 1, 2, (3-4) conforme tamanho do length
-        length = 4; // retornar quantos bytes foram usados na leitura do length
-        return span.ReadInt32(); // tamanho total do conteudo (string|byte[])
+        if ((span[0] & 0b10000000) == 0) // first bit is 0
+        {
+            length = 1;
+            return span[0];
+        }
+        else if ((span[0] & 0b11000000) == 128) // first bit is 1 but second is 0
+        {
+            length = 2;
+            var value = span.ReadUInt16();
+            var number = value & 0b01111111_11111111;
+            return number;
+        }
+        else
+        {
+            length = 4;
+            var value = span.ReadUInt32();
+            var number = value & 0b00111111_11111111_11111111_11111111;
+            return (int)number;
+        }
+
     }
 
     #endregion
@@ -176,13 +192,26 @@ internal static class SpanExtensions
         length = varLen + strLength;
     }
 
-    public static void WriteVariantLength(this Span<byte> span, int dataLength, out int length)
+    public static void WriteVariantLength(this Span<byte> span, int dataLength, out int varLen)
     {
-        span.WriteInt32(dataLength);
-        //TODO:Sombrio - implementar
-        // dataLength contem o total (em inteiro) de quantos bytes tem a string|byte[]
-        // deve ser gravado os bytes 1,2,(3-4) no span[0] span[1]..
-        length = 4; // quanto bytes foram usados para gravar o length
+        varLen = BsonValue.GetVariantLength(dataLength);
+
+        if (varLen == 1)
+        {
+            span[0] = (byte)dataLength;
+        }
+        else if (varLen == 2)
+        {
+            var op = 0b10000000_00000000;
+            var number = (ushort)(dataLength | op);
+            span.WriteUInt16(number);
+        }
+        else
+        {
+            var op = 0b11000000_00000000_00000000_00000000;
+            var number = (((uint)dataLength) | op);
+            span.WriteUInt32(number);
+        }
     }
 
     #endregion

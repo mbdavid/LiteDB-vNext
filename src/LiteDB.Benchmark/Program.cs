@@ -1,20 +1,34 @@
 ﻿// Length Variante
 // -----------------
 
-//TODO:Sombrio - testar
 
-var buffer = new byte[4].AsSpan();
+//var s0 = Convert.ToString(l, 2);
+//var s2 = Convert.ToString(b1, 2);
+//var s3 = Convert.ToString(b3, 2);
+//
+//Console.WriteLine(s0.PadLeft(8 * sizeof(int), '0'));
+//Console.WriteLine(s2.PadLeft(8 * sizeof(int), '0'));
+//Console.WriteLine(s3.PadLeft(8 * sizeof(int), '0'));
+//
+//return;
+
+var buffer = new byte[4];
 
 // testando os valores na escrita e leitura
-for(var i = 0; i < 2000; i++)
+for(var i = 192; i < 2000; i++)
 {
-    buffer.Fill(0);
+    var span = buffer.AsSpan();
+
+    span.Fill(0);
 
     // implementar aqui!
-    buffer.WriteVariantLength(i, out int lengthWrite);
+    span.WriteVariantLength(i, out int lengthWrite);
+
+    //    Console.WriteLine($"i:{i} - {Convert.ToString(span.ReadUInt16(), 2).PadLeft(8 * BsonValue.GetVariantLength(span.ReadUInt16()), '0')}");
+    ;
 
     // implementar aqui!
-    var read = buffer.ReadVariantLength(out var lengthRead);
+    var read = span.ReadVariantLength(out var lengthRead);
 
     ENSURE(i == read);
     ENSURE(lengthRead == lengthWrite);

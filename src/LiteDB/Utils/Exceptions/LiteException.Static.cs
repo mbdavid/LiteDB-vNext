@@ -8,6 +8,8 @@ public partial class LiteException
     internal static LiteException ERR_FILE_NOT_FOUND(string filename) =>
         new(1, $"File '{filename}' not found.");
 
+    internal static LiteException ERR_TOO_LARGE_VARIANT() =>
+        new(2, $"Content too large and exceed 1Gb limit.");
 
     #region ERR_UNEXPECTED_TOKEN
 
