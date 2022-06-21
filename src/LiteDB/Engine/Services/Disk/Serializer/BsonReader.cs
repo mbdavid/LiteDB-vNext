@@ -19,15 +19,15 @@ public class BsonReader
         var doc = new BsonDocument();
         var remaining = fields == null || fields.Count == 0 ? null : fields;
 
-        length = span.ReadInt32();
+        length = span.ReadVariantLength(out var varLen);
 
         if (skip) return null;
 
-        var offset = 4; // skip ReadInt32() for length
+        var offset = varLen; // skip variable length
 
         while (offset < length && (remaining == null || remaining?.Count > 0))
         {
-            var key = span[offset..].ReadCString(out var keyLength);
+            var key = span[offset..].ReadVString(out var keyLength);
 
             offset += keyLength;
 
@@ -50,11 +50,11 @@ public class BsonReader
     {
         var array = new BsonArray();
 
-        length = span.ReadInt32();
+        length = span.ReadVariantLength(out var varLen);
 
         if (skip) return null;
 
-        var offset = 4; // skip ReadInt32() for length
+        var offset = varLen; // skip variable length
 
         while (offset < length)
         {
@@ -79,9 +79,9 @@ public class BsonReader
                 return skip ? null : span[1..].ReadDouble();
 
             case BsonTypeCode.String:
-                var strLength = span.ReadInt32();
-                length = 1 + 4 + strLength;
-                return skip ? null : span[5..(5 + strLength)].ReadString();
+                var strLength = span[1..].ReadVariantLength(out var varSLen);
+                length = 1 + varSLen + strLength;
+                return skip ? null : span[(1 + varSLen)..(1 + varSLen + strLength)].ReadString();
 
             case BsonTypeCode.Document:
                 var doc = ReadDocument(span[1..], null, skip, out var docLength);
@@ -94,9 +94,9 @@ public class BsonReader
                 return array;
 
             case BsonTypeCode.Binary:
-                var bytesLength = span[1..].ReadInt32();
-                length = 1 + 4 + bytesLength;
-                return skip ? null : span[5..(5 + bytesLength)].ToArray();
+                var bytesLength = span[1..].ReadVariantLength(out var varBLen);
+                length = 1 + varBLen + bytesLength;
+                return skip ? null : span[(1 + varBLen)..(1 + varBLen + bytesLength)].ToArray();
 
             case BsonTypeCode.Guid:
                 length = 1 + 16;

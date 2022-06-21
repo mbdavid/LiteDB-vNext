@@ -10,12 +10,13 @@ public class BsonWriter
 
     public static void WriteDocument(Span<byte> span, BsonDocument document, out int length)
     {
-        var offset = 4; // skip WriteInt32(length)
+        var varLength = BsonValue.GetVariantLength(document.GetBytesCountCached());
+
+        var offset = varLength; // skip VariantLength
 
         foreach (var el in document.GetElements())
         {
-            // write key as CString (\0)
-            span[offset..].WriteCString(el.Key, out var keyLength);
+            span[offset..].WriteVString(el.Key, out var keyLength);
 
             offset += keyLength;
 
@@ -26,12 +27,14 @@ public class BsonWriter
 
         length = offset;
 
-        span.WriteInt32(length);
+        span.WriteVariantLength(length, out _);
     }
 
     public static void WriteArray(Span<byte> span, BsonArray array, out int length)
     {
-        var offset = 4; // skip WriteInt32(length)
+        var varLength = BsonValue.GetVariantLength(array.GetBytesCountCached());
+
+        var offset = varLength; // skip VariantLength
 
         for (var i = 0; i < array.Count; i++)
         {
@@ -42,7 +45,7 @@ public class BsonWriter
 
         length = offset;
 
-        span.WriteInt32(length);
+        span.WriteVariantLength(length, out _);
     }
 
     /// <summary>
@@ -61,9 +64,9 @@ public class BsonWriter
             case BsonType.String:
                 span[0] = (byte)BsonTypeCode.String;
                 var strLength = Encoding.UTF8.GetByteCount(value.AsString);
-                span.WriteInt32(strLength);
-                span[5..].WriteString(value.AsString);
-                length = 1 + strLength + 4;
+                span[1..].WriteVariantLength(strLength, out var varLength);
+                span[(1 + varLength)..].WriteString(value.AsString);
+                length = 1 + varLength + strLength;
                 break;
 
             case BsonType.Document:
@@ -81,9 +84,9 @@ public class BsonWriter
             case BsonType.Binary:
                 span[0] = (byte)BsonTypeCode.Binary;
                 var binaryLength = value.AsBinary.Length;
-                span[1..].WriteInt32(binaryLength);
-                span[1..binaryLength].WriteBytes(value.AsBinary);
-                length = 1 + binaryLength;
+                span[1..].WriteVariantLength(binaryLength, out var varLen);
+                span[(1 + varLen)..(1 + varLen + binaryLength)].WriteBytes(value.AsBinary);
+                length = 1 + varLen + binaryLength;
                 break;
 
             case BsonType.Guid:

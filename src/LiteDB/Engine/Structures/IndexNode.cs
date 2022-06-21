@@ -186,7 +186,7 @@ internal struct IndexNode
 
 
     /// <summary>
-    /// Calculate how many bytes this node will need on page segment
+    /// Calculate how many bytes this node will need on page block
     /// </summary>
     public static int GetNodeLength(byte level, BsonValue key, out int keyLength)
     {
@@ -200,14 +200,18 @@ internal struct IndexNode
     /// <summary>
     /// Get how many bytes will be used to store this value. Must consider:
     /// [1 byte] - BsonType
-    /// [4 bytes] - KeyLength (used only in String|Byte[])
+    /// [1,2,4 bytes] - KeyLength (used only in String|Byte[])
     /// [N bytes] - BsonValue in bytes (0-254)
     /// </summary>
     public static int GetKeyLength(BsonValue key)
     {
-        return 1 +
-            ((key.IsString || key.IsBinary) ? 4 : 0) +
-            key.GetBytesCountCached();
+        var keyLength = key.GetBytesCountCached();
+
+        var varLength = (key.IsString || key.IsBinary) ? BsonValue.GetVariantLength(keyLength) : 0;
+
+        return 1 +      // BsonType
+            varLength + // Variable Length (0, 1, 2, 4)
+            keyLength;  // Key Length
     }
 
     #endregion

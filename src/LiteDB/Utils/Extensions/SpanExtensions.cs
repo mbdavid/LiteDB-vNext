@@ -75,26 +75,21 @@ internal static class SpanExtensions
         return Encoding.UTF8.GetString(span);
     }
 
-    public static string ReadCString(this Span<byte> span, out int length)
+    public static string ReadVString(this Span<byte> span, out int length)
     {
-        var i = 0;
+        var strLength = ReadVariantLength(span, out var varLen);
 
-        while(span[i] != 0)
-        {
-            i++;
-        }
+        length = varLen + strLength;
 
-        length = i + 1;
-
-        return Encoding.UTF8.GetString(span[0..i]);
+        return Encoding.UTF8.GetString(span[varLen..(varLen + strLength)]);
     }
 
     public static int ReadVariantLength(this Span<byte> span, out int length)
     {
         //TODO:Sombrio - implementar
         // ler dentro do span os bytes 1, 2, (3-4) conforme tamanho do length
-        length = 1; // retornar quantos bytes foram usados na leitura do length
-        return 0; // tamanho total do conteudo (string|byte[])
+        length = 4; // retornar quantos bytes foram usados na leitura do length
+        return span.ReadInt32(); // tamanho total do conteudo (string|byte[])
     }
 
     #endregion
@@ -171,21 +166,23 @@ internal static class SpanExtensions
         Encoding.UTF8.GetBytes(value.AsSpan(), span);
     }
 
-    public static void WriteCString(this Span<byte> span, string value, out int length)
+    public static void WriteVString(this Span<byte> span, string value, out int length)
     {
-        length = Encoding.UTF8.GetByteCount(value) + 1; // '\0'
+        var strLength = Encoding.UTF8.GetByteCount(value);
+        WriteVariantLength(span, strLength, out var varLen);
 
-        Encoding.UTF8.GetBytes(value.AsSpan(), span);
+        Encoding.UTF8.GetBytes(value.AsSpan(), span[varLen..(varLen + strLength)]);
 
-        span[length] = 0;
+        length = varLen + strLength;
     }
 
     public static void WriteVariantLength(this Span<byte> span, int dataLength, out int length)
     {
+        span.WriteInt32(dataLength);
         //TODO:Sombrio - implementar
         // dataLength contem o total (em inteiro) de quantos bytes tem a string|byte[]
         // deve ser gravado os bytes 1,2,(3-4) no span[0] span[1]..
-        length = 1; // quanto bytes foram usados para gravar o length
+        length = 4; // quanto bytes foram usados para gravar o length
     }
 
     #endregion

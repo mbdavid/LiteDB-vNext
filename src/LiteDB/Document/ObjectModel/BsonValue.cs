@@ -483,7 +483,7 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     {
         //TODO: Sombrio
         // deve retornar quantos bytes (1,2,4) uma quantidade de dados iria ocupar
-        return 1;
+        return 4;
     }
 
     #endregion
