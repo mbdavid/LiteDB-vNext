@@ -24,6 +24,11 @@ internal class BufferPage : IMemoryOwner<byte>
         }
     }
 
+    /// <summary>
+    /// Checks if page buffer contains only 0
+    /// </summary>
+    public bool IsEmpty() => this.Memory.Span.IsFullZero();
+
     public void Dispose()
     {
         ArrayPool<byte>.Shared.Return(_source);

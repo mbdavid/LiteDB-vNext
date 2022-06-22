@@ -39,6 +39,13 @@ internal class DiskService : IDisposable
     public long LogLength => _logEndPosition - _logStartPosition;
 
     /// <summary>
+    /// Get current file length (with log inclued)
+    /// </summary>
+    public long FileLength => 
+        _streamPool.Writer?.Length ?? // get filesize direct from writer stream
+        _streamFactory.GetLength(); // if readonly, get by os descriptor
+
+    /// <summary>
     /// Get a new instance for read data/log pages. This instance are not thread-safe - must request 1 per thread (used in Transaction)
     /// Must call IDispose() after use to return to Pool
     /// </summary>
@@ -105,6 +112,7 @@ internal class DiskService : IDisposable
 
             using var cursor = pages.GetEnumerator();
 
+            // using cursor because loop need change page.Position struct (foreach don't work)
             while (cursor.MoveNext())
             {
                 var page = cursor.Current;
@@ -114,11 +122,10 @@ internal class DiskService : IDisposable
                 // checks for override WAL with PageID > Log position
                 while (position < dataPosition)
                 {
-                    // checks if position are no a FPS page
+                    // checks if position are no an allocation map page
                     if (AllocationMapPage.IsAllocationMapPageID((uint)(position / PAGE_SIZE)) == false)
                     {
-                        // must write a empty page because empty pages also are encrypted (if case)
-                        await stream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE, cancellationToken);
+                        position += PAGE_SIZE;
                     }
 
                     position += PAGE_SIZE;

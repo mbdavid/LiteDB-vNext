@@ -101,7 +101,7 @@ internal class BasePage : IDisposable
     }
 
     /// <summary>
-    /// Dispose both
+    /// Dispose both read/write buffer (return array back to pool)
     /// </summary>
     public void Dispose()
     {

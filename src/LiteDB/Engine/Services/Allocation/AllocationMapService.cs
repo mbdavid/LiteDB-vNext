@@ -5,7 +5,34 @@
 /// </summary>
 internal class AllocationMapService : IDisposable
 {
-    private List<AllocationMapPage> _pages = new();
+    private readonly List<AllocationMapPage> _pages = new();
+
+    private readonly DiskService _disk;
+
+    /// <summary>
+    /// Read all AllocationMapPages avaiable in disk
+    /// </summary>
+    public async Task ReadMapMapges(CancellationToken cancellationToken = default)
+    {
+        using var reader = _disk.GetReader();
+
+        long position = AMP_FIRST_PAGE_ID * PAGE_SIZE;
+
+        while(position < _disk.FileLength)
+        {
+            var buffer = new BufferPage(false);
+
+            await reader.ReadPageAsync(buffer.Memory, position, cancellationToken);
+
+            if (buffer.IsEmpty()) break;
+
+            var mapPage = new AllocationMapPage(buffer);
+
+            _pages.Add(mapPage); // pages are added in index order
+
+            position += (AMP_STEP_SIZE * PAGE_SIZE);
+        }
+    }
 
     /// <summary>
     /// Update map using pageID to found each allocation map page/page location must be changed
