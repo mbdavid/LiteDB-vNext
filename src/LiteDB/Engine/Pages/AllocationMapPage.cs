@@ -31,10 +31,10 @@ internal class AllocationMapPage : BasePage
         {
             var position = PAGE_HEADER_SIZE + (i * AMP_EXTEND_SIZE);
 
-            // check if empty colID (means 
+            // check if empty colID (means empty extend)
             if (span[position] == 0)
             {
-                DEBUG(span[position..(position + AMP_EXTEND_SIZE)].IsFullZero(), "all page allocation map should be empty");
+                DEBUG(span[position..(position + AMP_EXTEND_SIZE)].IsFullZero(), $"all page extend allocation map should be empty at {position}");
 
                 _emptyExtends.Enqueue(i);
             }
@@ -53,6 +53,8 @@ internal class AllocationMapPage : BasePage
     public uint GetFreePageID(byte coldID, PageType type, int length)
     {
         this.InitializeWrite();
+
+
 
         return 0;
     }
@@ -79,6 +81,67 @@ internal class AllocationMapPage : BasePage
 
         return extendID;
     }
+
+    /// <summary>
+    /// Find a pageType inside an extend with minimal size to fit in length. Can return a empty page if not found in any other pages
+    /// </summary>
+    private uint FindFreePageID(Span<byte> span, int extendIndex, PageType pageType, int length)
+    {
+        ENSURE(length < AMP_DATA_PAGE_SPACE_00, $"if need length bigger than {AMP_DATA_PAGE_SPACE_00} need create new page");
+
+        var extendPosition = PAGE_HEADER_SIZE + (extendIndex * AMP_EXTEND_SIZE);
+        var pageID = (uint)(this.PageID + (extendIndex * AMP_EXTEND_SIZE) + 1);
+        var empty = uint.MaxValue;
+
+        for (var i = 0; i < AMP_EXTEND_SIZE; i++)
+        {
+            var even = i % 2 == 0;
+            var position = extendPosition + 1 + (i / 2); // add collection byte
+            var data = span[position] & (even ? 0b1111_0000 : 0b0000_1111);
+
+            var slotPageType = (PageType)((data & 0b1100) >> 2);
+
+            if (slotPageType == pageType)
+            {
+                var slotFreeSpace = data & 0b0011;
+
+                if (pageType == PageType.Index)
+                {
+                    if (slotFreeSpace == 0)
+                    {
+                        return (uint)(pageID + i);
+                    }
+                }
+                else if (pageType == PageType.Index)
+                {
+                    if (slotFreeSpace == 0b00)
+                    {
+                        return (uint)(pageID + i);
+                    }
+                    else if (slotFreeSpace == 0b01 && length < AMP_DATA_PAGE_SPACE_00)
+                    {
+                        return (uint)(pageID + i);
+                    }
+                    else if (slotFreeSpace == 0b10 && length < AMP_DATA_PAGE_SPACE_01)
+                    {
+                        return (uint)(pageID + i);
+                    }
+                    else if (slotFreeSpace == 0b11)
+                    {
+                        continue;
+                    }
+                }
+            }
+            else if (slotPageType == PageType.Empty && empty == uint.MaxValue)
+            {
+                empty = (uint)(pageID + i); // return Empty page to used as new page
+            }
+        }
+
+        // will return first empty pageID or MaxValue if not found
+        return empty;
+    }
+
 
     #region Static Helpers
 

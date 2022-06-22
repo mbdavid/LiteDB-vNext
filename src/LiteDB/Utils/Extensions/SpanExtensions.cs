@@ -84,23 +84,23 @@ internal static class SpanExtensions
         return Encoding.UTF8.GetString(span[varLen..(varLen + strLength)]);
     }
 
-    public static int ReadVariantLength(this Span<byte> span, out int length)
+    public static int ReadVariantLength(this Span<byte> span, out int varLen)
     {
         if ((span[0] & 0b10000000) == 0) // first bit is 0
         {
-            length = 1;
+            varLen = 1;
             return span[0];
         }
         else if ((span[0] & 0b11000000) == 128) // first bit is 1 but second is 0
         {
-            length = 2;
+            varLen = 2;
             var value = BinaryPrimitives.ReadUInt16BigEndian(span);
             var number = value & 0b01111111_11111111;
             return number;
         }
         else
         {
-            length = 4;
+            varLen = 4;
             var value = BinaryPrimitives.ReadUInt32BigEndian(span);
             var number = value & 0b00111111_11111111_11111111_11111111;
             return (int)number;

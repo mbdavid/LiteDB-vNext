@@ -62,6 +62,23 @@ internal class Constants
     public const int AMP_STEP_SIZE = AMP_MAP_PAGES_COUNT + 1;
 
     /// <summary>
+    /// Represent an array of how distribuited pages are inside AllocationMap 2 bits (should be 4 values only)
+    /// 00 - arr[0]..8160 (page empty)
+    /// 01 - (arr[0]-1)..arr[1]
+    /// 10 - (arr[1]-1)..arr[2]
+    /// 11 - (arr[2]-1)..0 (page full)
+    /// </summary>
+    public const int AMP_DATA_PAGE_SPACE_00 = 7000;
+    public const int AMP_DATA_PAGE_SPACE_01 = 5000;
+    public const int AMP_DATA_PAGE_SPACE_10 = 2000;
+    public const int AMP_DATA_PAGE_SPACE_11 = 0;
+
+    /// <summary>
+    /// Indicate when a IndexPage must be consider full (IndexPage contains immutable-size/small nodes - don't need ranges)
+    /// </summary>
+    public const int AMP_INDEX_PAGE_SPACE = 1400;
+
+    /// <summary>
     /// Get first DataPage from $master
     /// </summary>
     public const int MASTER_PAGE_ID = 2;
