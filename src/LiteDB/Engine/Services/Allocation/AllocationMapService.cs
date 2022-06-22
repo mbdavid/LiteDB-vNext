@@ -12,7 +12,7 @@ internal class AllocationMapService : IDisposable
     /// <summary>
     /// Read all AllocationMapPages avaiable in disk
     /// </summary>
-    public async Task ReadMapMapges(CancellationToken cancellationToken = default)
+    public async Task ReadMapPages(CancellationToken cancellationToken = default)
     {
         using var reader = _disk.GetReader();
 

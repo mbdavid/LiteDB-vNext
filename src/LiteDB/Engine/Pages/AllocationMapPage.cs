@@ -44,10 +44,64 @@ internal class AllocationMapPage : BasePage
     /// <summary>
     /// Update
     /// </summary>
-    public void UpdateMap(uint pageID, PageType pageType, byte colID, ushort freeSpace)
+    public void UpdateMap(int extendIndex, int pageIndex, PageType pageType, byte colID, ushort freeSpace)
     {
         this.InitializeWrite();
         // usado no foreach depois de salvar em disco as paginas
+        var span = _writeBuffer.Memory.Span;
+
+        ENSURE(span[PAGE_HEADER_SIZE + (extendIndex * AMP_EXTEND_SIZE)] == colID, "this map page don't bellow to this extend collection");
+
+        // get byte position for 2 pages (even and odd)
+        var position = PAGE_HEADER_SIZE + (extendIndex * AMP_EXTEND_SIZE) + 1 + (pageIndex / 2);
+
+        var even = pageIndex % 2 == 0;
+
+        var pageTypeSlot = (PageType)(span[position] & (even ? 0b1100_0000 : 0b0000_1100));
+
+        ENSURE(pageTypeSlot == pageType || pageTypeSlot == PageType.Empty, "page type doesn't match in map");
+
+        if (pageTypeSlot == PageType.Empty)
+        {
+            pageTypeSlot = pageType;
+        }
+
+        var freeSpaceSlot = 0;
+
+        if (pageTypeSlot == PageType.Index)
+        {
+            freeSpaceSlot = freeSpace > AMP_INDEX_PAGE_SPACE ? 0b00 : 0b01;
+        }
+        else if (pageTypeSlot == PageType.Data)
+        {
+            if (freeSpace > AMP_DATA_PAGE_SPACE_00)
+            {
+                freeSpaceSlot = 0b00;
+            }
+            else if (freeSpace > AMP_DATA_PAGE_SPACE_01)
+            {
+                freeSpaceSlot = 0b01;
+            }
+            else if (freeSpace > AMP_DATA_PAGE_SPACE_10)
+            {
+                freeSpaceSlot = 0b10;
+            }
+            else
+            {
+                freeSpaceSlot = 0b11;
+            }
+        }
+
+        // get pageType + freeSpace in 4 bits 
+        var pageInfo = ((byte)pageTypeSlot << 2) | freeSpaceSlot;
+
+        // update left/right part of byte (page even or odd)
+        var byteData = even ?
+            ((pageInfo << 4) | (span[position] & 0b0000_1111)) :
+            (pageInfo | (span[position] & 0b1111_0000));
+
+        span[position] = (byte)byteData;
+
     }
 
     public uint GetFreePageID(byte coldID, PageType type, int length)
@@ -112,7 +166,7 @@ internal class AllocationMapPage : BasePage
                         return (uint)(pageID + i);
                     }
                 }
-                else if (pageType == PageType.Index)
+                else if (pageType == PageType.Data)
                 {
                     if (slotFreeSpace == 0b00)
                     {
@@ -154,7 +208,7 @@ internal class AllocationMapPage : BasePage
 
     public static void GetLocation(uint pageID,
         out uint pfsPageID, // AllocationMapID (começa em 0, 1, 2, 3)
-        out int extendIndex, // ExtendID (começa em 0, 1, ..., 1631, 1632, 1633, ...)
+        out int extendIndex, // ExtendIndex (começa em 0, 1, ..., 1631, 0, 1, ...)
         out int pageIndex) // PageIndex inside extend content (0, 1, 2, 3, 4, 5, 6, 7)
     {
         // test if is non-mapped page in PFS
