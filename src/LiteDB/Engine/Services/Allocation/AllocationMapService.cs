@@ -9,6 +9,9 @@ internal class AllocationMapService : IDisposable
 
     private readonly DiskService _disk;
 
+    private readonly uint[] _colIndexLastPageID = new uint[byte.MaxValue];
+    private readonly uint[] _colDataLastPageID = new uint[byte.MaxValue];
+
     /// <summary>
     /// Read all AllocationMapPages avaiable in disk
     /// </summary>
@@ -41,7 +44,9 @@ internal class AllocationMapService : IDisposable
     /// </summary>
     public void UpdateMap(uint pageID, PageType pageType, byte colID, ushort freeSpace)
     {
-        // testa pageType e colID no ENSURE
+        var pageIndex = (int)((pageID - AMP_FIRST_PAGE_ID) / AMP_STEP_SIZE);
+        var page = _pages[pageIndex];
+
     }
 
     /// <summary>

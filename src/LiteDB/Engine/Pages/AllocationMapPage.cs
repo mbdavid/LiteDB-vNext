@@ -13,6 +13,11 @@ internal class AllocationMapPage : BasePage
     private readonly Queue<int> _emptyExtends = new();
 
     /// <summary>
+    /// List of extends in this page, indexed by colID
+    /// </summary>
+    private readonly List<ExtendSummaryInfo>[] _extends = new List<ExtendSummaryInfo>[byte.MaxValue];
+
+    /// <summary>
     /// Create new AllocationMapPage instance
     /// </summary>
     public AllocationMapPage(uint pageID)
@@ -32,11 +37,19 @@ internal class AllocationMapPage : BasePage
             var position = PAGE_HEADER_SIZE + (i * AMP_EXTEND_SIZE);
 
             // check if empty colID (means empty extend)
-            if (span[position] == 0)
+            var colID = span[position];
+
+            if (colID == 0)
             {
                 DEBUG(span[position..(position + AMP_EXTEND_SIZE)].IsFullZero(), $"all page extend allocation map should be empty at {position}");
 
                 _emptyExtends.Enqueue(i);
+            }
+            else
+            {
+                var extends = _extends[colID] ??= new List<ExtendSummaryInfo>();
+
+                extends.Add(this.GetExtendSummary(span, i));
             }
         }
     }
@@ -55,45 +68,47 @@ internal class AllocationMapPage : BasePage
         // get byte position for 2 pages (even and odd)
         var position = PAGE_HEADER_SIZE + (extendIndex * AMP_EXTEND_SIZE) + 1 + (pageIndex / 2);
 
+        // each page use 4 bits from a single byte: even first 4 bits, odd second 4 bits
         var even = pageIndex % 2 == 0;
 
-        var pageTypeSlot = (PageType)(span[position] & (even ? 0b1100_0000 : 0b0000_1100));
+        // read pageType from 1 byte slot (2 bits)
+        var pageTypeSlot = (PageTypeSlot)(span[position] & (even ? 0b1100_0000 : 0b0000_1100));
 
-        ENSURE(pageTypeSlot == pageType || pageTypeSlot == PageType.Empty, "page type doesn't match in map");
+        ENSURE(pageTypeSlot.ToPageType() == pageType || pageTypeSlot == PageTypeSlot.Empty, "page type doesn't match in map");
 
-        if (pageTypeSlot == PageType.Empty)
+        if (pageTypeSlot == PageTypeSlot.Empty)
         {
-            pageTypeSlot = pageType;
+            pageTypeSlot = pageType.ToPageTypeSlot();
         }
 
-        var freeSpaceSlot = 0;
+        var freeSpaceMap = 0;
 
-        if (pageTypeSlot == PageType.Index)
+        if (pageTypeSlot == PageTypeSlot.Index)
         {
-            freeSpaceSlot = freeSpace > AMP_INDEX_PAGE_SPACE ? 0b00 : 0b01;
+            freeSpaceMap = freeSpace > AMP_INDEX_PAGE_SPACE ? 0b00 : 0b01;
         }
-        else if (pageTypeSlot == PageType.Data)
+        else if (pageTypeSlot == PageTypeSlot.Data)
         {
             if (freeSpace > AMP_DATA_PAGE_SPACE_00)
             {
-                freeSpaceSlot = 0b00;
+                freeSpaceMap = 0b00;
             }
             else if (freeSpace > AMP_DATA_PAGE_SPACE_01)
             {
-                freeSpaceSlot = 0b01;
+                freeSpaceMap = 0b01;
             }
             else if (freeSpace > AMP_DATA_PAGE_SPACE_10)
             {
-                freeSpaceSlot = 0b10;
+                freeSpaceMap = 0b10;
             }
             else
             {
-                freeSpaceSlot = 0b11;
+                freeSpaceMap = 0b11;
             }
         }
 
         // get pageType + freeSpace in 4 bits 
-        var pageInfo = ((byte)pageTypeSlot << 2) | freeSpaceSlot;
+        var pageInfo = (((byte)pageTypeSlot - 2) << 2) | freeSpaceMap;
 
         // update left/right part of byte (page even or odd)
         var byteData = even ?
@@ -101,7 +116,6 @@ internal class AllocationMapPage : BasePage
             (pageInfo | (span[position] & 0b1111_0000));
 
         span[position] = (byte)byteData;
-
     }
 
     public uint GetFreePageID(byte coldID, PageType type, int length)
@@ -128,12 +142,54 @@ internal class AllocationMapPage : BasePage
 
         ENSURE(_emptyExtends.Count > 0, "must have at least 1 empty extend on map page");
 
-        var extendID = _emptyExtends.Dequeue();
-        var position = AMP_EXTEND_SIZE; //TODO:sombrio, calcular
+        var extendIndex = _emptyExtends.Dequeue();
+        var position = PAGE_HEADER_SIZE + (extendIndex * AMP_EXTEND_SIZE);
 
         span[position] = colID;
 
-        return extendID;
+        var extends = (_extends[colID] ??= new List<ExtendSummaryInfo>());
+        
+        extends.Add(new ExtendSummaryInfo() { ExtendIndex = extendIndex });
+
+        return extendIndex;
+    }
+
+    /// <summary>
+    /// Read a single extend in buffer to summarize total pages free space avaiable
+    /// </summary>
+    private ExtendSummaryInfo GetExtendSummary(Span<byte> span, int extendIndex)
+    {
+        var extendPosition = PAGE_HEADER_SIZE + (extendIndex * AMP_EXTEND_SIZE);
+        var extendSummary = new ExtendSummaryInfo();
+
+        for (var i = 0; i < AMP_EXTEND_SIZE; i++)
+        {
+            var even = i % 2 == 0;
+            var position = extendPosition + 1 + (i / 2); // add collection byte
+            var data = span[position] & (even ? 0b1111_0000 : 0b0000_1111);
+
+            var slotPageType = (PageTypeSlot)((data & 0b1100) >> 2);
+            var slotFreeSpace = data & 0b0011;
+
+            if (slotPageType == PageTypeSlot.Empty)
+            {
+                extendSummary.EmptyPage++;
+            }
+            else if (slotPageType == PageTypeSlot.Index)
+            {
+                if (slotFreeSpace == 0b00) extendSummary.IndexPage_00++;
+                else extendSummary.IndexPage_01++;
+            }
+            else if (slotPageType == PageTypeSlot.Data && slotFreeSpace != 0b11)
+            {
+                if (slotFreeSpace == 0b00) extendSummary.DataPage_00++;
+                else if (slotFreeSpace == 0b01) extendSummary.DataPage_01++;
+                else if (slotFreeSpace == 0b10) extendSummary.DataPage_10++;
+                else extendSummary.DataPage_11++;
+            }
+        }
+
+        return extendSummary;
     }
 
     /// <summary>
@@ -235,4 +291,24 @@ internal class AllocationMapPage : BasePage
 
     #endregion
 
+}
+
+internal struct ExtendSummaryInfo
+{
+    public int ExtendIndex;
+    public byte ColID;
+    public byte EmptyPage;
+    public byte IndexPage_00;
+    public byte IndexPage_01;
+    public byte DataPage_00;
+    public byte DataPage_01;
+    public byte DataPage_10;
+    public byte DataPage_11;
+
+    public bool IsFull() => 
+        this.EmptyPage == 0 && 
+        this.IndexPage_00 == 0 && 
+        this.DataPage_00 == 0 && 
+        this.DataPage_01 == 0 && 
+        this.DataPage_10 == 0;
 }
