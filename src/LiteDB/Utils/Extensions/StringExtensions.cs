@@ -27,12 +27,10 @@ internal static class StringExtensions
 
     public static string Sha1(this string value)
     {
-        //TODO: improve with shared array
-        var data = Encoding.UTF8.GetBytes(value);
-
+        using var data = EncodingHelper.SharedEncoding(value, Encoding.UTF8);
         using var sha = SHA1.Create();
 
-        var hashData = sha.ComputeHash(data);
+        var hashData = sha.ComputeHash(data.Buffers, 0, data.Count);
         var hash = new StringBuilder();
 
         foreach (var b in hashData)
