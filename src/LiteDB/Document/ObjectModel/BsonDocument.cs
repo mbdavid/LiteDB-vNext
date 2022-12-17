@@ -155,15 +155,24 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     /// </summary>
     internal static int GetBytesCountElement(string key, BsonValue value)
     {
-        // check if data type is variant
-        var variant = value.Type == BsonType.String || value.Type == BsonType.Binary;
+        // get data length
+        var length = value.GetBytesCountCached();
+
+        // if data type is variant length, add varLength to length
+        if (value.Type == BsonType.String || 
+            value.Type == BsonType.Binary || 
+            value.Type == BsonType.Document || 
+            value.Type == BsonType.Array)
+        {
+            var varLength = GetVariantLength(length);
+
+            length += varLength;
+        }
 
         return
             Encoding.UTF8.GetByteCount(key) + // CString
-            1 + // CString \0
             1 + // element type
-            value.GetBytesCountCached() +
-            (variant ? 4 : 0); // bytes.Length Int32
+            length;
     }
 
     #endregion
