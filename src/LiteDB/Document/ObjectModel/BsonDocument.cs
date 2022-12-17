@@ -29,12 +29,15 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 
     public override int GetBytesCount()
     {
-        var length = 4;
+        var length = 0;
 
         foreach (var element in _value)
         {
             length += GetBytesCountElement(element.Key, element.Value);
         }
+
+        // adding variant length of document (1, 2 ou 4 bytes)
+        length += GetVariantLength(length);
 
         _length = length;
 
@@ -155,24 +158,24 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     /// </summary>
     internal static int GetBytesCountElement(string key, BsonValue value)
     {
+        var keyLength = Encoding.UTF8.GetByteCount(key);
+
+        keyLength += GetVariantLength(keyLength);
+
         // get data length
-        var length = value.GetBytesCountCached();
+        var valueLength = value.GetBytesCountCached();
 
         // if data type is variant length, add varLength to length
         if (value.Type == BsonType.String || 
-            value.Type == BsonType.Binary || 
-            value.Type == BsonType.Document || 
-            value.Type == BsonType.Array)
+            value.Type == BsonType.Binary)
         {
-            var varLength = GetVariantLength(length);
-
-            length += varLength;
+            valueLength += GetVariantLength(valueLength);
         }
 
         return
-            Encoding.UTF8.GetByteCount(key) + // CString
-            1 + // element type
-            length;
+            keyLength + 
+            1 + // element value type
+            valueLength;
     }
 
     #endregion
