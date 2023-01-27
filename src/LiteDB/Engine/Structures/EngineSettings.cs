@@ -5,10 +5,34 @@
 /// </summary>
 public class EngineSettings
 {
+    private readonly IDictionary<string, string> _settings;
+
+    public EngineSettings()
+    {
+        _settings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    public EngineSettings(IDictionary<string, string> settings)
+    {
+        _settings = settings;
+        this.Filename = settings["filename"];
+        this.Password = settings["password"];
+        //this.InitialSize = settings[]
+    }
+
+    /// <summary>
+    /// Get a key/value from parsed from connection string. Returns null if not found. Used for plugins
+    /// </summary>
+    public string this[string key]
+    {
+        get => _settings.GetOrDefault(key);
+        set => _settings[key] = value;
+    }
+
     /// <summary>
     /// Get/Set custom stream to be used as datafile (can be MemoryStrem or TempStream). Do not use FileStream - to use physical file, use "filename" attribute (and keep DataStrem null)
     /// </summary>
-    public Stream DataStream { get; set; } = null;
+    public Stream DataStream { get; set; }
 
     /// <summary>
     /// Full path or relative path from DLL directory. Can use ':temp:' for temp database or ':memory:' for in-memory database. (default: null)
@@ -34,52 +58,4 @@ public class EngineSettings
     /// Indicate that engine will open files in readonly mode (and will not support any database change)
     /// </summary>
     public bool ReadOnly { get; set; } = false;
-
-    /// <summary>
-    /// Create new IStreamFactory for datafile
-    /// </summary>
-    internal IStreamFactory CreateDataFactory()
-    {
-        if (this.DataStream != null)
-        {
-            return new StreamFactory(this.DataStream, this.Password);
-        }
-        else if (this.Filename == ":memory:")
-        {
-            return new StreamFactory(new MemoryStream(), this.Password);
-        }
-        else if (this.Filename == ":temp:")
-        {
-            return new StreamFactory(new TempStream(), this.Password);
-        }
-        else if (!string.IsNullOrEmpty(this.Filename))
-        {
-            return new FileStreamFactory(this.Filename, this.Password, false);
-        }
-
-        throw new ArgumentException("EngineSettings must have Filename or DataStream as data source");
-    }
-
-    /// <summary>
-    /// Create new IStreamFactory for temporary file (sort)
-    /// </summary>
-    internal IStreamFactory CreateTempFactory()
-    {
-        if (this.DataStream is MemoryStream || this.Filename == ":memory:" || this.ReadOnly)
-        {
-            return new StreamFactory(new MemoryStream(), null);
-        }
-        else if (this.Filename == ":temp:")
-        {
-            return new StreamFactory(new TempStream(), null);
-        }
-        else if (!string.IsNullOrEmpty(this.Filename))
-        {
-            var tempName = FileHelper.GetSufixFile(this.Filename, "-tmp", true);
-
-            return new FileStreamFactory(tempName, null, true);
-        }
-
-        return new StreamFactory(new TempStream(), null);
-    }
 }

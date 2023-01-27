@@ -25,14 +25,6 @@ public interface ILiteEngine : IDisposable
     //Task<Guid> QueryAsync(PageAddress headerNode, object query, int buffer = 1024);
     Task<Guid> FetchAsync(Guid cursorId);
 
-    /// <summary>
-    /// Implements a generic engine comunication using BsonDocument for input/output.
-    /// This method can be used with plugins to call new features outside engine
-    /// </summary>
-    /// <param name="input">Data document as input parameter (see ...)</param>
-    /// <returns>Data document result</returns>
-    Task<BsonDocument> ExecuteAsync(BsonDocument input);
-
     #endregion
 
     #region Exclusive Operations

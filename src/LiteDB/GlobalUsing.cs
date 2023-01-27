@@ -19,7 +19,6 @@ global using System.Buffers;
 global using System.Buffers.Binary;
 
 
-
 global using LiteDB.Engine;
 global using static LiteDB.Constants;
 global using static LiteDB.LiteException;

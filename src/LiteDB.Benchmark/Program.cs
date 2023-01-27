@@ -1,53 +1,43 @@
-﻿// Length Variante
-// -----------------
+﻿var d = new BsonDocument();
+var tt = 0;
 
-
-//var s0 = Convert.ToString(l, 2);
-//var s2 = Convert.ToString(b1, 2);
-//var s3 = Convert.ToString(b3, 2);
-//
-//Console.WriteLine(s0.PadLeft(8 * sizeof(int), '0'));
-//Console.WriteLine(s2.PadLeft(8 * sizeof(int), '0'));
-//Console.WriteLine(s3.PadLeft(8 * sizeof(int), '0'));
-//
-//return;
-
-var buffer = new byte[4];
-
-// testando os valores na escrita e leitura
-for(var i = 0; i < 20_000_000; i++)
+for(var c = 1; c <= 250; c++)
 {
-    var span = buffer.AsSpan();
+    var indexes = new BsonDocument();
 
-    span.Fill(0);
+    for(var i = 0; i < 32; i++)
+    {
+        var indexName = Guid.NewGuid()
+            .ToString("n")
+            .Substring(0, 32);
 
-    span.WriteVariantLength(i, out int lengthWrite);
+        indexes[indexName] = new BsonDocument
+        {
+            ["h"] = new byte[5],
+            ["l"] = new byte[5],
+            ["s"] = i,
+            ["u"] = true,
+            ["e"] = new byte[60],
+        };
 
-    var read = span.ReadVariantLength(out var lengthRead);
+        tt += 32 + 5 + 5 + 1 + 1 + 60;
+    }
 
-    ENSURE(i == read);
-    ENSURE(lengthRead == lengthWrite);
+    var colName = Guid.NewGuid()
+        .ToString("n")
+        .Substring(0, 32);
+
+    tt += 33;
+
+    d[colName] = indexes;
 }
 
+var total = 8192 * 8;
 
+Console.WriteLine(d.ToString());
+Console.WriteLine("Disponivel: " + total.ToString());
+Console.WriteLine("Cru: " + tt);
+Console.WriteLine(d.GetBytesCount());
+Console.WriteLine(d.GetBytesCount() > total ? "NÃO cabe" : "Cabe");
 
-
-// Run<BsonValueCompareTests>();
-
-//BenchmarkRunner.Run<BsonWriterTests>();
-
-/*
-var d = new BsonDocument { ["a"] = new BsonArray { 1, true } };
-
-var bytes = new byte[d.GetBytesCount()];
-
-BsonWriter.WriteDocument(bytes.AsSpan(), d, out _);
-
-
-var nd = BsonReader.ReadDocument(bytes.AsSpan(), out _);
-
-
-var eq = d == nd;
-
-Console.WriteLine(eq);
-*/
+Console.ReadLine();

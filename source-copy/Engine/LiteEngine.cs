@@ -9,7 +9,7 @@ public partial class LiteEngine //: ILiteEngine
 {
     private bool _disposed = false;
 
-//    private readonly EngineServices _services;
+    private readonly EngineServices _services;
 
     #region Ctor
 
@@ -36,7 +36,7 @@ public partial class LiteEngine //: ILiteEngine
     {
         if (settings == null) throw new ArgumentNullException(nameof(settings));
 
-        //_services = new EngineServices(settings);
+        _services = new EngineServices(settings);
     }
 
     #endregion
@@ -58,7 +58,7 @@ public partial class LiteEngine //: ILiteEngine
 
         if (disposing)
         {
-            //_services.Dispose();
+            _services.Dispose();
         }
 
         _disposed = true;

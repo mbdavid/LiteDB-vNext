@@ -8,8 +8,8 @@ internal struct DataBlock
     public const int DATA_BLOCK_FIXED_SIZE = 1 + // DataIndex
                                PageAddress.SIZE; // NextBlock
 
-    public const int P_EXTEND = 0;      // 00-00 [byte]
-    public const int P_NEXT_BLOCK = 1;  // 01-05 [pageAddress]
+    private const int P_EXTEND = 0;      // 00-00 [byte]
+    private const int P_NEXT_BLOCK = 1;  // 01-05 [pageAddress]
     public const int P_BUFFER = 6;       // 06-EOF [bytes[]]
 
     /// <summary>
