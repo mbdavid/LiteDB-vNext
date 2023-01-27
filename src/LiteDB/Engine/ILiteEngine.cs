@@ -17,13 +17,13 @@ public interface ILiteEngine : IDisposable
     /// <summary>
     /// Retorna o _id
     /// </summary>
-    Task<BsonValue> InsertAsync(byte colID, ICollection<(int Index, BsonExpression Expr, bool Unique)> indexes, ICollection<BsonDocument> documents, int autoId);
-    Task<bool> UpdateAsync(byte colID, ICollection<BsonDocument> documents);
-    Task<bool> DeleteAsync(byte colID, ICollection<BsonValue> ids);
+//    Task<BsonValue> InsertAsync(byte colID, ICollection<(int Index, BsonExpression Expr, bool Unique)> indexes, ICollection<BsonDocument> documents, int autoId);
+//    Task<bool> UpdateAsync(byte colID, ICollection<BsonDocument> documents);
+//    Task<bool> DeleteAsync(byte colID, ICollection<BsonValue> ids);
 
-    Task<object> BulkAsync(ICollection<object> operations);
+//    Task<object> BulkAsync(ICollection<object> operations);
     //Task<Guid> QueryAsync(PageAddress headerNode, object query, int buffer = 1024);
-    Task<Guid> FetchAsync(Guid cursorId);
+//    Task<Guid> FetchAsync(Guid cursorId);
 
     /// <summary>
     /// Implements a generic engine comunication using BsonDocument for input/output.
@@ -31,7 +31,7 @@ public interface ILiteEngine : IDisposable
     /// </summary>
     /// <param name="input">Data document as input parameter (see ...)</param>
     /// <returns>Data document result</returns>
-    Task<BsonDocument> ExecuteAsync(BsonDocument input);
+//    Task<BsonDocument> ExecuteAsync(BsonDocument input);
 
     #endregion
 
@@ -43,12 +43,12 @@ public interface ILiteEngine : IDisposable
 
     Task ShutdownAsync(bool force);
 
-    Task<bool> CreateCollectionAsync(string name, object options);
-    Task<bool> DropCollectionAsync(string name);
+//    Task<bool> CreateCollectionAsync(string name, object options);
+//    Task<bool> DropCollectionAsync(string name);
 
 
-    Task<bool> CreateIndexAsync(string collection, string name, BsonExpression expression, bool unique);
-    Task<bool> DropIndexAsync(string collection, string name);
+//    Task<bool> CreateIndexAsync(string collection, string name, BsonExpression expression, bool unique);
+//    Task<bool> DropIndexAsync(string collection, string name);
 
 
     /// <summary>
@@ -56,9 +56,9 @@ public interface ILiteEngine : IDisposable
     /// </summary>
     /// <param name="forced">Invalidate all pending cursors.</param>
     /// <returns></returns>
-    Task<int> CheckpointAsync(bool forced);
-    Task<int> RebuildAsync(object options);
-    Task<bool> SetPragmaAsync(string name, object value);
+//    Task<int> CheckpointAsync(bool forced);
+//    Task<int> RebuildAsync(object options);
+//    Task<bool> SetPragmaAsync(string name, object value);
 
     #endregion
 }
