@@ -42,6 +42,7 @@
     <Folder Include="Engine\Services\Wal\" />
     <Folder Include="Engine\Services\Sort\" />
     <Folder Include="Engine\Query\" />
+    <Folder Include="Utils\InterfaceGenerator\" />
   </ItemGroup>
 	
  <ItemGroup>
@@ -49,13 +50,9 @@
     <None Include="..\..\LICENSE" Pack="true" PackagePath="LICENSE" />
     <None Include="icon_64x64.png" Pack="true" PackagePath="icon_64x64.png" />
   </ItemGroup>
+	
+ <ItemGroup>
+   <ProjectReference Include="..\InterfaceGenerator\InterfaceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+ </ItemGroup>
 		
-  <ItemGroup>
-    <PackageReference Include="AutomaticInterface" Version="1.5.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-	<PackageReference Include="Microsoft.CodeAnalysis" Version="4.2.0" />
-  </ItemGroup>
-
 </Project>

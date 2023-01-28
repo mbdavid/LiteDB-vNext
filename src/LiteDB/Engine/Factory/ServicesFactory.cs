@@ -1,16 +1,20 @@
 ﻿namespace LiteDB.Engine;
 
+[GenerateAutoInterface]
 internal class ServicesFactory : IServicesFactory
 {
-    public IEngineServices CreateEngineServices(EngineSettings settings, IServicesFactory factory)
+    public EngineSettings Settings { get; }
 
+    public ServicesFactory(EngineSettings settings)
     {
-        throw new NotImplementedException();
+        if (settings == null) throw new ArgumentNullException(nameof(settings));
+
+        this.Settings = settings;
     }
 
-    public IMemoryCache CreateMemoryCache(IServicesFactory factory)
-        => new MemoryCache(factory);
+    public IEngineServices CreateEngineServices(IServicesFactory factory)
+        => new EngineServices(factory);
 
-    public IMemoryCachePage CreateMemoryCachePage(BasePage page)
-        => new MemoryCachePage(page);
+    public IMemoryCacheService CreateMemoryCacheService()
+        => new MemoryCacheService();
 }

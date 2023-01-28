@@ -5,11 +5,14 @@
 /// Its isolated from complete solution - works on low level only (no linq, no poco... just BSON objects)
 /// [ThreadSafe]
 /// </summary>
-public partial class LiteEngine //: ILiteEngine
+[GenerateAutoInterface]
+public partial class LiteEngine: ILiteEngine
 {
     private bool _disposed = false;
 
-//    private readonly EngineServices _services;
+    private readonly IEngineServices _services;
+
+    public EngineState State => _services?.State ?? EngineState.Close;
 
     #region Ctor
 
@@ -33,10 +36,25 @@ public partial class LiteEngine //: ILiteEngine
     /// Initialize LiteEngine using initial engine settings
     /// </summary>
     public LiteEngine(EngineSettings settings)
+        : this  (new ServicesFactory(settings))
     {
-        if (settings == null) throw new ArgumentNullException(nameof(settings));
+    }
 
-        //_services = new EngineServices(settings);
+    /// <summary>
+    /// Initialize LiteEngine with a custom ServiceFactory for all classes
+    /// </summary>
+    internal LiteEngine(IServicesFactory factory)
+    {
+        _services = factory.CreateEngineServices(factory);
+    }
+
+    #endregion
+
+    #region Open/Close database
+
+    public async Task OpenAsync()
+    {
+        await _services.OpenAsync();
     }
 
     #endregion
@@ -58,7 +76,7 @@ public partial class LiteEngine //: ILiteEngine
 
         if (disposing)
         {
-            //_services.Dispose();
+            //_services.CloseAsync().Wait;
         }
 
         _disposed = true;

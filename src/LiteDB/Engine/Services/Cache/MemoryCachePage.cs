@@ -1,12 +1,10 @@
-﻿using LiteDB.Engine.Services.Cache.Interfaces;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// Each memory cache page represent a shared buffer with PAGE_SIZE. 
 /// Implements IDisposable when page
 /// </summary>
-internal class MemoryCachePage : IMemoryCachePage
+internal class MemoryCachePage
 {
     /// <summary>
     /// Contains how many people are sharing this page for read
