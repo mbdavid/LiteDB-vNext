@@ -10,9 +10,9 @@ public partial class LiteEngine: ILiteEngine
 {
     private bool _disposed = false;
 
-    private readonly IEngineServices _services;
+    private readonly IServicesFactory _factory;
 
-    public EngineState State => _services?.State ?? EngineState.Close;
+    public EngineState State => _factory?.State ?? EngineState.Close;
 
     #region Ctor
 
@@ -45,7 +45,7 @@ public partial class LiteEngine: ILiteEngine
     /// </summary>
     internal LiteEngine(IServicesFactory factory)
     {
-        _services = factory.CreateEngineServices(factory);
+        _factory = factory;
     }
 
     #endregion
@@ -54,7 +54,9 @@ public partial class LiteEngine: ILiteEngine
 
     public async Task OpenAsync()
     {
-        await _services.OpenAsync();
+        var open = _factory.CreateOpenCommand();
+
+        await open.ExecuteAsync();
     }
 
     #endregion

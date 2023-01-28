@@ -30,7 +30,6 @@
 
   <ItemGroup>
     <Folder Include="Engine\FileReader\" />
-    <Folder Include="Engine\Commands\" />
     <Folder Include="Engine\Plugins\" />
     <Folder Include="Engine\Services\Transaction\" />
     <Folder Include="Engine\Services\Snapshot\" />
