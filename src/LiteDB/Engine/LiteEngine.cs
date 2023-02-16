@@ -5,48 +5,48 @@
 /// Its isolated from complete solution - works on low level only (no linq, no poco... just BSON objects)
 /// [ThreadSafe]
 /// </summary>
-[GenerateAutoInterface]
-public partial class LiteEngine: ILiteEngine
+//[GenerateAutoInterface]
+public partial class LiteEngine//: ILiteEngine
 {
     private bool _disposed = false;
 
-    private readonly IServicesFactory _factory;
+//    private readonly ServicesFactory _factory;
 
-    public EngineState State => _factory?.State ?? EngineState.Close;
+//    public EngineState State => _factory?.State ?? EngineState.Close;
 
     #region Ctor
 
     /// <summary>
     /// Initialize LiteEngine using connection memory database
     /// </summary>
-    public LiteEngine()
-        : this(new EngineSettings { DataStream = new MemoryStream() })
-    {
-    }
+//    public LiteEngine()
+//        : this(new EngineSettings { DataStream = new MemoryStream() })
+//    {
+//    }
 
     /// <summary>
     /// Initialize LiteEngine using connection string using key=value; parser
     /// </summary>
-    public LiteEngine(string filename)
-        : this (new EngineSettings { Filename = filename })
-    {
-    }
+//    public LiteEngine(string filename)
+//        : this (new EngineSettings { Filename = filename })
+//    {
+//    }
 
-    /// <summary>
-    /// Initialize LiteEngine using initial engine settings
-    /// </summary>
-    public LiteEngine(EngineSettings settings)
-        : this  (new ServicesFactory(settings))
-    {
-    }
+    ///// <summary>
+    ///// Initialize LiteEngine using initial engine settings
+    ///// </summary>
+    //public LiteEngine(EngineSettings settings)
+    //    : this  (new ServicesFactory(settings))
+    //{
+    //}
 
     /// <summary>
     /// Initialize LiteEngine with a custom ServiceFactory for all classes
     /// </summary>
-    internal LiteEngine(IServicesFactory factory)
-    {
-        _factory = factory;
-    }
+//    internal LiteEngine(ServicesFactory factory)
+//    {
+//        _factory = factory;
+//    }
 
     #endregion
 
@@ -54,9 +54,9 @@ public partial class LiteEngine: ILiteEngine
 
     public async Task OpenAsync()
     {
-        var open = _factory.CreateOpenCommand();
-
-        await open.ExecuteAsync();
+//        var open = _factory.CreateOpenCommand();
+//
+//        await open.ExecuteAsync();
     }
 
     #endregion

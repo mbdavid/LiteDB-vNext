@@ -1,7 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
-namespace InterfaceGenerator
+namespace LiteDB.Generator
 {
     internal static class AttributeDataExtensions
     {
@@ -9,6 +9,13 @@ namespace InterfaceGenerator
         {
             var pair = attributeData.NamedArguments.FirstOrDefault(x => x.Key == paramName);
             return pair.Value.Value?.ToString();
+        }
+
+        public static string? GetConstructorValue(this AttributeData attributeData)
+        {
+            var value = attributeData.ConstructorArguments.FirstOrDefault();
+
+            return value.Value?.ToString();
         }
     }
 }

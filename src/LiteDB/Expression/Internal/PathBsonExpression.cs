@@ -30,6 +30,7 @@ internal class PathBsonExpression : BsonExpression
         else if (source.IsArray)
         {
             // returns document fields inside array (only for sub documents)
+            // ex: $.Name - where $ = [{Name:.., Age:..},{Name:..}] => [Name0, Name1, ...]
             return new BsonArray(source.AsArray.Select(x => x.IsDocument ? x.AsDocument[this.Field] : BsonValue.Null));
         }
         else

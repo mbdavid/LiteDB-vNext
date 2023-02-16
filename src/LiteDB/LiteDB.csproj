@@ -41,7 +41,6 @@
     <Folder Include="Engine\Services\Wal\" />
     <Folder Include="Engine\Services\Sort\" />
     <Folder Include="Engine\Query\" />
-    <Folder Include="Utils\InterfaceGenerator\" />
   </ItemGroup>
 	
  <ItemGroup>
@@ -50,8 +49,8 @@
     <None Include="icon_64x64.png" Pack="true" PackagePath="icon_64x64.png" />
   </ItemGroup>
 	
- <ItemGroup>
-   <ProjectReference Include="..\InterfaceGenerator\InterfaceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
- </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LiteDB.Generator\LiteDB.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 		
 </Project>

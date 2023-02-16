@@ -1,4 +1,4 @@
-namespace InterfaceGenerator
+namespace LiteDB.Generator
 {
     internal static class StringExtensions
     {

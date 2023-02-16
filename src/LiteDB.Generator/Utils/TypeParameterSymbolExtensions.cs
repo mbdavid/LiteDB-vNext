@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
-namespace InterfaceGenerator
+namespace LiteDB.Generator
 {
     internal static class TypeParameterSymbolExtensions
     {

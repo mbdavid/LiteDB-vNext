@@ -433,7 +433,7 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '-')
                 {
-                    this.ReadLine();
+                    this.ReadLine(); // comment
                     token = this.ReadNext(eatWhitespace);
                 }
                 else

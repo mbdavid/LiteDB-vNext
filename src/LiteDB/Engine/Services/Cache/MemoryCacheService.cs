@@ -3,8 +3,8 @@
 /// <summary>
 /// Memory factory cache that pools memory allocation to reuse on pages access
 /// </summary>
-[GenerateAutoInterface]
-internal class MemoryCacheService : IMemoryCacheService
+//[GenerateAutoInterface]
+internal class MemoryCacheService //: IMemoryCacheService
 {
     private ConcurrentDictionary<long, MemoryCachePage> _cache = new();
 

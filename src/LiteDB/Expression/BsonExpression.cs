@@ -29,6 +29,6 @@ public abstract partial class BsonExpression
     {
         var context = new BsonExpressionContext(root, parameters, collation);
 
-        return Execute(context);
+        return this.Execute(context);
     }
 }

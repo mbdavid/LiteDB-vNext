@@ -18,7 +18,6 @@ internal class MemoryCachePage
     public MemoryCachePage(BasePage page)
     {
         this.Page = page;
-        ABCC.Sos3();
     }
 
     public void Rent()

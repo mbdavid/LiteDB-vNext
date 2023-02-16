@@ -58,9 +58,7 @@ namespace LiteDB
 
         /// <summary>
         /// Start parse full string expression into BsonExpression. Full expression are composed with conected expressions Read BsonExpression syntax. 
-        /// Root indicate that all fields assume to be on Root(), otherwise, use Current(). 
-        /// With root: `items` => `$.items`
-        /// Without root: `price` => `@.items`
+        /// Root indicate that fields will be from root value, otherwise, use current value (only when fields are no prefix with $. or @.). 
         /// </summary>
         public static BsonExpression ParseFullExpression(Tokenizer tokenizer, bool root)
         {
@@ -520,6 +518,7 @@ namespace LiteDB
 
                 tokenizer.ReadToken().Expect(TokenType.CloseBracket); // read close ]
 
+                //TODO: verificar se AND/OR não deveriam entrar aqui tambem
                 if (selector.Type.IsPredicate())
                 {
                     return BsonExpression.Filter(source, selector);

@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace InterfaceGenerator
+namespace LiteDB.Generator
 {
     internal class SyntaxReceiver : ISyntaxReceiver
     {
@@ -14,7 +14,7 @@ namespace InterfaceGenerator
                 IsClassOrRecord(typeDeclarationSyntax) &&
                 typeDeclarationSyntax.AttributeLists.Count > 0)
             {
-                CandidateTypes.Add(typeDeclarationSyntax);
+                this.CandidateTypes.Add(typeDeclarationSyntax);
             }
         }
 
