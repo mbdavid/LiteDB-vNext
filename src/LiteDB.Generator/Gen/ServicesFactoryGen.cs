@@ -35,7 +35,7 @@ internal class ServicesFactoryGen
 
                 if (createFactory != "True") continue;
 
-                GenerateInterfaceMethodDefinition(cw, type.TypeSymbol.Name, member as IMethodSymbol);
+                GenerateInterfaceMethodDefinition(cw, type.TypeSymbol.Name, member);
             }
         }
 
@@ -74,8 +74,12 @@ internal class ServicesFactoryGen
 
         cw.Write("public I{0} Create{0}", typeName);
 
+        var parameters = methodSymbol.Parameters
+            .Where(x => x.Type.Name != "I" + ServicesFactoryClassname)
+            .ToArray();
+
         cw.Write("(");
-        cw.WriteJoin(", ", methodSymbol.Parameters, (cwi, p) => cwi.WriteMethodParam(p));
+        cw.WriteJoin(", ", parameters, (cwi, p) => cwi.WriteMethodParam(p));
         cw.WriteLine(")");
 
         cw.Indent++;
@@ -83,7 +87,16 @@ internal class ServicesFactoryGen
         cw.Write("=> new {0}", typeName);
 
         cw.Write("(");
-        cw.WriteJoin(", ", methodSymbol.Parameters, (cwi, p) => cwi.WriteMethodParamValues(p));
+        cw.WriteJoin(", ", methodSymbol.Parameters, (cwi, p) => {
+            if (p.Type.Name == "I" + ServicesFactoryClassname)
+            {
+                cwi.Write("this");
+            }
+            else
+            {
+                cwi.WriteMethodParamValues(p);
+            }
+        });
         cw.WriteLine(");");
 
         cw.Indent--;
@@ -95,8 +108,12 @@ internal class ServicesFactoryGen
         
         cw.Write("I{0} Create{0}", typeName);
 
+        var parameters = methodSymbol.Parameters
+            .Where(x => x.Type.Name != "I" + ServicesFactoryClassname)
+            .ToArray();
+
         cw.Write("(");
-        cw.WriteJoin(", ", methodSymbol.Parameters, (cwi, p) => cwi.WriteMethodParam(p));
+        cw.WriteJoin(", ", parameters, (cwi, p) => cwi.WriteMethodParam(p));
         cw.WriteLine(");");
     }
 }
