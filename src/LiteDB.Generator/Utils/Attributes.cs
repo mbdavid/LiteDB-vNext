@@ -1,13 +1,12 @@
-﻿namespace LiteDB.Generator
-{
-    
-    internal class Attributes
-    {
-        public const string AttributesNamespace = "LiteDB";
+﻿namespace LiteDB.Generator;
 
-        public const string AutoInterfaceClassname = "AutoInterfaceAttribute";
-        
-        public static readonly string AttributesSourceCode = $@"
+internal class Attributes
+{
+    public const string AttributesNamespace = "LiteDB";
+
+    public const string AutoInterfaceClassname = "AutoInterfaceAttribute";
+    
+    public static readonly string AttributesSourceCode = $@"
 
 using System;
 using System.Diagnostics;
@@ -30,5 +29,4 @@ namespace {AttributesNamespace}
     }}
 }}
 ";
-    }
 }

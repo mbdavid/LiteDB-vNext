@@ -1,21 +1,17 @@
-using System.Linq;
-using Microsoft.CodeAnalysis;
+namespace LiteDB.Generator;
 
-namespace LiteDB.Generator
+internal static class AttributeDataExtensions
 {
-    internal static class AttributeDataExtensions
+    public static string? GetNamedParamValue(this AttributeData attributeData, string paramName)
     {
-        public static string? GetNamedParamValue(this AttributeData attributeData, string paramName)
-        {
-            var pair = attributeData.NamedArguments.FirstOrDefault(x => x.Key == paramName);
-            return pair.Value.Value?.ToString();
-        }
+        var pair = attributeData.NamedArguments.FirstOrDefault(x => x.Key == paramName);
+        return pair.Value.Value?.ToString();
+    }
 
-        public static string? GetConstructorValue(this AttributeData attributeData)
-        {
-            var value = attributeData.ConstructorArguments.FirstOrDefault();
+    public static string? GetConstructorValue(this AttributeData attributeData)
+    {
+        var value = attributeData.ConstructorArguments.FirstOrDefault();
 
-            return value.Value?.ToString();
-        }
+        return value.Value?.ToString();
     }
 }

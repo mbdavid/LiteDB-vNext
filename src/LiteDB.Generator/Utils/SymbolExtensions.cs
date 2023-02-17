@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.CodeAnalysis;
-
-namespace LiteDB.Generator;
+﻿namespace LiteDB.Generator;
 
 internal static class SymbolExtensions
 {

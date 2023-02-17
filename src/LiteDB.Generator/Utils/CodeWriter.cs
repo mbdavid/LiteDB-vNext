@@ -1,15 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-
-using static SourceGenDebugger;
-
-namespace LiteDB.Generator;
+﻿namespace LiteDB.Generator;
 
 internal class CodeWriter
 {

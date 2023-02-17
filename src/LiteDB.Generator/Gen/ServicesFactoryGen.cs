@@ -1,15 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-
-using static SourceGenDebugger;
-
-namespace LiteDB.Generator;
+﻿namespace LiteDB.Generator;
 
 internal class ServicesFactoryGen
 {
@@ -41,7 +30,6 @@ internal class ServicesFactoryGen
 
         cw.Indent--;
         cw.WriteLine("}");
-
 
         cw.WriteLine();
         cw.WriteLine("public partial class {0} : I{0}", ServicesFactoryClassname);
