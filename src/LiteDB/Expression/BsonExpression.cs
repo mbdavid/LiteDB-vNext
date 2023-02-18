@@ -25,7 +25,7 @@ public abstract partial class BsonExpression
 
     internal abstract BsonValue Execute(BsonExpressionContext context);
 
-    public BsonValue Execute(BsonValue root = null, BsonDocument parameters = null, Collation collation = null)
+    public BsonValue Execute(BsonValue? root = null, BsonDocument? parameters = null, Collation? collation = null)
     {
         var context = new BsonExpressionContext(root, parameters, collation);
 

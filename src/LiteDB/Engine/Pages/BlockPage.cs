@@ -7,7 +7,7 @@ internal class BlockPage : BasePage
 {
     private readonly BlockPageHeader _header;
 
-    private BlockPageHeader _headerWrite = null;
+    private BlockPageHeader? _headerWrite = null;
 
     #region Buffer Field Positions
 
@@ -46,7 +46,7 @@ internal class BlockPage : BasePage
         this.ColID = colID;
 
         // write unchanged data
-        var span = _writeBuffer.Memory.Span;
+        var span = _writeBuffer!.Memory.Span;
 
         span[P_COL_ID] = this.ColID;
 
@@ -94,7 +94,7 @@ internal class BlockPage : BasePage
         span[P_IS_CONFIRMED] = this.IsConfirmed ? (byte)1 : (byte)0;
 
         // update header instance
-        _headerWrite.Update(span);
+        _headerWrite!.Update(span);
 
         return buffer;
     }
@@ -141,8 +141,8 @@ internal class BlockPage : BasePage
         // initialize dirty buffer and dirty header (once)
         this.InitializeWrite();
 
-        var span = _writeBuffer.Memory.Span;
-        var header = _headerWrite;
+        var span = _writeBuffer!.Memory.Span;
+        var header = _headerWrite!;
 
         var isNewInsert = index == byte.MaxValue;
 
@@ -212,8 +212,8 @@ internal class BlockPage : BasePage
         this.InitializeWrite();
 
         // get span and header instance (dirty)
-        var span = _writeBuffer.Memory.Span;
-        var header = _headerWrite;
+        var span = _writeBuffer!.Memory.Span;
+        var header = _headerWrite!;
 
         // read block position on index slot
         var positionAddr = CalcPositionAddr(index);
@@ -283,8 +283,8 @@ internal class BlockPage : BasePage
         this.InitializeWrite();
 
         // get span and header instance (dirty)
-        var span = _writeBuffer.Memory.Span;
-        var header = _headerWrite;
+        var span = _writeBuffer!.Memory.Span;
+        var header = _headerWrite!;
 
         // read slot address
         var positionAddr = CalcPositionAddr(index);
@@ -374,8 +374,8 @@ internal class BlockPage : BasePage
         this.InitializeWrite();
 
         // get span and header instance (dirty)
-        var span = _writeBuffer.Memory.Span;
-        var header = _headerWrite;
+        var span = _writeBuffer!.Memory.Span;
+        var header = _headerWrite!;
 
         ENSURE(header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
         ENSURE(header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
@@ -456,8 +456,8 @@ internal class BlockPage : BasePage
     private void UpdateHighestIndex()
     {
         // get span and header instance (dirty)
-        var span = _writeBuffer.Memory.Span;
-        var header = _headerWrite;
+        var span = _writeBuffer!.Memory.Span;
+        var header = _headerWrite!;
 
         ENSURE(header.HighestIndex < byte.MaxValue, "can run only if contains a valid HighestIndex");
 
@@ -504,12 +504,12 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Checks if segment position has a valid value (used for DEBUG)
     /// </summary>
-    private bool IsValidPos(ushort position) => position >= PAGE_HEADER_SIZE && position < (PAGE_SIZE - _headerWrite.FooterSize);
+    private bool IsValidPos(ushort position) => position >= PAGE_HEADER_SIZE && position < (PAGE_SIZE - _headerWrite!.FooterSize);
 
     /// <summary>
     /// Checks if segment length has a valid value (used for DEBUG)
     /// </summary>
-    private bool IsValidLen(ushort length) => length > 0 && length <= (PAGE_SIZE - PAGE_HEADER_SIZE - _headerWrite.FooterSize);
+    private bool IsValidLen(ushort length) => length > 0 && length <= (PAGE_SIZE - PAGE_HEADER_SIZE - _headerWrite!.FooterSize);
 
     #endregion
 

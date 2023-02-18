@@ -3,7 +3,7 @@
 /// <summary>
 /// Implement multiple readers/single writer for async task
 /// </summary>
-public sealed class AsyncReaderWriterLock : IDisposable
+internal class AsyncReaderWriterLock : IDisposable
 {
     private readonly SemaphoreSlim _readSemaphore = new (1, 1);
     private readonly SemaphoreSlim _writeSemaphore = new (1, 1);

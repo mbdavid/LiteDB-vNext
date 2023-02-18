@@ -9,7 +9,7 @@ internal class EnsureCheck
     /// Ensure condition is true, otherwise throw exception (check contract)
     /// </summary>
     [DebuggerHidden]
-    public static void ENSURE(bool conditional, string message = null)
+    public static void ENSURE(bool conditional, string? message = null)
     {
         if (conditional == false)
         {
@@ -28,7 +28,7 @@ internal class EnsureCheck
     /// If ifTest are true, ensure condition is true, otherwise throw ensure exception (check contract)
     /// </summary>
     [DebuggerHidden]
-    public static void ENSURE(bool ifTest, bool conditional, string message = null)
+    public static void ENSURE(bool ifTest, bool conditional, string? message = null)
     {
         if (ifTest && conditional == false)
         {
@@ -48,7 +48,7 @@ internal class EnsureCheck
     /// </summary>
     [DebuggerHidden]
     [Conditional("DEBUG")]
-    public static void DEBUG(bool conditional, string message = null)
+    public static void DEBUG(bool conditional, string? message = null)
     {
         if (conditional == false)
         {

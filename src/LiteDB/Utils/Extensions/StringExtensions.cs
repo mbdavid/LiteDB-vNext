@@ -17,14 +17,6 @@ internal static class StringExtensions
         return true;
     }
 
-    public static string TrimToNull(this string str)
-    {
-        //TODO: improve with span
-        var v = str.Trim();
-
-        return v.Length == 0 ? null : v;
-    }
-
     public static string Sha1(this string value)
     {
         //TODO: improve with shared array
@@ -55,10 +47,10 @@ internal static class StringExtensions
         var isCharWildCardOn = false;
         var isCharSetOn = false;
         var isNotCharSetOn = false;
-        var endOfPattern = false;
         var lastWildCard = -1;
         var patternIndex = 0;
         var p = '\0';
+        bool endOfPattern;
 
         for (var i = 0; i < str.Length; i++)
         {

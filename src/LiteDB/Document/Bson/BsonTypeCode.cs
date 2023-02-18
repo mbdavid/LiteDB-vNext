@@ -25,8 +25,9 @@ public enum BsonTypeCode : byte
     ObjectId = 10,
     Guid = 11,
     DateTime = 12,
-    True = 13, // Boolean True
-    False = 14, // Boolean False
+    // reserved for DateTimeOffset
+    False = 20, // Boolean False
+    True = 21, // Boolean True
 
     MaxValue = 31, // use 5 bits max (keep 3 for extends)
 

@@ -13,7 +13,7 @@ public partial class LiteException
 
     #region ERR_UNEXPECTED_TOKEN
 
-    internal static LiteException ERR_UNEXPECTED_TOKEN(Token token, string expected = null)
+    internal static LiteException ERR_UNEXPECTED_TOKEN(Token token, string? expected = null)
     {
         var position = (token?.Position - (token?.Value?.Length ?? 0)) ?? 0;
         var str = token?.Type == TokenType.EOF ? "[EOF]" : token?.Value ?? "";
@@ -34,6 +34,25 @@ public partial class LiteException
             Position = position
         };
     }
+
+    #endregion
+
+    #region CRITITAL ERRORS (stop engine)
+
+    internal static LiteException ERR_INVALID_DATABASE() =>
+        new(900, $"File is not a valid LiteDB database format or contains a invalid password.");
+
+    internal static LiteException ERR_INVALID_FREE_SPACE_PAGE(uint pageID, int freeBytes, int length) =>
+        new(901, $"An operation that would corrupt page {pageID} was prevented. The operation required {length} free bytes, but the page had only {freeBytes} available.");
+
+    internal static LiteException ERR_ENSURE(string? message) =>
+        new(902, $"ENSURE: {message}.");
+
+    internal static LiteException ERR_DATAFILE_NOT_ENCRYPTED() =>
+        new(903, $"This datafile are not encrypted and shoutn't provide password");
+
+    internal static LiteException ERR_DISK_WRITE_FAILURE(Exception ex) =>
+        new(904, $"Disk fail in write operation: {ex.Message}. See inner exception for details", ex);
 
     #endregion
 }

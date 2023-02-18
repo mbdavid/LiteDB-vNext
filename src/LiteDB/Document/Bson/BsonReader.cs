@@ -11,10 +11,10 @@ public class BsonReader
     /// <summary>
     /// Read a document inside span buffer. 
     /// Use filds to select custom fields only (on root document only)
-    /// Skip will skip document read (just update length output)
+    /// Skip will skip document read (just update length output) - returns null
     /// Returns length document size
     /// </summary>
-    public static BsonDocument ReadDocument(Span<byte> span, HashSet<string> fields, bool skip, out int length)
+    public static BsonDocument? ReadDocument(Span<byte> span, HashSet<string>? fields, bool skip, out int length)
     {
         var doc = new BsonDocument();
         var remaining = fields == null || fields.Count == 0 ? null : fields;
@@ -39,14 +39,14 @@ public class BsonReader
 
             if (fieldSkip == false)
             {
-                doc.Add(key, value);
+                doc.Add(key, value!);
             }
         }
 
         return doc;
     }
 
-    public static BsonArray ReadArray(Span<byte> span, bool skip, out int length)
+    public static BsonArray? ReadArray(Span<byte> span, bool skip, out int length)
     {
         var array = new BsonArray();
 
@@ -60,7 +60,7 @@ public class BsonReader
         {
             var value = ReadValue(span[offset..], false, out var valueLength);
 
-            array.Add(value);
+            array.Add(value!);
 
             offset += valueLength;
         }
@@ -68,7 +68,7 @@ public class BsonReader
         return array;
     }
 
-    public static BsonValue ReadValue(Span<byte> span, bool skip, out int length)
+    public static BsonValue? ReadValue(Span<byte> span, bool skip, out int length)
     {
         var type = (BsonTypeCode)span[0];
 
@@ -81,7 +81,7 @@ public class BsonReader
             case BsonTypeCode.String:
                 var strLength = span[1..].ReadVariantLength(out var varSLen);
                 length = 1 + varSLen + strLength;
-                return skip ? null : span[(1 + varSLen)..(1 + varSLen + strLength)].ReadString();
+                return skip ? null : new BsonString(span[(1 + varSLen)..(1 + varSLen + strLength)].ReadString());
 
             case BsonTypeCode.Document:
                 var doc = ReadDocument(span[1..], null, skip, out var docLength);
@@ -96,7 +96,7 @@ public class BsonReader
             case BsonTypeCode.Binary:
                 var bytesLength = span[1..].ReadVariantLength(out var varBLen);
                 length = 1 + varBLen + bytesLength;
-                return skip ? null : span[(1 + varBLen)..(1 + varBLen + bytesLength)].ToArray();
+                return skip ? null : new BsonBinary(span[(1 + varBLen)..(1 + varBLen + bytesLength)].ToArray());
 
             case BsonTypeCode.Guid:
                 length = 1 + 16;
@@ -104,7 +104,7 @@ public class BsonReader
 
             case BsonTypeCode.ObjectId:
                 length = 1 + 12;
-                return skip ? null : span[1..].ReadObjectId();
+                return skip ? null : new BsonObjectId(span[1..].ReadObjectId());
 
             case BsonTypeCode.True:
                 length = 1;

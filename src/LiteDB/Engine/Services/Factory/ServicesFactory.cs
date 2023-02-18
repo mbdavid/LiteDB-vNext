@@ -1,7 +1,9 @@
-﻿//namespace LiteDB.Engine;
+﻿namespace LiteDB;
 
-////[GenerateAutoInterface]
-//internal class ServicesFactory //: IServicesFactory
+public partial class ServicesFactory
+{
+    public EngineState State { get; set; }
+}
 //{
 //    #region Engine Services/Settings
 

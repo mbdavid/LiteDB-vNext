@@ -42,7 +42,7 @@ internal class HeaderPage : BasePage
     public HeaderPage()
         : base(0, PageType.Header)
     {
-        var span = _writeBuffer.Memory.Span;
+        var span = _writeBuffer!.Memory.Span;
 
         // update header
         span.WriteDateTime(this.CreationTime);

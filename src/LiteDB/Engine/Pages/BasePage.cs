@@ -15,7 +15,7 @@ internal class BasePage : IDisposable
     /// Created only use first write operation
     /// Changes on BasePage must be one same thread (Not Thread Safe). Only one writer per time
     /// </summary>
-    protected IMemoryOwner<byte> _writeBuffer;
+    protected IMemoryOwner<byte>? _writeBuffer;
 
     #region Buffer Field Positions
 
@@ -63,12 +63,12 @@ internal class BasePage : IDisposable
     /// <summary>
     /// Create BasePage instance based on buffer content
     /// </summary>
-    public BasePage(IMemoryOwner<byte> buffer)
+    public BasePage(IMemoryOwner<byte> readBuffer)
     {
-        _readBuffer = buffer;
+        _readBuffer = readBuffer;
         _writeBuffer = null;
 
-        var span = buffer.Memory.Span;
+        var span = readBuffer.Memory.Span;
 
         this.PageID = span[P_PAGE_ID..].ReadUInt32();
         this.PageType = (PageType)span[P_PAGE_TYPE];
@@ -97,6 +97,8 @@ internal class BasePage : IDisposable
     {
         if (this.IsDirty == false) throw new InvalidOperationException("Current page has no dirty buffer");
 
+        if (_writeBuffer is null) throw new ArgumentNullException(nameof(_writeBuffer));
+
         return _writeBuffer.Memory;
     }
 
@@ -109,9 +111,11 @@ internal class BasePage : IDisposable
         {
             _readBuffer?.Dispose();
         }
-
-        _readBuffer.Dispose();
-        _writeBuffer?.Dispose();
+        else
+        {
+            _readBuffer?.Dispose();
+            _writeBuffer?.Dispose();
+        }
     }
 
     #endregion

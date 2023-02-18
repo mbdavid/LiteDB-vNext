@@ -6,6 +6,7 @@
 	<AssemblyVersion>6.0.0</AssemblyVersion>
 	<FileVersion>6.0.0</FileVersion>
 	<VersionPrefix>6.0.0</VersionPrefix>
+    <Nullable>enable</Nullable>
 	<Authors>Maurício David</Authors>
 	<Product>LiteDB</Product>
 	<Description>LiteDB - A lightweight embedded .NET NoSQL document store in a single datafile</Description>
@@ -28,21 +29,6 @@
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Engine\FileReader\" />
-    <Folder Include="Engine\Plugins\" />
-    <Folder Include="Engine\Services\Transaction\" />
-    <Folder Include="Engine\Services\Snapshot\" />
-    <Folder Include="Engine\SqlParser\" />
-    <Folder Include="Engine\SystemCollections\" />
-    <Folder Include="Engine\Services\Data\" />
-    <Folder Include="Engine\Services\Index\" />
-    <Folder Include="Engine\Services\Lock\" />
-    <Folder Include="Engine\Services\Wal\" />
-    <Folder Include="Engine\Services\Sort\" />
-    <Folder Include="Engine\Query\" />
-  </ItemGroup>
-	
  <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\LICENSE" Pack="true" PackagePath="LICENSE" />

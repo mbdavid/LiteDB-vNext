@@ -27,7 +27,7 @@ public class DiskService : IDiskService
 
     public Stream RendStreamReader()
     {
-        return null;
+        throw new NotImplementedException();
     }
 
     public void ReturnReader(Stream stream)

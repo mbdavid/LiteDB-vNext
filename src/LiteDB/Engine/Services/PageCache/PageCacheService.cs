@@ -3,12 +3,12 @@
 /// <summary>
 /// Memory factory cache that pools memory allocation to reuse on pages access
 /// </summary>
-//[GenerateAutoInterface]
-internal class MemoryCacheService //: IMemoryCacheService
+[AutoInterface(true)]
+internal class PageCacheService : IPageCacheService
 {
-    private ConcurrentDictionary<long, MemoryCachePage> _cache = new();
+    private ConcurrentDictionary<long, PageCacheItem> _cache = new();
 
-    public MemoryCacheService()
+    public PageCacheService()
     {
     }
 
@@ -16,9 +16,9 @@ internal class MemoryCacheService //: IMemoryCacheService
     /// Get a page from memory cache. If not exists, return null
     /// If exists, increase sharecounter (and must call Return() after use)
     /// </summary>
-    public MemoryCachePage GetPage(long position)
+    public PageCacheItem GetPage(long position)
     {
-        var found = _cache.TryGetValue(position, out MemoryCachePage page);
+        var found = _cache.TryGetValue(position, out PageCacheItem page);
 
         if (found)
         {
@@ -35,7 +35,7 @@ internal class MemoryCacheService //: IMemoryCacheService
     /// </summary>
     public void ReturnPage(long position)
     {
-        var found = _cache.TryGetValue(position, out MemoryCachePage page);
+        var found = _cache.TryGetValue(position, out PageCacheItem page);
 
         ENSURE(!found, $"This page position {position} are not in cache");
 
@@ -49,7 +49,7 @@ internal class MemoryCacheService //: IMemoryCacheService
     {
         ENSURE(page.IsDirty == false, "Page must be clean to be added on cache");
 
-        var cached = new MemoryCachePage(page);
+        var cached = new PageCacheItem();
 
         var added = _cache.TryAdd(position, cached);
 

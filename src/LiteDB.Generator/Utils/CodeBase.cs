@@ -1,10 +1,6 @@
 ﻿namespace LiteDB.Generator;
 
-internal class TypeSymbolWithAttribute
-{
-    public INamedTypeSymbol TypeSymbol { get; set; }
-    public AttributeData Attribute { get; set; }
-}
+internal record TypeSymbolWithAttribute(INamedTypeSymbol TypeSymbol, AttributeData Attribute);
 
 internal class CodeBase
 {
@@ -71,11 +67,7 @@ internal class CodeBase
 
             var attribute = attributes.Single();
 
-            yield return new TypeSymbolWithAttribute
-            {
-                TypeSymbol = implTypeSymbol,
-                Attribute = attribute,
-            };
+            yield return new TypeSymbolWithAttribute(implTypeSymbol, attribute);
         }
     }
 
