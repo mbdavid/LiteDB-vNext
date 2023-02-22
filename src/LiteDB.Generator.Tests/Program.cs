@@ -36,7 +36,7 @@ public class DiskService : IDiskService
 }
 
 [AutoInterface(true)]
-public class StreamPool
+public class StreamPool : IStreamPool
 {
     public StreamPool(int limit)
     {
