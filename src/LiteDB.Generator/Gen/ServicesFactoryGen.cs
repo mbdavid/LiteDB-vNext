@@ -12,7 +12,7 @@ internal class ServicesFactoryGen
         cw.WriteLine($"namespace {ServiceFactoryNamespace};");
         cw.WriteLine();
 
-        cw.WriteLine("public partial interface I{0}", ServicesFactoryClassname);
+        cw.WriteLine("partial interface I{0}", ServicesFactoryClassname);
         cw.WriteLine("{");
         cw.Indent++;
 
@@ -32,7 +32,7 @@ internal class ServicesFactoryGen
         cw.WriteLine("}");
 
         cw.WriteLine();
-        cw.WriteLine("public partial class {0} : I{0}", ServicesFactoryClassname);
+        cw.WriteLine("partial class {0} : I{0}", ServicesFactoryClassname);
         cw.WriteLine("{");
         cw.Indent++;
 

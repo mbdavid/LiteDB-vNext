@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-public partial interface IServicesFactory
+internal partial interface IServicesFactory
 {
     EngineState State { get; set; }
 }

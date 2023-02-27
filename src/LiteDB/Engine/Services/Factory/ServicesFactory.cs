@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-public partial class ServicesFactory
+internal partial class ServicesFactory
 {
     public EngineState State { get; set; }
 }
