@@ -49,8 +49,8 @@ internal class BinaryBsonExpression : BsonExpression
                 return this.Left.Execute(context).AsString?.SqlLike(this.Right.Execute(context).AsString, context.Collation) ?? false;
             case BsonExpressionType.Between:
                 var value = this.Left.Execute(context);
-                var start = (this.Right as MakeArrayBsonExpression).Items.First().Execute(context);
-                var end = (this.Right as MakeArrayBsonExpression).Items.Last().Execute(context);
+                var start = (this.Right as MakeArrayBsonExpression)!.Items.First().Execute(context);
+                var end = (this.Right as MakeArrayBsonExpression)!.Items.Last().Execute(context);
                 return value >= start && value <= end;
             case BsonExpressionType.In:
                 return this.Right.Execute(context).AsArray?.Contains(this.Left.Execute(context), context.Collation) ?? false;

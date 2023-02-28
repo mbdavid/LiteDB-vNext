@@ -2,7 +2,7 @@
 
 internal static class DictionaryExtensions
 {
-    public static T? GetOrDefault<K, T>(this IDictionary<K, T> dict, K key, T? defaultValue = default)
+    public static T GetOrDefault<K, T>(this IDictionary<K, T> dict, K key, T defaultValue)
     {
         if (dict.TryGetValue(key, out T result))
         {

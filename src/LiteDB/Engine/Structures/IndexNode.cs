@@ -85,7 +85,7 @@ internal struct IndexNode
 
         var keyPosition = P_KEY(this.Level);
 
-        this.Key = BsonReader.ReadValue(span[keyPosition..], false, out _);
+        this.Key = BsonReader.ReadValue(span[keyPosition..], false, out _)!;
     }
 
     /// <summary>
@@ -179,7 +179,7 @@ internal struct IndexNode
     /// </summary>
     public PageAddress GetNextPrev(byte level, int order)
     {
-        return order == 1/*Query.Ascending*/ ? this.Next[level] : this.Prev[level];
+        return order == Query.Ascending ? this.Next[level] : this.Prev[level];
     }
 
     #region Static Helpers

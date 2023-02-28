@@ -89,18 +89,18 @@ public abstract partial class BsonExpression
     /// <summary>
     /// Load all static methods from BsonExpressionMethods class. Use a dictionary using name + parameter count
     /// </summary>
-    private static Dictionary<string, MethodInfo> _methods =
+    private static readonly Dictionary<string, MethodInfo> _methods =
         typeof(BsonExpressionMethods).GetMethods(BindingFlags.Public | BindingFlags.Static)
         .ToDictionary(m => m.Name.ToUpper() + "~" + m.GetParameters().Where(p => p.ParameterType != typeof(Collation)).Count());
 
     /// <summary>
     /// Get expression method with same name and same parameter - return null if not found
     /// </summary>
-    internal static MethodInfo GetMethod(string name, int parameterCount)
+    internal static MethodInfo? GetMethod(string name, int parameterCount)
     {
         var key = name.ToUpper() + "~" + parameterCount;
 
-        return _methods.GetOrDefault(key);
+        return _methods.GetOrDefault(key, null);
     }
 
     #endregion

@@ -4,6 +4,7 @@ internal class ServicesFactoryGen
 {
     public const string ServiceFactoryNamespace = "LiteDB";
     public const string ServicesFactoryClassname = "ServicesFactory";
+    public const string ServicesFactoryAccessibility = "internal";
 
     public static void GenerateCode(CodeBase codeBase)
     {
@@ -12,7 +13,7 @@ internal class ServicesFactoryGen
         cw.WriteLine($"namespace {ServiceFactoryNamespace};");
         cw.WriteLine();
 
-        cw.WriteLine("partial interface I{0}", ServicesFactoryClassname);
+        cw.WriteLine("{0} partial interface I{1}", ServicesFactoryAccessibility, ServicesFactoryClassname);
         cw.WriteLine("{");
         cw.Indent++;
 
@@ -32,7 +33,7 @@ internal class ServicesFactoryGen
         cw.WriteLine("}");
 
         cw.WriteLine();
-        cw.WriteLine("partial class {0} : I{0}", ServicesFactoryClassname);
+        cw.WriteLine("{0} partial class {1} : I{1}", ServicesFactoryAccessibility, ServicesFactoryClassname);
         cw.WriteLine("{");
         cw.Indent++;
 

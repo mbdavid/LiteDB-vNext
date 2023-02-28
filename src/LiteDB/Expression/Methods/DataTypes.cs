@@ -197,19 +197,15 @@ internal partial class BsonExpressionMethods
         }
         else if (value.IsString)
         {
-            byte[] data = null;
-            var isBase64 = false;
-
             try
             {
-                data = Convert.FromBase64String(value.AsString);
-                isBase64 = true;
+                var data = Convert.FromBase64String(value.AsString);
+
+                return data;
             }
             catch (FormatException)
             {
             }
-
-            if (isBase64) return data;
         }
 
         return BsonValue.Null;
@@ -226,19 +222,15 @@ internal partial class BsonExpressionMethods
         }
         else if(value.IsString)
         {
-            ObjectId val = null;
-            var isObjectId = false;
-
             try
             {
-                val = new ObjectId(value.AsString);
-                isObjectId = true;
+                var val = new ObjectId(value.AsString);
+                
+                return val;
             }
             catch
             {
             }
-
-            if (isObjectId) return val;
         }
 
         return BsonValue.Null;
@@ -255,19 +247,10 @@ internal partial class BsonExpressionMethods
         }
         else if(value.IsString)
         {
-            var val = Guid.Empty;
-            var isGuid = false;
-
-            try
+            if (Guid.TryParse(value.AsString, out var guid))
             {
-                val = new Guid(value.AsString);
-                isGuid = true;
+                return guid;
             }
-            catch
-            {
-            }
-
-            if (isGuid) return val;
         }
 
         return BsonValue.Null;
@@ -292,9 +275,9 @@ internal partial class BsonExpressionMethods
         }
         else if(value.IsString)
         {
-            if (DateTime.TryParse(value.AsString, collation.Culture.DateTimeFormat, DateTimeStyles.None, out var val))
+            if (DateTime.TryParse(value.AsString, collation.Culture.DateTimeFormat, DateTimeStyles.None, out var date))
             {
-                return val;
+                return date;
             }
         }
 
@@ -314,9 +297,9 @@ internal partial class BsonExpressionMethods
         {
             var c = new CultureInfo(culture.AsString); // en-US
 
-            if (DateTime.TryParse(value.AsString, c.DateTimeFormat, DateTimeStyles.None, out var val))
+            if (DateTime.TryParse(value.AsString, c.DateTimeFormat, DateTimeStyles.None, out var date))
             {
-                return val;
+                return date;
             }
         }
 
@@ -334,9 +317,9 @@ internal partial class BsonExpressionMethods
         }
         else if(value.IsString)
         {
-            if (DateTime.TryParse(value.AsString, collation.Culture.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var val))
+            if (DateTime.TryParse(value.AsString, collation.Culture.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var date))
             {
-                return val;
+                return date;
             }
         }
 
@@ -356,9 +339,9 @@ internal partial class BsonExpressionMethods
         {
             var c = new CultureInfo(culture.AsString); // en-US
 
-            if (DateTime.TryParse(value.AsString, c.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var val))
+            if (DateTime.TryParse(value.AsString, c.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var date))
             {
-                return val;
+                return date;
             }
         }
 

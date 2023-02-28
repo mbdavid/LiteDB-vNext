@@ -1,12 +1,13 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
-/// Memory factory cache that pools memory allocation to reuse on pages access
+/// Page buffer cache. Keep a concurrent dictionary with buffers (byte[]) based on disk file position.
+/// Cache both data and log pages. Works at buffer level
 /// </summary>
 [AutoInterface(true)]
 internal class PageCacheService : IPageCacheService
 {
-    private ConcurrentDictionary<long, PageCacheItem> _cache = new();
+    private ConcurrentDictionary<long, BufferPage> _cache = new();
 
     public PageCacheService()
     {
@@ -16,9 +17,9 @@ internal class PageCacheService : IPageCacheService
     /// Get a page from memory cache. If not exists, return null
     /// If exists, increase sharecounter (and must call Return() after use)
     /// </summary>
-    public PageCacheItem GetPage(long position)
+    public BufferPage? GetBufferPage(long position)
     {
-        var found = _cache.TryGetValue(position, out PageCacheItem page);
+        var found = _cache.TryGetValue(position, out BufferPage page);
 
         if (found)
         {
@@ -31,29 +32,13 @@ internal class PageCacheService : IPageCacheService
     }
 
     /// <summary>
-    /// Return a page to cache after a GetPage
+    /// Add a new page to cache. Buffer must contains all data for postion in disk (data/log)
     /// </summary>
-    public void ReturnPage(long position)
+    public void AddPage(PageCacheItem page)
     {
-        var found = _cache.TryGetValue(position, out PageCacheItem page);
+        var added = _cache.TryAdd(page.Position, page);
 
-        ENSURE(!found, $"This page position {position} are not in cache");
-
-        page.Return();
-    }
-
-    /// <summary>
-    /// Add a new page to cache. Must have unique Position. Page must be clean 
-    /// </summary>
-    public void AddPage(long position, BasePage page)
-    {
-        ENSURE(page.IsDirty == false, "Page must be clean to be added on cache");
-
-        var cached = new PageCacheItem();
-
-        var added = _cache.TryAdd(position, cached);
-
-        ENSURE(!added, $"This page position {position} already in memory cache");
+        ENSURE(!added, $"This page position {page.Position} already in memory cache");
     }
 
     public int CleanUp()

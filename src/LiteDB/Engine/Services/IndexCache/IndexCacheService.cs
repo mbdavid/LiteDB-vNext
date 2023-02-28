@@ -1,12 +1,12 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
-/// Memory factory cache that pools memory allocation to reuse on pages access
+/// Keep all read/
 /// </summary>
 [AutoInterface(true)]
 internal class IndexCacheService : IIndexCacheService
 {
-    //private ConcurrentDictionary<string, <(int version, PageAddress addr)> _cache = new();
+    //private ConcurrentDictionary<PageAddress, List<(int version, IndexNode node)> _cache = new();
 
     public IndexCacheService()
     {
@@ -15,7 +15,7 @@ internal class IndexCacheService : IIndexCacheService
     /// <summary>
     /// Get index node from cache based on index address
     /// </summary>
-    public IndexNode GetIndexNode(PageAddress nodeAddress, int readVersion)
+    public IndexNode? GetIndexNode(PageAddress nodeAddress, int readVersion)
     {
         throw new NotImplementedException();
     }
@@ -29,10 +29,7 @@ internal class IndexCacheService : IIndexCacheService
 
     public int CleanUp()
     {
-        // faz um for e limpa toda _cache que tiver shared = 0 (chama dispose)
-        // retorna quantas paginas estão na _cache ainda
-        // não precisa de lock exclusivo para rodar
-        // faz gum GC
+        // devo fazer de tudo no checkpoint? tenho como saber quais devem ser excluidos?
         return 0;
     }
 
