@@ -17,7 +17,7 @@ internal class PageCacheService : IPageCacheService
     /// Get a page from memory cache. If not exists, return null
     /// If exists, increase sharecounter (and must call Return() after use)
     /// </summary>
-    public BufferPage? GetBufferPage(long position)
+    public BufferPage? GetPage(long position)
     {
         var found = _cache.TryGetValue(position, out BufferPage page);
 
@@ -34,7 +34,7 @@ internal class PageCacheService : IPageCacheService
     /// <summary>
     /// Add a new page to cache. Buffer must contains all data for postion in disk (data/log)
     /// </summary>
-    public void AddPage(PageCacheItem page)
+    public void AddPage(BufferPage page)
     {
         var added = _cache.TryAdd(page.Position, page);
 

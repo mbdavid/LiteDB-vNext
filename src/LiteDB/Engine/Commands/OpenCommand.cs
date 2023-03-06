@@ -3,18 +3,31 @@
 [AutoInterface(true)]
 internal class OpenCommand : IOpenCommand
 {
-    private readonly RequestContext _factory;
+    private readonly IEngineContext _ctx;
 
-    public OpenCommand(RequestContext factory)
+    public OpenCommand(IEngineContext ctx)
     {
-        _factory = factory;
+        _ctx = ctx;
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        //_factory.DiskService.Open();
+        var state = _ctx.Services.State;
+        var disk = _ctx.Services.DiskService;
 
-        //
-        await Task.CompletedTask;
+        // lock exclusivo? var exclusive = _ctx.Services.Locker.TryExclusive()
+
+        if (state != EngineState.Close) throw new Exception("must be closed");
+
+        // abre efetivamente o arquivo, cria se necessário, retorna false case seja recovery
+        var recovery = !await disk.InitializeAsync();
+
+        if (recovery)
+        {
+            // state = Recovering?
+            // faz recovery e executa novamente o disk.Initialize()
+        }
+
+        state = EngineState.Open;
     }
 }

@@ -1,9 +1,9 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
-/// Base page implement minimal page layer width read buffers
+/// Base page implement minimal page layer width read buffers. Pages are not thread-safe
 /// </summary>
-internal class BasePage : IDisposable
+internal class BasePage
 {
     /// <summary>
     /// Read buffer from disk or cache. It's concurrent read free
@@ -13,9 +13,13 @@ internal class BasePage : IDisposable
 
     /// <summary>
     /// Created only use first write operation
-    /// Changes on BasePage must be one same thread (Not Thread Safe). Only one writer per time
     /// </summary>
     protected IMemoryOwner<byte>? _writeBuffer;
+
+    /// <summary>
+    /// Memory factory to create writeBuffer when page changes
+    /// </summary>
+    private readonly IMemoryFactory? _memoryFactory;
 
     #region Buffer Field Positions
 
@@ -39,15 +43,15 @@ internal class BasePage : IDisposable
     /// <summary>
     /// If true any change operation InitializeWrite()
     /// </summary>
-    public bool IsDirty => _writeBuffer != null;
+    public bool IsDirty => _writeBuffer is not null;
 
     /// <summary>
     /// Create a new BasePage with an empty buffer. Write PageID and PageType on buffer
     /// </summary>
-    public BasePage(uint pageID, PageType pageType)
+    public BasePage(uint pageID, PageType pageType, IMemoryOwner<byte> writeBuffer)
     {
-        _readBuffer = new BufferPage(true);
-        _writeBuffer = _readBuffer;
+        _writeBuffer = writeBuffer;
+        _readBuffer = _writeBuffer;
 
         // initialize
         this.PageID = pageID;
@@ -63,9 +67,10 @@ internal class BasePage : IDisposable
     /// <summary>
     /// Create BasePage instance based on buffer content
     /// </summary>
-    public BasePage(IMemoryOwner<byte> readBuffer)
+    public BasePage(IMemoryOwner<byte> readBuffer, IMemoryFactory memoryFactory)
     {
         _readBuffer = readBuffer;
+        _memoryFactory = memoryFactory;
         _writeBuffer = null;
 
         var span = readBuffer.Memory.Span;
@@ -81,10 +86,10 @@ internal class BasePage : IDisposable
     /// </summary>
     protected virtual void InitializeWrite()
     {
-        if (_writeBuffer != null) return;
+        if (_writeBuffer is not null) return;
 
         // rent buffer
-        _writeBuffer = new BufferPage(false);
+        _writeBuffer = _memoryFactory!.Rent();
 
         // copy content from clean buffer to write buffer (if exists)
         _readBuffer.Memory.CopyTo(_writeBuffer.Memory);
@@ -93,29 +98,13 @@ internal class BasePage : IDisposable
     /// <summary>
     /// Returns updated write buffer
     /// </summary>
-    public virtual Memory<byte> GetBufferWrite()
+    public virtual IMemoryOwner<byte> GetBufferWrite()
     {
-        if (this.IsDirty == false) throw new InvalidOperationException("Current page has no dirty buffer");
+        ENSURE(this.IsDirty, $"PageID {this.PageID} has no change");
 
         if (_writeBuffer is null) throw new ArgumentNullException(nameof(_writeBuffer));
 
-        return _writeBuffer.Memory;
-    }
-
-    /// <summary>
-    /// Dispose both read/write buffer (return array back to pool)
-    /// </summary>
-    public void Dispose()
-    {
-        if (_readBuffer == _writeBuffer)
-        {
-            _readBuffer?.Dispose();
-        }
-        else
-        {
-            _readBuffer?.Dispose();
-            _writeBuffer?.Dispose();
-        }
+        return _writeBuffer;
     }
 
     #endregion

@@ -20,15 +20,15 @@ internal class AllocationMapPage : BasePage
     /// <summary>
     /// Create new AllocationMapPage instance
     /// </summary>
-    public AllocationMapPage(uint pageID)
-        : base(pageID, PageType.AllocationMap)
+    public AllocationMapPage(uint pageID, IMemoryOwner<byte> writeBuffer)
+        : base(pageID, PageType.AllocationMap, writeBuffer)
     {
     }
 
     /// <summary>
     /// </summary>
-    public AllocationMapPage(IMemoryOwner<byte> buffer)
-        : base(buffer)
+    public AllocationMapPage(IMemoryOwner<byte> buffer, IMemoryFactory memoryFactory)
+        : base(buffer, memoryFactory)
     {
         var span = _readBuffer.Memory.Span;
 
@@ -60,8 +60,9 @@ internal class AllocationMapPage : BasePage
     public void UpdateMap(int extendIndex, int pageIndex, PageType pageType, byte colID, ushort freeSpace)
     {
         this.InitializeWrite();
+
         // usado no foreach depois de salvar em disco as paginas
-        var span = _writeBuffer.Memory.Span;
+        var span = _writeBuffer!.Memory.Span;
 
         ENSURE(span[PAGE_HEADER_SIZE + (extendIndex * AMP_EXTEND_SIZE)] == colID, "this map page don't bellow to this extend collection");
 
@@ -120,7 +121,8 @@ internal class AllocationMapPage : BasePage
 
     public uint GetFreePageID(byte coldID, PageType type, int length)
     {
-        this.InitializeWrite();
+        // busca pagina com espaco disponivel, não atualiza neste momento (só no update)
+        // deve reaproveitar essa pagina dentro as buscas dentro do snapshot
 
 
 
@@ -138,7 +140,7 @@ internal class AllocationMapPage : BasePage
 
     private int AddExtend(byte colID)
     {
-        var span = _writeBuffer.Memory.Span;
+        var span = _writeBuffer!.Memory.Span;
 
         ENSURE(_emptyExtends.Count > 0, "must have at least 1 empty extend on map page");
 

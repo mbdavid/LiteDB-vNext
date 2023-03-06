@@ -1,5 +1,8 @@
 ﻿namespace LiteDB.Engine;
 
+// adding IDisposable in auto-generated interface ILiteEngine
+public partial interface ILiteEngine : IDisposable { }
+
 /// <summary>
 /// A public class that take care of all engine data structure access - it´s basic implementation of a NoSql database
 /// Its isolated from complete solution - works on low level only (no linq, no poco... just BSON objects)
@@ -16,7 +19,7 @@ public partial class LiteEngine : ILiteEngine
     #region Ctor
 
     /// <summary>
-    /// Initialize LiteEngine using connection memory database
+    /// Initialize LiteEngine using in-memory database
     /// </summary>
     public LiteEngine()
         : this(new EngineSettings { DataStream = new MemoryStream() })
@@ -24,7 +27,7 @@ public partial class LiteEngine : ILiteEngine
     }
 
     /// <summary>
-    /// Initialize LiteEngine using connection string using key=value; parser
+    /// Initialize LiteEngine using file system
     /// </summary>
     public LiteEngine(string filename)
         : this (new EngineSettings { Filename = filename })
@@ -32,19 +35,21 @@ public partial class LiteEngine : ILiteEngine
     }
 
     /// <summary>
-    /// Initialize LiteEngine using initial engine settings
+    /// Initialize LiteEngine using all engine settings
     /// </summary>
     public LiteEngine(EngineSettings settings)
-        : this  (new ServicesFactory(settings))
+        : this  (new ServicesFactory(), settings)
     {
     }
 
     /// <summary>
-    /// Initialize LiteEngine with a custom ServiceFactory for all classes
+    /// To initialize LiteEngine we need classes factory and engine settings
+    /// Current version still using IServiceFactory as internal...
     /// </summary>
-    internal LiteEngine(RequestContext factory)
+    internal LiteEngine(IServicesFactory factory, EngineSettings settings)
     {
         _factory = factory;
+        _services = _factory.CreateEngineServices(settings);
     }
 
     #endregion
@@ -53,7 +58,9 @@ public partial class LiteEngine : ILiteEngine
 
     public async Task OpenAsync()
     {
-        var open = _factory.CreateOpenCommand();
+        using var ctx = _factory.CreateEngineContext(_services);
+
+        var open = _factory.CreateOpenCommand(ctx);
 
         await open.ExecuteAsync();
     }

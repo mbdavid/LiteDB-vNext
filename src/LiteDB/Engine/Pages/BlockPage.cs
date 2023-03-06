@@ -39,8 +39,8 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Create a new BlockPage
     /// </summary>
-    public BlockPage(uint pageID, PageType pageType, byte colID)
-        : base(pageID, pageType)
+    public BlockPage(uint pageID, PageType pageType, byte colID, IMemoryOwner<byte> writeBuffer)
+        : base(pageID, pageType, writeBuffer)
     {
         // ColID never change
         this.ColID = colID;
@@ -57,8 +57,8 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Load BlockPage from buffer memory
     /// </summary>
-    public BlockPage(IMemoryOwner<byte> buffer)
-        : base(buffer)
+    public BlockPage(IMemoryOwner<byte> buffer, IMemoryFactory memoryFactory)
+        : base(buffer, memoryFactory)
     {
         var span = buffer.Memory.Span;
 
@@ -84,10 +84,10 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Get updated write buffer
     /// </summary>
-    public override Memory<byte> GetBufferWrite()
+    public override IMemoryOwner<byte> GetBufferWrite()
     {
         var buffer = base.GetBufferWrite();
-        var span = buffer.Span;
+        var span = buffer.Memory.Span;
 
         // update header props
         span[P_TRANSACTION_ID..].WriteUInt32(this.TransactionID);

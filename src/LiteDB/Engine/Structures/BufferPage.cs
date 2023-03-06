@@ -1,13 +1,13 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Net.NetworkInformation;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// Implement a page size fixed factory for data pages. Must dispose to dealocate memory
 /// </summary>
-internal class BufferPage : IMemoryOwner<byte>
+internal class BufferPage
 {
-    public static byte[] Empty { get; } = new byte[PAGE_SIZE];
-
-    private readonly byte[] _source;
+    private readonly IMemoryOwner<byte> _source;
 
     private int _sharedCounter = 0;
 
@@ -26,19 +26,11 @@ internal class BufferPage : IMemoryOwner<byte>
     /// </summary>
     public long Timestamp { get; private set; } = DateTime.UtcNow.Ticks;
 
-    public Memory<byte> Memory { get; }
+    public Memory<byte> Memory => _source.Memory;
 
-    public BufferPage(bool clean)
+    public BufferPage(IMemoryOwner<byte> source)
     {
-        _source = ArrayPool<byte>.Shared.Rent(PAGE_SIZE);
-
-        this.Memory = new Memory<byte>(_source, 0, PAGE_SIZE);
-
-        if (clean)
-        {
-            // update all page with 0
-            this.Memory.Span.Fill(0);
-        }
+        _source = source;
     }
 
     /// <summary>
@@ -62,6 +54,8 @@ internal class BufferPage : IMemoryOwner<byte>
 
     public void Dispose()
     {
-        ArrayPool<byte>.Shared.Return(_source);
+        ENSURE(_sharedCounter == 0, "ShareCounter must be zero when dispose BufferPage");
+
+        _source.Dispose();
     }
 }

@@ -39,8 +39,8 @@ internal class HeaderPage : BasePage
     /// <summary>
     /// Create new HeaderPage instance
     /// </summary>
-    public HeaderPage()
-        : base(0, PageType.Header)
+    public HeaderPage(IMemoryOwner<byte> writeBuffer)
+        : base(0, PageType.Header, writeBuffer)
     {
         var span = _writeBuffer!.Memory.Span;
 
@@ -50,14 +50,13 @@ internal class HeaderPage : BasePage
         // fixed content - can update buffer (header do not use shared cache)
         span[P_HEADER_INFO..].WriteString(HEADER_INFO);
         span[P_FILE_VERSION] = FILE_VERSION;
-
     }
 
     /// <summary>
     /// Load HeaderPage from buffer page
     /// </summary>
-    public HeaderPage(IMemoryOwner<byte> buffer)
-        : base(buffer)
+    public HeaderPage(IMemoryOwner<byte> buffer, IMemoryFactory memoryFactory)
+        : base(buffer, memoryFactory)
     {
         var span = _readBuffer.Memory.Span;
 
@@ -75,13 +74,17 @@ internal class HeaderPage : BasePage
         }
     }
 
-    public override Memory<byte> GetBufferWrite()
+    public override IMemoryOwner<byte> GetBufferWrite()
     {
         var buffer = base.GetBufferWrite();
-        var span = buffer.Span;
+        var span = buffer.Memory.Span;
+
+        //BinaryPrimitives.WriteUInt32LittleEndian(buffer.Memory.Span, this.LastPageID);
+
+        var xx = buffer.Memory.Span[P_LAST_PAGE_ID..4];
 
         // update header
-        span[P_LAST_PAGE_ID..4].WriteUInt32(this.LastPageID);
+        //span[P_LAST_PAGE_ID..4].WriteUInt32(this.LastPageID);
 
         return buffer;
     }
