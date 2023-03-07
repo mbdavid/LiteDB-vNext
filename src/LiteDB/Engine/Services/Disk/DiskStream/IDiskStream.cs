@@ -7,6 +7,6 @@ internal interface IDiskStream : IDisposable
     long GetLength();
     void Delete();
     Task FlushAsync();
-    Task<bool> ReadAsync(long position, Memory<byte> buffer);
-    Task WriteAsync(long position, Memory<byte> buffer);
+    Task<bool> ReadAsync(long position, PageBuffer buffer);
+    Task WriteAsync(PageBuffer buffer);
 }

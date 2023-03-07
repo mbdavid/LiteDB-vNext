@@ -8,7 +8,7 @@ internal class DataPage : BlockPage
     /// <summary>
     /// Create new DataPage
     /// </summary>
-    public DataPage(uint pageID, byte colID, IMemoryOwner<byte> writeBuffer)
+    public DataPage(uint pageID, byte colID, PageBuffer writeBuffer)
         : base(pageID, PageType.Data, colID, writeBuffer)
     {
     }
@@ -16,8 +16,8 @@ internal class DataPage : BlockPage
     /// <summary>
     /// Load data page from buffer
     /// </summary>
-    public DataPage(IMemoryOwner<byte> buffer, IMemoryFactory memoryFactory)
-        : base(buffer, memoryFactory)
+    public DataPage(PageBuffer readBuffer, IMemoryCacheService memoryCache)
+        : base(readBuffer, memoryCache)
     {
         ENSURE(this.PageType == PageType.Data, "page type must be data page");
     }

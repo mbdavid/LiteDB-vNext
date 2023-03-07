@@ -17,11 +17,11 @@ internal struct PageLogLocation
     public readonly uint PageID;
 
     /// <summary>
-    /// Memory buffer instance
+    /// Page buffer instance
     /// </summary>
-    public readonly Memory<byte> Buffer;
+    public readonly PageBuffer Buffer;
 
-    public PageLogLocation(uint pageID, Memory<byte> buffer)
+    public PageLogLocation(uint pageID, PageBuffer buffer)
     {
         this.Position = long.MaxValue; // empty
         this.PageID = pageID;

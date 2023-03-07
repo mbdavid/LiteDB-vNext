@@ -14,9 +14,9 @@ internal struct PageDataLocation
     /// <summary>
     /// Memory buffer instance
     /// </summary>
-    public readonly Memory<byte> Buffer;
+    public readonly PageBuffer Buffer;
 
-    public PageDataLocation(uint pageID, Memory<byte> buffer)
+    public PageDataLocation(uint pageID, PageBuffer buffer)
     {
         this.PageID = pageID;
         this.Buffer = buffer;

@@ -7,7 +7,7 @@ File.Delete(filename);
 
 using var db = new LiteEngine(filename);
 
-await db.OpenAsync();
+db.OpenAsync();
 
 Console.WriteLine("Database open");
 

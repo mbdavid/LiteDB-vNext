@@ -1,5 +1,8 @@
 ﻿namespace LiteDB;
 
+// adding IDisposable in auto-generated interface IEngineServices
+internal partial interface IEngineServices : IDisposable { }
+
 /// <summary>
 /// All shared services used in engine. Singleton
 /// [THREAD_SAFE]
@@ -7,28 +10,26 @@
 [AutoInterface(true)]
 internal class EngineServices : IEngineServices
 {
-    private readonly EngineSettings _settings;
-
     public EngineServices(IServicesFactory factory, EngineSettings settings)
     {
         // initalize dependecy-free services
-        this.MemoryFactory = factory.CreateMemoryFactory();
-        this.PageCacheService = factory.CreatePageCacheService();
+        this.MemoryCache = factory.CreateMemoryCacheService();
 
         // initialize disk service (will not open file here)
-        this.DiskService = factory.CreateDiskService(this.MemoryFactory, settings);
-
-        _settings = settings;
+        this.DiskService = factory.CreateDiskService(this.MemoryCache, settings);
     }
+
     public EngineState State { get; set; } = EngineState.Close;
 
     public Exception? Exception { get; set; }
 
-    //    public EngineSettings Settings => _settings;
+    public ConcurrentDictionary<string, object> Application { get; } = new();
+
     public IDiskService DiskService { get; set; }
 
-    public IMemoryFactory MemoryFactory { get; set; }
+    public IMemoryCacheService MemoryCache { get; set; }
 
-    public IPageCacheService PageCacheService { get; set; }
-
+    public void Dispose()
+    {
+    }
 }

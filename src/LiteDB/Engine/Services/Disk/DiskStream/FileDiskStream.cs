@@ -74,22 +74,24 @@ internal class FileDiskStream : IDiskStream
         return _stream?.FlushAsync() ?? Task.CompletedTask;
     }
 
-    public async Task<bool> ReadAsync(long position, Memory<byte> buffer)
+    public async Task<bool> ReadAsync(long position, PageBuffer buffer)
     {
         _stream ??= await CreateStreamAsync();
 
-        var read = await _stream.ReadAsync(buffer);
+        var read = await _stream.ReadAsync(buffer.Array, 0, PAGE_SIZE);
 
         return read == PAGE_SIZE;
     }
 
-    public async Task WriteAsync(long position, Memory<byte> buffer)
+    public async Task WriteAsync(PageBuffer buffer)
     {
+        ENSURE(buffer.Position != long.MaxValue, "PageBuffer must have defined Position before WriteAsync");
+
         _stream ??= await CreateStreamAsync();
 
-        _stream.Position = position;
+        _stream.Position = buffer.Position;
 
-        await _stream.WriteAsync(buffer);
+        await _stream.WriteAsync(buffer.Array, 0, PAGE_SIZE);
     }
 
     public void Dispose()

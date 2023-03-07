@@ -6,10 +6,6 @@ internal partial interface IEngineContext : IDisposable { }
 [AutoInterface(true)]
 internal class EngineContext : IEngineContext
 {
-    private static ConcurrentDictionary<string, object> _application = new();
-
-    public ConcurrentDictionary<string, object> Application { get; }
-
     public Dictionary<string, object> Request { get; }
 
     public IServicesFactory Factory { get; }
@@ -18,7 +14,6 @@ internal class EngineContext : IEngineContext
 
     public EngineContext(IServicesFactory factory, IEngineServices services)
     {
-        this.Application = _application;
         this.Request = new ();
         this.Factory = factory;
         this.Services = services;

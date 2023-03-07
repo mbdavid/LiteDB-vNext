@@ -20,17 +20,17 @@ internal class AllocationMapPage : BasePage
     /// <summary>
     /// Create new AllocationMapPage instance
     /// </summary>
-    public AllocationMapPage(uint pageID, IMemoryOwner<byte> writeBuffer)
+    public AllocationMapPage(uint pageID, PageBuffer writeBuffer)
         : base(pageID, PageType.AllocationMap, writeBuffer)
     {
     }
 
     /// <summary>
     /// </summary>
-    public AllocationMapPage(IMemoryOwner<byte> buffer, IMemoryFactory memoryFactory)
-        : base(buffer, memoryFactory)
+    public AllocationMapPage(PageBuffer readBuffer, IMemoryCacheService memoryCache)
+        : base(readBuffer, memoryCache)
     {
-        var span = _readBuffer.Memory.Span;
+        var span = _readBuffer.AsSpan();
 
         for(var i = 0; i < AMP_EXTEND_COUNT; i++)
         {
@@ -62,7 +62,7 @@ internal class AllocationMapPage : BasePage
         this.InitializeWrite();
 
         // usado no foreach depois de salvar em disco as paginas
-        var span = _writeBuffer!.Memory.Span;
+        var span = _writeBuffer!.Value.AsSpan();
 
         ENSURE(span[PAGE_HEADER_SIZE + (extendIndex * AMP_EXTEND_SIZE)] == colID, "this map page don't bellow to this extend collection");
 
@@ -140,7 +140,7 @@ internal class AllocationMapPage : BasePage
 
     private int AddExtend(byte colID)
     {
-        var span = _writeBuffer!.Memory.Span;
+        var span = _writeBuffer!.Value.AsSpan();
 
         ENSURE(_emptyExtends.Count > 0, "must have at least 1 empty extend on map page");
 

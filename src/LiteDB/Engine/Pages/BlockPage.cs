@@ -39,14 +39,14 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Create a new BlockPage
     /// </summary>
-    public BlockPage(uint pageID, PageType pageType, byte colID, IMemoryOwner<byte> writeBuffer)
+    public BlockPage(uint pageID, PageType pageType, byte colID, PageBuffer writeBuffer)
         : base(pageID, pageType, writeBuffer)
     {
         // ColID never change
         this.ColID = colID;
 
         // write unchanged data
-        var span = _writeBuffer!.Memory.Span;
+        var span = writeBuffer.AsSpan();
 
         span[P_COL_ID] = this.ColID;
 
@@ -57,10 +57,10 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Load BlockPage from buffer memory
     /// </summary>
-    public BlockPage(IMemoryOwner<byte> buffer, IMemoryFactory memoryFactory)
-        : base(buffer, memoryFactory)
+    public BlockPage(PageBuffer buffer, IMemoryCacheService memoryCache)
+        : base(buffer, memoryCache)
     {
-        var span = buffer.Memory.Span;
+        var span = buffer.AsSpan();
 
         // initialize variables with buffer data
         this.ColID = span[P_COL_ID];
@@ -84,10 +84,10 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Get updated write buffer
     /// </summary>
-    public override IMemoryOwner<byte> GetBufferWrite()
+    public override PageBuffer GetBufferWrite()
     {
         var buffer = base.GetBufferWrite();
-        var span = buffer.Memory.Span;
+        var span = buffer.AsSpan();
 
         // update header props
         span[P_TRANSACTION_ID..].WriteUInt32(this.TransactionID);
@@ -107,9 +107,9 @@ internal class BlockPage : BasePage
     public Span<byte> Get(byte index, bool readOnly)
     {
         // get read
-        var span = readOnly ? _readBuffer.Memory.Span :
-            _writeBuffer != null ? _writeBuffer.Memory.Span :
-            _readBuffer.Memory.Span;
+        var span = readOnly ? _readBuffer.AsSpan() :
+            _writeBuffer is not null ? _writeBuffer!.Value.AsSpan() :
+            _readBuffer.AsSpan();
 
         // read slot address
         var positionAddr = CalcPositionAddr(index);
@@ -141,7 +141,7 @@ internal class BlockPage : BasePage
         // initialize dirty buffer and dirty header (once)
         this.InitializeWrite();
 
-        var span = _writeBuffer!.Memory.Span;
+        var span = _writeBuffer!.Value.AsSpan();
         var header = _headerWrite!;
 
         var isNewInsert = index == byte.MaxValue;
@@ -212,7 +212,7 @@ internal class BlockPage : BasePage
         this.InitializeWrite();
 
         // get span and header instance (dirty)
-        var span = _writeBuffer!.Memory.Span;
+        var span = _writeBuffer!.Value.AsSpan();
         var header = _headerWrite!;
 
         // read block position on index slot
@@ -283,7 +283,7 @@ internal class BlockPage : BasePage
         this.InitializeWrite();
 
         // get span and header instance (dirty)
-        var span = _writeBuffer!.Memory.Span;
+        var span = _writeBuffer!.Value.AsSpan();
         var header = _headerWrite!;
 
         // read slot address
@@ -374,7 +374,7 @@ internal class BlockPage : BasePage
         this.InitializeWrite();
 
         // get span and header instance (dirty)
-        var span = _writeBuffer!.Memory.Span;
+        var span = _writeBuffer!.Value.AsSpan();
         var header = _headerWrite!;
 
         ENSURE(header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
@@ -456,7 +456,7 @@ internal class BlockPage : BasePage
     private void UpdateHighestIndex()
     {
         // get span and header instance (dirty)
-        var span = _writeBuffer!.Memory.Span;
+        var span = _writeBuffer!.Value.AsSpan();
         var header = _headerWrite!;
 
         ENSURE(header.HighestIndex < byte.MaxValue, "can run only if contains a valid HighestIndex");

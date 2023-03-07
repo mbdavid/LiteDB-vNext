@@ -56,13 +56,13 @@ public partial class LiteEngine : ILiteEngine
 
     #region Open/Close database
 
-    public async Task OpenAsync()
+    public void OpenAsync()
     {
         using var ctx = _factory.CreateEngineContext(_services);
 
         var open = _factory.CreateOpenCommand(ctx);
 
-        await open.ExecuteAsync();
+        open.ExecuteAsync();
     }
 
     #endregion

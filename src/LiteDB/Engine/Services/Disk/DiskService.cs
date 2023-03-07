@@ -6,14 +6,15 @@ internal class DiskService : IDiskService
     private readonly EngineSettings _settings;
     private IDiskStream _writer;
     private IServicesFactory _factory;
-    private readonly IMemoryFactory _memoryFactory;
+    private readonly IMemoryCacheService _memoryCache;
     private ConcurrentQueue<IDiskStream> _readers = new ();
 
-    public DiskService(IServicesFactory factory, IMemoryFactory memoryFactory, EngineSettings settings)
+    public DiskService(IServicesFactory factory, IMemoryCacheService memoryCache, EngineSettings settings)
     {
         _factory = factory;
-        _memoryFactory = memoryFactory;
+        _memoryCache = memoryCache;
         _settings = settings;
+
         _writer = _factory.CreateDiskStream(_settings, true);
     }
 
@@ -31,8 +32,8 @@ internal class DiskService : IDiskService
 
     private async Task CreateNewDatafileAsync()
     {
-        var headerBuffer = _memoryFactory.Rent();
-        var ampBuffer = _memoryFactory.Rent();
+        var headerBuffer = _memoryCache.AllocateNewPage();
+        var ampBuffer = _memoryCache.AllocateNewPage();
 
         var headerPage = new HeaderPage(headerBuffer);
         var ampPage = new AllocationMapPage(1, headerBuffer);
@@ -40,7 +41,10 @@ internal class DiskService : IDiskService
         headerPage.GetBufferWrite();
         ampPage.GetBufferWrite();
 
-        await _writer!.WriteAsync(0, headerBuffer.Memory);
-        await _writer!.WriteAsync(PAGE_SIZE, ampBuffer.Memory);
+        await _writer!.WriteAsync(headerBuffer);
+        await _writer!.WriteAsync(ampBuffer);
+
+        _memoryCache.DeallocatePage(headerBuffer);
+        _memoryCache.DeallocatePage(ampBuffer);
     }
 }

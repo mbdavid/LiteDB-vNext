@@ -28,6 +28,7 @@ internal class OpenCommand : IOpenCommand
             // faz recovery e executa novamente o disk.Initialize()
         }
 
-        state = EngineState.Open;
+        // update state
+        _ctx.Services.State = EngineState.Open;
     }
 }

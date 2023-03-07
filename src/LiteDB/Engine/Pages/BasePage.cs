@@ -9,17 +9,17 @@ internal class BasePage
     /// Read buffer from disk or cache. It's concurrent read free
     /// Will be Memory[byte].Empty if empty new page
     /// </summary>
-    protected IMemoryOwner<byte> _readBuffer;
+    protected PageBuffer _readBuffer;
 
     /// <summary>
     /// Created only use first write operation
     /// </summary>
-    protected IMemoryOwner<byte>? _writeBuffer;
+    protected PageBuffer? _writeBuffer;
 
     /// <summary>
-    /// Memory factory to create writeBuffer when page changes
+    /// Page memory service reference used in write operation
     /// </summary>
-    private readonly IMemoryFactory? _memoryFactory;
+    private readonly IMemoryCacheService? _memoryCache;
 
     #region Buffer Field Positions
 
@@ -48,17 +48,17 @@ internal class BasePage
     /// <summary>
     /// Create a new BasePage with an empty buffer. Write PageID and PageType on buffer
     /// </summary>
-    public BasePage(uint pageID, PageType pageType, IMemoryOwner<byte> writeBuffer)
+    public BasePage(uint pageID, PageType pageType, PageBuffer writeBuffer)
     {
         _writeBuffer = writeBuffer;
-        _readBuffer = _writeBuffer;
+        _readBuffer = writeBuffer;
 
         // initialize
         this.PageID = pageID;
         this.PageType = pageType;
 
         // write fixed data
-        var span = _readBuffer.Memory.Span;
+        var span = _readBuffer.AsSpan();
 
         span[P_PAGE_ID..].WriteUInt32(this.PageID);
         span[P_PAGE_TYPE] = (byte)this.PageType;
@@ -67,13 +67,13 @@ internal class BasePage
     /// <summary>
     /// Create BasePage instance based on buffer content
     /// </summary>
-    public BasePage(IMemoryOwner<byte> readBuffer, IMemoryFactory memoryFactory)
+    public BasePage(PageBuffer readBuffer, IMemoryCacheService memoryCache)
     {
         _readBuffer = readBuffer;
-        _memoryFactory = memoryFactory;
         _writeBuffer = null;
+        _memoryCache = memoryCache;
 
-        var span = readBuffer.Memory.Span;
+        var span = readBuffer.AsSpan();
 
         this.PageID = span[P_PAGE_ID..].ReadUInt32();
         this.PageType = (PageType)span[P_PAGE_TYPE];
@@ -88,23 +88,31 @@ internal class BasePage
     {
         if (_writeBuffer is not null) return;
 
-        // rent buffer
-        _writeBuffer = _memoryFactory!.Rent();
+        // if _readBuffer are not used by anyone in cache (ShareCounter == 1 - only current thread), remove
+        if (_memoryCache!.TryRemovePageFromCache(_readBuffer, 1))
+        {
+            _writeBuffer = _readBuffer;
+        }
+        else
+        {
+            // create a new page in memory
+            _writeBuffer = _memoryCache!.AllocateNewPage();
 
-        // copy content from clean buffer to write buffer (if exists)
-        _readBuffer.Memory.CopyTo(_writeBuffer.Memory);
+            // copy content from clean buffer to write buffer (if exists)
+            _readBuffer.AsSpan().CopyTo(_writeBuffer.Value.AsSpan());
+        }
     }
 
     /// <summary>
     /// Returns updated write buffer
     /// </summary>
-    public virtual IMemoryOwner<byte> GetBufferWrite()
+    public virtual PageBuffer GetBufferWrite()
     {
         ENSURE(this.IsDirty, $"PageID {this.PageID} has no change");
 
-        if (_writeBuffer is null) throw new ArgumentNullException(nameof(_writeBuffer));
+        if (_writeBuffer.HasValue == false) throw new ArgumentNullException(nameof(_writeBuffer));
 
-        return _writeBuffer;
+        return _writeBuffer.Value;
     }
 
     #endregion

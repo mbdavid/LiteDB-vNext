@@ -8,7 +8,7 @@ internal class IndexPage : BlockPage
     /// <summary>
     /// Create new IndexPage
     /// </summary>
-    public IndexPage(uint pageID, byte colID, IMemoryOwner<byte> writeBuffer) 
+    public IndexPage(uint pageID, byte colID, PageBuffer writeBuffer) 
         : base(pageID, PageType.Index, colID, writeBuffer)
     {
     }
@@ -16,8 +16,8 @@ internal class IndexPage : BlockPage
     /// <summary>
     /// Load index page from buffer
     /// </summary>
-    public IndexPage(IMemoryOwner<byte> buffer, IMemoryFactory memoryFactory)
-        : base(buffer, memoryFactory)
+    public IndexPage(PageBuffer readBuffer, IMemoryCacheService memoryCache)
+        : base(readBuffer, memoryCache)
     {
         ENSURE(this.PageType == PageType.Data, "page type must be index page");
     }
