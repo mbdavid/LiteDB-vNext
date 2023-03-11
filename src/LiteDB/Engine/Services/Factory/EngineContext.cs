@@ -1,9 +1,6 @@
 ﻿namespace LiteDB;
 
-// adding IDisposable in auto-generated interface IEngineContext
-internal partial interface IEngineContext : IDisposable { }
-
-[AutoInterface(true)]
+[AutoInterface(typeof(IDisposable))]
 internal class EngineContext : IEngineContext
 {
     public Dictionary<string, object> Request { get; }

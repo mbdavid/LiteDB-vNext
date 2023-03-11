@@ -11,7 +11,6 @@ internal static class AttributeDataExtensions
     public static string? GetConstructorValue(this AttributeData attributeData)
     {
         var value = attributeData.ConstructorArguments.FirstOrDefault();
-
         return value.Value?.ToString();
     }
 }

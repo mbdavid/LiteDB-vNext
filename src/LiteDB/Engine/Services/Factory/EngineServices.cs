@@ -1,13 +1,10 @@
 ﻿namespace LiteDB;
 
-// adding IDisposable in auto-generated interface IEngineServices
-internal partial interface IEngineServices : IDisposable { }
-
 /// <summary>
 /// All shared services used in engine. Singleton
 /// [THREAD_SAFE]
 /// </summary>
-[AutoInterface(true)]
+[AutoInterface(typeof(IDisposable))]
 internal class EngineServices : IEngineServices
 {
     public EngineServices(IServicesFactory factory, EngineSettings settings)

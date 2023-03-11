@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface(true)]
+[AutoInterface]
 internal class OpenCommand : IOpenCommand
 {
     private readonly IEngineContext _ctx;

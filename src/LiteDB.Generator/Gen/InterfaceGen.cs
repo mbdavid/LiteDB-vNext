@@ -24,12 +24,18 @@ internal class InterfaceGen
         var namespaceName = type.TypeSymbol.ContainingNamespace.ToDisplayString();
         var interfaceName = "I" + type.TypeSymbol.Name;
         var visibilityModifier = type.TypeSymbol.InferVisibilityModifier();
+        var inheritInterfaces = type.Attribute.GetConstructorValue();
+
+        if (inheritInterfaces != null)
+        {
+            inheritInterfaces = ": " + inheritInterfaces;
+        }
 
         cw.WriteLine("namespace {0};", namespaceName);
         cw.WriteLine();
 
         cw.WriteSymbolDocsIfPresent(type.TypeSymbol);
-        cw.Write("{0} partial interface {1}", visibilityModifier, interfaceName);
+        cw.Write("{0} partial interface {1}{2}", visibilityModifier, interfaceName, inheritInterfaces);
         cw.WriteTypeGenericsIfNeeded(type.TypeSymbol);
         cw.WriteLine();
         cw.WriteLine("{");

@@ -5,7 +5,7 @@ internal class FileDiskStream : IDiskStream
     private readonly string _filename;
     private readonly string? _password;
     private readonly bool _readonly;
-    private readonly bool _sequencial;
+    private readonly bool _sequential;
     private Stream? _stream;
 
     public string Name => Path.GetFileName(_filename);
@@ -15,7 +15,7 @@ internal class FileDiskStream : IDiskStream
         _filename = filename;
         _password = password;
         _readonly = readOnly;
-        _sequencial = sequencial;
+        _sequential = sequencial;
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ internal class FileDiskStream : IDiskStream
             _readonly ? FileAccess.Read : FileAccess.ReadWrite,
             _readonly ? FileShare.ReadWrite : FileShare.Read,
             PAGE_SIZE,
-            _sequencial ? FileOptions.SequentialScan : FileOptions.RandomAccess);
+            _sequential ? FileOptions.SequentialScan : FileOptions.RandomAccess);
 
         //if (stream.Length == 0 && _hidden)
         //{

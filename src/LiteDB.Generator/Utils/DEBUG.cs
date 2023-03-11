@@ -9,7 +9,7 @@ public static class SourceGenDebugger
         if (!Debugger.IsAttached)
         {
             // sadly this is Windows only so as of now :(
-            Debugger.Launch();
+            //Debugger.Launch();
         }
 #endif
     }

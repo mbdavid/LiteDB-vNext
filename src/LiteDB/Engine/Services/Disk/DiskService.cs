@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface(true)]
+[AutoInterface(typeof(IDisposable))]
 internal class DiskService : IDiskService
 {
     private readonly EngineSettings _settings;
@@ -36,7 +36,7 @@ internal class DiskService : IDiskService
         var ampBuffer = _memoryCache.AllocateNewPage();
 
         var headerPage = new HeaderPage(headerBuffer);
-        var ampPage = new AllocationMapPage(1, headerBuffer);
+        var ampPage = new AllocationMapPage(1, ampBuffer);
 
         headerPage.GetBufferWrite();
         ampPage.GetBufferWrite();
@@ -46,5 +46,9 @@ internal class DiskService : IDiskService
 
         _memoryCache.DeallocatePage(headerBuffer);
         _memoryCache.DeallocatePage(ampBuffer);
+    }
+
+    public void Dispose()
+    {
     }
 }

@@ -23,7 +23,7 @@ namespace {AttributesNamespace}
         {{
         }}
 
-        public {AutoInterfaceClassname}(bool createFactoryMethod)
+        public {AutoInterfaceClassname}(Type inheritInterface)
         {{
         }}
     }}

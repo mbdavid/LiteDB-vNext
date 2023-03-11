@@ -43,7 +43,6 @@ public class LiteGenerator : ISourceGenerator
         var codeBase = new CodeBase(context);
 
         InterfaceGen.GenerateCode(codeBase);
-        ServicesFactoryGen.GenerateCode(codeBase);
     }
 
     private static void RaiseExceptionDiagnostic(GeneratorExecutionContext context, Exception exception)

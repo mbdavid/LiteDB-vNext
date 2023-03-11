@@ -7,7 +7,7 @@ internal partial interface IMemoryCacheService : IDisposable { }
 /// Page buffer cache. Keep a concurrent dictionary with buffers (byte[]) based on disk file position.
 /// Cache both data and log pages. Works at buffer level
 /// </summary>
-[AutoInterface(true)]
+[AutoInterface(typeof(IDisposable))]
 internal class MemoryCacheService : IMemoryCacheService
 {
     private readonly ConcurrentQueue<PageBuffer> _freePages = new();
@@ -82,10 +82,12 @@ internal class MemoryCacheService : IMemoryCacheService
     /// <summary>
     /// Try remove page from cache based on shareCounter limit.
     /// </summary>
-    public bool TryRemovePageFromCache(PageBuffer buffer, int shareCounter)
+    public bool TryRemovePageFromCache(PageBuffer buffer, int maxShareCounter)
     {
+        var bufferShareCounter = buffer.ShareCounter;
+
         // if shareCounter from buffer are larger than shareCounter parameter, can't be removed from cache (is in use)
-        if (buffer.ShareCounter > shareCounter) return false;
+        if (bufferShareCounter > maxShareCounter) return false;
 
         // try delete this buffer
         var deleted = _cache.TryRemove(buffer.Position, out _);
@@ -93,7 +95,7 @@ internal class MemoryCacheService : IMemoryCacheService
         if (deleted)
         {
             // if after remove from cache, shareCounter was modified, re-add into cache
-            if (buffer.ShareCounter > shareCounter)
+            if (bufferShareCounter != buffer.ShareCounter)
             {
                 var added = _cache.TryAdd(buffer.Position, buffer);
 

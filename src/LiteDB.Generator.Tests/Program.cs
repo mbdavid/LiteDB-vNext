@@ -4,25 +4,21 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        IServicesFactory factory = new ServicesFactory();
-
-        var disk = factory.CreateDiskService();
-
-        disk.RendStreamReader();
 
     }
 }
 
 
-[AutoInterface(true)]
+[AutoInterface(typeof(IDisposable))]
 public class DiskService : IDiskService
 {
-    private readonly IServicesFactory _factory;
-
-    public DiskService(IServicesFactory factory)
+    public DiskService()
     {
-        _factory = factory;
-        _factory.CreateStreamPool(10);
+    }
+
+    public void Dispose()
+    {
+        throw new NotImplementedException();
     }
 
     public Stream RendStreamReader()
@@ -35,7 +31,7 @@ public class DiskService : IDiskService
     }
 }
 
-[AutoInterface(true)]
+[AutoInterface]
 public class StreamPool : IStreamPool
 {
     public StreamPool(int limit)

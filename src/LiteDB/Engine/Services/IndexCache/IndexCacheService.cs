@@ -3,7 +3,7 @@
 /// <summary>
 /// Keep all read/
 /// </summary>
-[AutoInterface(true)]
+[AutoInterface]
 internal class IndexCacheService : IIndexCacheService
 {
     //private ConcurrentDictionary<PageAddress, List<(int version, IndexNode node)> _cache = new();

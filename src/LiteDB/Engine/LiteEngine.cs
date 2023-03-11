@@ -1,14 +1,11 @@
 ﻿namespace LiteDB.Engine;
 
-// adding IDisposable in auto-generated interface ILiteEngine
-public partial interface ILiteEngine : IDisposable { }
-
 /// <summary>
 /// A public class that take care of all engine data structure access - it´s basic implementation of a NoSql database
 /// Its isolated from complete solution - works on low level only (no linq, no poco... just BSON objects)
 /// [ThreadSafe]
 /// </summary>
-[AutoInterface]
+[AutoInterface(typeof(IDisposable))]
 public partial class LiteEngine : ILiteEngine
 {
     private readonly IEngineServices _services;
