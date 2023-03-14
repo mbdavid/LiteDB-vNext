@@ -2,6 +2,7 @@
 
 /// <summary>
 /// Represent a location on log disk with Memory buffer
+/// * Immutable (thread safe)
 /// </summary>
 [DebuggerStepThrough]
 internal struct PageLogLocation

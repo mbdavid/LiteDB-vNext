@@ -1,29 +1,79 @@
 ﻿namespace LiteDB;
 
+/// <summary>
+/// * Singleton (thread safe)
+/// </summary>
 [AutoInterface]
 internal partial class ServicesFactory : IServicesFactory
 {
-    public IDiskStream CreateDiskStream(EngineSettings settings, bool sequential)
+    private IMemoryCacheService? _memoryCache;
+    private IIndexCacheService? _indexCache;
+    private IDiskService? _disk;
+
+    public ServicesFactory(EngineSettings settings)
     {
-        if (settings.Filename is null) throw new NotImplementedException();
+        this.Settings = settings;
+    }
+
+    #region Singleton instances (Properties)
+
+    public EngineSettings Settings { get; }
+
+    public EngineState State { get; set; } = EngineState.Close;
+
+    public Exception? Exception { get; set; }
+
+    public ConcurrentDictionary<string, object> Application { get; } = new();
+
+    public IMemoryCacheService MemoryCache
+    {
+        get
+        {
+            return _memoryCache ??= new MemoryCacheService();
+        }
+    }
+
+    public IDiskService Disk
+    {
+        get
+        {
+            return _disk ??= new DiskService(this);
+        }
+    }
+
+    public IIndexCacheService IndexCache
+    {
+        get
+        {
+            return _indexCache ??= new IndexCacheService();
+        }
+    }
+
+    #endregion
+
+    #region Transient instances (Create prefix)
+
+    public IEngineContext CreateEngineContext()
+    {
+        return new EngineContext();
+    }
+
+    public IOpenCommand CreateOpenCommand(IEngineContext ctx)
+    {
+        return new OpenCommand(this, ctx);
+    }
+
+    public IDiskStream CreateDiskStream(bool sequential)
+    {
+        if (this.Settings.Filename is null) throw new NotImplementedException();
 
         return new FileDiskStream(
-            settings.Filename, 
-            settings.Password, 
-            settings.ReadOnly, 
+            this.Settings.Filename,
+            this.Settings.Password,
+            this.Settings.ReadOnly,
             sequential);
     }
 
-    public IEngineServices CreateEngineServices(EngineSettings settings)
-        => new EngineServices(this, settings);
-    public IMemoryCacheService CreateMemoryCacheService()
-        => new MemoryCacheService();
-    public IEngineContext CreateEngineContext(IEngineServices services)
-        => new EngineContext(this, services);
-    public IDiskService CreateDiskService(IMemoryCacheService memoryCache, EngineSettings settings)
-        => new DiskService(this, memoryCache, settings);
-    public IOpenCommand CreateOpenCommand(IEngineContext ctx)
-        => new OpenCommand(ctx);
-    public IIndexCacheService CreateIndexCacheService()
-        => new IndexCacheService();
+    #endregion
+
 }

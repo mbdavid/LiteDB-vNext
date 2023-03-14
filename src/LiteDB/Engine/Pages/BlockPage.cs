@@ -82,11 +82,11 @@ internal class BlockPage : BasePage
     }
 
     /// <summary>
-    /// Get updated write buffer
+    /// Update writer buffer with header variables changes
     /// </summary>
-    public override PageBuffer GetBufferWrite()
+    public override PageBuffer UpdateHeaderBuffer()
     {
-        var buffer = base.GetBufferWrite();
+        var buffer = base.UpdateHeaderBuffer();
         var span = buffer.AsSpan();
 
         // update header props

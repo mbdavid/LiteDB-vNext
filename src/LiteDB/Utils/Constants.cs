@@ -36,7 +36,7 @@ internal class Constants
     public const int AMP_FIRST_PAGE_ID = 1;
 
     /// <summary>
-    /// Represent how many pages each extend will allocate in a single AllocationMapPage
+    /// Represent how many pages each extend will allocate in AllocationMapPage
     /// </summary>
     public const int AMP_EXTEND_SIZE = 8;
 
@@ -63,10 +63,10 @@ internal class Constants
 
     /// <summary>
     /// Represent an array of how distribuited pages are inside AllocationMap 2 bits (should be 4 values only)
-    /// 00 - arr[0]..8160 (page empty)
-    /// 01 - (arr[0]-1)..arr[1]
-    /// 10 - (arr[1]-1)..arr[2]
-    /// 11 - (arr[2]-1)..0 (page full)
+    /// 00 - 8160       (page empty - but already has pagetype)
+    /// 01 - 6999..5000
+    /// 10 - 4999..2000
+    /// 11 - 1999..0    (page full)
     /// </summary>
     public const int AMP_DATA_PAGE_SPACE_00 = 7000;
     public const int AMP_DATA_PAGE_SPACE_01 = 5000;

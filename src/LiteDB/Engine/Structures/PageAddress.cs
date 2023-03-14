@@ -2,6 +2,7 @@
 
 /// <summary>
 /// Represents a page address inside a page structure - index could be byte offset position OR index in a list (6 bytes)
+/// * Immutable (thread safe)
 /// </summary>
 [DebuggerStepThrough]
 internal struct PageAddress : IEquatable<PageAddress>

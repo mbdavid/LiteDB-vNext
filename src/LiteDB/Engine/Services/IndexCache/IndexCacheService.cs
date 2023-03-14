@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
-/// Keep all read/
+/// Singleton (thread safe)
 /// </summary>
 [AutoInterface]
 internal class IndexCacheService : IIndexCacheService

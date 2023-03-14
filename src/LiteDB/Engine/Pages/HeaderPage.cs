@@ -74,9 +74,12 @@ internal class HeaderPage : BasePage
         }
     }
 
-    public override PageBuffer GetBufferWrite()
+    /// <summary>
+    /// Update writer buffer with header variables changes
+    /// </summary>
+    public override PageBuffer UpdateHeaderBuffer()
     {
-        var buffer = base.GetBufferWrite();
+        var buffer = base.UpdateHeaderBuffer();
         var span = buffer.AsSpan();
 
         // update header

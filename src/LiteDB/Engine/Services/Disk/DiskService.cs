@@ -1,21 +1,21 @@
 ﻿namespace LiteDB.Engine;
 
+/// <summary>
+/// Singleton (thread safe)
+/// </summary>
 [AutoInterface(typeof(IDisposable))]
 internal class DiskService : IDiskService
 {
-    private readonly EngineSettings _settings;
-    private IDiskStream _writer;
     private IServicesFactory _factory;
-    private readonly IMemoryCacheService _memoryCache;
+
+    private IDiskStream _writer;
     private ConcurrentQueue<IDiskStream> _readers = new ();
 
-    public DiskService(IServicesFactory factory, IMemoryCacheService memoryCache, EngineSettings settings)
+    public DiskService(IServicesFactory factory)
     {
         _factory = factory;
-        _memoryCache = memoryCache;
-        _settings = settings;
 
-        _writer = _factory.CreateDiskStream(_settings, true);
+        _writer = _factory.CreateDiskStream(true);
     }
 
     public async Task<bool> InitializeAsync()
@@ -32,20 +32,22 @@ internal class DiskService : IDiskService
 
     private async Task CreateNewDatafileAsync()
     {
-        var headerBuffer = _memoryCache.AllocateNewPage();
-        var ampBuffer = _memoryCache.AllocateNewPage();
+        var memoryCache = _factory.MemoryCache;
+
+        var headerBuffer = memoryCache.AllocateNewPage();
+        var ampBuffer = memoryCache.AllocateNewPage();
 
         var headerPage = new HeaderPage(headerBuffer);
         var ampPage = new AllocationMapPage(1, ampBuffer);
 
-        headerPage.GetBufferWrite();
-        ampPage.GetBufferWrite();
+        headerPage.UpdateHeaderBuffer();
+        ampPage.UpdateHeaderBuffer();
 
-        await _writer!.WriteAsync(headerBuffer);
-        await _writer!.WriteAsync(ampBuffer);
+        await _writer.WriteAsync(headerBuffer);
+        await _writer.WriteAsync(ampBuffer);
 
-        _memoryCache.DeallocatePage(headerBuffer);
-        _memoryCache.DeallocatePage(ampBuffer);
+        memoryCache.DeallocatePage(headerBuffer);
+        memoryCache.DeallocatePage(ampBuffer);
     }
 
     public void Dispose()

@@ -1,23 +1,14 @@
 ﻿namespace LiteDB;
 
 [AutoInterface(typeof(IDisposable))]
-internal class EngineContext : IEngineContext
+internal partial class EngineContext : IEngineContext
 {
-    public Dictionary<string, object> Request { get; }
+    public long StartTime = DateTime.UtcNow.Ticks;
 
-    public IServicesFactory Factory { get; }
-
-    public IEngineServices Services { get; }
-
-    public EngineContext(IServicesFactory factory, IEngineServices services)
-    {
-        this.Request = new ();
-        this.Factory = factory;
-        this.Services = services;
-    }
+    public int PageReadCount;
+    public int PageWriteCount;
 
     public void Dispose()
     {
     }
 }
-

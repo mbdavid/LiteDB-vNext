@@ -2,6 +2,7 @@
 
 /// <summary>
 /// Base page implement minimal page layer width read buffers. Pages are not thread-safe
+/// * Shared (thread safe) (N readers, 1 writer)
 /// </summary>
 internal class BasePage
 {
@@ -104,9 +105,9 @@ internal class BasePage
     }
 
     /// <summary>
-    /// Returns updated write buffer
+    /// Update writer buffer with header variables changes
     /// </summary>
-    public virtual PageBuffer GetBufferWrite()
+    public virtual PageBuffer UpdateHeaderBuffer()
     {
         ENSURE(this.IsDirty, $"PageID {this.PageID} has no change");
 

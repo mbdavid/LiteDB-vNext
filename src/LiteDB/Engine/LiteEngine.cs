@@ -8,10 +8,9 @@
 [AutoInterface(typeof(IDisposable))]
 public partial class LiteEngine : ILiteEngine
 {
-    private readonly IEngineServices _services;
     private readonly IServicesFactory _factory;
 
-    public EngineState State => _services.State;
+    public EngineState State => _factory.State;
 
     #region Ctor
 
@@ -35,7 +34,7 @@ public partial class LiteEngine : ILiteEngine
     /// Initialize LiteEngine using all engine settings
     /// </summary>
     public LiteEngine(EngineSettings settings)
-        : this  (new ServicesFactory(), settings)
+        : this  (new ServicesFactory(settings))
     {
     }
 
@@ -43,23 +42,24 @@ public partial class LiteEngine : ILiteEngine
     /// To initialize LiteEngine we need classes factory and engine settings
     /// Current version still using IServiceFactory as internal...
     /// </summary>
-    internal LiteEngine(IServicesFactory factory, EngineSettings settings)
+    internal LiteEngine(IServicesFactory factory)
     {
         _factory = factory;
-        _services = _factory.CreateEngineServices(settings);
     }
 
     #endregion
 
     #region Open/Close database
 
-    public void OpenAsync()
+    public async Task<bool> OpenAsync()
     {
-        using var ctx = _factory.CreateEngineContext(_services);
+        using var ctx = _factory.CreateEngineContext();
 
         var open = _factory.CreateOpenCommand(ctx);
 
-        open.ExecuteAsync();
+        await open.ExecuteAsync();
+
+        return true;
     }
 
     #endregion

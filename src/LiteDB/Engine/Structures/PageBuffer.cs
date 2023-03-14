@@ -1,5 +1,8 @@
 ﻿namespace LiteDB.Engine;
 
+/// <summary>
+/// * Shared (thread safe)
+/// </summary>
 internal struct PageBuffer
 {
     public readonly byte[] Array;

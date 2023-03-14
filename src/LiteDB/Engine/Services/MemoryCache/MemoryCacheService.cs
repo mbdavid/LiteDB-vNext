@@ -1,11 +1,9 @@
 ﻿namespace LiteDB.Engine;
 
-// adding IDisposable in auto-generated interface IMemoryCacheService
-internal partial interface IMemoryCacheService : IDisposable { }
-
 /// <summary>
 /// Page buffer cache. Keep a concurrent dictionary with buffers (byte[]) based on disk file position.
 /// Cache both data and log pages. Works at buffer level
+/// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
 internal class MemoryCacheService : IMemoryCacheService

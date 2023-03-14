@@ -2,6 +2,7 @@
 
 /// <summary>
 /// Represent a location on data disk from a buffer source
+/// * Immutable (thread safe)
 /// </summary>
 [DebuggerStepThrough]
 internal struct PageDataLocation
