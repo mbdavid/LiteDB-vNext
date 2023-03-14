@@ -61,6 +61,9 @@ internal class BasePage
         // write fixed data
         var span = _readBuffer.AsSpan();
 
+        // clear write buffer to ensure all content will be 0 (empty)
+        span.Fill(0);
+
         span[P_PAGE_ID..].WriteUInt32(this.PageID);
         span[P_PAGE_TYPE] = (byte)this.PageType;
     }

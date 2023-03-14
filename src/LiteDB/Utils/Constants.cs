@@ -42,17 +42,17 @@ internal class Constants
 
     /// <summary>
     /// Bytes used in each extend (8 pages)
-    /// 1 byte for colID + 4 bytes for 8 pages bit wise for (pageType/freeSpace)
+    /// 1 byte for colID + 3 bytes for 8 pages bit wise for pageType/freeSpace
     /// </summary>
-    public const int AMP_BYTES_PER_EXTEND = 5;
+    public const int AMP_BYTES_PER_EXTEND = 4;
 
     /// <summary>
-    /// Get how many extends a single AllocationMap page support (1.632 extends)
+    /// Get how many extends a single AllocationMap page support (2.040 extends)
     /// </summary>
     public const int AMP_EXTEND_COUNT = PAGE_CONTENT_SIZE / AMP_BYTES_PER_EXTEND;
 
     /// <summary>
-    /// Get how many pages (data/index/empty) a single allocation map page support (13.056 pages)
+    /// Get how many pages (data/index/empty) a single allocation map page support (16.320 pages)
     /// </summary>
     public const int AMP_MAP_PAGES_COUNT = AMP_EXTEND_COUNT * AMP_BYTES_PER_EXTEND;
 
@@ -62,21 +62,26 @@ internal class Constants
     public const int AMP_STEP_SIZE = AMP_MAP_PAGES_COUNT + 1;
 
     /// <summary>
-    /// Represent an array of how distribuited pages are inside AllocationMap 2 bits (should be 4 values only)
-    /// 00 - 8160       (page empty - but already has pagetype)
-    /// 01 - 6999..5000
-    /// 10 - 4999..2000
-    /// 11 - 1999..0    (page full)
+    /// Represent an array of how distribuited pages are inside AllocationMap using 3 bits
+    /// [000] - Empty
+    /// --
+    /// [001] - Data  (exact 8160 bytes free)
+    /// [010] - Data  (between 6344 and 8159 bytes free)
+    /// [011] - Data  (between 2446 and 6343 bytes free)
+    /// [100] - Data  (between    0 and 2446 bytes free - page full)
+    /// --
+    /// [101] - Index (exact 8160 bytes free)
+    /// [110] - Index (between 1050 and 8159 bytes free)
+    /// [111] - Index (between    0 and 1049 bytes free - page full)
     /// </summary>
-    public const int AMP_DATA_PAGE_SPACE_00 = 7000;
-    public const int AMP_DATA_PAGE_SPACE_01 = 5000;
-    public const int AMP_DATA_PAGE_SPACE_10 = 2000;
-    public const int AMP_DATA_PAGE_SPACE_11 = 0;
+    public const int AMP_DATA_PAGE_SPACE_001 = PAGE_CONTENT_SIZE; // empty data page
+    public const int AMP_DATA_PAGE_SPACE_010 = 6433;
+    public const int AMP_DATA_PAGE_SPACE_011 = 2447;
+    public const int AMP_DATA_PAGE_SPACE_100 = 0;
 
-    /// <summary>
-    /// Indicate when a IndexPage must be consider full (IndexPage contains immutable-size/small nodes - don't need ranges)
-    /// </summary>
-    public const int AMP_INDEX_PAGE_SPACE = 1400;
+    public const int AMP_INDEX_PAGE_SPACE_101 = PAGE_CONTENT_SIZE;
+    public const int AMP_INDEX_PAGE_SPACE_110 = 1050;
+    public const int AMP_INDEX_PAGE_SPACE_111 = 0;
 
     /// <summary>
     /// Get first DataPage from $master
@@ -102,11 +107,6 @@ internal class Constants
     /// Max size of a index entry - usde for string, binary, array and documents. Need fit in 1 byte length
     /// </summary>
     public const int MAX_INDEX_KEY_LENGTH = 1023;
-
-    /// <summary>
-    /// Get max length of 1 single index node
-    /// </summary>
-    public const int MAX_INDEX_LENGTH = 1400;
 
     /// <summary>
     /// Define how many documents will be keep in memory until clear cache and remove support to orderby/groupby
