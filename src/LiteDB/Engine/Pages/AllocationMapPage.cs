@@ -8,7 +8,7 @@ internal class AllocationMapPage : BasePage
     /// <summary>
     /// Get how many extends exists in this page
     /// </summary>
-    public int ExtendsCount => AMP_EXTEND_COUNT - _emptyExtends.Count;
+    public int ExtendsCount => AM_EXTEND_COUNT - _emptyExtends.Count;
 
     private readonly Queue<int> _emptyExtends;
 
@@ -31,7 +31,7 @@ internal class AllocationMapPage : BasePage
         _allocationMapID = GetAllocationMapID(pageID);
 
         // fill all queue as empty extends (use ExtendID)
-        _emptyExtends = new Queue<int>(Enumerable.Range(0, AMP_EXTEND_COUNT)
+        _emptyExtends = new Queue<int>(Enumerable.Range(0, AM_EXTEND_COUNT)
             .Select(x => x * _allocationMapID));
     }
 
@@ -48,7 +48,7 @@ internal class AllocationMapPage : BasePage
         _writeBuffer = buffer;
 
         // create an empty list of extends
-        _emptyExtends = new Queue<int>(AMP_EXTEND_COUNT);
+        _emptyExtends = new Queue<int>(AM_EXTEND_COUNT);
     }
 
     /// <summary>
@@ -57,15 +57,15 @@ internal class AllocationMapPage : BasePage
     public void ReadAllocationMap(CollectionFreePages[] collectionFreePages)
     {
         // if this page contais all empty extends, there is no need to read all buffer
-        if (_emptyExtends.Count == AMP_EXTEND_COUNT) return;
+        if (_emptyExtends.Count == AM_EXTEND_COUNT) return;
 
         var span = _readBuffer.AsSpan();
 
         ENSURE(_emptyExtends.Count == 0, "empty extends will be loaded here and can't have any page before here");
 
-        for (var i = 0; i < AMP_EXTEND_COUNT; i++)
+        for (var i = 0; i < AM_EXTEND_COUNT; i++)
         {
-            var position = PAGE_HEADER_SIZE + (i * AMP_EXTEND_SIZE);
+            var position = PAGE_HEADER_SIZE + (i * AM_EXTEND_SIZE);
 
             // get extendID
             var extendID = i * _allocationMapID;
@@ -75,14 +75,14 @@ internal class AllocationMapPage : BasePage
 
             if (colID == 0)
             {
-                DEBUG(span[position..(position + AMP_BYTES_PER_EXTEND)].IsFullZero(), $"all page extend allocation map should be empty at {position}");
+                DEBUG(span[position..(position + AM_BYTES_PER_EXTEND)].IsFullZero(), $"all page extend allocation map should be empty at {position}");
 
                 _emptyExtends.Enqueue(extendID);
             }
             else
             {
                 // get 3 bytes from extend to read 8 sequencial pages free spaces
-                var pagesBytes = span[(position + 1)..(position + AMP_BYTES_PER_EXTEND - 2)];
+                var pagesBytes = span[(position + 1)..(position + AM_BYTES_PER_EXTEND - 2)];
 
                 // get free page lists from collection
                 var freePages = collectionFreePages[colID];
@@ -132,9 +132,9 @@ internal class AllocationMapPage : BasePage
             var list = pageData switch
             {
                 0b000 => freePages.EmptyPages,
-                0b001 => freePages.DataPages_1,
-                0b010 => freePages.DataPages_2,
-                0b011 => freePages.DataPages_3,
+                0b001 => freePages.DataPagesLarge,
+                0b010 => freePages.DataPagesMiddle,
+                0b011 => freePages.DataPagesSmall,
                 0b100 => null, // data full
                 0b101 => freePages.IndexPages,
                 0b110 => null, // index full
@@ -164,7 +164,7 @@ internal class AllocationMapPage : BasePage
         var pageID = firstPageID;
 
         // add all pages as emptyPages in freePages list
-        for (var i = 0; i < AMP_EXTEND_SIZE; i++)
+        for (var i = 0; i < AM_EXTEND_SIZE; i++)
         {
             freePages.EmptyPages.Enqueue(pageID);
 
@@ -191,7 +191,7 @@ internal class AllocationMapPage : BasePage
     /// </summary>
     public static int GetAllocationMapID(uint pageID)
     {
-        return (int)(pageID - AMP_FIRST_PAGE_ID) % AMP_EXTEND_COUNT;
+        return (int)(pageID - AM_FIRST_PAGE_ID) % AM_EXTEND_COUNT;
     }
 
     /// <summary>

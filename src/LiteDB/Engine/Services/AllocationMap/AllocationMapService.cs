@@ -22,6 +22,10 @@ internal class AllocationMapService : IAllocationMapService
         _factory = factory;
     }
 
+    /// <summary>
+    /// Initialize allocation map service loading all AM pages into memory and getting
+    /// </summary>
+    /// <returns></returns>
     public async Task Initialize()
     {
         var disk = _factory.Disk;
@@ -35,7 +39,7 @@ internal class AllocationMapService : IAllocationMapService
             // read all collection map in memory
             page.ReadAllocationMap(_collectionFreePages);
 
-            // add amp to instance
+            // add AM page to instance
             _pages.Add(page);
         }
     }
@@ -55,85 +59,41 @@ internal class AllocationMapService : IAllocationMapService
         if (type == PageType.Data)
         {
             // test if length for SMALL size document length
-            if (length < AMP_DATA_PAGE_SPACE_3)
+            if (length < AM_DATA_PAGE_SPACE_SMALL)
             {
-                if (freePages.DataPages_3.Count > 0)
+                if (freePages.DataPagesSmall.Count > 0) // test for small bucket
                 {
-                    return (freePages.DataPages_3.Dequeue(), false);
+                    return (freePages.DataPagesSmall.Dequeue(), false);
                 }
-                else if (freePages.DataPages_2.Count > 0)
+                else if (freePages.DataPagesMiddle.Count > 0) // test in middle bucket
                 {
-                    return (freePages.DataPages_2.Dequeue(), false);
+                    return (freePages.DataPagesMiddle.Dequeue(), false);
                 }
-                else if (freePages.DataPages_1.Count > 0)
+                else if (freePages.DataPagesLarge.Count > 0) // test in large bucket
                 {
-                    return (freePages.DataPages_1.Dequeue(), false);
-                }
-                else if (freePages.EmptyPages.Count > 0)
-                {
-                    return (freePages.EmptyPages.Dequeue(), true);
-                }
-                else
-                {
-                    // deve criar uma nova extend ou mesmo pesquisar em outra amp
-                    // pode ser que chame novamente a mesma função
-                    throw new NotImplementedException();
+                    return (freePages.DataPagesLarge.Dequeue(), false);
                 }
             }
 
             // test if length for MIDDLE size document length
-            else if (length < AMP_DATA_PAGE_SPACE_2)
+            else if (length < AM_DATA_PAGE_SPACE_MIDDLE)
             {
-                if (freePages.DataPages_1.Count > 0)
+                if (freePages.DataPagesMiddle.Count > 0) // test in middle bucket
                 {
-                    return (freePages.DataPages_1.Dequeue(), false);
+                    return (freePages.DataPagesMiddle.Dequeue(), false);
                 }
-                else if (freePages.EmptyPages.Count > 0)
+                else if (freePages.DataPagesLarge.Count > 0) // test for large bucket
                 {
-                    return (freePages.EmptyPages.Dequeue(), true);
-                }
-                else
-                {
-                    // deve criar uma nova extend ou mesmo pesquisar em outra amp
-                    // pode ser que chame novamente a mesma função
-                    throw new NotImplementedException();
+                    return (freePages.DataPagesLarge.Dequeue(), false);
                 }
             }
 
             // test if length for LARGE size document length (considering 1 page block)
-            else if (length < AMP_DATA_PAGE_SPACE_1)
+            else if (length < AM_DATA_PAGE_SPACE_LARGE)
             {
-                if (freePages.DataPages_1.Count > 0)
+                if (freePages.DataPagesLarge.Count > 0)
                 {
-                    return (freePages.DataPages_1.Dequeue(), false);
-                }
-                else if (freePages.EmptyPages.Count > 0)
-                {
-                    return (freePages.EmptyPages.Dequeue(), true);
-                }
-                else
-                {
-                    // deve criar uma nova extend ou mesmo pesquisar em outra amp
-                    // pode ser que chame novamente a mesma função
-                    throw new NotImplementedException();
-                }
-            }
-
-            else  // length >= AMP_DATA_PAGE_SPACE_2
-            {
-                if (freePages.DataPages_1.Count > 0)
-                {
-                    return (freePages.DataPages_1.Dequeue(), false);
-                }
-                else if (freePages.EmptyPages.Count > 0)
-                {
-                    return (freePages.EmptyPages.Dequeue(), true);
-                }
-                else
-                {
-                    // deve criar uma nova extend ou mesmo pesquisar em outra amp
-                    // pode ser que chame novamente a mesma função
-                    throw new NotImplementedException();
+                    return (freePages.DataPagesLarge.Dequeue(), false);
                 }
             }
         }
@@ -143,17 +103,20 @@ internal class AllocationMapService : IAllocationMapService
             {
                 return (freePages.IndexPages.Dequeue(), false);
             }
-            else if (freePages.EmptyPages.Count > 0)
-            {
-                return (freePages.EmptyPages.Dequeue(), true);
-            }
-            else
-            {
-                // deve criar uma nova extend ou mesmo pesquisar em outra amp
-                // pode ser que chame novamente a mesma função
-                throw new NotImplementedException();
-            }
         }
+
+        //TODO: nesse ponto eu poderia tentar dar um "Reload" na freePages pra carregar mais (se tiver mais)
+
+        // there is no page avaiable with a best fit - create a new page
+        if (freePages.EmptyPages.Count > 0)
+        {
+            return (freePages.EmptyPages.Dequeue(), true);
+        }
+
+        // if there is no empty pages, create new extend for this collection with new 8 pages
+        var emptyPageID = this.CreateNewExtend(colID, freePages);
+
+        return (emptyPageID, true);
     }
 
     /// <summary>
@@ -161,11 +124,40 @@ internal class AllocationMapService : IAllocationMapService
     /// Return the first empty pageID created for this collection in this new extend
     /// This method populate collectionFreePages[colID] with 8 new empty pages
     /// </summary>
-    private uint CreateNewExtend(byte colID)
+    private uint CreateNewExtend(byte colID, CollectionFreePages freePages)
     {
-        // lock, pois não pode ter 2 threads aqui
+        //TODO: lock, pois não pode ter 2 threads aqui
 
-        return 0;
+
+        // try create extend in all AM pages already exists
+        foreach (var page in _pages)
+        {
+            // create new extend on page (if this page contains empty extends)
+            var created = page.CreateNewExtend(colID, freePages);
+
+            if (created)
+            {
+                // return first empty page
+                return freePages.EmptyPages.Dequeue();
+            }
+        }
+
+        // if there is no more free extend in any AM page, let's create a new allocation map page
+        var pageBuffer = _factory.MemoryCache.AllocateNewBuffer();
+
+        // get a new PageID based on last AMP
+        var nextPageID = _pages.Last().PageID + AM_PAGE_STEP;
+
+        // create new AMP and add to list
+        var newPage = new AllocationMapPage(nextPageID, pageBuffer);
+
+        _pages.Add(newPage);
+
+        // create new extend for this collection - always return true because it´s a new page
+        newPage.CreateNewExtend(colID, freePages);
+
+        // return first empty page
+        return freePages.EmptyPages.Dequeue();
     }
 
     public void Dispose()

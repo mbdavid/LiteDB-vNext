@@ -31,54 +31,54 @@ internal class Constants
     public const int ENCRYPTION_SALT_SIZE = 16;
 
     /// <summary>
-    /// Represent pageID of first AllocationMapPage
+    /// Represent pageID of first AllocationMapPage (#1)
     /// </summary>
-    public const int AMP_FIRST_PAGE_ID = 1;
+    public const int AM_FIRST_PAGE_ID = 1;
 
     /// <summary>
     /// Represent how many pages each extend will allocate in AllocationMapPage
     /// </summary>
-    public const int AMP_EXTEND_SIZE = 8;
+    public const int AM_EXTEND_SIZE = 8;
 
     /// <summary>
     /// Bytes used in each extend (8 pages)
     /// 1 byte for colID + 3 bytes for 8 pages bit wise for pageType/freeSpace
     /// </summary>
-    public const int AMP_BYTES_PER_EXTEND = 4;
+    public const int AM_BYTES_PER_EXTEND = 4;
 
     /// <summary>
     /// Get how many extends a single AllocationMap page support (2.040 extends)
     /// </summary>
-    public const int AMP_EXTEND_COUNT = PAGE_CONTENT_SIZE / AMP_BYTES_PER_EXTEND;
+    public const int AM_EXTEND_COUNT = PAGE_CONTENT_SIZE / AM_BYTES_PER_EXTEND;
 
     /// <summary>
     /// Get how many pages (data/index/empty) a single allocation map page support (16.320 pages)
     /// </summary>
-    public const int AMP_MAP_PAGES_COUNT = AMP_EXTEND_COUNT * AMP_BYTES_PER_EXTEND;
+    public const int AM_MAP_PAGES_COUNT = AM_EXTEND_COUNT * AM_BYTES_PER_EXTEND;
 
     /// <summary>
     /// Indicate how many allocation map pages will jump to another map page (starts in 1)
     /// </summary>
-    public const int AMP_STEP_SIZE = AMP_MAP_PAGES_COUNT + 1;
+    public const int AM_PAGE_STEP = AM_MAP_PAGES_COUNT + 1;
 
     /// <summary>
     /// Represent an array of how distribuited pages are inside AllocationMap using 3 bits
     /// [000] - 0 - Empty
     /// --
-    /// [001] - 1 - Data  (between 91% and 100% free)
-    /// [010] - 2 - Data  (between 51% and 90% free)
-    /// [011] - 3 - Data  (between 31% and 50% free)
+    /// [001] - 1 - Data  (between 91% and 100% free) [LARGE]
+    /// [010] - 2 - Data  (between 51% and 90% free)  [MIDDLE]
+    /// [011] - 3 - Data  (between 31% and 50% free)  [SMALL]
     /// [100] - 4 - Data  (between 0% and 30% free - page full)
     /// --
     /// [101] - 5 - Index (between 8160 and 1050 bytes free)
     /// [110] - 6 - Index (between 1049 and 0 bytes free)
     /// [111] - 7 - reserved
     /// </summary>
-    public const int AMP_DATA_PAGE_SPACE_1 = (int)(PAGE_CONTENT_SIZE * 0.9); // 7344;
-    public const int AMP_DATA_PAGE_SPACE_2 = (int)(PAGE_CONTENT_SIZE * 0.5); // 4095;
-    public const int AMP_DATA_PAGE_SPACE_3 = (int)(PAGE_CONTENT_SIZE * 0.3); // 2248;
+    public const int AM_DATA_PAGE_SPACE_LARGE  = (int)(PAGE_CONTENT_SIZE * 0.9); // 7344;
+    public const int AM_DATA_PAGE_SPACE_MIDDLE = (int)(PAGE_CONTENT_SIZE * 0.5); // 4095;
+    public const int AM_DATA_PAGE_SPACE_SMALL  = (int)(PAGE_CONTENT_SIZE * 0.3); // 2248;
 
-    public const int AMP_INDEX_PAGE_SPACE = 1050;
+    public const int AM_INDEX_PAGE_SPACE = 1050;
 
     /// <summary>
     /// Get first DataPage from $master

@@ -8,10 +8,20 @@
 [AutoInterface(typeof(IDisposable))]
 internal class MemoryCacheService : IMemoryCacheService
 {
-    private readonly ConcurrentQueue<PageBuffer> _freePages = new();
-    private int _pagesAllocated = 0;
+    /// <summary>
+    /// A queue of all available (re-used) free buffers. Rent model
+    /// </summary>
+    private readonly ConcurrentQueue<PageBuffer> _freeBuffers = new();
 
+    /// <summary>
+    /// A dictionary to cache use/re-use same data buffer across threads. Rent model
+    /// </summary>
     private ConcurrentDictionary<long, PageBuffer> _cache = new();
+
+    /// <summary>
+    /// Track how many pages was allocated in memory. Reduce this size occurs only in CleanUp process
+    /// </summary>
+    private int _pagesAllocated = 0;
 
     public MemoryCacheService()
     {
@@ -20,9 +30,9 @@ internal class MemoryCacheService : IMemoryCacheService
     /// <summary>
     /// Allocate, in memory, a new array with PAGE_SIZE inside a PageBuffer struct reference.
     /// </summary>
-    public PageBuffer AllocateNewPage()
+    public PageBuffer AllocateNewBuffer()
     {
-        if (_freePages.TryDequeue(out var page))
+        if (_freeBuffers.TryDequeue(out var page))
         {
             return page;
         }
@@ -34,7 +44,7 @@ internal class MemoryCacheService : IMemoryCacheService
         return new PageBuffer(array);
     }
 
-    public void DeallocatePage(PageBuffer buffer)
+    public void DeallocateBuffer(PageBuffer buffer)
     {
         ENSURE(buffer.ShareCounter == 0, "ShareCounter must be 0 before return page to memory");
         ENSURE(!_cache.ContainsKey(buffer.Position), "PageBuffer must be outside cache");
@@ -43,7 +53,7 @@ internal class MemoryCacheService : IMemoryCacheService
         buffer.Reset();
 
         // neste momento posso escolher se adiciono no _freePages
-        _freePages.Enqueue(buffer);
+        _freeBuffers.Enqueue(buffer);
     }
 
     /// <summary>

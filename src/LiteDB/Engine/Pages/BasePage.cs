@@ -100,7 +100,7 @@ internal class BasePage
         else
         {
             // create a new page in memory
-            _writeBuffer = _memoryCache!.AllocateNewPage();
+            _writeBuffer = _memoryCache!.AllocateNewBuffer();
 
             // copy content from clean buffer to write buffer (if exists)
             _readBuffer.AsSpan().CopyTo(_writeBuffer.Value.AsSpan());

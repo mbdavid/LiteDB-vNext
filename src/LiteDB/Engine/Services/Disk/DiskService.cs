@@ -36,13 +36,13 @@ internal class DiskService : IDiskService
     {
         var memoryCache = _factory.MemoryCache;
 
-        long position = AMP_FIRST_PAGE_ID * PAGE_SIZE;
+        long position = AM_FIRST_PAGE_ID * PAGE_SIZE;
 
         var fileLength = _writer.GetLength();
 
         while (position < fileLength)
         {
-            var pageBuffer = memoryCache.AllocateNewPage();
+            var pageBuffer = memoryCache.AllocateNewBuffer();
 
             await _writer.ReadAsync(position, pageBuffer);
 
@@ -50,7 +50,7 @@ internal class DiskService : IDiskService
 
             yield return pageBuffer;
 
-            position += (AMP_STEP_SIZE * PAGE_SIZE);
+            position += (AM_PAGE_STEP * PAGE_SIZE);
         }
 
     }
@@ -59,20 +59,20 @@ internal class DiskService : IDiskService
     {
         var memoryCache = _factory.MemoryCache;
 
-        var headerBuffer = memoryCache.AllocateNewPage();
-        var ampBuffer = memoryCache.AllocateNewPage();
+        var headerBuffer = memoryCache.AllocateNewBuffer();
+        var amBuffer = memoryCache.AllocateNewBuffer();
 
         var headerPage = new HeaderPage(headerBuffer);
-        var ampPage = new AllocationMapPage(1, ampBuffer);
+        var amPage = new AllocationMapPage(1, amBuffer);
 
         headerPage.UpdateHeaderBuffer();
-        ampPage.UpdateHeaderBuffer();
+        amPage.UpdateHeaderBuffer();
 
         await _writer.WriteAsync(headerBuffer);
-        await _writer.WriteAsync(ampBuffer);
+        await _writer.WriteAsync(amBuffer);
 
-        memoryCache.DeallocatePage(headerBuffer);
-        memoryCache.DeallocatePage(ampBuffer);
+        memoryCache.DeallocateBuffer(headerBuffer);
+        memoryCache.DeallocateBuffer(amBuffer);
     }
 
     public void Dispose()
