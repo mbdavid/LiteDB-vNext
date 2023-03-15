@@ -1,9 +1,12 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+using System.Threading;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// * Singleton (thread safe)
 /// </summary>
-[AutoInterface]
+[AutoInterface(typeof(IDisposable))]
 internal class AllocationMapService : IAllocationMapService
 {
     private readonly IServicesFactory _factory;
@@ -19,9 +22,22 @@ internal class AllocationMapService : IAllocationMapService
         _factory = factory;
     }
 
-    public async Task<bool> Initialize()
+    public async Task Initialize()
     {
-        return true;
+        var disk = _factory.Disk;
+
+        // read all allocation maps pages on disk
+        await foreach (var pageBuffer in disk.ReadAllocationMapPages())
+        {
+            // get page buffer from disk
+            var page = new AllocationMapPage(pageBuffer);
+
+            // read all collection map in memory
+            page.ReadAllocationMap(_collectionFreePages);
+
+            // add amp to instance
+            _pages.Add(page);
+        }
     }
 
     /// <summary>
@@ -32,6 +48,7 @@ internal class AllocationMapService : IAllocationMapService
     {
         //TODO: cassiano, posso retornar uma pagina com tamanho menor do solicitado?
         // o chamador que peça uma nova com o restante (while)
+        // ta feio assim, mas tem como ficar bonito e eficiente (sem alocar memoria)
 
         var freePages = _collectionFreePages[colID];
 
@@ -42,19 +59,19 @@ internal class AllocationMapService : IAllocationMapService
             {
                 if (freePages.DataPages_3.Count > 0)
                 {
-                    return (freePages.DataPages_3.First(), false);
+                    return (freePages.DataPages_3.Dequeue(), false);
                 }
                 else if (freePages.DataPages_2.Count > 0)
                 {
-                    return (freePages.DataPages_2.First(), false);
+                    return (freePages.DataPages_2.Dequeue(), false);
                 }
                 else if (freePages.DataPages_1.Count > 0)
                 {
-                    return (freePages.DataPages_1.First(), false);
+                    return (freePages.DataPages_1.Dequeue(), false);
                 }
-                else if (freePages.EmptyPages_0.Count > 0)
+                else if (freePages.EmptyPages.Count > 0)
                 {
-                    return (freePages.EmptyPages_0.First(), true);
+                    return (freePages.EmptyPages.Dequeue(), true);
                 }
                 else
                 {
@@ -69,11 +86,11 @@ internal class AllocationMapService : IAllocationMapService
             {
                 if (freePages.DataPages_1.Count > 0)
                 {
-                    return (freePages.DataPages_1.First(), false);
+                    return (freePages.DataPages_1.Dequeue(), false);
                 }
-                else if (freePages.EmptyPages_0.Count > 0)
+                else if (freePages.EmptyPages.Count > 0)
                 {
-                    return (freePages.EmptyPages_0.First(), true);
+                    return (freePages.EmptyPages.Dequeue(), true);
                 }
                 else
                 {
@@ -88,11 +105,11 @@ internal class AllocationMapService : IAllocationMapService
             {
                 if (freePages.DataPages_1.Count > 0)
                 {
-                    return (freePages.DataPages_1.First(), false);
+                    return (freePages.DataPages_1.Dequeue(), false);
                 }
-                else if (freePages.EmptyPages_0.Count > 0)
+                else if (freePages.EmptyPages.Count > 0)
                 {
-                    return (freePages.EmptyPages_0.First(), true);
+                    return (freePages.EmptyPages.Dequeue(), true);
                 }
                 else
                 {
@@ -106,11 +123,11 @@ internal class AllocationMapService : IAllocationMapService
             {
                 if (freePages.DataPages_1.Count > 0)
                 {
-                    return (freePages.DataPages_1.First(), false);
+                    return (freePages.DataPages_1.Dequeue(), false);
                 }
-                else if (freePages.EmptyPages_0.Count > 0)
+                else if (freePages.EmptyPages.Count > 0)
                 {
-                    return (freePages.EmptyPages_0.First(), true);
+                    return (freePages.EmptyPages.Dequeue(), true);
                 }
                 else
                 {
@@ -122,11 +139,21 @@ internal class AllocationMapService : IAllocationMapService
         }
         else // PageType = IndexPage
         {
-
+            if (freePages.IndexPages.Count > 0)
+            {
+                return (freePages.IndexPages.Dequeue(), false);
+            }
+            else if (freePages.EmptyPages.Count > 0)
+            {
+                return (freePages.EmptyPages.Dequeue(), true);
+            }
+            else
+            {
+                // deve criar uma nova extend ou mesmo pesquisar em outra amp
+                // pode ser que chame novamente a mesma função
+                throw new NotImplementedException();
+            }
         }
-
-
-        return (150, true);
     }
 
     /// <summary>
@@ -141,4 +168,8 @@ internal class AllocationMapService : IAllocationMapService
         return 0;
     }
 
+    public void Dispose()
+    {
+        // limpar paginas
+    }
 }

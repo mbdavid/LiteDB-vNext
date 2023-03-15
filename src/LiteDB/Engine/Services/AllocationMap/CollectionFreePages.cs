@@ -7,17 +7,17 @@ internal struct CollectionFreePages
 {
     //TODO: test if hashset is the fast/best option here
 
-    public HashSet<uint> EmptyPages_0;
+    public FreePageList EmptyPages;
 
-    public HashSet<uint> DataPages_1;
-    public HashSet<uint> DataPages_2;
-    public HashSet<uint> DataPages_3;
+    public FreePageList DataPages_1;
+    public FreePageList DataPages_2;
+    public FreePageList DataPages_3;
 
-    public HashSet<uint> IndexPages;
+    public FreePageList IndexPages;
 
     public CollectionFreePages()
     {
-        this.EmptyPages_0 = new();
+        this.EmptyPages = new();
 
         this.DataPages_1 = new();
         this.DataPages_2 = new();

@@ -44,7 +44,7 @@ internal class BasePage
     /// <summary>
     /// If true any change operation InitializeWrite()
     /// </summary>
-    public bool IsDirty => _writeBuffer is not null;
+    public virtual bool IsDirty => _writeBuffer is not null;
 
     /// <summary>
     /// Create a new BasePage with an empty buffer. Write PageID and PageType on buffer
@@ -71,7 +71,7 @@ internal class BasePage
     /// <summary>
     /// Create BasePage instance based on buffer content
     /// </summary>
-    public BasePage(PageBuffer readBuffer, IMemoryCacheService memoryCache)
+    public BasePage(PageBuffer readBuffer, IMemoryCacheService? memoryCache)
     {
         _readBuffer = readBuffer;
         _writeBuffer = null;

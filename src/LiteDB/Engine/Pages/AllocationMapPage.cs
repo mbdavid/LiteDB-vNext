@@ -14,14 +14,21 @@ internal class AllocationMapPage : BasePage
 
     private readonly int _allocationMapID;
 
+    private bool _isDirty = false;
+
+    /// <summary>
+    /// AllocationMap is dirty is marked when content change (not only when have _writer != null)
+    /// </summary>
+    public override bool IsDirty => _isDirty;
+
     /// <summary>
     /// Create a new AllocationMapPage
     /// </summary>
     public AllocationMapPage(uint pageID, PageBuffer writeBuffer)
         : base(pageID, PageType.AllocationMap, writeBuffer)
     {
-        //TODO: cassiano, revisar
-        _allocationMapID = (int)(this.PageID - AMP_FIRST_PAGE_ID) % AMP_EXTEND_COUNT; // deve retornar 0, 1, 2, 3 ...
+        // get allocationMapID
+        _allocationMapID = GetAllocationMapID(pageID);
 
         // fill all queue as empty extends (use ExtendID)
         _emptyExtends = new Queue<int>(Enumerable.Range(0, AMP_EXTEND_COUNT)
@@ -31,10 +38,14 @@ internal class AllocationMapPage : BasePage
     /// <summary>
     /// Load AllocationMap from buffer memory
     /// </summary>
-    public AllocationMapPage(PageBuffer buffer, IMemoryCacheService memoryCache)
-        : base(buffer, memoryCache)
+    public AllocationMapPage(PageBuffer buffer)
+        : base(buffer, null)
     {
-        _allocationMapID = (int)(this.PageID - AMP_FIRST_PAGE_ID) % AMP_EXTEND_COUNT; // deve retornar 0, 1, 2, 3 ...
+        // get allocationMapID
+        _allocationMapID = GetAllocationMapID(this.PageID);
+
+        // for AllocationMapPage i will a single buffer to read (on database load) and write (on database close)
+        _writeBuffer = buffer;
 
         // create an empty list of extends
         _emptyExtends = new Queue<int>(AMP_EXTEND_COUNT);
@@ -116,11 +127,11 @@ internal class AllocationMapPage : BasePage
         void Add(int index, int pageData)
         {
             // get pageID based on extendID
-            var pageID = (uint)(extendID * index); // TODO: cassiano, verificar
+            var pageID = GetBlockPageID(extendID, index);
 
             var list = pageData switch
             {
-                0b000 => freePages.EmptyPages_0,
+                0b000 => freePages.EmptyPages,
                 0b001 => freePages.DataPages_1,
                 0b010 => freePages.DataPages_2,
                 0b011 => freePages.DataPages_3,
@@ -131,15 +142,13 @@ internal class AllocationMapPage : BasePage
                 _ => null
             };
 
-            if (list is not null)
-            {
-                list.Add(pageID);
-            }
+            list?.Enqueue(pageID);
         }
     }
 
     /// <summary>
-    /// Create a new extend for a collection. Remove this free extend from list and mark in buffer for this collection
+    /// Create a new extend for a collection. Remove this free extend from emptyExtends
+    /// If there is no more free extends, returns false. Populate freePages with new 8 empty pages for this collection
     /// </summary>
     public bool CreateNewExtend(byte colID, CollectionFreePages freePages)
     {
@@ -147,22 +156,59 @@ internal class AllocationMapPage : BasePage
 
         this.InitializeWrite();
 
+        // get a empty extend on this page
         var extendID = _emptyExtends.Dequeue();
 
-        for(var i = 0; i < AMP_EXTEND_SIZE; i++)
+        // get first PageID
+        var firstPageID = GetBlockPageID(extendID, 0);
+        var pageID = firstPageID;
+
+        // add all pages as emptyPages in freePages list
+        for (var i = 0; i < AMP_EXTEND_SIZE; i++)
         {
-            var pageID = (uint)(i * extendID); // TODO: tá errado
-            freePages.EmptyPages_0.Add(pageID);
+            freePages.EmptyPages.Enqueue(pageID);
+
+            pageID++;
         }
 
         var span = _writeBuffer!.Value.AsSpan();
 
-        //TODO: cassiano, revisar... preciso do indice aqui
-        var colIndex = PAGE_HEADER_SIZE + (extendID);
+        // get extend position inside this buffer
+        var colIndex = GetExtendPosition(extendID);
 
         // mark buffer write with this collection ID
         span[colIndex] = colID;
 
+        _isDirty = true;
+
         return true;
     }
+
+    #region Static Helpers
+
+    /// <summary>
+    /// Returns a AllocationMapID from a allocation map page number. Must return 0, 1, 2, 3
+    /// </summary>
+    public static int GetAllocationMapID(uint pageID)
+    {
+        return (int)(pageID - AMP_FIRST_PAGE_ID) % AMP_EXTEND_COUNT;
+    }
+
+    /// <summary>
+    /// Get PageID from a block page based on ExtendID (0, 1, ..) and PageIndex (0-7)
+    /// </summary>
+    public static uint GetBlockPageID(int extendID, int pageIndex)
+    {
+        return 0; //TODO: cassiano
+    }
+
+    /// <summary>
+    /// Get a extend position in current buffer based on ExtendID (32...8156 = 8160-4)
+    /// </summary>
+    public static byte GetExtendPosition(int extendID)
+    {
+        throw new NotImplementedException();
+    }
+
+    #endregion
 }

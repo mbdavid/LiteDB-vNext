@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// Singleton (thread safe)
@@ -28,6 +30,29 @@ internal class DiskService : IDiskService
         // abre o arquivo e retorna true se está tudo ok e não precisa de recovery
 
         return true;
+    }
+
+    public async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
+    {
+        var memoryCache = _factory.MemoryCache;
+
+        long position = AMP_FIRST_PAGE_ID * PAGE_SIZE;
+
+        var fileLength = _writer.GetLength();
+
+        while (position < fileLength)
+        {
+            var pageBuffer = memoryCache.AllocateNewPage();
+
+            await _writer.ReadAsync(position, pageBuffer);
+
+            //if (pageBuffer.IsEmpty()) break;
+
+            yield return pageBuffer;
+
+            position += (AMP_STEP_SIZE * PAGE_SIZE);
+        }
+
     }
 
     private async Task CreateNewDatafileAsync()
