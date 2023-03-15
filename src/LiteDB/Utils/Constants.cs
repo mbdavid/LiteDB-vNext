@@ -63,25 +63,22 @@ internal class Constants
 
     /// <summary>
     /// Represent an array of how distribuited pages are inside AllocationMap using 3 bits
-    /// [000] - Empty
+    /// [000] - 0 - Empty
     /// --
-    /// [001] - Data  (exact 8160 bytes free)
-    /// [010] - Data  (between 6344 and 8159 bytes free)
-    /// [011] - Data  (between 2446 and 6343 bytes free)
-    /// [100] - Data  (between    0 and 2446 bytes free - page full)
+    /// [001] - 1 - Data  (between 91% and 100% free)
+    /// [010] - 2 - Data  (between 51% and 90% free)
+    /// [011] - 3 - Data  (between 31% and 50% free)
+    /// [100] - 4 - Data  (between 0% and 30% free - page full)
     /// --
-    /// [101] - Index (exact 8160 bytes free)
-    /// [110] - Index (between 1050 and 8159 bytes free)
-    /// [111] - Index (between    0 and 1049 bytes free - page full)
+    /// [101] - 5 - Index (between 8160 and 1050 bytes free)
+    /// [110] - 6 - Index (between 1049 and 0 bytes free)
+    /// [111] - 7 - reserved
     /// </summary>
-    public const int AMP_DATA_PAGE_SPACE_001 = PAGE_CONTENT_SIZE; // empty data page
-    public const int AMP_DATA_PAGE_SPACE_010 = 6433;
-    public const int AMP_DATA_PAGE_SPACE_011 = 2447;
-    public const int AMP_DATA_PAGE_SPACE_100 = 0;
+    public const int AMP_DATA_PAGE_SPACE_1 = (int)(PAGE_CONTENT_SIZE * 0.9); // 7344;
+    public const int AMP_DATA_PAGE_SPACE_2 = (int)(PAGE_CONTENT_SIZE * 0.5); // 4095;
+    public const int AMP_DATA_PAGE_SPACE_3 = (int)(PAGE_CONTENT_SIZE * 0.3); // 2248;
 
-    public const int AMP_INDEX_PAGE_SPACE_101 = PAGE_CONTENT_SIZE;
-    public const int AMP_INDEX_PAGE_SPACE_110 = 1050;
-    public const int AMP_INDEX_PAGE_SPACE_111 = 0;
+    public const int AMP_INDEX_PAGE_SPACE = 1050;
 
     /// <summary>
     /// Get first DataPage from $master
@@ -107,6 +104,11 @@ internal class Constants
     /// Max size of a index entry - usde for string, binary, array and documents. Need fit in 1 byte length
     /// </summary>
     public const int MAX_INDEX_KEY_LENGTH = 1023;
+
+    /// <summary>
+    /// Get max length of 1 single index node
+    /// </summary>
+    public const int MAX_INDEX_LENGTH = 1400;
 
     /// <summary>
     /// Define how many documents will be keep in memory until clear cache and remove support to orderby/groupby

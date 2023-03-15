@@ -28,24 +28,117 @@ internal class AllocationMapService : IAllocationMapService
     /// Return a page ID with space avaiable to store length bytes. Support only DataPages and IndexPages.
     /// Return pageID and bool to indicate that this page is a new empty page (must be created)
     /// </summary>  
-    public (uint, bool) GetFreePageID(byte coldID, PageType type, int length)
+    public (uint, bool) GetFreePageID(byte colID, PageType type, int length)
     {
-        var freePages = _collectionFreePages[coldID];
+        //TODO: cassiano, posso retornar uma pagina com tamanho menor do solicitado?
+        // o chamador que peça uma nova com o restante (while)
+
+        var freePages = _collectionFreePages[colID];
 
         if (type == PageType.Data)
         {
-            if (length >= AMP_DATA_PAGE_SPACE_001 && freePages.DataPages_001.Count > 0)
+            // test if length for SMALL size document length
+            if (length < AMP_DATA_PAGE_SPACE_3)
             {
-                return (freePages.DataPages_001.First(), false);
+                if (freePages.DataPages_3.Count > 0)
+                {
+                    return (freePages.DataPages_3.First(), false);
+                }
+                else if (freePages.DataPages_2.Count > 0)
+                {
+                    return (freePages.DataPages_2.First(), false);
+                }
+                else if (freePages.DataPages_1.Count > 0)
+                {
+                    return (freePages.DataPages_1.First(), false);
+                }
+                else if (freePages.EmptyPages_0.Count > 0)
+                {
+                    return (freePages.EmptyPages_0.First(), true);
+                }
+                else
+                {
+                    // deve criar uma nova extend ou mesmo pesquisar em outra amp
+                    // pode ser que chame novamente a mesma função
+                    throw new NotImplementedException();
+                }
             }
-            if (length >= AMP_DATA_PAGE_SPACE_010 && freePages.DataPages_001.Count > 0)
+
+            // test if length for MIDDLE size document length
+            else if (length < AMP_DATA_PAGE_SPACE_2)
             {
-                return (freePages.DataPages_001.First(), false);
+                if (freePages.DataPages_1.Count > 0)
+                {
+                    return (freePages.DataPages_1.First(), false);
+                }
+                else if (freePages.EmptyPages_0.Count > 0)
+                {
+                    return (freePages.EmptyPages_0.First(), true);
+                }
+                else
+                {
+                    // deve criar uma nova extend ou mesmo pesquisar em outra amp
+                    // pode ser que chame novamente a mesma função
+                    throw new NotImplementedException();
+                }
             }
+
+            // test if length for LARGE size document length (considering 1 page block)
+            else if (length < AMP_DATA_PAGE_SPACE_1)
+            {
+                if (freePages.DataPages_1.Count > 0)
+                {
+                    return (freePages.DataPages_1.First(), false);
+                }
+                else if (freePages.EmptyPages_0.Count > 0)
+                {
+                    return (freePages.EmptyPages_0.First(), true);
+                }
+                else
+                {
+                    // deve criar uma nova extend ou mesmo pesquisar em outra amp
+                    // pode ser que chame novamente a mesma função
+                    throw new NotImplementedException();
+                }
+            }
+
+            else  // length >= AMP_DATA_PAGE_SPACE_2
+            {
+                if (freePages.DataPages_1.Count > 0)
+                {
+                    return (freePages.DataPages_1.First(), false);
+                }
+                else if (freePages.EmptyPages_0.Count > 0)
+                {
+                    return (freePages.EmptyPages_0.First(), true);
+                }
+                else
+                {
+                    // deve criar uma nova extend ou mesmo pesquisar em outra amp
+                    // pode ser que chame novamente a mesma função
+                    throw new NotImplementedException();
+                }
+            }
+        }
+        else // PageType = IndexPage
+        {
+
         }
 
 
         return (150, true);
+    }
+
+    /// <summary>
+    /// Create a new extend in any allocation map page that contains space avaiable. If all pages are full, create another allocation map page
+    /// Return the first empty pageID created for this collection in this new extend
+    /// This method populate collectionFreePages[colID] with 8 new empty pages
+    /// </summary>
+    private uint CreateNewExtend(byte colID)
+    {
+        // lock, pois não pode ter 2 threads aqui
+
+        return 0;
     }
 
 }
