@@ -42,6 +42,11 @@ internal struct PageBuffer
         return this.Array.AsSpan(0, PAGE_SIZE);
     }
 
+    public Span<byte> AsSpan(int start, int length)
+    {
+        return this.Array.AsSpan(start, length);
+    }
+
     public void Rent()
     {
         Interlocked.Increment(ref this.ShareCounter);
@@ -54,5 +59,13 @@ internal struct PageBuffer
         Interlocked.Decrement(ref this.ShareCounter);
 
         ENSURE(this.ShareCounter < 0, "ShareCounter cached page must be large than 0");
+    }
+
+    /// <summary>
+    /// Test if first 32 header bytes are zero
+    /// </summary>
+    public bool IsHeaderEmpty()
+    {
+        return this.Array.AsSpan()[0..(PAGE_HEADER_SIZE - 1)].IsFullZero();
     }
 }

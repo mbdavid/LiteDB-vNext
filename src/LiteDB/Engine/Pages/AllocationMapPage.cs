@@ -5,11 +5,6 @@ namespace LiteDB.Engine;
 /// </summary>
 internal class AllocationMapPage : BasePage
 {
-    /// <summary>
-    /// Get how many extends exists in this page
-    /// </summary>
-    public int ExtendsCount => AM_EXTEND_COUNT - _emptyExtends.Count;
-
     private readonly Queue<int> _emptyExtends;
 
     private readonly int _allocationMapID;
@@ -20,6 +15,11 @@ internal class AllocationMapPage : BasePage
     /// AllocationMap is dirty is marked when content change (not only when have _writer != null)
     /// </summary>
     public override bool IsDirty => _isDirty;
+
+    /// <summary>
+    /// Get how many extends exists in this page
+    /// </summary>
+    public int ExtendsCount => AM_EXTEND_COUNT - _emptyExtends.Count;
 
     /// <summary>
     /// Create a new AllocationMapPage
@@ -133,7 +133,7 @@ internal class AllocationMapPage : BasePage
             {
                 0b000 => freePages.EmptyPages,
                 0b001 => freePages.DataPagesLarge,
-                0b010 => freePages.DataPagesMiddle,
+                0b010 => freePages.DataPagesMedium,
                 0b011 => freePages.DataPagesSmall,
                 0b100 => null, // data full
                 0b101 => freePages.IndexPages,
@@ -182,6 +182,55 @@ internal class AllocationMapPage : BasePage
         _isDirty = true;
 
         return true;
+    }
+
+    /// <summary>
+    /// Update map buffer based on extendIndex (0-2039) and pageIndex (0-7). Value shloud be 0-7
+    /// This method update 1 ou 2 bytes acording with pageIndex
+    /// </summary>
+    public void UpdateMap(int extendIndex, int pageIndex, byte value)
+    {
+        // get extend start posistion on buffer
+        var position = PAGE_HEADER_SIZE + (extendIndex *  AM_BYTES_PER_EXTEND);
+
+        // get 3 pageBytes
+        var pageBytes = _writeBuffer!.Value.AsSpan(position + 1, position + AM_BYTES_PER_EXTEND);
+
+        // mark page as dirty (in map page this should be manual)
+        _isDirty = true;
+
+        // update value (3 bits) according pageIndex (can update 1 or 2 bytes)
+        switch (pageIndex)
+        {
+            case 0:
+                pageBytes[0] = (byte)((pageBytes[0] & 0b000_111_11) | (value << 5));
+                break;
+            case 1:
+                pageBytes[0] = (byte)((pageBytes[0] & 0b111_000_11) | (value << 2));
+                break;
+            case 2:
+                pageBytes[0] = (byte)((pageBytes[0] & 0b111_111_00) | (value >> 1));
+                pageBytes[1] = (byte)((pageBytes[1] & 0b0_111_111_1) | (value << 7));
+                break;
+            case 3:
+                pageBytes[1] = (byte)((pageBytes[1] & 0b1_000_111_1) | (value << 4));
+                break;
+            case 4:
+                pageBytes[1] = (byte)((pageBytes[1] & 0b1_111_000_1) | (value << 1));
+                break;
+            case 5:
+                pageBytes[1] = (byte)((pageBytes[1] & 0b1_111_111_0) | (value >> 2));
+                pageBytes[2] = (byte)((pageBytes[2] & 0b00_111_111) | (value << 6));
+                break;
+            case 6:
+                pageBytes[2] = (byte)((pageBytes[2] & 0b11_000_111) | (value << 3));
+                break;
+            case 7:
+                pageBytes[2] = (byte)((pageBytes[2] & 0b11_111_000) | value);
+                break;
+            default:
+                throw new NotSupportedException();
+        }
     }
 
     #region Static Helpers

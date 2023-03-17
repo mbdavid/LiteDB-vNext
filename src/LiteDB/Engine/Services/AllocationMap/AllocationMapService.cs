@@ -65,9 +65,9 @@ internal class AllocationMapService : IAllocationMapService
                 {
                     return (freePages.DataPagesSmall.Dequeue(), false);
                 }
-                else if (freePages.DataPagesMiddle.Count > 0) // test in middle bucket
+                else if (freePages.DataPagesMedium.Count > 0) // test in medium bucket
                 {
-                    return (freePages.DataPagesMiddle.Dequeue(), false);
+                    return (freePages.DataPagesMedium.Dequeue(), false);
                 }
                 else if (freePages.DataPagesLarge.Count > 0) // test in large bucket
                 {
@@ -75,12 +75,12 @@ internal class AllocationMapService : IAllocationMapService
                 }
             }
 
-            // test if length for MIDDLE size document length
-            else if (length < AM_DATA_PAGE_SPACE_MIDDLE)
+            // test if length for MEDIUM size document length
+            else if (length < AM_DATA_PAGE_SPACE_MEDIUM)
             {
-                if (freePages.DataPagesMiddle.Count > 0) // test in middle bucket
+                if (freePages.DataPagesMedium.Count > 0) // test in medium bucket
                 {
-                    return (freePages.DataPagesMiddle.Dequeue(), false);
+                    return (freePages.DataPagesMedium.Dequeue(), false);
                 }
                 else if (freePages.DataPagesLarge.Count > 0) // test for large bucket
                 {
@@ -145,10 +145,10 @@ internal class AllocationMapService : IAllocationMapService
         // if there is no more free extend in any AM page, let's create a new allocation map page
         var pageBuffer = _factory.MemoryCache.AllocateNewBuffer();
 
-        // get a new PageID based on last AMP
+        // get a new PageID based on last AM page
         var nextPageID = _pages.Last().PageID + AM_PAGE_STEP;
 
-        // create new AMP and add to list
+        // create new AM page and add to list
         var newPage = new AllocationMapPage(nextPageID, pageBuffer);
 
         _pages.Add(newPage);
@@ -158,6 +158,59 @@ internal class AllocationMapService : IAllocationMapService
 
         // return first empty page
         return freePages.EmptyPages.Dequeue();
+    }
+
+    /// <summary>
+    /// Update all map position pages based on 
+    /// </summary>
+    public void UpdateMap(IEnumerable<BlockPage> modifiedPages)
+    {
+        // nesse processo deve atualizar _collectionFreePages, adicionando as paginas no lugar certo
+        // (não pode pre-existir, pois já foi "dequeue")
+
+        // deve atualizar também o buffer das AM pages envolvidas.
+        // Não há criação de AM pages aqui
+
+        foreach(var page in modifiedPages)
+        {
+            var allocationMapID = 0; // sombrio; otimizar performance no calculo? (0,1,2,..)
+            var extendIndex = 0; // sombrio (baseado no pageID) (0-2039)
+            var pageIndex = 0; // sombrio (baseado no pageID) (0-7)
+            byte value = 0; // calcular conforme page.Header.FreeSpace (0-7)
+
+            var mapPage = _pages[allocationMapID];
+
+            mapPage.UpdateMap(extendIndex, pageIndex, value);
+
+            var freePages = _collectionFreePages[page.ColID];
+
+            switch (value)
+            {
+                case 0b000: // 0
+                    freePages.EmptyPages.Insert(page.PageID);
+                    break;
+                case 0b001: // 1
+                    freePages.DataPagesLarge.Insert(page.PageID);
+                    break;
+                case 0b010: // 2
+                    freePages.DataPagesMedium.Insert(page.PageID);
+                    break;
+                case 0b011: // 3
+                    freePages.DataPagesSmall.Insert(page.PageID);
+                    break;
+                case 0b100: // 4 - data page full
+                    break;
+                case 0b101: // 5 - index page with available space
+                    freePages.IndexPages.Insert(page.PageID);
+                    break;
+                case 0b110: // 6 - index page full
+                case 0b111: // 7 - reserved
+                    break;
+
+            }
+
+        }
+
     }
 
     public void Dispose()

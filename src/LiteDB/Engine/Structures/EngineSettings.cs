@@ -4,7 +4,8 @@
 /// All engine settings used to starts new engine
 /// * Immutable (thread safe)
 /// </summary>
-public class EngineSettings
+[AutoInterface]
+public class EngineSettings : IEngineSettings
 {
     private readonly IDictionary<string, string> _settings;
 

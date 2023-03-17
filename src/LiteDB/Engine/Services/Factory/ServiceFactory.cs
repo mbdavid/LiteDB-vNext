@@ -10,14 +10,14 @@ internal partial class ServicesFactory : IServicesFactory
     private IIndexCacheService? _indexCache;
     private IDiskService? _disk;
 
-    public ServicesFactory(EngineSettings settings)
+    public ServicesFactory(IEngineSettings settings)
     {
         this.Settings = settings;
     }
 
     #region Singleton instances (Properties)
 
-    public EngineSettings Settings { get; }
+    public IEngineSettings Settings { get; }
 
     public EngineState State { get; set; } = EngineState.Close;
 
@@ -72,6 +72,11 @@ internal partial class ServicesFactory : IServicesFactory
             this.Settings.Password,
             this.Settings.ReadOnly,
             sequential);
+    }
+
+    public INewDatafile CreateNewDatafile()
+    {
+        return new NewDatafile(this);
     }
 
     #endregion

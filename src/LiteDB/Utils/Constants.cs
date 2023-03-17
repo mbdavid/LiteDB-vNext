@@ -66,7 +66,7 @@ internal class Constants
     /// [000] - 0 - Empty
     /// --
     /// [001] - 1 - Data  (between 91% and 100% free) [LARGE]
-    /// [010] - 2 - Data  (between 51% and 90% free)  [MIDDLE]
+    /// [010] - 2 - Data  (between 51% and 90% free)  [MEDIUM]
     /// [011] - 3 - Data  (between 31% and 50% free)  [SMALL]
     /// [100] - 4 - Data  (between 0% and 30% free - page full)
     /// --
@@ -75,7 +75,7 @@ internal class Constants
     /// [111] - 7 - reserved
     /// </summary>
     public const int AM_DATA_PAGE_SPACE_LARGE  = (int)(PAGE_CONTENT_SIZE * 0.9); // 7344;
-    public const int AM_DATA_PAGE_SPACE_MIDDLE = (int)(PAGE_CONTENT_SIZE * 0.5); // 4095;
+    public const int AM_DATA_PAGE_SPACE_MEDIUM = (int)(PAGE_CONTENT_SIZE * 0.5); // 4095;
     public const int AM_DATA_PAGE_SPACE_SMALL  = (int)(PAGE_CONTENT_SIZE * 0.3); // 2248;
 
     public const int AM_INDEX_PAGE_SPACE = 1050;

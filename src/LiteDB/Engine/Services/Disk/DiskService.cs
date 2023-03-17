@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// Singleton (thread safe)
@@ -8,13 +6,15 @@ namespace LiteDB.Engine;
 [AutoInterface(typeof(IDisposable))]
 internal class DiskService : IDiskService
 {
-    private IServicesFactory _factory;
+    private readonly IServicesFactory _factory;
+    private readonly IMemoryCacheService _memoryCache;
 
     private IDiskStream _writer;
     private ConcurrentQueue<IDiskStream> _readers = new ();
 
     public DiskService(IServicesFactory factory)
     {
+        _memoryCache = factory.MemoryCache;
         _factory = factory;
 
         _writer = _factory.CreateDiskStream(true);
@@ -22,60 +22,49 @@ internal class DiskService : IDiskService
 
     public async Task<bool> InitializeAsync()
     {
+        // if file not found, create empty database
         if (_writer.Exists() == false)
         {
-            await this.CreateNewDatafileAsync();
+            var df = _factory.CreateNewDatafile();
+
+            await df.CreateAsync(_writer);
         }
 
-        // abre o arquivo e retorna true se está tudo ok e não precisa de recovery
+        //TOD: abrir stream e retorna true se está tudo ok e não precisa de recovery
 
         return true;
     }
 
+    /// <summary>
+    /// Read all allocation map pages. Allocation map pages contains initial position and fixed interval between other pages
+    /// </summary>
     public async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
     {
-        var memoryCache = _factory.MemoryCache;
-
         long position = AM_FIRST_PAGE_ID * PAGE_SIZE;
 
+        // using writer stream because this reads occurs on database open
         var fileLength = _writer.GetLength();
 
         while (position < fileLength)
         {
-            var pageBuffer = memoryCache.AllocateNewBuffer();
+            var pageBuffer = _memoryCache.AllocateNewBuffer();
 
             await _writer.ReadAsync(position, pageBuffer);
 
-            //if (pageBuffer.IsEmpty()) break;
+            if (pageBuffer.IsHeaderEmpty()) break;
 
             yield return pageBuffer;
 
             position += (AM_PAGE_STEP * PAGE_SIZE);
         }
-
     }
 
     private async Task CreateNewDatafileAsync()
     {
-        var memoryCache = _factory.MemoryCache;
-
-        var headerBuffer = memoryCache.AllocateNewBuffer();
-        var amBuffer = memoryCache.AllocateNewBuffer();
-
-        var headerPage = new HeaderPage(headerBuffer);
-        var amPage = new AllocationMapPage(1, amBuffer);
-
-        headerPage.UpdateHeaderBuffer();
-        amPage.UpdateHeaderBuffer();
-
-        await _writer.WriteAsync(headerBuffer);
-        await _writer.WriteAsync(amBuffer);
-
-        memoryCache.DeallocateBuffer(headerBuffer);
-        memoryCache.DeallocateBuffer(amBuffer);
     }
 
     public void Dispose()
     {
+        //TODO: implementar fechamento de todos os streams
     }
 }
