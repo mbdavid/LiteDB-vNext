@@ -17,11 +17,6 @@ internal class AllocationMapPage : BasePage
     public override bool IsDirty => _isDirty;
 
     /// <summary>
-    /// Get how many extends exists in this page
-    /// </summary>
-    public int ExtendsCount => AM_EXTEND_COUNT - _emptyExtends.Count;
-
-    /// <summary>
     /// Create a new AllocationMapPage
     /// </summary>
     public AllocationMapPage(uint pageID, PageBuffer writeBuffer)
@@ -65,10 +60,12 @@ internal class AllocationMapPage : BasePage
 
         for (var i = 0; i < AM_EXTEND_COUNT; i++)
         {
+            // extend position on buffer
             var position = PAGE_HEADER_SIZE + (i * AM_EXTEND_SIZE);
 
-            // get extendID
+            // get extendID 
             var extendID = i * _allocationMapID;
+            //TODO: sombrio, revisar
 
             // check if empty colID (means empty extend)
             var colID = span[position];

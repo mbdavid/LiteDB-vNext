@@ -10,7 +10,13 @@ namespace LiteDB.Engine;
 internal class AllocationMapService : IAllocationMapService
 {
     private readonly IServicesFactory _factory;
-    private List<AllocationMapPage> _pages = new();
+    private readonly IDiskService _disk;
+    private readonly IMemoryCacheService _memoryCache;
+
+    /// <summary>
+    /// List of all allocation map pages, in pageID order
+    /// </summary>
+    private readonly List<AllocationMapPage> _pages = new();
 
     /// <summary>
     /// A struct, per colID, to store a list of pages with available space
@@ -20,6 +26,8 @@ internal class AllocationMapService : IAllocationMapService
     public AllocationMapService(IServicesFactory factory)
     {
         _factory = factory;
+        _disk = _factory.Disk;
+        _memoryCache = _factory.MemoryCache;
     }
 
     /// <summary>
@@ -28,10 +36,8 @@ internal class AllocationMapService : IAllocationMapService
     /// <returns></returns>
     public async Task Initialize()
     {
-        var disk = _factory.Disk;
-
         // read all allocation maps pages on disk
-        await foreach (var pageBuffer in disk.ReadAllocationMapPages())
+        await foreach (var pageBuffer in _disk.ReadAllocationMapPages())
         {
             // get page buffer from disk
             var page = new AllocationMapPage(pageBuffer);
@@ -143,7 +149,7 @@ internal class AllocationMapService : IAllocationMapService
         }
 
         // if there is no more free extend in any AM page, let's create a new allocation map page
-        var pageBuffer = _factory.MemoryCache.AllocateNewBuffer();
+        var pageBuffer = _memoryCache.AllocateNewBuffer();
 
         // get a new PageID based on last AM page
         var nextPageID = _pages.Last().PageID + AM_PAGE_STEP;
@@ -208,9 +214,7 @@ internal class AllocationMapService : IAllocationMapService
                     break;
 
             }
-
         }
-
     }
 
     public void Dispose()

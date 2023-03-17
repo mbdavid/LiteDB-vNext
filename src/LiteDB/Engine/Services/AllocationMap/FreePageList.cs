@@ -10,7 +10,7 @@ internal class FreePageList
     /// <summary>
     /// Get/Set to indicate this list was not fully loaded because reach limit
     /// </summary>
-    public bool HasMoreToRead { get; set; } = false;
+    public bool HasMore { get; set; } = false;
 
     public FreePageList()
     {
@@ -32,7 +32,7 @@ internal class FreePageList
     /// </summary>
     public void Enqueue(uint pageID)
     {
-        _pages.Enqueue (pageID);
+        _pages.Enqueue(pageID);
     }
 
     /// <summary>

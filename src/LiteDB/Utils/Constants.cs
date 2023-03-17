@@ -91,6 +91,24 @@ internal class Constants
     public const byte MASTER_COL_ID = byte.MaxValue;
 
     /// <summary>
+    /// Get a list of keys used inside $master collection (MK = master key)
+    /// </summary>
+    public const string MK_COL = "collections";
+    public const string MK_COL_NAME = "name";
+    public const string MK_INDEXES = "indexes";
+    public const string MK_IDX_NAME = "name";
+    public const string MK_IDX_EXPR = "expr";
+    public const string MK_IDX_UNIQUE = "unique";
+    public const string MK_IDX_HEADER = "header";
+    public const string MK_IDX_TAIL = "tail";
+    public const string MK_PRAGMAS = "pragmas";
+    public const string MK_PRAGMA_USER_VERSION = "user_version";
+    public const string MK_PRAGMA_COLLATION = "collation";
+    public const string MK_PRAGMA_TIMEOUT = "timeout";
+    public const string MK_PRAGMA_LIMIT_SIZE = "limit";
+    public const string MK_PRAGMA_CHECKPOINT = "checkpoint";
+
+    /// <summary>
     /// Define index name max length
     /// </summary>
     public static int INDEX_NAME_MAX_LENGTH = 32;
