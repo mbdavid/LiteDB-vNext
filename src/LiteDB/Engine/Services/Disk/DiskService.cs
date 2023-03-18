@@ -17,9 +17,13 @@ internal class DiskService : IDiskService
         _memoryCache = factory.MemoryCache;
         _factory = factory;
 
-        _writer = _factory.CreateDiskStream(true);
+        _writer = _factory.CreateDiskStream(false);
     }
 
+    /// <summary>
+    /// Open (or create) datafile. Checks file integrity based on recovery flag.
+    /// Returns false if disk was not dispoable after last write use (recovery = true)
+    /// </summary>
     public async Task<bool> InitializeAsync()
     {
         // if file not found, create empty database
@@ -59,8 +63,25 @@ internal class DiskService : IDiskService
         }
     }
 
-    private async Task CreateNewDatafileAsync()
+    /// <summary>
+    /// Rent a disk reader from pool. Must return after use
+    /// </summary>
+    public IDiskStream RentDiskReader()
     {
+        if (_readers.TryDequeue(out var reader))
+        {
+            return reader;
+        }
+
+        return _factory.CreateDiskStream(true);
+    }
+
+    /// <summary>
+    /// Return a rented reader and add to pool
+    /// </summary>
+    public void ReturnDiskReader(IDiskStream reader)
+    {
+        _readers.Enqueue(reader);
     }
 
     public void Dispose()

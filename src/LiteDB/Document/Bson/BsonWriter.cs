@@ -2,13 +2,10 @@
 
 /// <summary>
 /// </summary>
-public class BsonWriter
+[AutoInterface]
+public class BsonWriter : IBsonWriter
 {
-    public BsonWriter()
-    {
-    }
-
-    public static void WriteDocument(Span<byte> span, BsonDocument document, out int length)
+    public void WriteDocument(Span<byte> span, BsonDocument document, out int length)
     {
         var varLength = BsonValue.GetVariantLength(document.GetBytesCountCached());
 
@@ -30,7 +27,7 @@ public class BsonWriter
         span.WriteVariantLength(length, out _);
     }
 
-    public static void WriteArray(Span<byte> span, BsonArray array, out int length)
+    public void WriteArray(Span<byte> span, BsonArray array, out int length)
     {
         var varLength = BsonValue.GetVariantLength(array.GetBytesCountCached());
 
@@ -51,7 +48,7 @@ public class BsonWriter
     /// <summary>
     /// Write DataTypeCode + Value. Returns length (including dataType byte code)
     /// </summary>
-    public static void WriteValue(Span<byte> span, BsonValue value, out int length)
+    public void WriteValue(Span<byte> span, BsonValue value, out int length)
     {
         switch (value.Type)
         {

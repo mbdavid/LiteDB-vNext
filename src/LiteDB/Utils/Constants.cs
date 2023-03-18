@@ -91,17 +91,25 @@ internal class Constants
     public const byte MASTER_COL_ID = byte.MaxValue;
 
     /// <summary>
+    /// Get how many bytes $master can be store (8 pages)
+    /// </summary>
+    public const int MASTER_DOC_SIZE = AM_EXTEND_SIZE * PAGE_CONTENT_SIZE;
+
+    /// <summary>
     /// Get a list of keys used inside $master collection (MK = master key)
     /// </summary>
     public const string MK_COL = "collections";
     public const string MK_COL_NAME = "name";
-    public const string MK_INDEXES = "indexes";
+    public const string MK_INDEX = "indexes";
     public const string MK_IDX_NAME = "name";
     public const string MK_IDX_EXPR = "expr";
     public const string MK_IDX_UNIQUE = "unique";
-    public const string MK_IDX_HEADER = "header";
-    public const string MK_IDX_TAIL = "tail";
-    public const string MK_PRAGMAS = "pragmas";
+    public const string MK_IDX_HEAD_PAGE_ID = "headPageID";
+    public const string MK_IDX_HEAD_INDEX = "headIndex";
+    public const string MK_IDX_TAIL_PAGE_ID = "tailPageID";
+    public const string MK_IDX_TAIL_INDEX = "tailIndex";
+    public const string MK_META = "meta";
+    public const string MK_PRAGMA = "pragmas";
     public const string MK_PRAGMA_USER_VERSION = "user_version";
     public const string MK_PRAGMA_COLLATION = "collation";
     public const string MK_PRAGMA_TIMEOUT = "timeout";

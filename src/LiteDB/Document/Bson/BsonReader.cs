@@ -2,19 +2,16 @@
 
 /// <summary>
 /// </summary>
-public class BsonReader
+[AutoInterface]
+public class BsonReader : IBsonReader
 {
-    public BsonReader()
-    {
-    }
-
     /// <summary>
     /// Read a document inside span buffer. 
     /// Use filds to select custom fields only (on root document only)
     /// Skip will skip document read (just update length output) - returns null
     /// Returns length document size
     /// </summary>
-    public static BsonDocument? ReadDocument(Span<byte> span, HashSet<string>? fields, bool skip, out int length)
+    public BsonDocument? ReadDocument(Span<byte> span, HashSet<string>? fields, bool skip, out int length)
     {
         var doc = new BsonDocument();
         var remaining = fields == null || fields.Count == 0 ? null : fields;
@@ -46,7 +43,7 @@ public class BsonReader
         return doc;
     }
 
-    public static BsonArray? ReadArray(Span<byte> span, bool skip, out int length)
+    public BsonArray? ReadArray(Span<byte> span, bool skip, out int length)
     {
         var array = new BsonArray();
 
@@ -68,7 +65,7 @@ public class BsonReader
         return array;
     }
 
-    public static BsonValue? ReadValue(Span<byte> span, bool skip, out int length)
+    public BsonValue? ReadValue(Span<byte> span, bool skip, out int length)
     {
         var type = (BsonTypeCode)span[0];
 
@@ -84,12 +81,12 @@ public class BsonReader
                 return skip ? null : new BsonString(span[(1 + varSLen)..(1 + varSLen + strLength)].ReadString());
 
             case BsonTypeCode.Document:
-                var doc = ReadDocument(span[1..], null, skip, out var docLength);
+                var doc = this.ReadDocument(span[1..], null, skip, out var docLength);
                 length = 1 + docLength;
                 return doc;
 
             case BsonTypeCode.Array:
-                var array = ReadArray(span[1..], skip, out var arrLength);
+                var array = this.ReadArray(span[1..], skip, out var arrLength);
                 length = 1 + arrLength;
                 return array;
 

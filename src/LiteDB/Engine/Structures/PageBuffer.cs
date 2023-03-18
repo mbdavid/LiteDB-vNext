@@ -42,6 +42,11 @@ internal struct PageBuffer
         return this.Array.AsSpan(0, PAGE_SIZE);
     }
 
+    public Span<byte> AsSpan(int start)
+    {
+        return this.Array.AsSpan(start);
+    }
+
     public Span<byte> AsSpan(int start, int length)
     {
         return this.Array.AsSpan(start, length);

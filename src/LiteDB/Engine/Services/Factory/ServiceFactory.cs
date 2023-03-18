@@ -9,6 +9,10 @@ internal partial class ServicesFactory : IServicesFactory
     private IMemoryCacheService? _memoryCache;
     private IIndexCacheService? _indexCache;
     private IDiskService? _disk;
+    private IMasterService? _master;
+
+    private IBsonReader? _bsonReader;
+    private IBsonWriter? _bsonWriter;
 
     public ServicesFactory(IEngineSettings settings)
     {
@@ -24,6 +28,22 @@ internal partial class ServicesFactory : IServicesFactory
     public Exception? Exception { get; set; }
 
     public ConcurrentDictionary<string, object> Application { get; } = new();
+
+    public IBsonReader BsonReader
+    {
+        get
+        {
+            return _bsonReader ??= new BsonReader();
+        }
+    }
+
+    public IBsonWriter BsonWriter
+    {
+        get
+        {
+            return _bsonWriter ??= new BsonWriter();
+        }
+    }
 
     public IMemoryCacheService MemoryCache
     {
@@ -49,6 +69,14 @@ internal partial class ServicesFactory : IServicesFactory
         }
     }
 
+    public IMasterService Master
+    {
+        get
+        {
+            return _master ??= new MasterService(this);
+        }
+    }
+
     #endregion
 
     #region Transient instances (Create prefix)
@@ -63,14 +91,17 @@ internal partial class ServicesFactory : IServicesFactory
         return new OpenCommand(this, ctx);
     }
 
-    public IDiskStream CreateDiskStream(bool sequential)
+    public IDiskStream CreateDiskStream(bool readOnly)
     {
         if (this.Settings.Filename is null) throw new NotImplementedException();
+
+        // when write mode, use sequencial disk access
+        var sequential = !readOnly;
 
         return new FileDiskStream(
             this.Settings.Filename,
             this.Settings.Password,
-            this.Settings.ReadOnly,
+            readOnly || this.Settings.ReadOnly,
             sequential);
     }
 
