@@ -3,6 +3,7 @@
 [AutoInterface(typeof(IDisposable))]
 internal class MasterService : IMasterService
 {
+    // dependency injection
     private readonly IServicesFactory _factory;
     private readonly IDiskService _disk;
     private readonly IMemoryCacheService _memoryCache;
@@ -13,6 +14,8 @@ internal class MasterService : IMasterService
     /// All data from master collection are inside this document
     /// </summary>
     private MasterDocument _master;
+
+    public MasterDocument Document => _master;
 
     public MasterService(IServicesFactory factory)
     {

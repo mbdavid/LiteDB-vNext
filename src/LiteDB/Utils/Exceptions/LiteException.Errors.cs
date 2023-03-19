@@ -11,6 +11,9 @@ public partial class LiteException
     internal static LiteException ERR_TOO_LARGE_VARIANT() =>
         new(2, $"Content too large and exceed 1Gb limit.");
 
+    internal static LiteException ERR_TIMEOUT(TimeSpan timeout) =>
+        new(3, $"Timeout exceeded. Limit: {timeout.TotalSeconds:0}");
+
     #region ERR_UNEXPECTED_TOKEN
 
     internal static LiteException ERR_UNEXPECTED_TOKEN(Token token, string? expected = null)

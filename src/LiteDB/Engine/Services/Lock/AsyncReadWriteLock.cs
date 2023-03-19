@@ -7,12 +7,21 @@ internal class AsyncReaderWriterLock : IDisposable
 {
     private readonly SemaphoreSlim _readSemaphore = new (1, 1);
     private readonly SemaphoreSlim _writeSemaphore = new (1, 1);
-
+    private readonly TimeSpan _timeout;
     private int _readerCount;
+
+    public int ReaderCount => _readerCount;
+
+    public AsyncReaderWriterLock(TimeSpan timeout)
+    {
+        //TODO: antes de usar o timeout, verificar que ao adicionar o metodo Wait retorna bool
+        _timeout = timeout;
+    }
 
     public async Task AcquireWriterLock(CancellationToken token = default)
     {
         await _writeSemaphore.WaitAsync(token).ConfigureAwait(false);
+
         try
         {
             await _readSemaphore.WaitAsync(token).ConfigureAwait(false);
@@ -44,6 +53,7 @@ internal class AsyncReaderWriterLock : IDisposable
             {
                 Interlocked.Decrement(ref _readerCount);
                 _writeSemaphore.Release();
+
                 throw;
             }
         }

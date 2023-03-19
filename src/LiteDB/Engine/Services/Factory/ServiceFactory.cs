@@ -9,6 +9,10 @@ internal partial class ServicesFactory : IServicesFactory
     private IMemoryCacheService? _memoryCache;
     private IIndexCacheService? _indexCache;
     private IDiskService? _disk;
+    private IAllocationMapService? _allocationMap;
+    private IWalIndexService? _walIndex;
+    private ILockService? _lock;
+    private ITransactionMonitor? _monitor;
     private IMasterService? _master;
 
     private IBsonReader? _bsonReader;
@@ -61,6 +65,14 @@ internal partial class ServicesFactory : IServicesFactory
         }
     }
 
+    public IAllocationMapService AllocationMap
+    {
+        get
+        {
+            return _allocationMap ??= new AllocationMapService(this);
+        }
+    }
+
     public IIndexCacheService IndexCache
     {
         get
@@ -74,6 +86,30 @@ internal partial class ServicesFactory : IServicesFactory
         get
         {
             return _master ??= new MasterService(this);
+        }
+    }
+
+    public IWalIndexService WalIndex
+    {
+        get
+        {
+            return _walIndex ??= new WalIndexService(this);
+        }
+    }
+
+    public ITransactionMonitor Monitor
+    {
+        get
+        {
+            return _monitor ??= new TransactionMonitor(this);
+        }
+    }
+
+    public ILockService Lock
+    {
+        get
+        {
+            return _lock ??= new LockService(this.Master.Document.Pragmas.Timeout);
         }
     }
 
@@ -108,6 +144,16 @@ internal partial class ServicesFactory : IServicesFactory
     public INewDatafile CreateNewDatafile()
     {
         return new NewDatafile(this);
+    }
+
+    public ITransactionService CreateTransaction(int transactionID)
+    {
+        return new TransactionService(this, transactionID);
+    }
+
+    public ISnapshot CreateSnapshot(byte colID, LockMode mode, int readVersion)
+    {
+        return new Snapshot(this, colID, mode, readVersion);
     }
 
     #endregion
