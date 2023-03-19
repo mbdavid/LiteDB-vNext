@@ -85,7 +85,8 @@ internal struct IndexNode
 
         var keyPosition = P_KEY(this.Level);
 
-        this.Key = BsonReader.ReadValue(span[keyPosition..], false, out _)!;
+        // read bson value from buffer
+        this.Key = span[keyPosition..].ReadBsonValue(out _);
     }
 
     /// <summary>
@@ -116,7 +117,8 @@ internal struct IndexNode
 
         var keyPosition = P_KEY(this.Level);
 
-        BsonWriter.WriteValue(span[keyPosition..], this.Key, out _);
+        // writing key value
+        span[keyPosition..].WriteBsonValue(this.Key, out _);
     }
 
     /// <summary>

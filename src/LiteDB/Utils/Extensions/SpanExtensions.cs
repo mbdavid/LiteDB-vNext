@@ -2,6 +2,9 @@
 
 internal static class SpanExtensions
 {
+    private static readonly IBsonReader _reader = new BsonReader();
+    private static readonly IBsonWriter _writer = new BsonWriter();
+
     #region Read Extensions
 
     public static Int16 ReadInt16(this Span<byte> span)
@@ -105,6 +108,15 @@ internal static class SpanExtensions
             var number = value & 0b00111111_11111111_11111111_11111111;
             return (int)number;
         }
+
+    }
+
+    /// <summary>
+    /// Read a BsonValue from Span using singleton instance of IBsonReader. Used for IndexKey node
+    /// </summary>
+    public static BsonValue ReadBsonValue(this Span<byte> span, out int length)
+    {
+        return _reader.ReadValue(span, false, out length)!; // skip = false - always returns a BsonValue
 
     }
 
@@ -215,6 +227,14 @@ internal static class SpanExtensions
             var number = (((uint)dataLength) | op);
             BinaryPrimitives.WriteUInt32BigEndian(span, number);
         }
+    }
+    
+    /// <summary>
+    /// Write BsonValue direct into a byte[]. Used for Index Key write. Use a Singleton instance of BsonWriter
+    /// </summary>
+    public static void WriteBsonValue(this Span<byte> span, BsonValue value, out int length)
+    {
+        _writer.WriteValue(span, value, out length);
     }
 
     #endregion

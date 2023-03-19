@@ -4,25 +4,26 @@
 internal class OpenCommand : IOpenCommand
 {
     private readonly IServicesFactory _factory;
+    private readonly IDiskService _disk;
     private readonly IEngineContext _ctx;
 
     public OpenCommand(IServicesFactory factory, IEngineContext ctx)
     {
         _factory = factory;
         _ctx = ctx;
+        _disk = factory.Disk;
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        var state = _factory.State;
-        var disk = _factory.Disk;
+        var state = _factory.State; // state is an enum (valueType) - must be read direct from _factory
 
         // lock exclusivo? var exclusive = _ctx.Services.Locker.TryExclusive()
 
         if (state != EngineState.Close) throw new Exception("must be closed");
 
-        // abre efetivamente o arquivo, cria se necessário, retorna false case seja recovery
-        var recovery = !await disk.InitializeAsync();
+        // open data file here. Returns false if disk was not dispoable after last write use
+        var recovery = !await _disk.InitializeAsync();
 
         if (recovery)
         {
