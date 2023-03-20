@@ -19,7 +19,8 @@ internal class HeaderPage : BasePage
     #region Buffer Field Positions
 
     private const int P_CREATION_TIME = 5; // 5-13 (8 bytes)
-    private const int P_LAST_PAGE_ID = 14; // 14-18 (4 bytes)
+
+    public const int P_CONTENT_CRC8 = 31; // 31-31 (1 byte)
 
     public const int P_HEADER_INFO = 32;  // 32-58 (27 bytes)
     public const int P_FILE_VERSION = 59; // 59-59 (1 byte)
@@ -30,11 +31,6 @@ internal class HeaderPage : BasePage
     /// DateTime when database was created [8 bytes]
     /// </summary>
     public DateTime CreationTime { get; } = DateTime.UtcNow;
-
-    /// <summary>
-    /// Get last physical page ID created [4 bytes]
-    /// </summary>
-    public uint LastPageID { get; private set; } = uint.MaxValue;
 
     /// <summary>
     /// Create new HeaderPage instance

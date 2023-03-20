@@ -6,18 +6,24 @@
 [AutoInterface(typeof(IDisposable))]
 internal class DiskService : IDiskService
 {
+    // dependency injection
     private readonly IServicesFactory _factory;
     private readonly IMemoryCacheService _memoryCache;
 
     private IDiskStream _writer;
-    private ConcurrentQueue<IDiskStream> _readers = new ();
+    private readonly PageBuffer _headerBuffer;
+    private readonly ConcurrentQueue<IDiskStream> _readers = new ();
+
+    private long _startLog;
+    private long _endLog;
 
     public DiskService(IServicesFactory factory)
     {
-        _memoryCache = factory.MemoryCache;
         _factory = factory;
+        _memoryCache = factory.MemoryCache;
 
-        _writer = _factory.CreateDiskStream(false);
+        _headerBuffer = _memoryCache.AllocateNewBuffer();
+        _writer = factory.CreateDiskStream(false);
     }
 
     /// <summary>
@@ -34,7 +40,19 @@ internal class DiskService : IDiskService
             await df.CreateAsync(_writer);
         }
 
+        // read header page buffer from start of disk
+        var read = await _writer.ReadAsync(0, _headerBuffer);
+
+        ENSURE(read, "page header must be full read");
+
+        // acho que vou fazer uma header que não seja page. tipo offset
+        var h = new HeaderPage(_headerBuffer);
+
+
         //TOD: abrir stream e retorna true se está tudo ok e não precisa de recovery
+
+        // initialize log position at end of file
+        _startLog = _endLog = _writer.GetLength();
 
         return true;
     }
@@ -87,5 +105,6 @@ internal class DiskService : IDiskService
     public void Dispose()
     {
         //TODO: implementar fechamento de todos os streams
+        // desalocar header
     }
 }
