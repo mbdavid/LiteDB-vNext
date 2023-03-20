@@ -1,5 +1,8 @@
 ﻿namespace LiteDB.Engine;
 
+/// <summary>
+/// * Singleton (thread safe)
+/// </summary>
 [AutoInterface(typeof(IDisposable))]
 internal class MasterService : IMasterService
 {

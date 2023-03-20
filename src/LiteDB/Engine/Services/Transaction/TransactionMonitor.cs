@@ -2,7 +2,7 @@
 
 /// <summary>
 /// This class monitor all open transactions to manage memory usage for each transaction
-/// [Singleton - ThreadSafe]
+/// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
 internal class TransactionMonitor : ITransactionMonitor
@@ -10,7 +10,10 @@ internal class TransactionMonitor : ITransactionMonitor
     // dependency injection
     private readonly IServicesFactory _factory;
 
-    private readonly ConcurrentDictionary<int, ITransactionService> _transactions = new ConcurrentDictionary<int, ITransactionService>();
+    // concurrent data-structures
+    private readonly ConcurrentDictionary<int, ITransactionService> _transactions = new();
+
+    private readonly ConcurrentDictionary<int, object> _openCursors = new();
 
     private int _lastTransactionID = 0;
 

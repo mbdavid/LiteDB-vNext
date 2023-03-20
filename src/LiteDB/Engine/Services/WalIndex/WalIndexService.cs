@@ -1,8 +1,10 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// Do all WAL index services based on LOG file - has only single instance per engine
-/// [Singleton - ThreadSafe]
+/// * Singleton (thread safe)
 /// </summary>
 [AutoInterface]
 internal class WalIndexService : IWalIndexService
@@ -10,18 +12,17 @@ internal class WalIndexService : IWalIndexService
     // dependency injection
     private readonly IServicesFactory _factory;
 
-    private readonly IDictionary<uint, List<(int Version, long Position)>> _index = new Dictionary<uint, List<(int, long)>>();
-    private readonly HashSet<uint> _confirmTransactions = new();
-    private int _currentReadVersion = 0;
-
     /// <summary>
-    /// Get current read version for all new transactions
+    /// A indexed dictionary by PageID where each item are a sorter-list of read version and disk log position
     /// </summary>
-    public int CurrentReadVersion => _currentReadVersion;
+    private readonly ConcurrentDictionary<uint, List<(int Version, long Position)>> _index = new();
 
     public WalIndexService(IServicesFactory factory)
     {
         _factory = factory;
+
+        var xx = new ConcurrentBag<(int Version, long Position)>();
+        var r = xx.ElementAt(0);
     }
 
     /*

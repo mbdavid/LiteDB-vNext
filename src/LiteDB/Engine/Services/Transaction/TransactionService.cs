@@ -34,11 +34,25 @@ internal class TransactionService : ITransactionService
     }
 
     /// <summary>
-    /// Create and initialize a new snapshot for this transaction
+    /// Create and initialize a new snapshot for this transaction. 
+    /// A new Snapshot are returned after async initialize.
     /// </summary>
-    public async Task<ISnapshot> CreateSnapshot(byte colID, LockMode mode)
+    public Task<ISnapshot> CreateSnapshotAsync(byte colID, LockMode mode)
+        => CreateSnapshotAsync(colID, mode, this.TransactionID);
+
+    /// <summary>
+    /// Create and initialize a new snapshot for read-only fetch data
+    /// A new Snapshot are returned after async initialize
+    /// </summary>
+    public Task<ISnapshot> CreateSnapshotAsync(byte colID, int readVersion)
+        => CreateSnapshotAsync(colID, LockMode.Read, readVersion);
+
+    /// <summary>
+    /// Create and initialize a new snapshot for this transaction. 
+    /// A new Snapshot are returned after async initialize
+    /// </summary>
+    private async Task<ISnapshot> CreateSnapshotAsync(byte colID, LockMode mode, int readVersion)
     {
-        var readVersion = _walIndex.CurrentReadVersion;
         var snapshot = _factory.CreateSnapshot(colID, mode, readVersion);
 
         await snapshot.InitializeAsync();
