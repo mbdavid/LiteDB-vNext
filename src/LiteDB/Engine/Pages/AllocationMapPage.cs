@@ -2,6 +2,11 @@ namespace LiteDB.Engine;
 
 /// <summary>
 /// Represent a single allocation map page with 1.632 extends and 13.056 pages pointer
+/// Each extend represent 8 pages at same collection. Each extend use 4 bytes
+/// 
+///  01234567   01234567   01234567   01234567
+/// [________] [________] [________] [________]
+///  ColID      00011122   23334445   55666777
 /// </summary>
 internal class AllocationMapPage : BasePage
 {

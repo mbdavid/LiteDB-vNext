@@ -69,6 +69,9 @@ internal class FileDiskStream : IDiskStream
 
             await stream.ReadAsync(headerBuffer, 0, FILE_HEADER_SIZE);
 
+            var isEncrypted = headerBuffer[FileHeader.P_ENCRYPTED];
+            var salt = headerBuffer[FileHeader.P_ENCRYPTION_SALT..(FileHeader.P_ENCRYPTION_SALT + ENCRYPTION_SALT_SIZE)];
+
         }
 
         // le header/salt se _password!=null
