@@ -20,7 +20,7 @@ internal class HeaderPage : BasePage
 
     private const int P_CREATION_TIME = 5; // 5-13 (8 bytes)
 
-    public const int P_CONTENT_CRC8 = 31; // 31-31 (1 byte)
+    public const int P_CRC8 = 31; // 31-31 (1 byte)
 
     public const int P_HEADER_INFO = 32;  // 32-58 (27 bytes)
     public const int P_FILE_VERSION = 59; // 59-59 (1 byte)
@@ -58,7 +58,6 @@ internal class HeaderPage : BasePage
 
         // read header
         this.CreationTime = span[P_CREATION_TIME..8].ReadDateTime();
-        this.LastPageID = span[P_LAST_PAGE_ID..4].ReadUInt32();
 
         // read content: info and file version
         var info = span[P_HEADER_INFO..HEADER_INFO.Length].ReadString();
