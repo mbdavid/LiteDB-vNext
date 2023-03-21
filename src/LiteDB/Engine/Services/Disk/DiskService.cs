@@ -14,9 +14,6 @@ internal class DiskService : IDiskService
     private readonly PageBuffer _headerBuffer;
     private readonly ConcurrentQueue<IDiskStream> _readers = new ();
 
-    private long _startLog;
-    private long _endLog;
-
     public DiskService(IServicesFactory factory)
     {
         _factory = factory;
@@ -41,18 +38,14 @@ internal class DiskService : IDiskService
         }
 
         // read header page buffer from start of disk
-        var read = await _writer.ReadAsync(0, _headerBuffer);
+        var read = await _writer.ReadPageAsync(0, _headerBuffer);
 
         ENSURE(read, "page header must be full read");
 
-        // acho que vou fazer uma header que não seja page. tipo offset
-        var h = new HeaderPage(_headerBuffer);
 
 
         //TOD: abrir stream e retorna true se está tudo ok e não precisa de recovery
 
-        // initialize log position at end of file
-        _startLog = _endLog = _writer.GetLength();
 
         return true;
     }
@@ -71,7 +64,7 @@ internal class DiskService : IDiskService
         {
             var pageBuffer = _memoryCache.AllocateNewBuffer();
 
-            await _writer.ReadAsync(position, pageBuffer);
+            await _writer.ReadPageAsync(position, pageBuffer);
 
             if (pageBuffer.IsHeaderEmpty()) break;
 

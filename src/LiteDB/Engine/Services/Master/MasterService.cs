@@ -49,7 +49,7 @@ internal class MasterService : IMasterService
             var pagePosition = BasePage.GetPagePosition(MASTER_PAGE_ID);
 
             // read first 8k
-            await reader.ReadAsync(pagePosition, buffer);
+            await reader.ReadPageAsync(pagePosition, buffer);
 
             // read document size
             var masterLength = buffer.AsSpan(PAGE_HEADER_SIZE).ReadVariantLength(out _);
@@ -82,7 +82,7 @@ internal class MasterService : IMasterService
                     pagePosition += PAGE_SIZE;
 
                     // reuse same buffer (will be copied to bufferDocumnet)
-                    await reader.ReadAsync(pagePosition, buffer);
+                    await reader.ReadPageAsync(pagePosition, buffer);
 
                     var pageContentSize = bytesToRead > PAGE_CONTENT_SIZE ? PAGE_CONTENT_SIZE : bytesToRead;
 

@@ -3,8 +3,7 @@
 internal enum PageType : byte 
 { 
     Empty = 0, 
-    Header = 1, 
-    AllocationMap = 2, 
-    Index = 3, 
-    Data = 4 
+    AllocationMap = 1, 
+    Index = 2, 
+    Data = 3
 }

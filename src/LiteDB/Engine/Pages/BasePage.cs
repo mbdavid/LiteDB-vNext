@@ -26,8 +26,8 @@ internal class BasePage
 
     public const int P_PAGE_ID = 0;  // 00-03 [uint]
     public const int P_PAGE_TYPE = 4; // 04-04 [byte]
-
-    private const int P_CRC8 = 31; // 1 byte (last byte in header)
+    // 05-30 (26 bytes reserved for other page types)
+    public const int P_CRC8 = 31; // 1 byte (last byte in header)
 
     #endregion
 

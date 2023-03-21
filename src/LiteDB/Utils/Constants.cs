@@ -6,6 +6,11 @@
 internal class Constants
 {
     /// <summary>
+    /// Initial file data descriptor size (before start database - use offset in Stream)
+    /// </summary>
+    public const int FILE_HEADER_SIZE = 100;
+
+    /// <summary>
     /// The size of each page in disk - use 8192 as all major databases
     /// </summary>
     public const int PAGE_SIZE = 8192;
@@ -31,9 +36,9 @@ internal class Constants
     public const int ENCRYPTION_SALT_SIZE = 16;
 
     /// <summary>
-    /// Represent pageID of first AllocationMapPage (#1)
+    /// Represent pageID of first AllocationMapPage (#0)
     /// </summary>
-    public const int AM_FIRST_PAGE_ID = 1;
+    public const int AM_FIRST_PAGE_ID = 0;
 
     /// <summary>
     /// Represent how many pages each extend will allocate in AllocationMapPage
@@ -83,7 +88,7 @@ internal class Constants
     /// <summary>
     /// Get first DataPage from $master
     /// </summary>
-    public const int MASTER_PAGE_ID = 2;
+    public const int MASTER_PAGE_ID = 1;
 
     /// <summary>
     /// Get colID for $master document

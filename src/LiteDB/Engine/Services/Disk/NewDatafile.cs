@@ -19,14 +19,14 @@ internal class NewDatafile : INewDatafile
         var headerBuffer = _memoryCache.AllocateNewBuffer();
         var mapBuffer = _memoryCache.AllocateNewBuffer();
 
-        var headerPage = new HeaderPage(headerBuffer);
+        var headerPage = new FileHeader(headerBuffer);
         var mapPage = new AllocationMapPage(1, mapBuffer);
 
         headerPage.UpdateHeaderBuffer();
         mapPage.UpdateHeaderBuffer();
 
-        await stream.WriteAsync(headerBuffer);
-        await stream.WriteAsync(mapBuffer);
+        await stream.WritePageAsync(headerBuffer);
+        await stream.WritePageAsync(mapBuffer);
 
         _memoryCache.DeallocateBuffer(headerBuffer);
         _memoryCache.DeallocateBuffer(mapBuffer);
