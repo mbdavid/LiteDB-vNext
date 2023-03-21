@@ -63,6 +63,14 @@ internal class FileDiskStream : IDiskStream
         //    File.SetAttributes(_filename, FileAttributes.Hidden);
         //}
 
+        if (_password is not null)
+        {
+            var headerBuffer = ArrayPool<byte>.Shared.Rent(FILE_HEADER_SIZE);
+
+            await stream.ReadAsync(headerBuffer, 0, FILE_HEADER_SIZE);
+
+        }
+
         // le header/salt se _password!=null
 
         //return _password == null ? (Stream)stream : new AesStream(_password, _salt, stream);
