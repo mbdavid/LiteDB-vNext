@@ -9,16 +9,13 @@ public class AesStream : Stream
     private readonly ICryptoTransform _encryptor;
     private readonly ICryptoTransform _decryptor;
 
-    private readonly string _name;
     private readonly Stream _stream;
-    private readonly CryptoStream _reader;
-    private readonly CryptoStream _writer;
+    private readonly CryptoStream? _reader;
+    private readonly CryptoStream? _writer;
 
     private readonly byte[] _decryptedZeroes = new byte[16];
 
     private static readonly byte[] _emptyContent = new byte[PAGE_SIZE - 1 - 16]; // 1 for aes indicator + 16 for salt 
-
-    public byte[] Salt { get; }
 
     public override bool CanRead => _stream.CanRead;
 
@@ -26,140 +23,50 @@ public class AesStream : Stream
 
     public override bool CanWrite => _stream.CanWrite;
 
-    public override long Length => _stream.Length - PAGE_SIZE;
+    public override long Length => _stream.Length;
 
     public override long Position
     {
-        get => _stream.Position - PAGE_SIZE;
-        set => this.Seek(value, SeekOrigin.Begin);
+        get => _stream.Position;
+        set => _stream.Position = value;
     }
 
-    public long StreamPosition => _stream.Position;
-
-    public AesStream(string password, Stream stream)
+    public AesStream(Stream stream, string password, byte[] salt)
     {
         _stream = stream;
-        _name = _stream is FileStream fileStream ? Path.GetFileName(fileStream.Name) : null;
 
-        var isNew = _stream.Length < PAGE_SIZE;
+        _aes = Aes.Create();
+        _aes.Padding = PaddingMode.None;
+        _aes.Mode = CipherMode.ECB;
 
-        // start stream from zero position
-        _stream.Position = 0;
+        var pdb = new Rfc2898DeriveBytes(password, salt);
 
-        try
+        using (pdb as IDisposable)
         {
-            // new file? create new salt
-            if (isNew)
-            {
-                this.Salt = NewSalt();
-
-                // first byte =1 means this datafile is encrypted
-                _stream.WriteByte(1);
-                _stream.Write(this.Salt, 0, ENCRYPTION_SALT_SIZE);
-
-                // fill with 0 full PAGE_SIZE
-                _stream.Write(_emptyContent, 0, _emptyContent.Length);
-            }
-            else
-            {
-                this.Salt = new byte[ENCRYPTION_SALT_SIZE];
-
-                // checks if this datafile are encrypted
-                var isEncrypted = _stream.ReadByte();
-
-                if (isEncrypted != 1)
-                {
-                    throw new LiteException(0, "This file is not encrypted");
-                }
-
-                _stream.Read(this.Salt, 0, ENCRYPTION_SALT_SIZE);
-            }
-
-            _aes = Aes.Create();
-            _aes.Padding = PaddingMode.None;
-            _aes.Mode = CipherMode.ECB;
-
-            var pdb = new Rfc2898DeriveBytes(password, this.Salt);
-
-            using (pdb as IDisposable)
-            {
-                _aes.Key = pdb.GetBytes(32);
-                _aes.IV = pdb.GetBytes(16);
-            }
-
-            _encryptor = _aes.CreateEncryptor();
-            _decryptor = _aes.CreateDecryptor();
-
-            _reader = _stream.CanRead ?
-                new CryptoStream(_stream, _decryptor, CryptoStreamMode.Read) :
-                null;
-
-            _writer = _stream.CanWrite ?
-                new CryptoStream(_stream, _encryptor, CryptoStreamMode.Write) :
-                null;
-
-            // set stream to password checking
-            _stream.Position = 32;
-
-            var checkBuffer = new byte[32];
-
-            // fill checkBuffer with encrypted 1 to check when open
-            if (isNew)
-            {
-                checkBuffer.Fill(1, 0, checkBuffer.Length);
-
-                _writer.Write(checkBuffer, 0, checkBuffer.Length);
-
-                //ensure that the "hidden" page in encrypted files is created correctly
-                _stream.Position = PAGE_SIZE - 1;
-                _stream.WriteByte(0);
-            }
-            else
-            {
-                _reader.Read(checkBuffer, 0, checkBuffer.Length);
-
-                if (!checkBuffer.All(x => x == 1))
-                {
-                    throw new LiteException(0, "Invalid password");
-                }
-            }
-
-            _stream.Position = PAGE_SIZE;
-            _stream.FlushToDisk();
-
-            using (var ms = new MemoryStream(new byte[16]))
-            using (var tempStream = new CryptoStream(ms, _decryptor, CryptoStreamMode.Read))
-            {
-                tempStream.Read(_decryptedZeroes, 0, _decryptedZeroes.Length);
-            }
+            _aes.Key = pdb.GetBytes(32);
+            _aes.IV = pdb.GetBytes(16);
         }
-        catch
-        {
-            _stream.Dispose();
 
-            throw;
-        }
+        _encryptor = _aes.CreateEncryptor();
+        _decryptor = _aes.CreateDecryptor();
+
+        _reader = _stream.CanRead ?
+            new CryptoStream(_stream, _decryptor, CryptoStreamMode.Read) :
+            null;
+
+        _writer = _stream.CanWrite ?
+            new CryptoStream(_stream, _encryptor, CryptoStreamMode.Write) :
+            null;
     }
 
     /// <summary>
-    /// Decrypt data from Stream
+    /// Decrypt data from Stream. Must check if disk are not full 0 (skiped). In this case, must return empty
     /// </summary>
     public override int Read(byte[] array, int offset, int count)
     {
-        ENSURE(count == PAGE_SIZE, "buffer size must be PAGE_SIZE");
-        ENSURE(this.Position % PAGE_SIZE == 0, $"AesRead: position must be in PAGE_SIZE module. Position={this.Position}, File={_name}");
+        var read = _reader!.Read(array, offset, count);
 
-        var r = _reader.Read(array, offset, count);
-
-        // checks if the first 16 bytes of the page in the original stream are zero
-        // this should never happen, but if it does, return a blank page
-        // the blank page will be skipped by WalIndexService.CheckpointInternal() and WalIndexService.RestoreIndex()
-        if (this.IsBlank(array, offset))
-        {
-            array.Fill(0, offset, count);
-        }
-
-        return r;
+        return read;
     }
 
     /// <summary>
@@ -167,10 +74,7 @@ public class AesStream : Stream
     /// </summary>
     public override void Write(byte[] array, int offset, int count)
     {
-        ENSURE(count == PAGE_SIZE, "buffer size must be PAGE_SIZE");
-        ENSURE(this.Position % PAGE_SIZE == 0, $"AesWrite: position must be in PAGE_SIZE module. Position={this.Position}, File={_name}");
-
-        _writer.Write(array, offset, count);
+        _writer!.Write(array, offset, count);
     }
 
     protected override void Dispose(bool disposing)
@@ -207,12 +111,12 @@ public class AesStream : Stream
 
     public override long Seek(long offset, SeekOrigin origin)
     {
-        return _stream.Seek(offset + PAGE_SIZE, origin);
+        return _stream.Seek(offset, origin);
     }
 
     public override void SetLength(long value)
     {
-        _stream.SetLength(value + PAGE_SIZE);
+        _stream.SetLength(value);
     }
 
     private unsafe bool IsBlank(byte[] array, int offset)

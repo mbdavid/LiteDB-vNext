@@ -13,7 +13,7 @@ internal class MasterDocument
     {
         this.Collections = new Dictionary<string, CollectionDocument>(byte.MaxValue, StringComparer.OrdinalIgnoreCase);
 
-        this.Pragmas = new PragmaDocument(collation);
+        this.Pragmas = new PragmaDocument();
     }
 
     /// <summary>

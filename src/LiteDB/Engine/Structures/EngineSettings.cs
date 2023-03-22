@@ -56,6 +56,11 @@ public class EngineSettings : IEngineSettings
     public Collation Collation { get; init; } = Collation.Default;
 
     /// <summary>
+    /// Timeout for waiting unlock operations (default: 1 minute)
+    /// </summary>
+    public TimeSpan Timeout { get; init; } = TimeSpan.FromMinutes(1);
+
+    /// <summary>
     /// Indicate that engine will open files in readonly mode (and will not support any database change)
     /// </summary>
     public bool ReadOnly { get; init; } = false;

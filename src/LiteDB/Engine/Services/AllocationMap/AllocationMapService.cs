@@ -26,8 +26,8 @@ internal class AllocationMapService : IAllocationMapService
     public AllocationMapService(IServicesFactory factory)
     {
         _factory = factory;
-        _disk = _factory.Disk;
-        _memoryCache = _factory.MemoryCache;
+        _disk = _factory.GetDisk();
+        _memoryCache = _factory.GetMemoryCache();
     }
 
     /// <summary>

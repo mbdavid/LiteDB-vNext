@@ -33,6 +33,7 @@ internal class AllocationMapPage : BasePage
         // fill all queue as empty extends (use ExtendID)
         _emptyExtends = new Queue<int>(Enumerable.Range(0, AM_EXTEND_COUNT)
             .Select(x => x * _allocationMapID));
+
     }
 
     /// <summary>

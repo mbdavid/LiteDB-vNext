@@ -8,17 +8,6 @@ internal class PragmaDocument
     public int UserVersion { get; private set; } = 0;
 
     /// <summary>
-    /// Define collation for this database. Value will be persisted on disk at first write database. After this, there is no change of collation
-    /// (read only - created on new datafile)
-    /// </summary>
-    public Collation Collation { get; }
-
-    /// <summary>
-    /// Timeout for waiting unlock operations (default: 1 minute)
-    /// </summary>
-    public TimeSpan Timeout { get; private set; } = TimeSpan.FromMinutes(1);
-
-    /// <summary>
     /// Max limit of datafile (in bytes) (default: MaxValue)
     /// </summary>
     public long LimitSize { get; private set; } = long.MaxValue;
@@ -31,11 +20,10 @@ internal class PragmaDocument
 
 
     /// <summary>
-    /// Initialize new pragma document (based only in collection info)
+    /// Initialize new pragma document
     /// </summary>
-    public PragmaDocument(Collation collation)
+    public PragmaDocument()
     {
-        this.Collation = collation;
     }
 
     /// <summary>
@@ -44,8 +32,6 @@ internal class PragmaDocument
     public PragmaDocument(BsonDocument doc)
     {
         this.UserVersion = doc[MK_PRAGMA_USER_VERSION];
-        this.Collation = new Collation(doc[MK_PRAGMA_USER_VERSION].AsString);
-        this.Timeout = TimeSpan.FromSeconds(doc[MK_PRAGMA_USER_VERSION].AsInt32);
         this.LimitSize = doc[MK_PRAGMA_USER_VERSION];
         this.Checkpoint = doc[MK_PRAGMA_USER_VERSION];
     }

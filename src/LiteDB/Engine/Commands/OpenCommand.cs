@@ -10,8 +10,8 @@ internal class OpenCommand : IOpenCommand
     public OpenCommand(IServicesFactory factory, IEngineContext ctx)
     {
         _factory = factory;
+        _disk = factory.GetDisk();
         _ctx = ctx;
-        _disk = factory.Disk;
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
@@ -22,14 +22,8 @@ internal class OpenCommand : IOpenCommand
 
         if (state != EngineState.Close) throw new Exception("must be closed");
 
-        // open data file here. Returns false if disk was not dispoable after last write use
-        var recovery = !await _disk.InitializeAsync();
+        var fileHeader = await _disk.InitializeAsync();
 
-        if (recovery)
-        {
-            // state = Recovering?
-            // faz recovery e executa novamente o disk.Initialize()
-        }
 
         // update state
         _factory.State = EngineState.Open;

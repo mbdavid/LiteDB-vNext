@@ -2,20 +2,16 @@
 
 internal class FileDiskStream : IDiskStream
 {
-    private readonly string _filename;
-    private readonly string? _password;
-    private readonly bool _readonly;
-    private readonly bool _sequential;
-    private Stream? _stream;
+    private readonly IEngineSettings _settings;
 
-    public string Name => Path.GetFileName(_filename);
+    private Stream? _headerStream;
+    private Stream? _contentStream;
 
-    public FileDiskStream(string filename, string? password, bool readOnly, bool sequencial)
+    public string Name => Path.GetFileName(_settings.Filename);
+
+    public FileDiskStream(IEngineSettings settings)
     {
-        _filename = filename;
-        _password = password;
-        _readonly = readOnly;
-        _sequential = sequencial;
+        _settings = settings;
     }
 
     /// <summary>
@@ -27,7 +23,7 @@ internal class FileDiskStream : IDiskStream
         if (!this.Exists()) return 0;
 
         // get physical file length from OS
-        var length = new FileInfo(_filename).Length;
+        var length = new FileInfo(_settings.Filename).Length;
 
         return length;
     }
@@ -37,7 +33,7 @@ internal class FileDiskStream : IDiskStream
     /// </summary>
     public bool Exists()
     {
-        return File.Exists(_filename);
+        return File.Exists(_settings.Filename);
     }
 
     /// <summary>
@@ -45,72 +41,96 @@ internal class FileDiskStream : IDiskStream
     /// </summary>
     public void Delete()
     {
-        File.Delete(_filename);
+        File.Delete(_settings.Filename);
     }
 
-    private async Task<Stream> CreateStreamAsync()
+    /// <summary>
+    /// Initialize disk opening already exist datafile and return file header structure.
+    /// Can open file as read or write
+    /// </summary>
+    public async Task<FileHeader> OpenAsync()
     {
-        var stream = new FileStream(
-            _filename,
-            _readonly ? FileMode.Open : FileMode.OpenOrCreate,
-            _readonly ? FileAccess.Read : FileAccess.ReadWrite,
-            _readonly ? FileShare.ReadWrite : FileShare.Read,
+        _headerStream = new FileStream(
+            _settings.Filename,
+            FileMode.Open,
+            _settings.ReadOnly ? FileAccess.Read : FileAccess.ReadWrite,
+            _settings.ReadOnly ? FileShare.ReadWrite : FileShare.Read,
             PAGE_SIZE,
-            _sequential ? FileOptions.SequentialScan : FileOptions.RandomAccess);
+            FileOptions.RandomAccess);
 
-        //if (stream.Length == 0 && _hidden)
-        //{
-        //    File.SetAttributes(_filename, FileAttributes.Hidden);
-        //}
+        // reading file header
+        var buffer = new byte[FILE_HEADER_SIZE];
 
-        if (_password is not null)
-        {
-            var headerBuffer = ArrayPool<byte>.Shared.Rent(FILE_HEADER_SIZE);
+        _headerStream.Position = 0;
 
-            await stream.ReadAsync(headerBuffer, 0, FILE_HEADER_SIZE);
+        await _headerStream.ReadAsync(buffer);
 
-            var isEncrypted = headerBuffer[FileHeader.P_ENCRYPTED];
-            var salt = headerBuffer[FileHeader.P_ENCRYPTION_SALT..(FileHeader.P_ENCRYPTION_SALT + ENCRYPTION_SALT_SIZE)];
+        var header = new FileHeader(buffer);
 
-        }
+        // for content stream, use AesStream (for encrypted file) or same headerStream
+        _contentStream = header.Encrypted ?
+            new AesStream(_headerStream, _settings.Password ?? "", header.EncryptionSalt) :
+            _headerStream;
 
-        // le header/salt se _password!=null
+        return header;
+    }
 
-        //return _password == null ? (Stream)stream : new AesStream(_password, _salt, stream);
-        return stream;
+    /// <summary>
+    /// Initialize disk creating a new datafile and writing file header
+    /// </summary>
+    public async Task CreateAsync(FileHeader fileHeader)
+    {
+        _headerStream = new FileStream(
+            _settings.Filename,
+            FileMode.CreateNew,
+            FileAccess.ReadWrite,
+            FileShare.Read,
+            PAGE_SIZE,
+            FileOptions.RandomAccess);
+
+        // writing file header
+        await _headerStream.WriteAsync(fileHeader.Buffer, 0, FILE_HEADER_SIZE);
+
+        // for content stream, use AesStream (for encrypted file) or same headerStream
+        _contentStream = fileHeader.Encrypted ?
+            new AesStream(_headerStream, _settings.Password ?? "", fileHeader.EncryptionSalt) :
+            _headerStream;
     }
 
     public Task FlushAsync()
     {
-        return _stream?.FlushAsync() ?? Task.CompletedTask;
+        return _contentStream?.FlushAsync() ?? Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Read single page from disk using disk position. This position has FILE_HEADER_SIZE offset
+    /// </summary>
     public async Task<bool> ReadPageAsync(long position, PageBuffer buffer)
     {
-        _stream ??= await CreateStreamAsync();
+        if (_contentStream is null) throw new InvalidOperationException("Datafile closed");
 
         // add header file offset
-        _stream.Position = position + FILE_HEADER_SIZE;
+        _contentStream.Position = position + FILE_HEADER_SIZE;
 
-        var read = await _stream.ReadAsync(buffer.Array, 0, PAGE_SIZE);
+        var read = await _contentStream.ReadAsync(buffer.Array, 0, PAGE_SIZE);
 
         return read == PAGE_SIZE;
     }
 
     public async Task WritePageAsync(PageBuffer buffer)
     {
+        if (_contentStream is null) throw new InvalidOperationException("Datafile closed");
+
         ENSURE(buffer.Position != long.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
-        _stream ??= await CreateStreamAsync();
-
         // add header file offset
-        _stream.Position = buffer.Position + FILE_HEADER_SIZE;
+        _contentStream.Position = buffer.Position + FILE_HEADER_SIZE;
 
-        await _stream.WriteAsync(buffer.Array, 0, PAGE_SIZE);
+        await _contentStream.WriteAsync(buffer.Array, 0, PAGE_SIZE);
     }
 
     public void Dispose()
     {
-        _stream?.Dispose();
+        _contentStream?.Dispose();
     }
 }

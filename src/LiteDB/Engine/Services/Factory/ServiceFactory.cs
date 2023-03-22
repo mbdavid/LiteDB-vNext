@@ -33,84 +33,54 @@ internal partial class ServicesFactory : IServicesFactory
 
     public ConcurrentDictionary<string, object> Application { get; } = new();
 
-    public IBsonReader BsonReader
+    public IBsonReader GetBsonReader()
     {
-        get
-        {
-            return _bsonReader ??= new BsonReader();
-        }
+        return _bsonReader ??= new BsonReader();
     }
 
-    public IBsonWriter BsonWriter
+    public IBsonWriter GetBsonWriter()
     {
-        get
-        {
-            return _bsonWriter ??= new BsonWriter();
-        }
+        return _bsonWriter ??= new BsonWriter();
     }
 
-    public IMemoryCacheService MemoryCache
+    public IMemoryCacheService GetMemoryCache()
     {
-        get
-        {
-            return _memoryCache ??= new MemoryCacheService();
-        }
+        return _memoryCache ??= new MemoryCacheService();
     }
 
-    public IDiskService Disk
-    {
-        get
-        {
-            return _disk ??= new DiskService(this);
-        }
+    public IDiskService GetDisk()
+    { 
+        return _disk ??= new DiskService(this);
     }
 
-    public IAllocationMapService AllocationMap
+    public IAllocationMapService GetAllocationMap()
     {
-        get
-        {
-            return _allocationMap ??= new AllocationMapService(this);
-        }
+        return _allocationMap ??= new AllocationMapService(this);
     }
 
-    public IIndexCacheService IndexCache
-    {
-        get
-        {
-            return _indexCache ??= new IndexCacheService();
-        }
+    public IIndexCacheService GetIndexCache()
+    { 
+        return _indexCache ??= new IndexCacheService();
     }
 
-    public IMasterService Master
+    public IMasterService GetMaster()
     {
-        get
-        {
-            return _master ??= new MasterService(this);
-        }
+        return _master ??= new MasterService(this);
     }
 
-    public IWalIndexService WalIndex
+    public IWalIndexService GetWalIndex()
     {
-        get
-        {
-            return _walIndex ??= new WalIndexService(this);
-        }
+        return _walIndex ??= new WalIndexService(this);
     }
 
-    public ITransactionMonitor Monitor
+    public ITransactionMonitor GetMonitor()
     {
-        get
-        {
-            return _monitor ??= new TransactionMonitor(this);
-        }
+        return _monitor ??= new TransactionMonitor(this);
     }
 
-    public ILockService Lock
+    public ILockService GetLock()
     {
-        get
-        {
-            return _lock ??= new LockService(this.Master.Document.Pragmas.Timeout);
-        }
+        return _lock ??= new LockService(this.Settings.Timeout);
     }
 
     #endregion
@@ -131,14 +101,7 @@ internal partial class ServicesFactory : IServicesFactory
     {
         if (this.Settings.Filename is null) throw new NotImplementedException();
 
-        // when write mode, use sequencial disk access
-        var sequential = !readOnly;
-
-        return new FileDiskStream(
-            this.Settings.Filename,
-            this.Settings.Password,
-            readOnly || this.Settings.ReadOnly,
-            sequential);
+        return new FileDiskStream(this.Settings);
     }
 
     public INewDatafile CreateNewDatafile()

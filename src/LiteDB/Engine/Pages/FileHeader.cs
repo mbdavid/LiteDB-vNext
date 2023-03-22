@@ -4,7 +4,7 @@ namespace LiteDB.Engine;
 /// First initial data structure at start of disk. 
 /// All information data here are immutable. Only flag controls are changed (ChangeID, Recovery)
 /// </summary>
-internal class FileHeader
+internal struct FileHeader
 {
     /// <summary>
     /// Header info the validate that datafile is a LiteDB file (27 bytes)
@@ -50,6 +50,8 @@ internal class FileHeader
     public Collation Collation { get; }
     public Version EngineVersion { get; }
 
+    public byte[] Buffer { get; } = new byte[FILE_HEADER_SIZE];
+
     /// <summary>
     /// Read file header from a existing buffer data
     /// </summary>
@@ -74,12 +76,15 @@ internal class FileHeader
         var build = buffer[P_ENGINE_VER_BUILD];
 
         this.EngineVersion = new Version(major, minor, build);
+
+        // copy buffer
+        buffer.CopyTo(this.Buffer);
     }
 
     /// <summary>
     /// Create a new file header structure and write direct on buffer
     /// </summary>
-    public FileHeader(IEngineSettings settings, Span<byte> buffer)
+    public FileHeader(IEngineSettings settings)
     {
         _headerInfo = HEADER_INFO;
         _fileVersion = FILE_VERSION;
@@ -92,8 +97,8 @@ internal class FileHeader
         this.Collation = settings.Collation;
         this.EngineVersion = typeof(LiteEngine).Assembly.GetName().Version;
 
-        // clear buffer to ensure 0 in reserved bytes
-        buffer.Fill(0);
+        // get buffer
+        var buffer = this.Buffer.AsSpan();
 
         // write flags/data into file header buffer
         buffer[P_HEADER_INFO..].WriteString(_headerInfo);

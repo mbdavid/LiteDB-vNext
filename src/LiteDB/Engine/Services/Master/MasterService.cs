@@ -23,10 +23,10 @@ internal class MasterService : IMasterService
     public MasterService(IServicesFactory factory)
     {
         _factory = factory;
-        _disk = factory.Disk;
-        _memoryCache = factory.MemoryCache;
-        _reader = factory.BsonReader;
-        _writer = factory.BsonWriter;
+        _disk = factory.GetDisk();
+        _memoryCache = factory.GetMemoryCache();
+        _reader = factory.GetBsonReader();
+        _writer = factory.GetBsonWriter();
 
         var collation = _factory.Settings.Collation;
 

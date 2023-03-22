@@ -17,37 +17,33 @@ internal class DiskService : IDiskService
     public DiskService(IServicesFactory factory)
     {
         _factory = factory;
-        _memoryCache = factory.MemoryCache;
+        _memoryCache = factory.GetMemoryCache();
 
         _headerBuffer = _memoryCache.AllocateNewBuffer();
         _writer = factory.CreateDiskStream(false);
     }
 
     /// <summary>
-    /// Open (or create) datafile. Checks file integrity based on recovery flag.
-    /// Returns false if disk was not dispoable after last write use (recovery = true)
+    /// Open (or create) datafile.
     /// </summary>
-    public async Task<bool> InitializeAsync()
+    public async Task<FileHeader> InitializeAsync()
     {
         // if file not found, create empty database
         if (_writer.Exists() == false)
         {
             var df = _factory.CreateNewDatafile();
 
-            await df.CreateAsync(_writer);
+            var fileHeader = await df.CreateAsync(_writer);
+
+            return fileHeader;
         }
+        else
+        {
+            // read header page buffer from start of disk
+            var fileHeader = await _writer.OpenAsync();
 
-        // read header page buffer from start of disk
-        var read = await _writer.ReadPageAsync(0, _headerBuffer);
-
-        ENSURE(read, "page header must be full read");
-
-
-
-        //TOD: abrir stream e retorna true se está tudo ok e não precisa de recovery
-
-
-        return true;
+            return fileHeader;
+        }
     }
 
     /// <summary>
@@ -93,6 +89,15 @@ internal class DiskService : IDiskService
     public void ReturnDiskReader(IDiskStream reader)
     {
         _readers.Enqueue(reader);
+    }
+
+    public async Task WritePages(IEnumerable<PageBuffer> pages)
+    {
+        foreach(var pageBuffer in pages)
+        {
+            await _writer.WritePageAsync(pageBuffer);
+        }
+        await _writer.FlushAsync();
     }
 
     public void Dispose()

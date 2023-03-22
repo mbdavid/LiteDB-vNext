@@ -19,8 +19,8 @@ internal class TransactionService : ITransactionService
     public TransactionService(IServicesFactory factory, int transactionID)
     {
         _factory = factory;
-        _walIndex = factory.WalIndex;
-        _lock = factory.Lock;
+        _walIndex = factory.GetWalIndex();
+        _lock = factory.GetLock();
 
         this.TransactionID = transactionID;
     }

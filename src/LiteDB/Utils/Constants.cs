@@ -116,8 +116,6 @@ internal class Constants
     public const string MK_META = "meta";
     public const string MK_PRAGMA = "pragmas";
     public const string MK_PRAGMA_USER_VERSION = "user_version";
-    public const string MK_PRAGMA_COLLATION = "collation";
-    public const string MK_PRAGMA_TIMEOUT = "timeout";
     public const string MK_PRAGMA_LIMIT_SIZE = "limit";
     public const string MK_PRAGMA_CHECKPOINT = "checkpoint";
 

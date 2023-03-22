@@ -10,26 +10,34 @@ internal class NewDatafile : INewDatafile
     public NewDatafile(IServicesFactory factory)
     {
         _factory = factory;
-        _memoryCache = factory.MemoryCache;
+        _memoryCache = factory.GetMemoryCache();
         _settings = factory.Settings;
     }
 
-    public async Task CreateAsync(IDiskStream stream)
+    public async Task<FileHeader> CreateAsync(IDiskStream stream)
     {
-        var headerBuffer = _memoryCache.AllocateNewBuffer();
-        var mapBuffer = _memoryCache.AllocateNewBuffer();
+        var fileHeader = new FileHeader(_settings);
 
-        var headerPage = new FileHeader(headerBuffer);
-        var mapPage = new AllocationMapPage(1, mapBuffer);
+        await stream.CreateAsync(fileHeader);
 
-        headerPage.UpdateHeaderBuffer();
-        mapPage.UpdateHeaderBuffer();
 
-        await stream.WritePageAsync(headerBuffer);
-        await stream.WritePageAsync(mapBuffer);
 
-        _memoryCache.DeallocateBuffer(headerBuffer);
-        _memoryCache.DeallocateBuffer(mapBuffer);
+
+        //var mapBuffer = _memoryCache.AllocateNewBuffer();
+        //var masterBuffer = _memoryCache.AllocateNewBuffer();
+
+        //var mapPage = new AllocationMapPage(AM_FIRST_PAGE_ID, mapBuffer);
+
+        //mapPage.UpdateHeaderBuffer();
+
+
+        //await stream.WriteFileHeaderAsync(fileBuffer);
+        //await stream.WritePageAsync(mapBuffer);
+
+        //// return arrays to memory
+        //ArrayPool<byte>.Shared.Return(fileBuffer);
+        //_memoryCache.DeallocateBuffer(mapBuffer);
+        return fileHeader;
 
     }
 }

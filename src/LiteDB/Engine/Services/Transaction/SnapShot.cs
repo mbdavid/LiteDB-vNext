@@ -23,9 +23,9 @@ internal class Snapshot : ISnapshot
     public Snapshot(IServicesFactory factory, byte colID, LockMode mode, int readVersion)
     {
         _factory = factory;
-        _lock = factory.Lock;
-        _walIndex = factory.WalIndex;
-        _allocationMap = factory.AllocationMap;
+        _lock = factory.GetLock();
+        _walIndex = factory.GetWalIndex();
+        _allocationMap = factory.GetAllocationMap();
 
         _colID = colID;
         _mode = mode;
