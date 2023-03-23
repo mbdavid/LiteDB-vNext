@@ -9,17 +9,17 @@ internal class DiskService : IDiskService
     // dependency injection
     private readonly IServicesFactory _factory;
     private readonly IMemoryCacheService _memoryCache;
+    private readonly IEngineSettings _settings;
 
     private IDiskStream _writer;
-    private readonly PageBuffer _headerBuffer;
     private readonly ConcurrentQueue<IDiskStream> _readers = new ();
 
     public DiskService(IServicesFactory factory)
     {
         _factory = factory;
         _memoryCache = factory.GetMemoryCache();
+        _settings = factory.Settings;
 
-        _headerBuffer = _memoryCache.AllocateNewBuffer();
         _writer = factory.CreateDiskStream(false);
     }
 
@@ -28,12 +28,19 @@ internal class DiskService : IDiskService
     /// </summary>
     public async Task<FileHeader> InitializeAsync()
     {
-        // if file not found, create empty database
+        // if file not exists, create empty database
         if (_writer.Exists() == false)
         {
-            var df = _factory.CreateNewDatafile();
+            var fileHeader = new FileHeader(_settings);
 
-            var fileHeader = await df.CreateAsync(_writer);
+            // create new file and write 
+            await _writer.CreateAsync(fileHeader);
+
+            // intialize new database class factory
+            var newFile = _factory.CreateNewDatafile();
+
+            // create first AM page and $master 
+            await newFile.CreateAsync(_writer);
 
             return fileHeader;
         }

@@ -31,6 +31,8 @@ internal partial class ServicesFactory : IServicesFactory
 
     public Exception? Exception { get; set; }
 
+    public FileHeader? FileHeader { get; set; }
+
     public ConcurrentDictionary<string, object> Application { get; } = new();
 
     public IBsonReader GetBsonReader()

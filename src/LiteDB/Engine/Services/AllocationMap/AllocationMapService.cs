@@ -34,7 +34,7 @@ internal class AllocationMapService : IAllocationMapService
     /// Initialize allocation map service loading all AM pages into memory and getting
     /// </summary>
     /// <returns></returns>
-    public async Task Initialize()
+    public async Task InitializeAsync()
     {
         // read all allocation maps pages on disk
         await foreach (var pageBuffer in _disk.ReadAllocationMapPages())

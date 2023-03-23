@@ -4,7 +4,7 @@ internal class FileDiskStream : IDiskStream
 {
     private readonly IEngineSettings _settings;
 
-    private Stream? _headerStream;
+    private Stream? _stream;
     private Stream? _contentStream;
 
     public string Name => Path.GetFileName(_settings.Filename);
@@ -50,7 +50,8 @@ internal class FileDiskStream : IDiskStream
     /// </summary>
     public async Task<FileHeader> OpenAsync()
     {
-        _headerStream = new FileStream(
+        // open stream
+        _stream = new FileStream(
             _settings.Filename,
             FileMode.Open,
             _settings.ReadOnly ? FileAccess.Read : FileAccess.ReadWrite,
@@ -61,16 +62,16 @@ internal class FileDiskStream : IDiskStream
         // reading file header
         var buffer = new byte[FILE_HEADER_SIZE];
 
-        _headerStream.Position = 0;
+        _stream.Position = 0;
 
-        await _headerStream.ReadAsync(buffer);
+        await _stream.ReadAsync(buffer);
 
         var header = new FileHeader(buffer);
 
-        // for content stream, use AesStream (for encrypted file) or same headerStream
+        // for content stream, use AesStream (for encrypted file) or same _stream
         _contentStream = header.Encrypted ?
-            new AesStream(_headerStream, _settings.Password ?? "", header.EncryptionSalt) :
-            _headerStream;
+            new AesStream(_stream, _settings.Password ?? "", header.EncryptionSalt) :
+            _stream;
 
         return header;
     }
@@ -80,7 +81,8 @@ internal class FileDiskStream : IDiskStream
     /// </summary>
     public async Task CreateAsync(FileHeader fileHeader)
     {
-        _headerStream = new FileStream(
+        // create new data file
+        _stream = new FileStream(
             _settings.Filename,
             FileMode.CreateNew,
             FileAccess.ReadWrite,
@@ -89,12 +91,14 @@ internal class FileDiskStream : IDiskStream
             FileOptions.RandomAccess);
 
         // writing file header
-        await _headerStream.WriteAsync(fileHeader.Buffer, 0, FILE_HEADER_SIZE);
+        _stream.Position = 0;
 
-        // for content stream, use AesStream (for encrypted file) or same headerStream
+        await _stream.WriteAsync(fileHeader.Buffer, 0, FILE_HEADER_SIZE);
+
+        // for content stream, use AesStream (for encrypted file) or same _stream
         _contentStream = fileHeader.Encrypted ?
-            new AesStream(_headerStream, _settings.Password ?? "", fileHeader.EncryptionSalt) :
-            _headerStream;
+            new AesStream(_stream, _settings.Password ?? "", fileHeader.EncryptionSalt) :
+            _stream;
     }
 
     public Task FlushAsync()
