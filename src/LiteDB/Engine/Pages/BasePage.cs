@@ -18,9 +18,9 @@ internal class BasePage
     protected PageBuffer? _writeBuffer;
 
     /// <summary>
-    /// Page memory service reference used in write operation
+    /// Function to create writable buffer
     /// </summary>
-    private readonly IMemoryCacheService? _memoryCache;
+    private readonly IPageWriteFactoryService? _writeFactory;
 
     #region Buffer Field Positions
 
@@ -71,11 +71,13 @@ internal class BasePage
     /// <summary>
     /// Create BasePage instance based on buffer content
     /// </summary>
-    public BasePage(PageBuffer readBuffer, IMemoryCacheService? memoryCache)
+    public BasePage(PageBuffer readBuffer, IPageWriteFactoryService? writeFactory)
     {
         _readBuffer = readBuffer;
-        _writeBuffer = null;
-        _memoryCache = memoryCache;
+        _writeFactory = writeFactory;
+
+        // if has no write factory, use same read buffer to write
+        _writeBuffer = writeFactory is null ? _readBuffer : null;
 
         var span = readBuffer.AsSpan();
 
@@ -92,19 +94,8 @@ internal class BasePage
     {
         if (_writeBuffer is not null) return;
 
-        // if _readBuffer are not used by anyone in cache (ShareCounter == 1 - only current thread), remove
-        if (_memoryCache!.TryRemovePageFromCache(_readBuffer, 1))
-        {
-            _writeBuffer = _readBuffer;
-        }
-        else
-        {
-            // create a new page in memory
-            _writeBuffer = _memoryCache!.AllocateNewBuffer();
-
-            // copy content from clean buffer to write buffer (if exists)
-            _readBuffer.AsSpan().CopyTo(_writeBuffer.Value.AsSpan());
-        }
+        // create a new write buffer in memory or re-use if this buffer are not used in cache
+        _writeBuffer = _writeFactory!.GetWriteBuffer(_readBuffer);
     }
 
     /// <summary>

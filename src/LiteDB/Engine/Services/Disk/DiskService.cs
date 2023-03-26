@@ -8,7 +8,7 @@ internal class DiskService : IDiskService
 {
     // dependency injection
     private readonly IServicesFactory _factory;
-    private readonly IMemoryCacheService _memoryCache;
+    private readonly IBufferFactoryService _bufferFactory;
     private readonly IEngineSettings _settings;
 
     private IDiskStream _writer;
@@ -17,7 +17,7 @@ internal class DiskService : IDiskService
     public DiskService(IServicesFactory factory)
     {
         _factory = factory;
-        _memoryCache = factory.GetMemoryCache();
+        _bufferFactory = factory.GetBufferFactory();
         _settings = factory.Settings;
 
         _writer = factory.CreateDiskStream(false);
@@ -65,7 +65,7 @@ internal class DiskService : IDiskService
 
         while (position < fileLength)
         {
-            var pageBuffer = _memoryCache.AllocateNewBuffer();
+            var pageBuffer = _bufferFactory.AllocateNewBuffer();
 
             await _writer.ReadPageAsync(position, pageBuffer);
 

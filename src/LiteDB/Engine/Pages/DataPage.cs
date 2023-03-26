@@ -16,8 +16,8 @@ internal class DataPage : BlockPage
     /// <summary>
     /// Load data page from buffer
     /// </summary>
-    public DataPage(PageBuffer readBuffer, IMemoryCacheService memoryCache)
-        : base(readBuffer, memoryCache)
+    public DataPage(PageBuffer readBuffer, IPageWriteFactoryService? writeFactory)
+        : base(readBuffer, writeFactory)
     {
         ENSURE(this.PageType == PageType.Data, "page type must be data page");
     }

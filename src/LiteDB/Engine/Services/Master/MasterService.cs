@@ -9,7 +9,7 @@ internal class MasterService : IMasterService
     // dependency injection
     private readonly IServicesFactory _factory;
     private readonly IDiskService _disk;
-    private readonly IMemoryCacheService _memoryCache;
+    private readonly IBufferFactoryService _bufferFactory;
     private readonly IBsonReader _reader;
     private readonly IBsonWriter _writer;
 
@@ -24,7 +24,7 @@ internal class MasterService : IMasterService
     {
         _factory = factory;
         _disk = factory.GetDisk();
-        _memoryCache = factory.GetMemoryCache();
+        _bufferFactory = factory.GetBufferFactory();
         _reader = factory.GetBsonReader();
         _writer = factory.GetBsonWriter();
 
@@ -40,7 +40,7 @@ internal class MasterService : IMasterService
     public async Task InitializeAsync()
     {
         var reader = _disk.RentDiskReader();
-        var buffer = _memoryCache.AllocateNewBuffer();
+        var buffer = _bufferFactory.AllocateNewBuffer();
         byte[]? bufferDocument = null;
 
         try
@@ -104,7 +104,7 @@ internal class MasterService : IMasterService
             if (bufferDocument is not null)  ArrayPool<byte>.Shared.Return(bufferDocument);
 
             // deallocate buffer
-            _memoryCache.DeallocateBuffer(buffer);
+            _bufferFactory.DeallocateBuffer(buffer);
 
             // return reader disk
             _disk.ReturnDiskReader(reader);

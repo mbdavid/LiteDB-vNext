@@ -7,6 +7,8 @@
 internal partial class ServicesFactory : IServicesFactory
 {
     private IMemoryCacheService? _memoryCache;
+    private IBufferFactoryService? _bufferFactory;
+    private IPageWriteFactoryService? _pageWriteFactory;
     private IIndexCacheService? _indexCache;
     private IDiskService? _disk;
     private IAllocationMapService? _allocationMap;
@@ -14,7 +16,6 @@ internal partial class ServicesFactory : IServicesFactory
     private ILockService? _lock;
     private ITransactionMonitor? _monitor;
     private IMasterService? _master;
-
     private IBsonReader? _bsonReader;
     private IBsonWriter? _bsonWriter;
 
@@ -27,11 +28,11 @@ internal partial class ServicesFactory : IServicesFactory
 
     public IEngineSettings Settings { get; }
 
-    public EngineState State { get; set; } = EngineState.Close;
+    public EngineState State { get; private set; } = EngineState.Close;
 
-    public Exception? Exception { get; set; }
+    public Exception? Exception { get; private set; }
 
-    public FileHeader? FileHeader { get; set; }
+    public FileHeader? FileHeader { get; private set; }
 
     public ConcurrentDictionary<string, object> Application { get; } = new();
 
@@ -48,6 +49,16 @@ internal partial class ServicesFactory : IServicesFactory
     public IMemoryCacheService GetMemoryCache()
     {
         return _memoryCache ??= new MemoryCacheService();
+    }
+
+    public IBufferFactoryService GetBufferFactory()
+    {
+        return _bufferFactory ??= new BufferFactoryService();
+    }
+
+    public IPageWriteFactoryService GetPageWriteFactory()
+    {
+        return _pageWriteFactory ??= new PageWriteFactoryService(this);
     }
 
     public IDiskService GetDisk()
@@ -123,4 +134,15 @@ internal partial class ServicesFactory : IServicesFactory
 
     #endregion
 
+    #region Modified State Methods
+
+    public void SetStateOpen(FileHeader header)
+    {
+        if (this.State != EngineState.Close) throw new InvalidOperationException("Engine must be closed before open");
+
+        this.FileHeader = header;
+        this.State = EngineState.Open;
+    }
+
+    #endregion
 }

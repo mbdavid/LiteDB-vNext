@@ -11,7 +11,7 @@ internal class AllocationMapService : IAllocationMapService
 {
     private readonly IServicesFactory _factory;
     private readonly IDiskService _disk;
-    private readonly IMemoryCacheService _memoryCache;
+    private readonly IBufferFactoryService _bufferFactory;
 
     /// <summary>
     /// List of all allocation map pages, in pageID order
@@ -27,7 +27,7 @@ internal class AllocationMapService : IAllocationMapService
     {
         _factory = factory;
         _disk = _factory.GetDisk();
-        _memoryCache = _factory.GetMemoryCache();
+        _bufferFactory = _factory.GetBufferFactory();
     }
 
     /// <summary>
@@ -51,12 +51,12 @@ internal class AllocationMapService : IAllocationMapService
     }
 
     /// <summary>
-    /// Return a page ID with space avaiable to store length bytes. Support only DataPages and IndexPages.
-    /// Return pageID and bool to indicate that this page is a new empty page (must be created)
+    /// Return a page ID with space available to store 'length' bytes. Support only DataPages and IndexPages.
+    /// Return pageID and a bool that indicates if this page is a new empty page (must be created)
     /// </summary>  
     public (uint, bool) GetFreePageID(byte colID, PageType type, int length)
     {
-        //TODO: cassiano, posso retornar uma pagina com tamanho menor do solicitado?
+        //TODO: sombrio, posso retornar uma pagina com tamanho menor do solicitado?
         // o chamador que peça uma nova com o restante (while)
         // ta feio assim, mas tem como ficar bonito e eficiente (sem alocar memoria)
 
@@ -113,7 +113,7 @@ internal class AllocationMapService : IAllocationMapService
 
         //TODO: nesse ponto eu poderia tentar dar um "Reload" na freePages pra carregar mais (se tiver mais)
 
-        // there is no page avaiable with a best fit - create a new page
+        // there is no page available with a best fit - create a new page
         if (freePages.EmptyPages.Count > 0)
         {
             return (freePages.EmptyPages.Dequeue(), true);
@@ -126,7 +126,7 @@ internal class AllocationMapService : IAllocationMapService
     }
 
     /// <summary>
-    /// Create a new extend in any allocation map page that contains space avaiable. If all pages are full, create another allocation map page
+    /// Create a new extend in any allocation map page that contains space available. If all pages are full, create another allocation map page
     /// Return the first empty pageID created for this collection in this new extend
     /// This method populate collectionFreePages[colID] with 8 new empty pages
     /// </summary>
@@ -149,7 +149,7 @@ internal class AllocationMapService : IAllocationMapService
         }
 
         // if there is no more free extend in any AM page, let's create a new allocation map page
-        var pageBuffer = _memoryCache.AllocateNewBuffer();
+        var pageBuffer = _bufferFactory.AllocateNewBuffer();
 
         // get a new PageID based on last AM page
         var nextPageID = _pages.Last().PageID + AM_PAGE_STEP;
@@ -179,13 +179,16 @@ internal class AllocationMapService : IAllocationMapService
 
         foreach(var page in modifiedPages)
         {
-            var allocationMapID = 0; // sombrio; otimizar performance no calculo? (0,1,2,..)
-            var extendIndex = 0; // sombrio (baseado no pageID) (0-2039)
-            var pageIndex = 0; // sombrio (baseado no pageID) (0-7)
+            var allocationMapID = (int)(page.PageID / AM_PAGE_STEP);
+            var extendIndex = (int)(page.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+            var pageIndex = (int)(page.PageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
             byte value = 0; // calcular conforme page.Header.FreeSpace (0-7)
+
+            ENSURE(pageIndex != -1, "PageID cannot be an AM page ID");
 
             var mapPage = _pages[allocationMapID];
 
+            // update buffer map
             mapPage.UpdateMap(extendIndex, pageIndex, value);
 
             var freePages = _collectionFreePages[page.ColID];

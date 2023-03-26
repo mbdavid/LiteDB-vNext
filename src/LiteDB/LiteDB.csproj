@@ -41,6 +41,7 @@
   </ItemGroup>
 	
   <ItemGroup>
+    <Folder Include="Engine\Services\BufferFactory\" />
     <Folder Include="Engine\Services\Disk\Streams\" />
   </ItemGroup>
 	

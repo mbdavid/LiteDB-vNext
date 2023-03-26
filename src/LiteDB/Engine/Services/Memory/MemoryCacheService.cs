@@ -9,51 +9,12 @@
 internal class MemoryCacheService : IMemoryCacheService
 {
     /// <summary>
-    /// A queue of all available (re-used) free buffers. Rent model
-    /// </summary>
-    private readonly ConcurrentQueue<PageBuffer> _freeBuffers = new();
-
-    /// <summary>
     /// A dictionary to cache use/re-use same data buffer across threads. Rent model
     /// </summary>
     private ConcurrentDictionary<long, PageBuffer> _cache = new();
 
-    /// <summary>
-    /// Track how many pages was allocated in memory. Reduce this size occurs only in CleanUp process
-    /// </summary>
-    private int _pagesAllocated = 0;
-
     public MemoryCacheService()
     {
-    }
-
-    /// <summary>
-    /// Allocate, in memory, a new array with PAGE_SIZE inside a PageBuffer struct reference.
-    /// </summary>
-    public PageBuffer AllocateNewBuffer()
-    {
-        if (_freeBuffers.TryDequeue(out var page))
-        {
-            return page;
-        }
-
-        var array = new byte[PAGE_SIZE];
-
-        Interlocked.Increment(ref _pagesAllocated);
-
-        return new PageBuffer(array);
-    }
-
-    public void DeallocateBuffer(PageBuffer buffer)
-    {
-        ENSURE(buffer.ShareCounter == 0, "ShareCounter must be 0 before return page to memory");
-        ENSURE(!_cache.ContainsKey(buffer.Position), "PageBuffer must be outside cache");
-
-        // clear buffer position/sharecounter
-        buffer.Reset();
-
-        // neste momento posso escolher se adiciono no _freePages
-        _freeBuffers.Enqueue(buffer);
     }
 
     /// <summary>

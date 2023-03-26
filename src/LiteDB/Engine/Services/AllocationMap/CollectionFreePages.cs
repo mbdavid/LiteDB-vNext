@@ -26,7 +26,7 @@ internal class CollectionFreePages
     public FreePageList DataPagesSmall { get; } = new();
 
     /// <summary>
-    /// Contains a list of free index pages with space avaiable to at least one more node [value: 101 = 5]
+    /// Contains a list of free index pages with space available to at least one more node [value: 101 = 5]
     /// </summary>
     public FreePageList IndexPages { get; } = new();
 }

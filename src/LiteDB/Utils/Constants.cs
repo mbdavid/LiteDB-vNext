@@ -3,7 +3,7 @@
 /// <summary>
 /// Class with all constants used in LiteDB + Debbuger HELPER
 /// </summary>
-internal class Constants
+public class Constants
 {
     /// <summary>
     /// Initial file data descriptor size (before start database - use offset in Stream)
@@ -59,10 +59,10 @@ internal class Constants
     /// <summary>
     /// Get how many pages (data/index/empty) a single allocation map page support (16.320 pages)
     /// </summary>
-    public const int AM_MAP_PAGES_COUNT = AM_EXTEND_COUNT * AM_BYTES_PER_EXTEND;
+    public const int AM_MAP_PAGES_COUNT = AM_EXTEND_COUNT * AM_EXTEND_SIZE;
 
     /// <summary>
-    /// Indicate how many allocation map pages will jump to another map page (starts in 1)
+    /// Indicate how many allocation map pages will jump to another map page (starts in 0)
     /// </summary>
     public const int AM_PAGE_STEP = AM_MAP_PAGES_COUNT + 1;
 
@@ -70,7 +70,7 @@ internal class Constants
     /// Represent an array of how distribuited pages are inside AllocationMap using 3 bits
     /// [000] - 0 - Empty
     /// --
-    /// [001] - 1 - Data  (between 91% and 100% free) [LARGE]
+    /// [001] - 1 - Data  (between 91% and 99.99% free) [LARGE]
     /// [010] - 2 - Data  (between 51% and 90% free)  [MEDIUM]
     /// [011] - 3 - Data  (between 31% and 50% free)  [SMALL]
     /// [100] - 4 - Data  (between 0% and 30% free - page full)

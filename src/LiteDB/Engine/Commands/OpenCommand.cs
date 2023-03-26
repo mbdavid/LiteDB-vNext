@@ -46,8 +46,7 @@ internal class OpenCommand : IOpenCommand
         await _master.InitializeAsync();
 
         // update header/state
-        _factory.FileHeader = fileHeader;
-        _factory.State = EngineState.Open;
+        _factory.SetStateOpen(fileHeader);
 
         // release exclusive
         _lock.ExitExclusive();

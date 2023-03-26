@@ -57,8 +57,8 @@ internal class BlockPage : BasePage
     /// <summary>
     /// Load BlockPage from buffer memory
     /// </summary>
-    public BlockPage(PageBuffer buffer, IMemoryCacheService memoryCache)
-        : base(buffer, memoryCache)
+    public BlockPage(PageBuffer buffer, IPageWriteFactoryService? writeFactory)
+        : base(buffer, writeFactory)
     {
         var span = buffer.AsSpan();
 
@@ -151,7 +151,7 @@ internal class BlockPage : BasePage
             throw ERR_INVALID_FREE_SPACE_PAGE(this.PageID, header.FreeBytes, bytesLength + (isNewInsert ? BlockPageHeader.SLOT_SIZE : 0));
         }
 
-        // calculate how many continuous bytes are avaiable in this page
+        // calculate how many continuous bytes are available in this page
         var continuousBlocks = header.FreeBytes - header.FragmentedBytes - (isNewInsert ? BlockPageHeader.SLOT_SIZE : 0);
 
         ENSURE(continuousBlocks == PAGE_SIZE - header.NextFreePosition - header.FooterSize - (isNewInsert ? BlockPageHeader.SLOT_SIZE : 0), "continuosBlock must be same as from NextFreePosition");

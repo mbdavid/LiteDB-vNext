@@ -16,8 +16,8 @@ internal class IndexPage : BlockPage
     /// <summary>
     /// Load index page from buffer
     /// </summary>
-    public IndexPage(PageBuffer readBuffer, IMemoryCacheService memoryCache)
-        : base(readBuffer, memoryCache)
+    public IndexPage(PageBuffer readBuffer, IPageWriteFactoryService? writeFactory)
+        : base(readBuffer, writeFactory)
     {
         ENSURE(this.PageType == PageType.Data, "page type must be index page");
     }
