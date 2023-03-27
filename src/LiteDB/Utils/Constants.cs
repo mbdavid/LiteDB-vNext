@@ -104,9 +104,9 @@ public class Constants
     /// Get a list of keys used inside $master collection (MK = master key)
     /// </summary>
     public const string MK_COL = "collections";
-    public const string MK_COL_NAME = "name";
+    public const string MK_COL_ID = "colID";
     public const string MK_INDEX = "indexes";
-    public const string MK_IDX_NAME = "name";
+    public const string MK_IDX_SLOT = "slot";
     public const string MK_IDX_EXPR = "expr";
     public const string MK_IDX_UNIQUE = "unique";
     public const string MK_IDX_HEAD_PAGE_ID = "headPageID";
@@ -138,6 +138,11 @@ public class Constants
     /// Get max length of 1 single index node
     /// </summary>
     public const int MAX_INDEX_LENGTH = 1400;
+
+    /// <summary>
+    /// Get default checkpoint size (in pages). This value is used inside pragma
+    /// </summary>
+    public const int CHECKPOINT_SIZE = 1000;
 
     /// <summary>
     /// Define how many documents will be keep in memory until clear cache and remove support to orderby/groupby

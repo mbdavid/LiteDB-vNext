@@ -26,7 +26,7 @@ internal class MasterService : IMasterService
     public PragmaDocument? Pragmas { get; private set; }
 
     /// <summary>
-    /// Master document read from disk
+    /// $master document read from disk
     /// </summary>
     private BsonDocument? _master;
 
@@ -37,14 +37,14 @@ internal class MasterService : IMasterService
         _bufferFactory = factory.GetBufferFactory();
         _reader = factory.GetBsonReader();
         _writer = factory.GetBsonWriter();
-
-        var collation = _factory.Settings.Collation;
     }
+
+    #region Read/Write $master
 
     /// <summary>
     /// Initialize (when database open) reading first extend pages. Database should have no log data to read this
     /// </summary>
-    public async Task ReadMasterFromDiskAsync()
+    public async Task ReadFromDiskAsync()
     {
         var reader = _disk.RentDiskReader();
         var buffer = _bufferFactory.AllocateNewBuffer();
@@ -66,7 +66,7 @@ internal class MasterService : IMasterService
             {
                 var master = _reader.ReadDocument(buffer.AsSpan(PAGE_HEADER_SIZE), null, false, out _)!;
 
-                this.LoadMasterDocument(master);
+                this.UpdateDocument(master);
             }
             // otherwise, read as many pages as needed to read full master collection
             else
@@ -101,7 +101,7 @@ internal class MasterService : IMasterService
                 // read $master document from full buffer document
                 var master = _reader.ReadDocument(bufferDocument, null, false, out _)!;
 
-                this.LoadMasterDocument(master);
+                this.UpdateDocument(master);
             }
         }
         finally
@@ -120,7 +120,7 @@ internal class MasterService : IMasterService
     /// <summary>
     /// Load external master document and update Collection/Pragmas fields
     /// </summary>
-    private void LoadMasterDocument(BsonDocument master)
+    public void UpdateDocument(BsonDocument master)
     {
         // initialize collection dict
         this.Collections = new Dictionary<string, CollectionDocument>(byte.MaxValue, StringComparer.OrdinalIgnoreCase);
@@ -157,9 +157,14 @@ internal class MasterService : IMasterService
         }
         else
         {
+            //TODO: slitar em um array alugado e salvar nas paginas
             throw new NotImplementedException();
         }
     }
+
+    #endregion
+
+    #region Operations in $master
 
     public BsonDocument AddCollection(string name, PageAddress head, PageAddress tail)
     {
@@ -201,20 +206,17 @@ internal class MasterService : IMasterService
         return master;
     }
 
-    private BsonDocument CreateIndex(byte slot, string expr, bool unique, PageAddress head, PageAddress tail)
+    private BsonDocument CreateIndex(byte slot, string expr, bool unique, PageAddress head, PageAddress tail) => new()
     {
-        return new BsonDocument
-        {
-            [MK_IDX_SLOT] = slot,
-            [MK_IDX_EXPR] = expr,
-            [MK_IDX_UNIQUE] = unique,
-            [MK_IDX_HEAD_PAGE_ID] = head.PageID,
-            [MK_IDX_HEAD_INDEX] = head.Index,
-            [MK_IDX_TAIL_PAGE_ID] = tail.PageID,
-            [MK_IDX_TAIL_INDEX] = tail.Index,
-            [MK_META] = new BsonDocument()
-        };
-    }
+        [MK_IDX_SLOT] = slot,
+        [MK_IDX_EXPR] = expr,
+        [MK_IDX_UNIQUE] = unique,
+        [MK_IDX_HEAD_PAGE_ID] = head.PageID,
+        [MK_IDX_HEAD_INDEX] = head.Index,
+        [MK_IDX_TAIL_PAGE_ID] = tail.PageID,
+        [MK_IDX_TAIL_INDEX] = tail.Index,
+        [MK_META] = new BsonDocument()
+    };
 
     public BsonDocument DropIndex(byte colID, byte slot)
     {
@@ -233,6 +235,26 @@ internal class MasterService : IMasterService
         var clone = new BsonDocument(_master!);
         return clone;
     }
+
+    #endregion
+
+    #region Create new $master
+
+    /// <summary>
+    /// Create a new $master document with initial pragma values
+    /// </summary>
+    public static BsonDocument CreateNewMaster() => new()
+    {
+        [MK_COL] = new BsonDocument(),
+        [MK_PRAGMA] = new BsonDocument
+        {
+            [MK_PRAGMA_USER_VERSION] = 0,
+            [MK_PRAGMA_LIMIT_SIZE] = 0,
+            [MK_PRAGMA_CHECKPOINT] = CHECKPOINT_SIZE,
+        }
+    };
+
+    #endregion
 
     public void Dispose()
     {

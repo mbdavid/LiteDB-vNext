@@ -18,22 +18,14 @@ internal class PragmaDocument
     /// </summary>
     public int Checkpoint { get; private set; } = 1000;
 
-
-    ///// <summary>
-    ///// Initialize new pragma document
-    ///// </summary>
-    //public PragmaDocument()
-    //{
-    //}
-
     /// <summary>
     /// Read pragma information from a BsonDocument
     /// </summary>
     public PragmaDocument(BsonDocument doc)
     {
         this.UserVersion = doc[MK_PRAGMA_USER_VERSION];
-        this.LimitSize = doc[MK_PRAGMA_USER_VERSION];
-        this.Checkpoint = doc[MK_PRAGMA_USER_VERSION];
+        this.LimitSize = doc[MK_PRAGMA_LIMIT_SIZE];
+        this.Checkpoint = doc[MK_PRAGMA_CHECKPOINT];
     }
 }
 

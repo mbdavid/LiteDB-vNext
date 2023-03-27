@@ -32,7 +32,6 @@ internal class AllocationMapPage : BasePage
 
         // fill all queue as empty extends (use ExtendIndex)
         _emptyExtends = new Queue<int>(Enumerable.Range(0, AM_EXTEND_COUNT - 1));
-
     }
 
     /// <summary>
