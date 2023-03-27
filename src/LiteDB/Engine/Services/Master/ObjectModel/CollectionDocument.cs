@@ -7,33 +7,20 @@ internal class CollectionDocument
     public IDictionary<string, IndexDocument> Indexes { get; }
     public BsonDocument Meta { get; }
 
-    public CollectionDocument(byte colID, string name, PageAddress head, PageAddress tail)
+    public CollectionDocument(string name, BsonDocument doc)
     {
-        this.ColID = colID;
         this.Name = name;
-        this.Meta = new BsonDocument();
-
-        // create primary key index
-        this.Indexes = new Dictionary<string, IndexDocument>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["_id"] = new IndexDocument(head, tail)
-        };
-    }
-
-    public CollectionDocument(byte colID, BsonDocument doc)
-    {
-        this.ColID = colID;
-        this.Name = doc[MK_COL_NAME];
+        this.ColID = (byte)doc[MK_COL_ID].AsInt32;
         this.Meta = doc[MK_META].AsDocument;
         this.Indexes = new Dictionary<string, IndexDocument>(StringComparer.OrdinalIgnoreCase);
 
         // get indexes as a document (each key is one slot)
         var indexes = doc[MK_INDEX].AsDocument;
 
-        foreach (var key in indexes.Keys)
+        foreach (var indexName in indexes.Keys)
         {
-            var idxDoc = indexes[key].AsDocument;
-            var index = new IndexDocument(Convert.ToByte(key), idxDoc);
+            var indexDoc = indexes[indexName].AsDocument;
+            var index = new IndexDocument(indexName, indexDoc);
 
             this.Indexes[index.Name] = index;
         }

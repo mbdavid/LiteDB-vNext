@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Xml.Linq;
+
+namespace LiteDB.Engine;
 
 internal class IndexDocument
 {
@@ -11,26 +13,12 @@ internal class IndexDocument
     public BsonDocument Meta { get; }
 
     /// <summary>
-    /// Create new PK index document
+    /// Load index document from $master.collections[0].indexes
     /// </summary>
-    public IndexDocument(PageAddress head, PageAddress tail)
+    public IndexDocument(string name, BsonDocument doc)
     {
-        this.Slot = 0;
-        this.Name = "_id";
-        this.Expr = BsonExpression.Create("$._id");
-        this.Unique = true;
-        this.Head = head;
-        this.Tail = tail;
-        this.Meta = new BsonDocument();
-    }
-
-    /// <summary>
-    /// Load index document from $master.collections[]
-    /// </summary>
-    public IndexDocument(byte slot, BsonDocument doc)
-    {
-        this.Slot = slot;
-        this.Name = doc[MK_IDX_NAME];
+        this.Name = name;
+        this.Slot = (byte)doc[MK_IDX_SLOT].AsInt32;
         this.Expr = BsonExpression.Create(doc[MK_IDX_EXPR]);
         this.Unique = doc[MK_IDX_UNIQUE];
         this.Head = new PageAddress((uint)doc[MK_IDX_HEAD_PAGE_ID], (byte)doc[MK_IDX_HEAD_INDEX]);

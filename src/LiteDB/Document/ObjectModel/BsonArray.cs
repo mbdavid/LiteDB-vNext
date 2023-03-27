@@ -25,6 +25,22 @@ public class BsonArray : BsonValue, IList<BsonValue>
         this.AddRange(values);
     }
 
+    public BsonArray(BsonArray clone)
+        : this(clone.Count)
+    {
+        for(var i = 0; i < _value.Count; i++)
+        {
+            var value = _value[i];
+
+            _value.Add(
+                value.IsDocument ? new BsonDocument(value.AsDocument) :
+                value.IsArray ? new BsonArray(value.AsArray) :
+                value);
+        }
+
+        _length = clone._length;
+    }
+
     public override BsonType Type => BsonType.Array;
 
     public override int GetBytesCount()

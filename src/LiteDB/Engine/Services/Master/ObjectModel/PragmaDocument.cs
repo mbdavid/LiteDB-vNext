@@ -19,12 +19,12 @@ internal class PragmaDocument
     public int Checkpoint { get; private set; } = 1000;
 
 
-    /// <summary>
-    /// Initialize new pragma document
-    /// </summary>
-    public PragmaDocument()
-    {
-    }
+    ///// <summary>
+    ///// Initialize new pragma document
+    ///// </summary>
+    //public PragmaDocument()
+    //{
+    //}
 
     /// <summary>
     /// Read pragma information from a BsonDocument

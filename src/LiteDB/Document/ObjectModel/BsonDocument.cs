@@ -25,6 +25,20 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
         _value = value ?? throw new ArgumentNullException(nameof(value));
     }
 
+    public BsonDocument(BsonDocument clone)
+        : this(clone.Count)
+    {
+        foreach(var entity in clone._value)
+        {
+            _value.Add(entity.Key,
+                entity.Value.IsDocument ? new BsonDocument(entity.Value.AsDocument) :
+                entity.Value.IsArray ? new BsonArray(entity.Value.AsArray) :
+                entity.Value);
+        }
+
+        _length = clone._length;
+    }
+
     public override BsonType Type => BsonType.Document;
 
     public override int GetBytesCount()
