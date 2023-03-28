@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class BlockPageService : IBlockPageService
+internal class BasePageService : IBasePageService
 {
     /// <summary>
     /// Get a page block item based on index slot
@@ -380,6 +380,16 @@ internal class BlockPageService : IBlockPageService
 
 
     #region Static Helpers
+
+    /// <summary>
+    /// Returns a size of specified number of pages
+    /// </summary>
+    public static long GetPagePosition(uint pageID) => checked((long)pageID * PAGE_SIZE);
+
+    /// <summary>
+    /// Returns a size of specified number of pages
+    /// </summary>
+    public static long GetPagePosition(int pageID) => GetPagePosition((uint)pageID);
 
     /// <summary>
     /// Get buffer offset position where one page segment length are located (based on index slot)

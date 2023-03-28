@@ -8,25 +8,27 @@ namespace LiteDB.Engine;
 /// [________] [________] [________] [________]
 ///  ColID      00011122   23334445   55666777
 /// </summary>
-internal class AllocationMapPage : BasePage
+internal class AllocationMapPage
 {
     private readonly Queue<int> _emptyExtends;
 
     private readonly int _allocationMapID;
 
-    private bool _isDirty = false;
+    private PageBuffer _buffer;
 
-    /// <summary>
-    /// AllocationMap is dirty is marked when content change (not only when have _writer != null)
-    /// </summary>
-    public override bool IsDirty => _isDirty;
+    public uint PageID => _buffer.Header.PageID;
 
     /// <summary>
     /// Create a new AllocationMapPage
     /// </summary>
-    public AllocationMapPage(uint pageID, PageBuffer writeBuffer)
-        : base(pageID, PageType.AllocationMap, writeBuffer)
+    public AllocationMapPage(uint pageID, PageBuffer buffer)
     {
+        _buffer = buffer;
+
+        // update page header
+        buffer.Header.PageID = pageID;
+        buffer.Header.PageType = PageType.AllocationMap;
+
         // get allocationMapID
         _allocationMapID = GetAllocationMapID(pageID);
 
@@ -38,10 +40,11 @@ internal class AllocationMapPage : BasePage
     /// Load AllocationMap from buffer memory
     /// </summary>
     public AllocationMapPage(PageBuffer buffer)
-        : base(buffer, null)
     {
+        _buffer = buffer;
+
         // get allocationMapID
-        _allocationMapID = GetAllocationMapID(this.PageID);
+        _allocationMapID = GetAllocationMapID(buffer.Header.PageID);
 
         // create an empty list of extends
         _emptyExtends = new Queue<int>(AM_EXTEND_COUNT);
@@ -55,7 +58,7 @@ internal class AllocationMapPage : BasePage
         // if this page contais all empty extends, there is no need to read all buffer
         if (_emptyExtends.Count == AM_EXTEND_COUNT) return;
 
-        var span = _readBuffer.AsSpan();
+        var span = _buffer.AsSpan();
 
         ENSURE(_emptyExtends.Count == 0, "empty extends will be loaded here and can't have any page before here");
 
@@ -148,8 +151,6 @@ internal class AllocationMapPage : BasePage
     {
         if (_emptyExtends.Count == 0) return false;
 
-        this.InitializeWrite();
-
         // get a empty extend on this page
         var extendIndex = _emptyExtends.Dequeue();
 
@@ -163,7 +164,7 @@ internal class AllocationMapPage : BasePage
         }
 
         // get page span
-        var span = _writeBuffer!.Value.AsSpan();
+        var span = _buffer.AsSpan();
 
         // get extend position inside this buffer
         var colPosition = PAGE_HEADER_SIZE + (extendIndex * AM_BYTES_PER_EXTEND);
@@ -171,7 +172,8 @@ internal class AllocationMapPage : BasePage
         // mark buffer write with this collection ID
         span[colPosition] = colID;
 
-        _isDirty = true;
+        // mark buffer as dirty
+        _buffer.IsDirty = true;
 
         return true;
     }
@@ -186,10 +188,10 @@ internal class AllocationMapPage : BasePage
         var position = PAGE_HEADER_SIZE + (extendIndex *  AM_BYTES_PER_EXTEND);
 
         // get 3 pageBytes
-        var pageBytes = _writeBuffer!.Value.AsSpan(position + 1, position + AM_BYTES_PER_EXTEND);
+        var pageBytes = _buffer.AsSpan(position + 1, position + AM_BYTES_PER_EXTEND);
 
-        // mark page as dirty (in map page this should be manual)
-        _isDirty = true;
+        // mark buffer as dirty (in map page this should be manual)
+        _buffer.IsDirty = true;
 
         // update value (3 bits) according pageIndex (can update 1 or 2 bytes)
         switch (pageIndex)

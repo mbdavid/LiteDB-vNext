@@ -29,6 +29,12 @@
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Engine\Services\BufferFactory\**" />
+    <EmbeddedResource Remove="Engine\Services\BufferFactory\**" />
+    <None Remove="Engine\Services\BufferFactory\**" />
+  </ItemGroup>
+
  <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\LICENSE" Pack="true" PackagePath="LICENSE" />
@@ -41,7 +47,6 @@
   </ItemGroup>
 	
   <ItemGroup>
-    <Folder Include="Engine\Services\BufferFactory\" />
     <Folder Include="Engine\Services\Disk\Streams\" />
   </ItemGroup>
 	

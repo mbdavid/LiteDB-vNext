@@ -169,7 +169,7 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Update all map position pages based on 
     /// </summary>
-    public void UpdateMap(IEnumerable<BlockPage> modifiedPages)
+    public void UpdateMap(IEnumerable<PageBuffer> modifiedPages)
     {
         // nesse processo deve atualizar _collectionFreePages, adicionando as paginas no lugar certo
         // (não pode pre-existir, pois já foi "dequeue")
@@ -179,9 +179,11 @@ internal class AllocationMapService : IAllocationMapService
 
         foreach(var page in modifiedPages)
         {
-            var allocationMapID = (int)(page.PageID / AM_PAGE_STEP);
-            var extendIndex = (int)(page.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
-            var pageIndex = (int)(page.PageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
+            var header = page.Header;
+
+            var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
+            var extendIndex = (int)(header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+            var pageIndex = (int)(header.PageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
             byte value = 0; // calcular conforme page.Header.FreeSpace (0-7)
 
             ENSURE(pageIndex != -1, "PageID cannot be an AM page ID");
@@ -191,26 +193,26 @@ internal class AllocationMapService : IAllocationMapService
             // update buffer map
             mapPage.UpdateMap(extendIndex, pageIndex, value);
 
-            var freePages = _collectionFreePages[page.ColID];
+            var freePages = _collectionFreePages[header.ColID];
 
             switch (value)
             {
                 case 0b000: // 0
-                    freePages.EmptyPages.Insert(page.PageID);
+                    freePages.EmptyPages.Insert(header.PageID);
                     break;
                 case 0b001: // 1
-                    freePages.DataPagesLarge.Insert(page.PageID);
+                    freePages.DataPagesLarge.Insert(header.PageID);
                     break;
                 case 0b010: // 2
-                    freePages.DataPagesMedium.Insert(page.PageID);
+                    freePages.DataPagesMedium.Insert(header.PageID);
                     break;
                 case 0b011: // 3
-                    freePages.DataPagesSmall.Insert(page.PageID);
+                    freePages.DataPagesSmall.Insert(header.PageID);
                     break;
                 case 0b100: // 4 - data page full
                     break;
                 case 0b101: // 5 - index page with available space
-                    freePages.IndexPages.Insert(page.PageID);
+                    freePages.IndexPages.Insert(header.PageID);
                     break;
                 case 0b110: // 6 - index page full
                 case 0b111: // 7 - reserved

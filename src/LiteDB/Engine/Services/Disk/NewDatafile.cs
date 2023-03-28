@@ -6,6 +6,7 @@ internal class NewDatafile : INewDatafile
     private readonly IServicesFactory _factory;
     private readonly IBufferFactoryService _bufferFactory;
     private readonly IBsonWriter _writer;
+    private readonly IDataPageService _dataPageService;
     private readonly IEngineSettings _settings;
 
     public NewDatafile(IServicesFactory factory)
@@ -13,6 +14,7 @@ internal class NewDatafile : INewDatafile
         _factory = factory;
         _bufferFactory = factory.GetBufferFactory();
         _writer = _factory.GetBsonWriter();
+        _dataPageService =  _factory.GetDataPageService();
         _settings = factory.Settings;
     }
 
@@ -28,25 +30,26 @@ internal class NewDatafile : INewDatafile
         // create new file and write header
         await stream.CreateAsync(fileHeader);
 
-        // allocate new memory buffers
+        // create map page
         var mapBuffer = _bufferFactory.AllocateNewBuffer();
-        var masterBuffer = _bufferFactory.AllocateNewBuffer();
 
-        var mapPage = new AllocationMapPage(AM_FIRST_PAGE_ID, mapBuffer);
-        var masterPage = new DataPage(MASTER_PAGE_ID, MASTER_COL_ID, masterBuffer);
+        mapBuffer.Header.PageID = AM_FIRST_PAGE_ID;
+        mapBuffer.Header.PageType = PageType.AllocationMap;
 
         // mark first extend to $master 
         mapBuffer.AsSpan(PAGE_HEADER_SIZE)[0] = MASTER_COL_ID;
+
+        // create $master page
+        var masterBuffer = _bufferFactory.AllocateNewBuffer();
+
+        // create new data page
+        _dataPageService.CreateNew(masterBuffer, MASTER_PAGE_ID, MASTER_COL_ID);
 
         // create empty $master and writes on master data page
         _writer.WriteDocument(
             masterBuffer.AsSpan(PAGE_HEADER_SIZE), 
             MasterService.CreateNewMaster(), 
             out _);
-
-        // update header pages
-        mapPage.UpdateHeaderBuffer();
-        masterPage.UpdateHeaderBuffer();
 
         // write both pages in disk and flush to OS
         await stream.WritePageAsync(mapBuffer);

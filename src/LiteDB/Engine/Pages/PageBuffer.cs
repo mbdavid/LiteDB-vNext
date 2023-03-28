@@ -21,9 +21,14 @@ internal struct PageBuffer
     public long Timestamp = 0;
 
     /// <summary>
+    /// Get/Set if page was modified and need to saved on disk
+    /// </summary>
+    public bool IsDirty = false;
+
+    /// <summary>
     /// Page header structure. Must be loaded/updated to buffer 
     /// </summary>
-    public readonly PageHeader Header = new();
+    public PageHeader Header = new();
 
     /// <summary>
     /// Page memory buffer with PAGE_SIZE size
@@ -39,6 +44,7 @@ internal struct PageBuffer
         this.ShareCounter = 0;
         this.Timestamp = 0;
         this.Position = long.MaxValue;
+        this.IsDirty = false;
     }
 
     public Span<byte> AsSpan()

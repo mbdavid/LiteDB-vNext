@@ -17,8 +17,8 @@ internal class Snapshot : ISnapshot
     private readonly byte _colID;
 
     // local page cache - contains only data/index pages about this collection
-    private readonly IDictionary<uint, DataPage> _dataPages = new Dictionary<uint, DataPage>();
-    private readonly IDictionary<uint, IndexPage> _indexPages = new Dictionary<uint, IndexPage>();
+    private readonly IDictionary<uint, PageBuffer> _dataPages = new Dictionary<uint, PageBuffer>();
+    private readonly IDictionary<uint, PageBuffer> _indexPages = new Dictionary<uint, PageBuffer>();
 
     public Snapshot(IServicesFactory factory, byte colID, LockMode mode, int readVersion)
     {

@@ -53,7 +53,7 @@ internal class MasterService : IMasterService
         try
         {
             // get first $master page
-            var pagePosition = BasePage.GetPagePosition(MASTER_PAGE_ID);
+            var pagePosition = BasePageService.GetPagePosition(MASTER_PAGE_ID);
 
             // read first 8k
             await reader.ReadPageAsync(pagePosition, buffer);

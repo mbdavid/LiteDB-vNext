@@ -10,12 +10,8 @@ public class AesStream : Stream
     private readonly ICryptoTransform _decryptor;
 
     private readonly Stream _stream;
-    private readonly CryptoStream? _reader;
+    private readonly CryptoStream _reader;
     private readonly CryptoStream? _writer;
-
-    private readonly byte[] _decryptedZeroes = new byte[16];
-
-    private static readonly byte[] _emptyContent = new byte[PAGE_SIZE - 1 - 16]; // 1 for aes indicator + 16 for salt 
 
     public override bool CanRead => _stream.CanRead;
 
@@ -50,9 +46,7 @@ public class AesStream : Stream
         _encryptor = _aes.CreateEncryptor();
         _decryptor = _aes.CreateDecryptor();
 
-        _reader = _stream.CanRead ?
-            new CryptoStream(_stream, _decryptor, CryptoStreamMode.Read) :
-            null;
+        _reader = new CryptoStream(_stream, _decryptor, CryptoStreamMode.Read);
 
         _writer = _stream.CanWrite ?
             new CryptoStream(_stream, _encryptor, CryptoStreamMode.Write) :
@@ -64,7 +58,7 @@ public class AesStream : Stream
     /// </summary>
     public override int Read(byte[] array, int offset, int count)
     {
-        var read = _reader!.Read(array, offset, count);
+        var read = _reader.Read(array, offset, count);
 
         return read;
     }
@@ -75,33 +69,6 @@ public class AesStream : Stream
     public override void Write(byte[] array, int offset, int count)
     {
         _writer!.Write(array, offset, count);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-
-        _stream?.Dispose();
-
-        _encryptor.Dispose();
-        _decryptor.Dispose();
-
-        _aes.Dispose();
-    }
-
-    /// <summary>
-    /// Get new salt for encryption
-    /// </summary>
-    public static byte[] NewSalt()
-    {
-        var salt = new byte[ENCRYPTION_SALT_SIZE];
-
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(salt);
-        }
-
-        return salt;
     }
 
     public override void Flush()
@@ -119,15 +86,34 @@ public class AesStream : Stream
         _stream.SetLength(value);
     }
 
-    private unsafe bool IsBlank(byte[] array, int offset)
+    protected override void Dispose(bool disposing)
     {
-        fixed (byte* arrayPtr = array)
-        fixed (void* vPtr = _decryptedZeroes)
-        {
-            ulong* ptr = (ulong*)(arrayPtr + offset);
-            ulong* zeroptr = (ulong*)vPtr;
+        base.Dispose(disposing);
 
-            return *ptr == *zeroptr && *(ptr + 1) == *(zeroptr + 1);
-        }
+        _stream?.Dispose();
+
+        _encryptor.Dispose();
+        _decryptor.Dispose();
+
+        _aes.Dispose();
     }
+
+    #region Static Helpers
+
+    /// <summary>
+    /// Get new salt for encryption
+    /// </summary>
+    public static byte[] NewSalt()
+    {
+        var salt = new byte[ENCRYPTION_SALT_SIZE];
+
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(salt);
+        }
+
+        return salt;
+    }
+
+    #endregion
 }

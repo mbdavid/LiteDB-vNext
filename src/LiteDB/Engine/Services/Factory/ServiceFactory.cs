@@ -18,6 +18,8 @@ internal partial class ServicesFactory : IServicesFactory
     private IMasterService? _master;
     private IBsonReader? _bsonReader;
     private IBsonWriter? _bsonWriter;
+    private IDataPageService? _dataPageService;
+    private IIndexPageService? _indexPageService;
 
     public ServicesFactory(IEngineSettings settings)
     {
@@ -44,6 +46,16 @@ internal partial class ServicesFactory : IServicesFactory
     public IBsonWriter GetBsonWriter()
     {
         return _bsonWriter ??= new BsonWriter();
+    }
+
+    public IDataPageService GetDataPageService()
+    {
+        return _dataPageService ??= new DataPageService(this.CreatePageService());
+    }
+
+    public IIndexPageService GetIndexPageService()
+    {
+        return _indexPageService ??= new IndexPageService(this.CreatePageService());
     }
 
     public IMemoryCacheService GetMemoryCache()
@@ -103,6 +115,11 @@ internal partial class ServicesFactory : IServicesFactory
     public IEngineContext CreateEngineContext()
     {
         return new EngineContext();
+    }
+
+    public IBasePageService CreatePageService()
+    {
+        return new BasePageService();
     }
 
     public IOpenCommand CreateOpenCommand(IEngineContext ctx)
