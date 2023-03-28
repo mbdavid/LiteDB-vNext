@@ -32,11 +32,9 @@ internal class BufferFactoryService : IBufferFactoryService
             return page;
         }
 
-        var array = new byte[PAGE_SIZE];
-
         Interlocked.Increment(ref _pagesAllocated);
 
-        return new PageBuffer(array);
+        return new PageBuffer();
     }
 
     public void DeallocateBuffer(PageBuffer buffer)

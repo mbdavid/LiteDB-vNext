@@ -93,7 +93,7 @@ internal class FileDiskStream : IDiskStream
         // writing file header
         _stream.Position = 0;
 
-        await _stream.WriteAsync(fileHeader.Buffer, 0, FILE_HEADER_SIZE);
+        await _stream.WriteAsync(fileHeader.GetBuffer(), 0, FILE_HEADER_SIZE);
 
         // for content stream, use AesStream (for encrypted file) or same _stream
         _contentStream = fileHeader.Encrypted ?
@@ -116,7 +116,9 @@ internal class FileDiskStream : IDiskStream
         // add header file offset
         _contentStream.Position = position + FILE_HEADER_SIZE;
 
-        var read = await _contentStream.ReadAsync(buffer.Array, 0, PAGE_SIZE);
+        var read = await _contentStream.ReadAsync(buffer.Buffer, 0, PAGE_SIZE);
+
+        buffer.ReadHeader();
 
         return read == PAGE_SIZE;
     }
@@ -130,7 +132,10 @@ internal class FileDiskStream : IDiskStream
         // add header file offset
         _contentStream.Position = buffer.Position + FILE_HEADER_SIZE;
 
-        await _contentStream.WriteAsync(buffer.Array, 0, PAGE_SIZE);
+        // before store on this, update header page (first 32 bytes)
+        buffer.WriteHeader();
+
+        await _contentStream.WriteAsync(buffer.Buffer, 0, PAGE_SIZE);
     }
 
     public void Dispose()

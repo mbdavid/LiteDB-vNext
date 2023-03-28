@@ -5,29 +5,33 @@
 /// </summary>
 internal struct PageBuffer
 {
-    public readonly byte[] Array;
-
     /// <summary>
     /// Position on disk where this page came from or where this page must be stored
     /// </summary>
-    public long Position;
+    public long Position = long.MaxValue;
 
     /// <summary>
     /// Contains how many threads are sharing this buffer slice for read. Used for cache service
     /// </summary>
-    public int ShareCounter;
+    public int ShareCounter = 0;
 
     /// <summary>
     /// Last time this buffer was hit by cache
     /// </summary>
-    public long Timestamp;
+    public long Timestamp = 0;
 
-    public PageBuffer(byte[] array)
+    /// <summary>
+    /// Page header structure. Must be loaded/updated to buffer 
+    /// </summary>
+    public readonly PageHeader Header = new();
+
+    /// <summary>
+    /// Page memory buffer with PAGE_SIZE size
+    /// </summary>
+    public readonly byte[] Buffer = new byte[PAGE_SIZE];
+
+    public PageBuffer()
     {
-        this.Array = array;
-        this.Position = long.MaxValue;
-        this.ShareCounter = 0;
-        this.Timestamp = 0;
     }
 
     public void Reset()
@@ -39,17 +43,17 @@ internal struct PageBuffer
 
     public Span<byte> AsSpan()
     {
-        return this.Array.AsSpan(0, PAGE_SIZE);
+        return this.Buffer.AsSpan(0, PAGE_SIZE);
     }
 
     public Span<byte> AsSpan(int start)
     {
-        return this.Array.AsSpan(start);
+        return this.Buffer.AsSpan(start);
     }
 
     public Span<byte> AsSpan(int start, int length)
     {
-        return this.Array.AsSpan(start, length);
+        return this.Buffer.AsSpan(start, length);
     }
 
     public void Rent()
@@ -67,10 +71,26 @@ internal struct PageBuffer
     }
 
     /// <summary>
+    /// Load header data using buffer
+    /// </summary>
+    public void ReadHeader()
+    {
+        this.Header.ReadFromBuffer(this.Buffer);
+    }
+
+    /// <summary>
+    /// Update header buffer array using PageHeader structure changes
+    /// </summary>
+    public void WriteHeader()
+    {
+        this.Header.WriteToBuffer(this.Buffer);
+    }
+
+    /// <summary>
     /// Test if first 32 header bytes are zero
     /// </summary>
     public bool IsHeaderEmpty()
     {
-        return this.Array.AsSpan()[0..(PAGE_HEADER_SIZE - 1)].IsFullZero();
+        return this.Buffer.AsSpan()[0..(PAGE_HEADER_SIZE - 1)].IsFullZero();
     }
 }

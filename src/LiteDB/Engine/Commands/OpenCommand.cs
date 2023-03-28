@@ -34,7 +34,7 @@ internal class OpenCommand : IOpenCommand
         var fileHeader = await _disk.InitializeAsync();
 
         // testa recovery
-        if (fileHeader.Buffer[FileHeader.P_RECOVERY] == 1)
+        if (fileHeader.Recovery)
         {
             // recovey
         }

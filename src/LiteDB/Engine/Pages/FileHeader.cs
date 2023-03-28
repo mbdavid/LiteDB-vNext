@@ -18,10 +18,10 @@ internal struct FileHeader
 
     #region Buffer Field Positions
 
-    public const int P_HEADER_INFO = 1;  // 1-27 (27 bytes)
-    public const int P_FILE_VERSION = 28; // 28-28 (1 byte)
+    public const int P_HEADER_INFO = 0;  // 0-26 (27 bytes)
+    public const int P_FILE_VERSION = 27; // 27-27 (1 byte)
 
-    public const int P_ENCRYPTED = 0; // 0-0 (1 byte)
+    public const int P_ENCRYPTED = 28; // 28-28 (1 byte)
     public const int P_ENCRYPTION_SALT = 29; // 29-44  (16 bytes)
 
     public const int P_INSTANCE_ID = 45; // 45-61  (16 bytes)
@@ -39,18 +39,18 @@ internal struct FileHeader
 
     #endregion
 
-    private string _headerInfo;
-    private byte _fileVersion;
+    private readonly string _headerInfo;
+    private readonly byte _fileVersion;
 
-    public bool Encrypted { get; }
-    public byte[] EncryptionSalt { get; }
+    public readonly bool Encrypted;
+    public readonly byte[] EncryptionSalt;
 
-    public Guid InstanceID { get; }
-    public DateTime CreationTime { get; }
-    public Collation Collation { get; }
-    public Version EngineVersion { get; }
+    public readonly Guid InstanceID;
+    public readonly DateTime CreationTime;
+    public readonly Collation Collation;
+    public readonly Version EngineVersion;
 
-    public byte[] Buffer { get; } = new byte[FILE_HEADER_SIZE];
+    public readonly bool Recovery;
 
     /// <summary>
     /// Read file header from a existing buffer data
@@ -77,8 +77,7 @@ internal struct FileHeader
 
         this.EngineVersion = new Version(major, minor, build);
 
-        // copy buffer
-        buffer.CopyTo(this.Buffer);
+        this.Recovery = buffer[P_RECOVERY] == 1;
     }
 
     /// <summary>
@@ -97,12 +96,19 @@ internal struct FileHeader
         this.Collation = settings.Collation;
         this.EngineVersion = typeof(LiteEngine).Assembly.GetName().Version;
 
+        this.Recovery = false;
+    }
+
+    public byte[] GetBuffer()
+    {
+        var array = new byte[FILE_HEADER_SIZE];
+
         // get buffer
-        var buffer = this.Buffer.AsSpan();
+        var buffer = array.AsSpan();
 
         // write flags/data into file header buffer
-        buffer[P_HEADER_INFO..].WriteString(_headerInfo);
-        buffer[P_FILE_VERSION] = _fileVersion;
+        buffer[P_HEADER_INFO..].WriteString(HEADER_INFO);
+        buffer[P_FILE_VERSION] = FILE_VERSION;
 
         buffer[P_ENCRYPTED] = this.Encrypted ? (byte)1 : (byte)0;
         buffer[P_ENCRYPTION_SALT..].WriteBytes(this.EncryptionSalt);
@@ -114,6 +120,8 @@ internal struct FileHeader
         buffer[P_ENGINE_VER_MAJOR] = (byte)this.EngineVersion.Major;
         buffer[P_ENGINE_VER_MINOR] = (byte)this.EngineVersion.Minor;
         buffer[P_ENGINE_VER_BUILD] = (byte)this.EngineVersion.Build;
+
+        return array;
     }
 
     public void ValidateHeader()

@@ -75,7 +75,7 @@ internal class MasterService : IMasterService
                 bufferDocument = ArrayPool<byte>.Shared.Rent(masterLength);
 
                 // copy first page already read
-                Buffer.BlockCopy(buffer.Array, 0, bufferDocument, 0, PAGE_HEADER_SIZE);
+                Buffer.BlockCopy(buffer.Buffer, 0, bufferDocument, 0, PAGE_HEADER_SIZE);
 
                 // track how many bytes are readed (remove first page already read)
                 var bytesToRead = masterLength - PAGE_CONTENT_SIZE;
@@ -92,7 +92,7 @@ internal class MasterService : IMasterService
 
                     var pageContentSize = bytesToRead > PAGE_CONTENT_SIZE ? PAGE_CONTENT_SIZE : bytesToRead;
 
-                    Buffer.BlockCopy(buffer.Array, 0, bufferDocument, docPosition, pageContentSize);
+                    Buffer.BlockCopy(buffer.Buffer, 0, bufferDocument, docPosition, pageContentSize);
 
                     bytesToRead -= pageContentSize;
                     docPosition += pageContentSize;
