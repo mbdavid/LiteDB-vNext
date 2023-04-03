@@ -10,6 +10,7 @@ internal partial class ServicesFactory : IServicesFactory
     private IBufferFactoryService? _bufferFactory;
     private IPageWriteFactoryService? _pageWriteFactory;
     private IIndexCacheService? _indexCache;
+    private IStreamFactory? _streamFactory;
     private IDiskService? _disk;
     private IAllocationMapService? _allocationMap;
     private IWalIndexService? _walIndex;
@@ -74,8 +75,19 @@ internal partial class ServicesFactory : IServicesFactory
     }
 
     public IDiskService GetDisk()
-    { 
+    {
         return _disk ??= new DiskService(this);
+    }
+
+    public IStreamFactory GetStreamFactory()
+    {
+        if (this.Settings.Filename is null)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        return _streamFactory ??= new FileStreamFactory(this.Settings);
     }
 
     public IAllocationMapService GetAllocationMap()
@@ -127,11 +139,16 @@ internal partial class ServicesFactory : IServicesFactory
         return new OpenCommand(this, ctx);
     }
 
-    public IDiskStream CreateDiskStream(bool readOnly)
+    public IFileDiskStream CreateFileDiskStream(bool readOnly)
+    {
+        return new FileDiskStream(this.Settings, this.GetStreamFactory());
+    }
+
+    public IStreamFactory CreateStreamFactory(bool readOnly)
     {
         if (this.Settings.Filename is null) throw new NotImplementedException();
 
-        return new FileDiskStream(this.Settings);
+        return new FileStreamFactory(this.Settings);
     }
 
     public INewDatafile CreateNewDatafile()

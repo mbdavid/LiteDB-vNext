@@ -1,63 +1,33 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Runtime;
 
-internal class FileDiskStream : IDiskStream
+namespace LiteDB.Engine;
+
+[AutoInterface]
+internal class FileDiskStream : IFileDiskStream
 {
     private readonly IEngineSettings _settings;
+    private readonly IStreamFactory _streamFactory;
 
     private Stream? _stream;
     private Stream? _contentStream;
 
     public string Name => Path.GetFileName(_settings.Filename);
 
-    public FileDiskStream(IEngineSettings settings)
+    public FileDiskStream(IEngineSettings settings, IStreamFactory streamFactory)
     {
         _settings = settings;
-    }
-
-    /// <summary>
-    /// Get filelength from descriptor
-    /// </summary>
-    public long GetLength()
-    {
-        // if file don't exists, returns 0
-        if (!this.Exists()) return 0;
-
-        // get physical file length from OS
-        var length = new FileInfo(_settings.Filename).Length;
-
-        return length;
-    }
-
-    /// <summary>
-    /// Check if file exists without create/open
-    /// </summary>
-    public bool Exists()
-    {
-        return File.Exists(_settings.Filename);
-    }
-
-    /// <summary>
-    /// Delete current file
-    /// </summary>
-    public void Delete()
-    {
-        File.Delete(_settings.Filename);
+        _streamFactory = streamFactory;
     }
 
     /// <summary>
     /// Initialize disk opening already exist datafile and return file header structure.
     /// Can open file as read or write
     /// </summary>
-    public async Task<FileHeader> OpenAsync()
+    public async Task<FileHeader> OpenAsync(bool canWrite)
     {
-        // open stream
-        _stream = new FileStream(
-            _settings.Filename,
-            FileMode.Open,
-            _settings.ReadOnly ? FileAccess.Read : FileAccess.ReadWrite,
-            _settings.ReadOnly ? FileShare.ReadWrite : FileShare.Read,
-            PAGE_SIZE,
-            FileOptions.RandomAccess);
+        // get a new FileStream connected to file
+        _stream = _streamFactory.GetStream(canWrite, 
+            canWrite ? FileOptions.RandomAccess : FileOptions.SequentialScan);
 
         // reading file header
         var buffer = new byte[FILE_HEADER_SIZE];
@@ -82,13 +52,7 @@ internal class FileDiskStream : IDiskStream
     public async Task CreateAsync(FileHeader fileHeader)
     {
         // create new data file
-        _stream = new FileStream(
-            _settings.Filename,
-            FileMode.CreateNew,
-            FileAccess.ReadWrite,
-            FileShare.Read,
-            PAGE_SIZE,
-            FileOptions.RandomAccess);
+        _stream = _streamFactory.GetStream(true, FileOptions.SequentialScan);
 
         // writing file header
         _stream.Position = 0;

@@ -38,7 +38,6 @@ internal class BasePageService : IBasePageService
     /// </summary>
     private Span<byte> InternalInsert(PageBuffer buffer, ushort bytesLength, ref byte index)
     {
-        // initialize dirty buffer and dirty header (once)
         var span = buffer.AsSpan();
         var header = buffer.Header;
 
@@ -106,8 +105,6 @@ internal class BasePageService : IBasePageService
     /// </summary>
     public void Delete(PageBuffer buffer, byte index)
     {
-        // initialize dirty buffer and dirty header (once)
-
         // get span and header instance (dirty)
         var span = buffer.AsSpan();
         var header = buffer.Header;
