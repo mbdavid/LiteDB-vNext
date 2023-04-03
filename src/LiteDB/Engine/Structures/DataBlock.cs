@@ -15,17 +15,17 @@ internal struct DataBlock
     /// <summary>
     /// Block RowID
     /// </summary>
-    public PageAddress RowID { get; }
+    public readonly PageAddress RowID;
 
     /// <summary>
     /// Indicate if this data block is first block (false) or extend block (true)
     /// </summary>
-    public bool Extend { get; }
+    public readonly bool Extend;
 
     /// <summary>
     /// If document need more than 1 block, use this link to next block
     /// </summary>
-    public PageAddress NextBlock { get; private set; }
+    public PageAddress NextBlock;
 
     /// <summary>
     /// Read new DataBlock from filled page block

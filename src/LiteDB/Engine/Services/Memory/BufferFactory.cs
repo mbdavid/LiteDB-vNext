@@ -11,9 +11,9 @@ internal class BufferFactory : IBufferFactory
     private readonly IMemoryCacheService _memoryCache;
 
     /// <summary>
-    /// A queue of all available (re-used) free buffers. Rent model
+    /// A queue of all available (re-used) free page buffers. Rental model
     /// </summary>
-    private readonly ConcurrentQueue<PageBuffer> _freeBuffers = new();
+    private readonly ConcurrentQueue<PageBuffer> _freePages = new();
 
     /// <summary>
     /// Track how many pages was allocated in memory. Reduce this size occurs only in CleanUp process
@@ -28,9 +28,9 @@ internal class BufferFactory : IBufferFactory
     /// <summary>
     /// Allocate, in memory, a new array with PAGE_SIZE inside a PageBuffer struct reference.
     /// </summary>
-    public PageBuffer AllocateNewBuffer()
+    public PageBuffer AllocateNewPage()
     {
-        if (_freeBuffers.TryDequeue(out var page))
+        if (_freePages.TryDequeue(out var page))
         {
             return page;
         }
@@ -40,36 +40,36 @@ internal class BufferFactory : IBufferFactory
         return new PageBuffer();
     }
 
-    public void DeallocateBuffer(PageBuffer buffer)
+    public void DeallocatePage(PageBuffer page)
     {
-        ENSURE(buffer.ShareCounter == 0, "ShareCounter must be 0 before return page to memory");
+        ENSURE(page.ShareCounter == 0, "ShareCounter must be 0 before return page to memory");
 
         // clear buffer position/sharecounter
-        buffer.Reset();
+        page.Reset();
 
         // neste momento posso escolher se adiciono no _freePages
-        _freeBuffers.Enqueue(buffer);
+        _freePages.Enqueue(page);
     }
 
     /// <summary>
-    /// Try convert a readable buffer into a writable buffer. If only current thread are using, convert it.
-    /// Otherwise return a new AllocateNewBuffer()
+    /// Try convert a readable page buffer into a writable page buffer. If only current thread are using, convert it.
+    /// Otherwise return a new AllocateNewPage()
     /// </summary>
-    public PageBuffer GetWriteBuffer(PageBuffer readBuffer)
+    public PageBuffer GetWritePage(PageBuffer readPage)
     {
         // if readBuffer are not used by anyone in cache (ShareCounter == 1 - only current thread), remove it
-        if (_memoryCache.TryRemovePageFromCache(readBuffer, 1))
+        if (_memoryCache.TryRemovePageFromCache(readPage, 1))
         {
             // it's safe here to use readBuffer as writeBuffer (nobody else are reading)
-            return readBuffer;
+            return readPage;
         }
         else
         {
             // create a new page in memory
-            var buffer = this.AllocateNewBuffer();
+            var buffer = this.AllocateNewPage();
 
             // copy content from clean buffer to write buffer (if exists)
-            readBuffer.AsSpan().CopyTo(buffer.AsSpan());
+            readPage.AsSpan().CopyTo(buffer.AsSpan());
 
             return buffer;
         }

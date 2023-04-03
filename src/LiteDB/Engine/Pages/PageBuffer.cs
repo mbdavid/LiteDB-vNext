@@ -77,22 +77,6 @@ internal struct PageBuffer
     }
 
     /// <summary>
-    /// Load header data using buffer
-    /// </summary>
-    public void ReadHeader()
-    {
-        this.Header.ReadFromBuffer(this.Buffer);
-    }
-
-    /// <summary>
-    /// Update header buffer array using PageHeader structure changes
-    /// </summary>
-    public void WriteHeader()
-    {
-        this.Header.WriteToBuffer(this.Buffer);
-    }
-
-    /// <summary>
     /// Test if first 32 header bytes are zero
     /// </summary>
     public bool IsHeaderEmpty()

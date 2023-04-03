@@ -70,13 +70,13 @@ internal class DiskService : IDiskService
 
         while (position < fileLength)
         {
-            var pageBuffer = _bufferFactory.AllocateNewBuffer();
+            var page = _bufferFactory.AllocateNewPage();
 
-            await _writer.ReadPageAsync(position, pageBuffer);
+            await _writer.ReadPageAsync(position, page);
 
-            if (pageBuffer.IsHeaderEmpty()) break;
+            if (page.IsHeaderEmpty()) break;
 
-            yield return pageBuffer;
+            yield return page;
 
             position += (AM_PAGE_STEP * PAGE_SIZE);
         }
@@ -105,9 +105,9 @@ internal class DiskService : IDiskService
 
     public async Task WritePages(IEnumerable<PageBuffer> pages)
     {
-        foreach(var pageBuffer in pages)
+        foreach(var page in pages)
         {
-            await _writer.WritePageAsync(pageBuffer);
+            await _writer.WritePageAsync(page);
         }
         await _writer.FlushAsync();
     }

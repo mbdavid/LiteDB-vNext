@@ -49,7 +49,7 @@ internal class MasterService : IMasterService
     public async Task ReadFromDiskAsync()
     {
         var reader = _disk.RentDiskReader();
-        var buffer = _bufferFactory.AllocateNewBuffer();
+        var buffer = _bufferFactory.AllocateNewPage();
         byte[]? bufferDocument = null;
 
         try
@@ -112,7 +112,7 @@ internal class MasterService : IMasterService
             if (bufferDocument is not null)  ArrayPool<byte>.Shared.Return(bufferDocument);
 
             // deallocate buffer
-            _bufferFactory.DeallocateBuffer(buffer);
+            _bufferFactory.DeallocatePage(buffer);
 
             // return reader disk
             _disk.ReturnDiskReader(reader);

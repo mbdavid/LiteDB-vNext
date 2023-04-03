@@ -31,7 +31,7 @@ internal class NewDatafile : INewDatafile
         await file.CreateAsync(fileHeader);
 
         // create map page
-        var mapBuffer = _bufferFactory.AllocateNewBuffer();
+        var mapBuffer = _bufferFactory.AllocateNewPage();
 
         mapBuffer.Header.PageID = AM_FIRST_PAGE_ID;
         mapBuffer.Header.PageType = PageType.AllocationMap;
@@ -40,7 +40,7 @@ internal class NewDatafile : INewDatafile
         mapBuffer.AsSpan(PAGE_HEADER_SIZE)[0] = MASTER_COL_ID;
 
         // create $master page
-        var masterBuffer = _bufferFactory.AllocateNewBuffer();
+        var masterBuffer = _bufferFactory.AllocateNewPage();
 
         // create new data page
         _dataPageService.CreateNew(masterBuffer, MASTER_PAGE_ID, MASTER_COL_ID);
@@ -57,8 +57,8 @@ internal class NewDatafile : INewDatafile
         await file.FlushAsync();
 
         // deallocate buffers
-        _bufferFactory.DeallocateBuffer(mapBuffer);
-        _bufferFactory.DeallocateBuffer(masterBuffer);
+        _bufferFactory.DeallocatePage(mapBuffer);
+        _bufferFactory.DeallocatePage(masterBuffer);
 
         return fileHeader;
     }

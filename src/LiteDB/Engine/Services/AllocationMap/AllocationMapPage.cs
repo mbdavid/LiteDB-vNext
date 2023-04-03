@@ -14,20 +14,20 @@ internal class AllocationMapPage
 
     private readonly int _allocationMapID;
 
-    private PageBuffer _buffer;
+    private PageBuffer _page;
 
-    public uint PageID => _buffer.Header.PageID;
+    public uint PageID => _page.Header.PageID;
 
     /// <summary>
     /// Create a new AllocationMapPage
     /// </summary>
-    public AllocationMapPage(uint pageID, PageBuffer buffer)
+    public AllocationMapPage(uint pageID, PageBuffer page)
     {
-        _buffer = buffer;
+        _page = page;
 
         // update page header
-        buffer.Header.PageID = pageID;
-        buffer.Header.PageType = PageType.AllocationMap;
+        page.Header.PageID = pageID;
+        page.Header.PageType = PageType.AllocationMap;
 
         // get allocationMapID
         _allocationMapID = GetAllocationMapID(pageID);
@@ -39,12 +39,12 @@ internal class AllocationMapPage
     /// <summary>
     /// Load AllocationMap from buffer memory
     /// </summary>
-    public AllocationMapPage(PageBuffer buffer)
+    public AllocationMapPage(PageBuffer page)
     {
-        _buffer = buffer;
+        _page = page;
 
         // get allocationMapID
-        _allocationMapID = GetAllocationMapID(buffer.Header.PageID);
+        _allocationMapID = GetAllocationMapID(page.Header.PageID);
 
         // create an empty list of extends
         _emptyExtends = new Queue<int>(AM_EXTEND_COUNT);
@@ -58,7 +58,7 @@ internal class AllocationMapPage
         // if this page contais all empty extends, there is no need to read all buffer
         if (_emptyExtends.Count == AM_EXTEND_COUNT) return;
 
-        var span = _buffer.AsSpan();
+        var span = _page.AsSpan();
 
         ENSURE(_emptyExtends.Count == 0, "empty extends will be loaded here and can't have any page before here");
 
@@ -164,7 +164,7 @@ internal class AllocationMapPage
         }
 
         // get page span
-        var span = _buffer.AsSpan();
+        var span = _page.AsSpan();
 
         // get extend position inside this buffer
         var colPosition = PAGE_HEADER_SIZE + (extendIndex * AM_BYTES_PER_EXTEND);
@@ -173,7 +173,7 @@ internal class AllocationMapPage
         span[colPosition] = colID;
 
         // mark buffer as dirty
-        _buffer.IsDirty = true;
+        _page.IsDirty = true;
 
         return true;
     }
@@ -188,10 +188,10 @@ internal class AllocationMapPage
         var position = PAGE_HEADER_SIZE + (extendIndex *  AM_BYTES_PER_EXTEND);
 
         // get 3 pageBytes
-        var pageBytes = _buffer.AsSpan(position + 1, position + AM_BYTES_PER_EXTEND);
+        var pageBytes = _page.AsSpan(position + 1, position + AM_BYTES_PER_EXTEND);
 
         // mark buffer as dirty (in map page this should be manual)
-        _buffer.IsDirty = true;
+        _page.IsDirty = true;
 
         // update value (3 bits) according pageIndex (can update 1 or 2 bytes)
         switch (pageIndex)

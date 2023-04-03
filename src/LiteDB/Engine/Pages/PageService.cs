@@ -6,10 +6,10 @@ internal class PageService : IPageService
     /// <summary>
     /// Get a page block item based on index slot
     /// </summary>
-    public Span<byte> Get(PageBuffer buffer, byte index, bool readOnly)
+    public Span<byte> Get(PageBuffer page, byte index, bool readOnly)
     {
         // get read
-        var span = buffer.AsSpan();
+        var span = page.AsSpan();
 
         // read slot address
         var positionAddr = CalcPositionAddr(index);
@@ -26,20 +26,20 @@ internal class PageService : IPageService
     /// <summary>
     /// Get a new page segment for this length content
     /// </summary>
-    public Span<byte> Insert(PageBuffer buffer, ushort bytesLength, out byte index)
+    public Span<byte> Insert(PageBuffer page, ushort bytesLength, out byte index)
     {
         index = byte.MaxValue;
 
-        return this.InternalInsert(buffer, bytesLength, ref index);
+        return this.InternalInsert(page, bytesLength, ref index);
     }
 
     /// <summary>
     /// Get a new page segment for this length content using fixed index
     /// </summary>
-    private Span<byte> InternalInsert(PageBuffer buffer, ushort bytesLength, ref byte index)
+    private Span<byte> InternalInsert(PageBuffer page, ushort bytesLength, ref byte index)
     {
-        var span = buffer.AsSpan();
-        var header = buffer.Header;
+        var span = page.AsSpan();
+        var header = page.Header;
 
         var isNewInsert = index == byte.MaxValue;
 
@@ -56,7 +56,7 @@ internal class PageService : IPageService
         // if continuous blocks are not big enough for this data, must run page defrag
         if (bytesLength > continuousBlocks)
         {
-            this.Defrag(buffer);
+            this.Defrag(page);
         }
 
         // if index is new insert segment, must request for new Index
@@ -103,11 +103,11 @@ internal class PageService : IPageService
     /// <summary>
     /// Remove index slot about this page block
     /// </summary>
-    public void Delete(PageBuffer buffer, byte index)
+    public void Delete(PageBuffer page, byte index)
     {
         // get span and header instance (dirty)
-        var span = buffer.AsSpan();
-        var header = buffer.Header;
+        var span = page.AsSpan();
+        var header = page.Header;
 
         // read block position on index slot
         var positionAddr = CalcPositionAddr(index);
@@ -147,7 +147,7 @@ internal class PageService : IPageService
         // if deleted if are HighestIndex, update HighestIndex
         if (header.HighestIndex == index)
         {
-            this.UpdateHighestIndex(buffer);
+            this.UpdateHighestIndex(page);
         }
 
         // reset start index (used in GetFreeIndex)
@@ -169,13 +169,13 @@ internal class PageService : IPageService
     /// Update segment bytes with new data. Current page must have bytes enougth for this new size. Index will not be changed
     /// Update will try use same segment to store. If not possible, write on end of page (with possible Defrag operation)
     /// </summary>
-    public Span<byte> Update(PageBuffer buffer, byte index, ushort bytesLength)
+    public Span<byte> Update(PageBuffer page, byte index, ushort bytesLength)
     {
         ENSURE(bytesLength > 0, "must update more than 0 bytes");
 
         // get span and header instance (dirty)
-        var span = buffer.AsSpan();
-        var header = buffer.Header;
+        var span = page.AsSpan();
+        var header = page.Header;
 
         // read slot address
         var positionAddr = CalcPositionAddr(index);
@@ -251,7 +251,7 @@ internal class PageService : IPageService
             span[lengthAddr..].WriteUInt16(0);
 
             // call insert
-            return this.InternalInsert(buffer, bytesLength, ref index);
+            return this.InternalInsert(page, bytesLength, ref index);
         }
     }
 
@@ -259,11 +259,11 @@ internal class PageService : IPageService
     /// Defrag method re-organize all byte data content removing all fragmented data. This will move all page blocks
     /// to create a single continuous content area (just after header area). No index block will be changed (only positions)
     /// </summary>
-    public void Defrag(PageBuffer buffer)
+    public void Defrag(PageBuffer page)
     {
         // get span and header instance (dirty)
-        var span = buffer.AsSpan();
-        var header = buffer.Header;
+        var span = page.AsSpan();
+        var header = page.Header;
 
         ENSURE(header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
         ENSURE(header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
@@ -341,11 +341,11 @@ internal class PageService : IPageService
     /// Update HighestIndex based on current HighestIndex (step back looking for next used slot)
     /// Used only in Delete() operation
     /// </summary>
-    private void UpdateHighestIndex(PageBuffer buffer)
+    private void UpdateHighestIndex(PageBuffer page)
     {
         // get span and header instance (dirty)
-        var span = buffer.AsSpan();
-        var header = buffer.Header;
+        var span = page.AsSpan();
+        var header = page.Header;
 
         ENSURE(header.HighestIndex < byte.MaxValue, "can run only if contains a valid HighestIndex");
 

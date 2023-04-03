@@ -51,22 +51,22 @@ internal class MemoryCacheService : IMemoryCacheService
     /// <summary>
     /// Try remove page from cache based on shareCounter limit.
     /// </summary>
-    public bool TryRemovePageFromCache(PageBuffer buffer, int maxShareCounter)
+    public bool TryRemovePageFromCache(PageBuffer page, int maxShareCounter)
     {
-        var bufferShareCounter = buffer.ShareCounter;
+        var pageShareCounter = page.ShareCounter;
 
         // if shareCounter from buffer are larger than shareCounter parameter, can't be removed from cache (is in use)
-        if (bufferShareCounter > maxShareCounter) return false;
+        if (pageShareCounter > maxShareCounter) return false;
 
         // try delete this buffer
-        var deleted = _cache.TryRemove(buffer.Position, out _);
+        var deleted = _cache.TryRemove(page.Position, out _);
 
         if (deleted)
         {
             // if after remove from cache, shareCounter was modified, re-add into cache
-            if (bufferShareCounter != buffer.ShareCounter)
+            if (pageShareCounter != page.ShareCounter)
             {
-                var added = _cache.TryAdd(buffer.Position, buffer);
+                var added = _cache.TryAdd(page.Position, page);
 
                 ENSURE(added, "PageBuffer was already in cache after remove/re-add");
 
@@ -74,7 +74,7 @@ internal class MemoryCacheService : IMemoryCacheService
             }
 
             // after remove this page from cache, clear Position/ShareCounter
-            buffer.Reset();
+            page.Reset();
         }
 
         return deleted;

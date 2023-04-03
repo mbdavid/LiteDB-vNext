@@ -73,33 +73,37 @@ internal class FileDisk : IFileDisk
     /// <summary>
     /// Read single page from disk using disk position. This position has FILE_HEADER_SIZE offset
     /// </summary>
-    public async Task<bool> ReadPageAsync(long position, PageBuffer buffer)
+    public async Task<bool> ReadPageAsync(long position, PageBuffer page)
     {
         if (_contentStream is null) throw new InvalidOperationException("Datafile closed");
 
         // add header file offset
         _contentStream.Position = position + FILE_HEADER_SIZE;
 
-        var read = await _contentStream.ReadAsync(buffer.Buffer, 0, PAGE_SIZE);
+        var read = await _contentStream.ReadAsync(page.Buffer, 0, PAGE_SIZE);
 
-        buffer.ReadHeader();
+        // after read content from file, update header info in page
+        page.Header.ReadFromBuffer(page.Buffer);
+
+        // update page position
+        page.Position = position;
 
         return read == PAGE_SIZE;
     }
 
-    public async Task WritePageAsync(PageBuffer buffer)
+    public async Task WritePageAsync(PageBuffer page)
     {
         if (_contentStream is null) throw new InvalidOperationException("Datafile closed");
 
-        ENSURE(buffer.Position != long.MaxValue, "PageBuffer must have defined Position before WriteAsync");
+        ENSURE(page.Position != long.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
         // add header file offset
-        _contentStream.Position = buffer.Position + FILE_HEADER_SIZE;
+        _contentStream.Position = page.Position + FILE_HEADER_SIZE;
 
-        // before store on this, update header page (first 32 bytes)
-        buffer.WriteHeader();
+        // before save on disk, update header page to buffer (first 32 bytes)
+        page.Header.WriteToBuffer(page.Buffer);
 
-        await _contentStream.WriteAsync(buffer.Buffer, 0, PAGE_SIZE);
+        await _contentStream.WriteAsync(page.Buffer, 0, PAGE_SIZE);
     }
 
     public void Dispose()
