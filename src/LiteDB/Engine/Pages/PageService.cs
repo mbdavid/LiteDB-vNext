@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class BasePageService : IBasePageService
+internal class PageService : IPageService
 {
     /// <summary>
     /// Get a page block item based on index slot

@@ -6,8 +6,10 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class BufferFactoryService : IBufferFactoryService
+internal class BufferFactory : IBufferFactory
 {
+    private readonly IMemoryCacheService _memoryCache;
+
     /// <summary>
     /// A queue of all available (re-used) free buffers. Rent model
     /// </summary>
@@ -18,8 +20,9 @@ internal class BufferFactoryService : IBufferFactoryService
     /// </summary>
     private int _pagesAllocated = 0;
 
-    public BufferFactoryService()
+    public BufferFactory(IMemoryCacheService memoryCache)
     {
+        _memoryCache = memoryCache;
     }
 
     /// <summary>
@@ -46,6 +49,30 @@ internal class BufferFactoryService : IBufferFactoryService
 
         // neste momento posso escolher se adiciono no _freePages
         _freeBuffers.Enqueue(buffer);
+    }
+
+    /// <summary>
+    /// Try convert a readable buffer into a writable buffer. If only current thread are using, convert it.
+    /// Otherwise return a new AllocateNewBuffer()
+    /// </summary>
+    public PageBuffer GetWriteBuffer(PageBuffer readBuffer)
+    {
+        // if readBuffer are not used by anyone in cache (ShareCounter == 1 - only current thread), remove it
+        if (_memoryCache.TryRemovePageFromCache(readBuffer, 1))
+        {
+            // it's safe here to use readBuffer as writeBuffer (nobody else are reading)
+            return readBuffer;
+        }
+        else
+        {
+            // create a new page in memory
+            var buffer = this.AllocateNewBuffer();
+
+            // copy content from clean buffer to write buffer (if exists)
+            readBuffer.AsSpan().CopyTo(buffer.AsSpan());
+
+            return buffer;
+        }
     }
 
     public int CleanUp()

@@ -5,9 +5,9 @@ namespace LiteDB.Engine;
 [AutoInterface]
 internal class DataPageService : IDataPageService
 {
-    private readonly IBasePageService _pageService;
+    private readonly IPageService _pageService;
 
-    public DataPageService(IBasePageService pageService)
+    public DataPageService(IPageService pageService)
     {
         _pageService = pageService;
     }

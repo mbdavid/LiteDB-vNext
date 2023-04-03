@@ -9,9 +9,8 @@ namespace LiteDB.Engine;
 [AutoInterface(typeof(IDisposable))]
 internal class AllocationMapService : IAllocationMapService
 {
-    private readonly IServicesFactory _factory;
     private readonly IDiskService _disk;
-    private readonly IBufferFactoryService _bufferFactory;
+    private readonly IBufferFactory _bufferFactory;
 
     /// <summary>
     /// List of all allocation map pages, in pageID order
@@ -23,17 +22,15 @@ internal class AllocationMapService : IAllocationMapService
     /// </summary>
     private readonly CollectionFreePages[] _collectionFreePages = new CollectionFreePages[byte.MaxValue];
 
-    public AllocationMapService(IServicesFactory factory)
+    public AllocationMapService(IDiskService disk, IBufferFactory bufferFactory)
     {
-        _factory = factory;
-        _disk = _factory.GetDisk();
-        _bufferFactory = _factory.GetBufferFactory();
+        _disk = disk;
+        _bufferFactory = bufferFactory;
     }
 
     /// <summary>
     /// Initialize allocation map service loading all AM pages into memory and getting
     /// </summary>
-    /// <returns></returns>
     public async Task InitializeAsync()
     {
         // read all allocation maps pages on disk

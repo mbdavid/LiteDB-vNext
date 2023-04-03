@@ -12,16 +12,14 @@ namespace LiteDB.Engine;
 internal class WalIndexService : IWalIndexService
 {
     // dependency injection
-    private readonly IServicesFactory _factory;
 
     /// <summary>
     /// A indexed dictionary by PageID where each item are a sorter-list of read version and disk log position
     /// </summary>
     private readonly ConcurrentDictionary<uint, List<(int Version, long Position)>> _index = new();
 
-    public WalIndexService(IServicesFactory factory)
+    public WalIndexService()
     {
-        _factory = factory;
     }
 
     /// <summary>

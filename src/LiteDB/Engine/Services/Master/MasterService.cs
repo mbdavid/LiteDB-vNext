@@ -9,9 +9,8 @@ namespace LiteDB.Engine;
 internal class MasterService : IMasterService
 {
     // dependency injection
-    private readonly IServicesFactory _factory;
     private readonly IDiskService _disk;
-    private readonly IBufferFactoryService _bufferFactory;
+    private readonly IBufferFactory _bufferFactory;
     private readonly IBsonReader _reader;
     private readonly IBsonWriter _writer;
 
@@ -30,13 +29,16 @@ internal class MasterService : IMasterService
     /// </summary>
     private BsonDocument? _master;
 
-    public MasterService(IServicesFactory factory)
+    public MasterService(
+        IDiskService disk,
+        IBufferFactory bufferFactory,
+        IBsonReader reader,
+        IBsonWriter writer)
     {
-        _factory = factory;
-        _disk = factory.GetDisk();
-        _bufferFactory = factory.GetBufferFactory();
-        _reader = factory.GetBsonReader();
-        _writer = factory.GetBsonWriter();
+        _disk = disk;
+        _bufferFactory = bufferFactory;
+        _reader = reader;
+        _writer = writer;
     }
 
     #region Read/Write $master
@@ -53,7 +55,7 @@ internal class MasterService : IMasterService
         try
         {
             // get first $master page
-            var pagePosition = BasePageService.GetPagePosition(MASTER_PAGE_ID);
+            var pagePosition = PageService.GetPagePosition(MASTER_PAGE_ID);
 
             // read first 8k
             await reader.ReadPageAsync(pagePosition, buffer);

@@ -6,28 +6,56 @@
 [AutoInterface]
 internal partial class ServicesFactory : IServicesFactory
 {
-    private IMemoryCacheService? _memoryCache;
-    private IBufferFactoryService? _bufferFactory;
-    private IPageWriteFactoryService? _pageWriteFactory;
-    private IIndexCacheService? _indexCache;
-    private IStreamFactory? _streamFactory;
-    private IDiskService? _disk;
-    private IAllocationMapService? _allocationMap;
-    private IWalIndexService? _walIndex;
-    private ILockService? _lock;
-    private ITransactionMonitor? _monitor;
-    private IMasterService? _master;
-    private IBsonReader? _bsonReader;
-    private IBsonWriter? _bsonWriter;
-    private IDataPageService? _dataPageService;
-    private IIndexPageService? _indexPageService;
+    private readonly IBsonReader _bsonReader;
+    private readonly IBsonWriter _bsonWriter;
+    private readonly IBufferFactory _bufferFactory;
+    private readonly IMemoryCacheService _memoryCache;
+    private readonly IIndexCacheService _indexCache;
+    private readonly IWalIndexService _walIndex;
+
+    private readonly ILockService _lock;
+    private readonly IStreamFactory _streamFactory;
+
+    private readonly IDiskService _disk;
+    private readonly IAllocationMapService _allocationMap;
+    private readonly IMasterService _master;
+    private readonly ITransactionMonitor _monitor;
+
+    private readonly IDataPageService _dataPageService;
+    private readonly IIndexPageService _indexPageService;
 
     public ServicesFactory(IEngineSettings settings)
     {
         this.Settings = settings;
+
+        // initialize per-engine classes instances
+        // no dependencies
+        _bsonReader = new BsonReader();
+        _bsonWriter = new BsonWriter();
+        _memoryCache = new MemoryCacheService();
+        _indexCache = new IndexCacheService();
+        _walIndex = new WalIndexService();
+
+        // settings dependency only
+        _lock = new LockService(settings.Timeout);
+        _streamFactory = new FileStreamFactory(settings);
+
+        // other services dependencies
+        _bufferFactory = new BufferFactory(_memoryCache);
+        _disk = new DiskService(settings, _bufferFactory, _streamFactory, this);
+        _allocationMap = new AllocationMapService(_disk, _bufferFactory);
+        _master = new MasterService(_disk, _bufferFactory, _bsonReader, _bsonWriter);
+        _monitor = new TransactionMonitor(this);
+
+        // create single instance of PageService to be used in both data/index page services
+        var pageService = new PageService();
+
+        _dataPageService = new DataPageService(pageService);
+        _indexPageService = new IndexPageService(pageService);
+
     }
 
-    #region Singleton instances (Properties)
+    #region Singleton instances (Get/Properties)
 
     public IEngineSettings Settings { get; }
 
@@ -39,110 +67,46 @@ internal partial class ServicesFactory : IServicesFactory
 
     public ConcurrentDictionary<string, object> Application { get; } = new();
 
-    public IBsonReader GetBsonReader()
-    {
-        return _bsonReader ??= new BsonReader();
-    }
+    public IBsonReader GetBsonReader() => _bsonReader;
 
-    public IBsonWriter GetBsonWriter()
-    {
-        return _bsonWriter ??= new BsonWriter();
-    }
+    public IBsonWriter GetBsonWriter() => _bsonWriter;
 
-    public IDataPageService GetDataPageService()
-    {
-        return _dataPageService ??= new DataPageService(this.CreatePageService());
-    }
+    public IBufferFactory GetBufferFactory() => _bufferFactory;
 
-    public IIndexPageService GetIndexPageService()
-    {
-        return _indexPageService ??= new IndexPageService(this.CreatePageService());
-    }
+    public IMemoryCacheService GetMemoryCache() => _memoryCache;
 
-    public IMemoryCacheService GetMemoryCache()
-    {
-        return _memoryCache ??= new MemoryCacheService();
-    }
+    public IIndexCacheService GetIndexCache() => _indexCache;
 
-    public IBufferFactoryService GetBufferFactory()
-    {
-        return _bufferFactory ??= new BufferFactoryService();
-    }
+    public IDataPageService GetDataPageService() =>_dataPageService;
 
-    public IPageWriteFactoryService GetPageWriteFactory()
-    {
-        return _pageWriteFactory ??= new PageWriteFactoryService(this);
-    }
+    public IIndexPageService GetIndexPageService() => _indexPageService;
 
-    public IDiskService GetDisk()
-    {
-        return _disk ??= new DiskService(this);
-    }
+    public IDiskService GetDisk() => _disk;
 
-    public IStreamFactory GetStreamFactory()
-    {
-        if (this.Settings.Filename is null)
-        {
-            throw new NotImplementedException();
-        }
+    public IStreamFactory GetStreamFactory() => _streamFactory;
 
+    public IAllocationMapService GetAllocationMap() => _allocationMap;
 
-        return _streamFactory ??= new FileStreamFactory(this.Settings);
-    }
+    public IMasterService GetMaster() => _master;
 
-    public IAllocationMapService GetAllocationMap()
-    {
-        return _allocationMap ??= new AllocationMapService(this);
-    }
+    public IWalIndexService GetWalIndex() => _walIndex;
 
-    public IIndexCacheService GetIndexCache()
-    { 
-        return _indexCache ??= new IndexCacheService();
-    }
+    public ITransactionMonitor GetMonitor() => _monitor;
 
-    public IMasterService GetMaster()
-    {
-        return _master ??= new MasterService(this);
-    }
-
-    public IWalIndexService GetWalIndex()
-    {
-        return _walIndex ??= new WalIndexService(this);
-    }
-
-    public ITransactionMonitor GetMonitor()
-    {
-        return _monitor ??= new TransactionMonitor(this);
-    }
-
-    public ILockService GetLock()
-    {
-        return _lock ??= new LockService(this.Settings.Timeout);
-    }
+    public ILockService GetLock() => _lock;
 
     #endregion
 
     #region Transient instances (Create prefix)
 
-    public IEngineContext CreateEngineContext()
-    {
-        return new EngineContext();
-    }
+    public IEngineContext CreateEngineContext() 
+        => new EngineContext();
 
-    public IBasePageService CreatePageService()
-    {
-        return new BasePageService();
-    }
+    public IOpenCommand CreateOpenCommand(IEngineContext ctx) 
+        => new OpenCommand(this, ctx);
 
-    public IOpenCommand CreateOpenCommand(IEngineContext ctx)
-    {
-        return new OpenCommand(this, ctx);
-    }
-
-    public IFileDiskStream CreateFileDiskStream(bool readOnly)
-    {
-        return new FileDiskStream(this.Settings, this.GetStreamFactory());
-    }
+    public IFileDisk CreateFileDisk() 
+        => new FileDisk(this);
 
     public IStreamFactory CreateStreamFactory(bool readOnly)
     {
@@ -151,20 +115,14 @@ internal partial class ServicesFactory : IServicesFactory
         return new FileStreamFactory(this.Settings);
     }
 
-    public INewDatafile CreateNewDatafile()
-    {
-        return new NewDatafile(this);
-    }
+    public INewDatafile CreateNewDatafile() 
+        => new NewDatafile(this);
 
-    public ITransactionService CreateTransaction(int transactionID)
-    {
-        return new TransactionService(this, transactionID);
-    }
+    public ITransaction CreateTransaction(int transactionID) 
+        => new Transaction(this, transactionID);
 
-    public ISnapshot CreateSnapshot(byte colID, LockMode mode, int readVersion)
-    {
-        return new Snapshot(this, colID, mode, readVersion);
-    }
+    public ISnapshot CreateSnapshot(byte colID, LockMode mode, int readVersion) 
+        => new Snapshot(this, colID, mode, readVersion);
 
     #endregion
 

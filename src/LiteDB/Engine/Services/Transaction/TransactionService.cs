@@ -1,11 +1,9 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
-/// Represent a single transaction service. Need a new instance for each transaction.
-/// You must run each transaction in a different thread - no 2 transaction in same thread (locks as per-thread)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class TransactionService : ITransactionService
+internal class Transaction : ITransaction
 {
     // dependency injection
     private readonly IServicesFactory _factory;
@@ -16,7 +14,7 @@ internal class TransactionService : ITransactionService
 
     public int TransactionID { get; }
 
-    public TransactionService(IServicesFactory factory, int transactionID)
+    public Transaction(IServicesFactory factory, int transactionID)
     {
         _factory = factory;
         _walIndex = factory.GetWalIndex();

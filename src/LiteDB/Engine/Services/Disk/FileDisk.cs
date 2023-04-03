@@ -3,7 +3,7 @@
 namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class FileDiskStream : IFileDiskStream
+internal class FileDisk : IFileDisk
 {
     private readonly IEngineSettings _settings;
     private readonly IStreamFactory _streamFactory;
@@ -13,10 +13,10 @@ internal class FileDiskStream : IFileDiskStream
 
     public string Name => Path.GetFileName(_settings.Filename);
 
-    public FileDiskStream(IEngineSettings settings, IStreamFactory streamFactory)
+    public FileDisk(IServicesFactory factory)
     {
-        _settings = settings;
-        _streamFactory = streamFactory;
+        _settings = factory.Settings;
+        _streamFactory = factory.GetStreamFactory();
     }
 
     /// <summary>

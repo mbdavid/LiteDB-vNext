@@ -3,9 +3,9 @@
 [AutoInterface]
 internal class IndexPageService : IIndexPageService
 {
-    private readonly IBasePageService _pageService;
+    private readonly IPageService _pageService;
 
-    public IndexPageService(IBasePageService pageService)
+    public IndexPageService(IPageService pageService)
     {
         _pageService = pageService;
     }

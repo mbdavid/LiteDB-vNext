@@ -8,21 +8,24 @@ internal class DiskService : IDiskService
 {
     // dependency injection
     private readonly IServicesFactory _factory;
-    private readonly IBufferFactoryService _bufferFactory;
+    private readonly IBufferFactory _bufferFactory;
     private readonly IStreamFactory _streamFactory;
     private readonly IEngineSettings _settings;
 
-    private IFileDiskStream _writer;
-    private readonly ConcurrentQueue<IFileDiskStream> _readers = new ();
+    private IFileDisk _writer;
+    private readonly ConcurrentQueue<IFileDisk> _readers = new ();
 
-    public DiskService(IServicesFactory factory)
+    public DiskService(IEngineSettings settings, 
+        IBufferFactory bufferFactory,
+        IStreamFactory streamFactory,
+        IServicesFactory factory)
     {
+        _settings = settings;
+        _bufferFactory = bufferFactory;
+        _streamFactory = streamFactory;
         _factory = factory;
-        _bufferFactory = factory.GetBufferFactory();
-        _streamFactory = factory.GetStreamFactory();
-        _settings = factory.Settings;
 
-        _writer = factory.CreateFileDiskStream(false);
+        _writer = factory.CreateFileDisk();
     }
 
     /// <summary>
@@ -82,20 +85,20 @@ internal class DiskService : IDiskService
     /// <summary>
     /// Rent a disk reader from pool. Must return after use
     /// </summary>
-    public IFileDiskStream RentDiskReader()
+    public IFileDisk RentDiskReader()
     {
         if (_readers.TryDequeue(out var reader))
         {
             return reader;
         }
 
-        return _factory.CreateFileDiskStream(true);
+        return _factory.CreateFileDisk();
     }
 
     /// <summary>
     /// Return a rented reader and add to pool
     /// </summary>
-    public void ReturnDiskReader(IFileDiskStream reader)
+    public void ReturnDiskReader(IFileDisk reader)
     {
         _readers.Enqueue(reader);
     }

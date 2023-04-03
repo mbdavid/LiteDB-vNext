@@ -11,21 +11,21 @@ internal class TransactionMonitor : ITransactionMonitor
     private readonly IServicesFactory _factory;
 
     // concurrent data-structures
-    private readonly ConcurrentDictionary<int, ITransactionService> _transactions = new();
+    private readonly ConcurrentDictionary<int, ITransaction> _transactions = new();
 
     private readonly ConcurrentDictionary<int, object> _openCursors = new();
 
     private int _lastTransactionID = 0;
 
     // expose open transactions
-    public ICollection<ITransactionService> Transactions => _transactions.Values;
+    public ICollection<ITransaction> Transactions => _transactions.Values;
 
     public TransactionMonitor(IServicesFactory factory)
     {
         _factory = factory;
     }
 
-    public async Task<ITransactionService> CreateTransactionAsync()
+    public async Task<ITransaction> CreateTransactionAsync()
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
         var transaction = _factory.CreateTransaction(transactionID);
@@ -39,7 +39,7 @@ internal class TransactionMonitor : ITransactionMonitor
 
     /// <summary>
     /// </summary>
-    public void ReleaseTransaction(TransactionService transaction)
+    public void ReleaseTransaction(Transaction transaction)
     {
         // dispose current transaction
         transaction.Dispose();
@@ -52,7 +52,7 @@ internal class TransactionMonitor : ITransactionMonitor
     /// <summary>
     /// Check if transaction size reach limit AND check if is possible extend this limit
     /// </summary>
-    public bool CheckSafepoint(TransactionService trans)
+    public bool CheckSafepoint(Transaction trans)
     {
         return false; //TODO: implementar o momento de fazer safepoint
 //            trans.Pages.TransactionSize >= trans.MaxTransactionSize &&

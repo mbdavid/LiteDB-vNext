@@ -170,7 +170,7 @@ internal struct PageHeader
         // check for all slot area to get first empty slot [safe for byte loop]
         for (byte index = _startIndex; index <= this.HighestIndex; index++)
         {
-            var positionAddr = BasePageService.CalcPositionAddr(index);
+            var positionAddr = PageService.CalcPositionAddr(index);
             var position = span[positionAddr..2].ReadUInt16();
 
             // if position = 0 means this slot are not used
