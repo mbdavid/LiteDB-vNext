@@ -24,24 +24,14 @@ internal class PageService : IPageService
     }
 
     /// <summary>
-    /// Get a new page segment for this length content
-    /// </summary>
-    public Span<byte> Insert(PageBuffer page, ushort bytesLength, out byte index)
-    {
-        index = byte.MaxValue;
-
-        return this.InternalInsert(page, bytesLength, ref index);
-    }
-
-    /// <summary>
     /// Get a new page segment for this length content using fixed index
     /// </summary>
-    private Span<byte> InternalInsert(PageBuffer page, ushort bytesLength, ref byte index)
+    public Span<byte> Insert(PageBuffer page, ushort bytesLength, byte index, bool isNewInsert)
     {
-        var span = page.AsSpan();
-        var header = page.Header;
+        ENSURE(index != byte.MaxValue, "index must be 0-254");
 
-        var isNewInsert = index == byte.MaxValue;
+        var span = page.AsSpan();
+        ref var header = ref page.Header;
 
         if (!(header.FreeBytes >= bytesLength + (isNewInsert ? PageHeader.SLOT_SIZE : 0)))
         {
@@ -57,13 +47,6 @@ internal class PageService : IPageService
         if (bytesLength > continuousBlocks)
         {
             this.Defrag(page);
-        }
-
-        // if index is new insert segment, must request for new Index
-        if (index == byte.MaxValue)
-        {
-            // get new free index must run after defrag
-            index = header.GetFreeIndex(span);
         }
 
         if (index > header.HighestIndex || header.HighestIndex == byte.MaxValue)
@@ -107,7 +90,7 @@ internal class PageService : IPageService
     {
         // get span and header instance (dirty)
         var span = page.AsSpan();
-        var header = page.Header;
+        ref var header = ref page.Header;
 
         // read block position on index slot
         var positionAddr = CalcPositionAddr(index);
@@ -175,7 +158,7 @@ internal class PageService : IPageService
 
         // get span and header instance (dirty)
         var span = page.AsSpan();
-        var header = page.Header;
+        ref var header = ref page.Header;
 
         // read slot address
         var positionAddr = CalcPositionAddr(index);
@@ -251,7 +234,7 @@ internal class PageService : IPageService
             span[lengthAddr..].WriteUInt16(0);
 
             // call insert
-            return this.InternalInsert(page, bytesLength, ref index);
+            return this.Insert(page, bytesLength, index, false);
         }
     }
 
@@ -263,7 +246,7 @@ internal class PageService : IPageService
     {
         // get span and header instance (dirty)
         var span = page.AsSpan();
-        var header = page.Header;
+        ref var header = ref page.Header;
 
         ENSURE(header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
         ENSURE(header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
@@ -345,7 +328,7 @@ internal class PageService : IPageService
     {
         // get span and header instance (dirty)
         var span = page.AsSpan();
-        var header = page.Header;
+        ref var header = ref page.Header;
 
         ENSURE(header.HighestIndex < byte.MaxValue, "can run only if contains a valid HighestIndex");
 

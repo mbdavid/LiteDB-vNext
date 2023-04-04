@@ -43,7 +43,7 @@ internal partial class ServicesFactory : IServicesFactory
         // other services dependencies
         _bufferFactory = new BufferFactory(_memoryCache);
         _disk = new DiskService(settings, _bufferFactory, _streamFactory, this);
-        _allocationMap = new AllocationMapService(_disk, _bufferFactory);
+        _allocationMap = new AllocationMapService(_disk, _streamFactory, _bufferFactory);
         _master = new MasterService(_disk, _bufferFactory, _bsonReader, _bsonWriter);
         _monitor = new TransactionMonitor(this);
 
@@ -105,8 +105,8 @@ internal partial class ServicesFactory : IServicesFactory
     public IOpenCommand CreateOpenCommand(IEngineContext ctx) 
         => new OpenCommand(this, ctx);
 
-    public IFileDisk CreateFileDisk() 
-        => new FileDisk(this);
+    public IDiskStream CreateDiskStream() 
+        => new DiskStream(this);
 
     public IStreamFactory CreateStreamFactory(bool readOnly)
     {
@@ -118,11 +118,9 @@ internal partial class ServicesFactory : IServicesFactory
     public INewDatafile CreateNewDatafile() 
         => new NewDatafile(this);
 
-    public ITransaction CreateTransaction(int transactionID) 
-        => new Transaction(this, transactionID);
+    public ITransaction CreateTransaction(int transactionID, byte[] writeCollections) 
+        => new Transaction(this, transactionID, writeCollections);
 
-    public ISnapshot CreateSnapshot(byte colID, LockMode mode, int readVersion) 
-        => new Snapshot(this, colID, mode, readVersion);
 
     #endregion
 

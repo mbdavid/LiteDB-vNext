@@ -1,6 +1,4 @@
-﻿using System.Xml.Linq;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// * Singleton (thread safe)
@@ -48,9 +46,10 @@ internal class MasterService : IMasterService
     /// </summary>
     public async Task ReadFromDiskAsync()
     {
-        var reader = _disk.RentDiskReader();
         var buffer = _bufferFactory.AllocateNewPage();
         byte[]? bufferDocument = null;
+
+        var reader = await _disk.RentDiskReaderAsync();
 
         try
         {

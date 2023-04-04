@@ -10,7 +10,6 @@ internal class LockService : ILockService
 {
     private readonly AsyncReaderWriterLock _database;
     private readonly AsyncReaderWriterLock[] _collections;
-    private readonly TimeSpan _timeout;
 
     public LockService(TimeSpan timeout)
     {
@@ -21,8 +20,6 @@ internal class LockService : ILockService
         _collections = Enumerable.Range(0, byte.MaxValue + 1)
             .Select(x => new AsyncReaderWriterLock(timeout))
             .ToArray();
-
-        _timeout = timeout;
     }
 
     /// <summary>
@@ -34,7 +31,7 @@ internal class LockService : ILockService
     /// All non-exclusive database operations must call this EnterTranscation() just before working. 
     /// This will be used to garantee exclusive write-only (non-reader) during exclusive operations (like checkpoint)
     /// </summary>
-    public async Task EnterTransaction()
+    public async Task EnterTransactionAsync()
     {
         await _database.AcquireReaderLock();
     }
@@ -51,7 +48,7 @@ internal class LockService : ILockService
     /// Enter all database in exclusive lock. Wait for all transactions finish. In exclusive mode no one can enter in new transaction (for read/write)
     /// If current thread already in exclusive mode, returns false
     /// </summary>
-    public async Task EnterExclusive()
+    public async Task EnterExclusiveAsync()
     {
         await _database.AcquireWriterLock();
     }
@@ -67,7 +64,7 @@ internal class LockService : ILockService
     /// <summary>
     /// Enter collection write lock mode (only 1 collection per time can have this lock)
     /// </summary>
-    public async Task EnterCollectionWriteLock(byte colID)
+    public async Task EnterCollectionWriteLockAsync(byte colID)
     {
         await _collections[colID].AcquireWriterLock();
     }

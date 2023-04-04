@@ -3,73 +3,99 @@
 [AutoInterface]
 internal class DataService : IDataService
 {
-/*
     /// <summary>
     /// Get maximum data bytes[] that fit in 1 page = 8150
     /// </summary>
-    public const int MAX_DATA_BYTES_PER_PAGE =
-        PAGE_SIZE - // 8192
-        PAGE_HEADER_SIZE - // [32 bytes]
-        BasePage.SLOT_SIZE - // [4 bytes]
-        DataBlock.DATA_BLOCK_FIXED_SIZE; // [6 bytes];
+    public const int MAX_DATA_BYTES_PER_PAGE = 7000;
 
-    private Snapshot _snapshot;
+    // dependency injection
+    private readonly IAllocationMapService _allocationMap;
+    private readonly IDataPageService _dataPage;
+    private readonly IBsonWriter _writer;
 
-    public DataService(Snapshot snapshot)
+    private readonly ITransaction _transaction;
+
+    public DataService(IServicesFactory factory, ITransaction transaction)
     {
-        _snapshot = snapshot;
+        _allocationMap = factory.GetAllocationMap();
+        _dataPage = factory.GetDataPageService();
+        _writer = factory.GetBsonWriter();
+
+        _transaction = transaction;
     }
 
     /// <summary>
     /// Insert BsonDocument into new data pages
     /// </summary>
-    public PageAddress Insert(BsonDocument doc)
+    public async Task<PageAddress> Insert(byte colID, BsonDocument doc)
     {
-        var bytesLeft = doc.GetBytesCount(true);
+        var bytesLeft = doc.GetBytesCount();
 
-        if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
+        //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
+
+        // rent an array to fit all document serialized
+        var bufferDoc = ArrayPool<byte>.Shared.Rent(bytesLeft);
+
+        // write all document into buffer doc before copy to pages
+        _writer.WriteDocument(bufferDoc, doc, out _);
 
         var firstBlock = PageAddress.Empty;
+        var bytesToCopy = Math.Min(bytesLeft, MAX_DATA_BYTES_PER_PAGE);
 
-        IEnumerable<BufferSlice> source()
+        // get first page
+        var page = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
+
+        // one single page
+        if (bytesToCopy <= bytesLeft)
         {
-            var blockIndex = 0;
-            DataBlock lastBlock = null;
+            var dataBlock = _dataPage.InsertDataBlock(page, bufferDoc, PageAddress.Empty);
 
+            firstBlock = dataBlock.RowID;
+        }
+        // multiple pages
+        else
+        {
+            var pages = new PageBuffer[bytesLeft % MAX_DATA_BYTES_PER_PAGE];
+            var pageIndex = 0;
+
+            pages[0] = page;
+
+            // load/create all pages before
             while (bytesLeft > 0)
             {
-                var bytesToCopy = Math.Min(bytesLeft, MAX_DATA_BYTES_PER_PAGE);
-                var dataPage = _snapshot.GetFreeDataPage(bytesToCopy + DataBlock.DATA_BLOCK_FIXED_SIZE);
-                var dataBlock = dataPage.InsertBlock(bytesToCopy, blockIndex++ > 0);
+                bytesToCopy = Math.Min(bytesLeft, MAX_DATA_BYTES_PER_PAGE);
 
-                if (lastBlock != null)
-                {
-                    lastBlock.SetNextBlock(dataBlock.Position);
-                }
+                var nextPage = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
 
-                if (firstBlock.IsEmpty) firstBlock = dataBlock.Position;
-
-                _snapshot.AddOrRemoveFreeDataList(dataPage);
-
-                yield return dataBlock.Buffer;
-
-                lastBlock = dataBlock;
+                pages[++pageIndex] = nextPage;
 
                 bytesLeft -= bytesToCopy;
             }
+
+            var nextBlock = PageAddress.Empty;
+
+            // copy document bytes in reverse page order (to be set next block)
+            for (var i = pages.Length - 1; i >= 0; i--)
+            {
+                var startIndex = i * MAX_DATA_BYTES_PER_PAGE;
+                var docLength = i == pages.Length - 1 ? bytesToCopy : MAX_DATA_BYTES_PER_PAGE;
+
+                var dataBlock = _dataPage.InsertDataBlock(pages[i], 
+                    bufferDoc.AsSpan(startIndex, docLength), 
+                    nextBlock);
+
+                nextBlock = dataBlock.RowID;
+            }
+
+            firstBlock = nextBlock;
         }
 
-        // consume all source bytes to write BsonDocument direct into PageBuffer
-        // must be fastest as possible
-        using (var w = new BufferWriter(source()))
-        {
-            // already bytes count calculate at method start
-            w.WriteDocument(doc, false);
-            w.Consume();
-        }
+        // return array after use
+        ArrayPool<byte>.Shared.Return(bufferDoc);
 
         return firstBlock;
     }
+/*
 
     /// <summary>
     /// Update document using same page position as reference

@@ -276,7 +276,7 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue MATCH(BsonValue value, BsonValue pattern, BsonValue group)
     {
-        if (value.IsString == false || pattern.IsString == false) return null;
+        if (value.IsString == false || pattern.IsString == false) return BsonValue.Null;
 
         var match = Regex.Match(value.AsString, pattern.AsString);
 

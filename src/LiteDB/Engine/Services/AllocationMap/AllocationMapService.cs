@@ -10,6 +10,7 @@ namespace LiteDB.Engine;
 internal class AllocationMapService : IAllocationMapService
 {
     private readonly IDiskService _disk;
+    private readonly IStreamFactory _streamFactory;
     private readonly IBufferFactory _bufferFactory;
 
     /// <summary>
@@ -22,9 +23,15 @@ internal class AllocationMapService : IAllocationMapService
     /// </summary>
     private readonly CollectionFreePages[] _collectionFreePages = new CollectionFreePages[byte.MaxValue];
 
-    public AllocationMapService(IDiskService disk, IBufferFactory bufferFactory)
+    /// <summary>
+    /// Start position on log. Should use GetNextLogPosition()
+    /// </summary>
+    private long _logPosition;
+
+    public AllocationMapService(IDiskService disk, IStreamFactory streamFactory, IBufferFactory bufferFactory)
     {
         _disk = disk;
+        _streamFactory = streamFactory;
         _bufferFactory = bufferFactory;
     }
 
@@ -45,6 +52,21 @@ internal class AllocationMapService : IAllocationMapService
             // add AM page to instance
             _pages.Add(page);
         }
+
+        // initialize log position based on current file length
+        _logPosition = _streamFactory.GetLength();
+    }
+
+    /// <summary>
+    /// Get a new page position to be used in log
+    /// </summary>
+    public long GetNextLogPosition(uint pageID)
+    {
+        var position = Interlocked.Add(ref _logPosition, PAGE_SIZE);
+
+        ENSURE(position > PageService.GetPagePosition(pageID), "log position must be greater than pageID");
+
+        return position;
     }
 
     /// <summary>
@@ -55,7 +77,6 @@ internal class AllocationMapService : IAllocationMapService
     {
         //TODO: sombrio, posso retornar uma pagina com tamanho menor do solicitado?
         // o chamador que peça uma nova com o restante (while)
-        // ta feio assim, mas tem como ficar bonito e eficiente (sem alocar memoria)
 
         var freePages = _collectionFreePages[colID];
 
@@ -176,11 +197,10 @@ internal class AllocationMapService : IAllocationMapService
 
         foreach(var page in modifiedPages)
         {
-            var header = page.Header;
-
-            var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
-            var extendIndex = (int)(header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
-            var pageIndex = (int)(header.PageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
+            var pageID = page.Header.PageID;
+            var allocationMapID = (int)(pageID / AM_PAGE_STEP);
+            var extendIndex = (int)(pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+            var pageIndex = (int)(pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
             byte value = 0; // calcular conforme page.Header.FreeSpace (0-7)
 
             ENSURE(pageIndex != -1, "PageID cannot be an AM page ID");
@@ -190,26 +210,26 @@ internal class AllocationMapService : IAllocationMapService
             // update buffer map
             mapPage.UpdateMap(extendIndex, pageIndex, value);
 
-            var freePages = _collectionFreePages[header.ColID];
+            var freePages = _collectionFreePages[page.Header.ColID];
 
             switch (value)
             {
                 case 0b000: // 0
-                    freePages.EmptyPages.Insert(header.PageID);
+                    freePages.EmptyPages.Insert(pageID);
                     break;
                 case 0b001: // 1
-                    freePages.DataPagesLarge.Insert(header.PageID);
+                    freePages.DataPagesLarge.Insert(pageID);
                     break;
                 case 0b010: // 2
-                    freePages.DataPagesMedium.Insert(header.PageID);
+                    freePages.DataPagesMedium.Insert(pageID);
                     break;
                 case 0b011: // 3
-                    freePages.DataPagesSmall.Insert(header.PageID);
+                    freePages.DataPagesSmall.Insert(pageID);
                     break;
                 case 0b100: // 4 - data page full
                     break;
                 case 0b101: // 5 - index page with available space
-                    freePages.IndexPages.Insert(header.PageID);
+                    freePages.IndexPages.Insert(pageID);
                     break;
                 case 0b110: // 6 - index page full
                 case 0b111: // 7 - reserved

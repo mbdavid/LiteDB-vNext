@@ -38,14 +38,14 @@ internal class MemoryCacheService : IMemoryCacheService
     /// <summary>
     /// Add a new page to cache. Buffer must contains all data for postion in disk (data/log)
     /// </summary>
-    public void AddPageInCache(PageBuffer page)
+    public bool AddPageInCache(PageBuffer page)
     {
         ENSURE(page.Position != long.MaxValue, "PageBuffer must have a position before add in cache");
         ENSURE(page.ShareCounter == 0, "ShareCounter must be zero before add in cache");
 
         var added = _cache.TryAdd(page.Position, page);
 
-        ENSURE(!added, $"This page position {page.Position} already in cache");
+        return added;
     }
 
     /// <summary>

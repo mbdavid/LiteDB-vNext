@@ -106,7 +106,7 @@ internal class BinaryBsonExpression : BsonExpression
             case BsonExpressionType.Like:
                 return this.Left.ToString() + " LIKE " + this.Right.ToString();
             case BsonExpressionType.Between:
-                var values = this.Right as MakeArrayBsonExpression;
+                var values = (this.Right as MakeArrayBsonExpression)!;
                 return this.Left.ToString() + " BETWEEN " + values.Items.First().ToString() + " AND " + values.Items.Last().ToString();
             case BsonExpressionType.In:
                 return this.Left.ToString() + " IN " + this.Right.ToString();

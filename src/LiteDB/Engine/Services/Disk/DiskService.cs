@@ -12,8 +12,10 @@ internal class DiskService : IDiskService
     private readonly IStreamFactory _streamFactory;
     private readonly IEngineSettings _settings;
 
-    private IFileDisk _writer;
-    private readonly ConcurrentQueue<IFileDisk> _readers = new ();
+    private readonly IDiskStream _writer;
+    private readonly ConcurrentQueue<IDiskStream> _readers = new ();
+
+    private bool _writeInit = false;
 
     public DiskService(IEngineSettings settings, 
         IBufferFactory bufferFactory,
@@ -25,7 +27,7 @@ internal class DiskService : IDiskService
         _streamFactory = streamFactory;
         _factory = factory;
 
-        _writer = factory.CreateFileDisk();
+        _writer = factory.CreateDiskStream();
     }
 
     /// <summary>
@@ -59,6 +61,33 @@ internal class DiskService : IDiskService
     }
 
     /// <summary>
+    /// Rent a disk reader from pool. Must return after use
+    /// </summary>
+    public async Task<IDiskStream> RentDiskReaderAsync()
+    {
+        if (_readers.TryDequeue(out var reader))
+        {
+            return reader;
+        }
+
+        // create new diskstream
+        reader = _factory.CreateDiskStream();
+
+        // and open to read-only
+        await reader.OpenAsync(false);
+
+        return reader;
+    }
+
+    /// <summary>
+    /// Return a rented reader and add to pool
+    /// </summary>
+    public void ReturnDiskReader(IDiskStream reader)
+    {
+        _readers.Enqueue(reader);
+    }
+
+    /// <summary>
     /// Read all allocation map pages. Allocation map pages contains initial position and fixed interval between other pages
     /// </summary>
     public async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
@@ -74,7 +103,11 @@ internal class DiskService : IDiskService
 
             await _writer.ReadPageAsync(position, page);
 
-            if (page.IsHeaderEmpty()) break;
+            if (page.IsHeaderEmpty())
+            {
+                _bufferFactory.DeallocatePage(page);
+                break;
+            }
 
             yield return page;
 
@@ -82,33 +115,20 @@ internal class DiskService : IDiskService
         }
     }
 
-    /// <summary>
-    /// Rent a disk reader from pool. Must return after use
-    /// </summary>
-    public IFileDisk RentDiskReader()
+    public async Task WritePagesAsync(IEnumerable<PageBuffer> pages)
     {
-        if (_readers.TryDequeue(out var reader))
+        // set recovery flag in header file to true at first use
+        if (_writeInit == false)
         {
-            return reader;
+            _writeInit = true;
+            _writer.WriteFlag(FileHeader.P_RECOVERY, 1);
         }
 
-        return _factory.CreateFileDisk();
-    }
-
-    /// <summary>
-    /// Return a rented reader and add to pool
-    /// </summary>
-    public void ReturnDiskReader(IFileDisk reader)
-    {
-        _readers.Enqueue(reader);
-    }
-
-    public async Task WritePages(IEnumerable<PageBuffer> pages)
-    {
-        foreach(var page in pages)
+        foreach (var page in pages)
         {
             await _writer.WritePageAsync(page);
         }
+
         await _writer.FlushAsync();
     }
 

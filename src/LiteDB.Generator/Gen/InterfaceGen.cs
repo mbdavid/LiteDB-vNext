@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Generator;
+﻿using System.Dynamic;
+
+namespace LiteDB.Generator;
 
 internal class InterfaceGen
 {
@@ -24,36 +26,53 @@ internal class InterfaceGen
         var namespaceName = type.TypeSymbol.ContainingNamespace.ToDisplayString();
         var interfaceName = "I" + type.TypeSymbol.Name;
         var visibilityModifier = type.TypeSymbol.InferVisibilityModifier();
-        var inheritInterfaces = type.Attribute.GetConstructorValue();
+        var inheritInterface = type.Attribute.GetConstructorValue();
+        var inheritMembers = new HashSet<string>();
 
-        if (inheritInterfaces != null)
+        if (inheritInterface is not null)
         {
-            inheritInterfaces = ": " + inheritInterfaces;
+            var interfaceType = Type.GetType(inheritInterface);
+
+            if (interfaceType is not null)
+            {
+                foreach (var member in interfaceType.GetMembers())
+                {
+                    inheritMembers.Add(member.Name);
+                }
+            }
+
+            inheritInterface = ": " + inheritInterface;
         }
 
         cw.WriteLine("namespace {0};", namespaceName);
         cw.WriteLine();
 
         cw.WriteSymbolDocsIfPresent(type.TypeSymbol);
-        cw.Write("{0} partial interface {1}{2}", visibilityModifier, interfaceName, inheritInterfaces);
+        cw.Write("{0} partial interface {1}{2}", visibilityModifier, interfaceName, inheritInterface);
         cw.WriteTypeGenericsIfNeeded(type.TypeSymbol);
         cw.WriteLine();
         cw.WriteLine("{");
+        cw.WriteLine("#nullable enable");
 
         cw.Indent++;
-        GenerateInterfaceMemberDefinitions(cw, type.TypeSymbol);
+        GenerateInterfaceMemberDefinitions(cw, type.TypeSymbol, inheritMembers);
         cw.Indent--;
+
+        cw.WriteLine("#nullable disable");
 
         cw.WriteLine("}");
 
         return cw.ToString();
     }
 
-    private static void GenerateInterfaceMemberDefinitions(CodeWriter cw, INamespaceOrTypeSymbol implTypeSymbol)
+    private static void GenerateInterfaceMemberDefinitions(CodeWriter cw, INamespaceOrTypeSymbol implTypeSymbol, HashSet<string> inheritMembers)
     {
         foreach (var member in implTypeSymbol.GetMembers())
         {
             if (member.DeclaredAccessibility != Accessibility.Public) continue;
+
+            if (inheritMembers.Contains(member.Name)) continue;
+
 
             GenerateInterfaceMemberDefinition(cw, member);
         }

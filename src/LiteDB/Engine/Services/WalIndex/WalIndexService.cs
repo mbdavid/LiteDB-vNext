@@ -16,7 +16,7 @@ internal class WalIndexService : IWalIndexService
     /// <summary>
     /// A indexed dictionary by PageID where each item are a sorter-list of read version and disk log position
     /// </summary>
-    private readonly ConcurrentDictionary<uint, List<(int Version, long Position)>> _index = new();
+    private readonly ConcurrentDictionary<uint, List<(int version, long position)>> _index = new();
 
     public WalIndexService()
     {
@@ -31,17 +31,16 @@ internal class WalIndexService : IWalIndexService
         // initial value
         walVersion = 0;
 
-        // wal-index versions must be greater than 0 (version 0 is datafile)
-        // get (if exists) listVersion of a PageID
+        // if version is 0 or there is no page on log index, return current position on disk
         if (version == 0 || 
             _index.TryGetValue(pageID, out var listVersion) == false)
         {
-            return long.MaxValue;
+            return PageService.GetPagePosition(pageID);
         }
 
         // list are sorted by version number
         var idx = listVersion.Count;
-        var position = long.MaxValue; // not found
+        var position = PageService.GetPagePosition(pageID); // not found (get from data)
 
         // get all page versions in wal-index
         // and then filter only equals-or-less then selected version
@@ -49,12 +48,12 @@ internal class WalIndexService : IWalIndexService
         {
             idx--;
 
-            var item = listVersion[idx];
+            var (ver, pos) = listVersion[idx];
 
-            if (item.Version <= version)
+            if (ver <= version)
             {
-                walVersion = item.Version;
-                position = item.Position;
+                walVersion = ver;
+                position = pos;
 
                 break;
             }
@@ -63,25 +62,25 @@ internal class WalIndexService : IWalIndexService
         return position;
     }
 
-    public void AddVersion(int version, IEnumerable<(uint PageID, long Position)> pagePositions)
+    public void AddVersion(int version, IEnumerable<(uint pageID, long position)> pagePositions)
     {
-        foreach (var item in pagePositions)
+        foreach (var (pageID, position) in pagePositions)
         {
-            if (_index.TryGetValue(item.PageID, out var listVersion))
+            if (_index.TryGetValue(pageID, out var listVersion))
             {
                 // add version/position into pageID
-                listVersion.Add(new(version, item.Position));
+                listVersion.Add(new(version, position));
             }
             else
             {
                 listVersion = new()
                 {
                     // add version/position into pageID
-                    new(version, item.Position)
+                    new(version, position)
                 };
 
                 // add listVersion with first item in index for this pageID
-                _index.TryAdd(item.PageID, listVersion);
+                _index.TryAdd(pageID, listVersion);
             }
         }
     }

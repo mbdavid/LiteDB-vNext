@@ -100,7 +100,12 @@ public abstract partial class BsonExpression
     {
         var key = name.ToUpper() + "~" + parameterCount;
 
-        return _methods.GetOrDefault(key, null);
+        if (_methods.TryGetValue(key, out var method))
+        {
+            return method;
+        }
+
+        return default;
     }
 
     #endregion

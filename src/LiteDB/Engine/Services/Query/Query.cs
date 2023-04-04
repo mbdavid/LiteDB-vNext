@@ -202,11 +202,13 @@ namespace LiteDB
             return In(field, new BsonArray(values));
         }
 
+        /*
         /// <summary>
         /// Get all operands to works with array or enumerable values
         /// </summary>
 //TODO: implementar QueryAny()
 //        public static QueryAny Any() => new QueryAny();
+*/
 
         /// <summary>
         /// Returns document that exists in BOTH queries results. If both queries has indexes, left query has index preference (other side will be run in full scan)

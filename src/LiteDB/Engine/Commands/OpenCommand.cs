@@ -26,18 +26,14 @@ internal class OpenCommand : IOpenCommand
     {
         if (_factory.State != EngineState.Close) throw new Exception("must be closed");
 
-        await _lock.EnterExclusive();
+        await _lock.EnterExclusiveAsync();
 
         if (_factory.State != EngineState.Close) throw new Exception("must be closed");
 
         // open/create data file and returns file header
         var fileHeader = await _disk.InitializeAsync();
 
-        // testa recovery
-        if (fileHeader.Recovery)
-        {
-            // recovey
-        }
+        if (fileHeader.Recovery) throw new NotImplementedException();
 
         // initialize AM service
         await _allocationMap.InitializeAsync();

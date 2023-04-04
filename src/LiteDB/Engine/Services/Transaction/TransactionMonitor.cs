@@ -25,10 +25,10 @@ internal class TransactionMonitor : ITransactionMonitor
         _factory = factory;
     }
 
-    public async Task<ITransaction> CreateTransactionAsync()
+    public async Task<ITransaction> CreateTransactionAsync(byte[] writeCollections)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
-        var transaction = _factory.CreateTransaction(transactionID);
+        var transaction = _factory.CreateTransaction(transactionID, writeCollections);
 
         _transactions.TryAdd(transactionID, transaction);
 
@@ -46,7 +46,6 @@ internal class TransactionMonitor : ITransactionMonitor
 
         // remove from "open transaction" list
         _transactions.TryRemove(transaction.TransactionID, out _);
-
     }
 
     /// <summary>

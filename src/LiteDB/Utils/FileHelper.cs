@@ -41,7 +41,7 @@ internal static class FileHelper
     /// </summary>
     public static bool IsFileLocked(string filename)
     {
-        FileStream stream = null;
+        FileStream? stream = null;
         var file = new FileInfo(filename);
 
         try

@@ -49,7 +49,7 @@ internal struct PageHeader
     /// <summary>
     /// Represent transaction ID that was stored [4 bytes]
     /// </summary>
-    public uint TransactionID = 0;
+    public int TransactionID = 0;
 
     /// <summary>
     /// Used in WAL, define this page is last transaction page and are confirmed on disk [1 byte]
@@ -57,7 +57,7 @@ internal struct PageHeader
     public bool IsConfirmed = false;
 
     /// <summary>
-    /// Indicate how many items are used inside this page [1 byte]
+    /// Indicate how many items are used inside this page [1 byte] -> 0-254 (255)
     /// </summary>
     public byte ItemsCount = 0;
 
@@ -77,7 +77,7 @@ internal struct PageHeader
     public ushort NextFreePosition = PAGE_HEADER_SIZE;
 
     /// <summary>
-    /// Get last (highest) used index slot - use byte.MaxValue for empty [1 byte]
+    /// Get last (highest) used index slot - use byte.MaxValue for empty [1 byte] -> 0-254 (255 items)
     /// </summary>
     public byte HighestIndex = byte.MaxValue;
 
@@ -93,7 +93,7 @@ internal struct PageHeader
     /// <summary>
     /// Get how many free bytes (including fragmented bytes) are in this page (content space) - Will return 0 bytes if page are full (or with max 255 items)
     /// </summary>
-    public int FreeBytes => this.ItemsCount == byte.MaxValue ?
+    public int FreeBytes => this.ItemsCount == byte.MaxValue ? // if page is full of items (255) - returns 0 bytes empty
         0 :
         PAGE_CONTENT_SIZE - this.UsedBytes - this.FooterSize;
 
@@ -121,7 +121,7 @@ internal struct PageHeader
         this.PageType = (PageType)span[P_PAGE_TYPE];
 
         this.ColID = span[P_COL_ID];
-        this.TransactionID = span[P_TRANSACTION_ID..].ReadUInt32();
+        this.TransactionID = span[P_TRANSACTION_ID..].ReadInt32();
         this.IsConfirmed = span[P_IS_CONFIRMED] != 0;
 
         this.ItemsCount = span[P_ITEMS_COUNT];
@@ -139,7 +139,7 @@ internal struct PageHeader
         span[P_PAGE_TYPE] = (byte)this.PageType;
 
         span[P_COL_ID] = this.ColID;
-        span[P_TRANSACTION_ID..].WriteUInt32(this.TransactionID);
+        span[P_TRANSACTION_ID..].WriteInt32(this.TransactionID);
         span[P_IS_CONFIRMED] = this.IsConfirmed ? (byte)1 : (byte)0;
 
         span[P_ITEMS_COUNT] = this.ItemsCount;

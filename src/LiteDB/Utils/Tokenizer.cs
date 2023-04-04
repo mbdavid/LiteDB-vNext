@@ -171,21 +171,21 @@ internal class Tokenizer
 {
     private TextReader _reader;
     private char _char = '\0';
-    private Token _current = null;
-    private Token _ahead = null;
+    private Token? _current = null;
+    private Token? _ahead = null;
     private bool _eof = false;
     private long _position = 0;
 
     public bool EOF => _eof && _ahead == null;
     public long Position => _position;
-    public Token Current => _current;
+    public Token Current => _current!;
 
     /// <summary>
     /// If EOF throw an invalid token exception (used in while()) otherwise return "false" (not EOF)
     /// </summary>
     public bool CheckEOF()
     {
-        if (_eof) throw ERR_UNEXPECTED_TOKEN(_current);
+        if (_eof) throw ERR_UNEXPECTED_TOKEN(this.Current);
 
         return false;
     }
@@ -288,10 +288,10 @@ internal class Tokenizer
 
         if (_eof)
         {
-            return new Token(TokenType.EOF, null, _position);
+            return new Token(TokenType.EOF, "", _position);
         }
 
-        Token token = null;
+        Token? token = null;
 
         switch (_char)
         {

@@ -81,7 +81,7 @@ internal static class BufferExtensions
 
         bytesCount = 0;
 
-        return null;
+        return "";
     }
 
     #region ToBytes BitConverter helper

@@ -59,7 +59,7 @@ internal class BsonExpressionParser
             // read operator between expressions
             var op = ReadOperant(tokenizer);
 
-            if (op == null) break;
+            if (op is null) break;
 
             // for map operation, get next expression force read as Current
             var expr = ParseSingleExpression(tokenizer, (op == "=>" ? false : root));
@@ -139,9 +139,9 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse double number - return null if not double token
     /// </summary>
-    private static BsonExpression TryParseDouble(Tokenizer tokenizer)
+    private static BsonExpression? TryParseDouble(Tokenizer tokenizer)
     {
-        string value = null;
+        string? value = null;
 
         if (tokenizer.Current.Type == TokenType.Double)
         {
@@ -157,7 +157,7 @@ internal class BsonExpressionParser
             }
         }
 
-        if (value != null)
+        if (value is not null)
         {
             var number = Convert.ToDouble(value, CultureInfo.InvariantCulture.NumberFormat);
 
@@ -170,9 +170,9 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse int number - return null if not int token
     /// </summary>
-    private static BsonExpression TryParseInt(Tokenizer tokenizer)
+    private static BsonExpression? TryParseInt(Tokenizer tokenizer)
     {
-        string value = null;
+        string? value = null;
 
         if (tokenizer.Current.Type == TokenType.Int)
         {
@@ -208,7 +208,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse bool - return null if not bool token
     /// </summary>
-    private static BsonExpression TryParseBool(Tokenizer tokenizer)
+    private static BsonExpression? TryParseBool(Tokenizer tokenizer)
     {
         if (tokenizer.Current.Type == TokenType.Word && (tokenizer.Current.Is("true") || tokenizer.Current.Is("false")))
         {
@@ -223,7 +223,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse null constant - return null if not null token
     /// </summary>
-    private static BsonExpression TryParseNull(Tokenizer tokenizer)
+    private static BsonExpression? TryParseNull(Tokenizer tokenizer)
     {
         if (tokenizer.Current.Type == TokenType.Word && tokenizer.Current.Is("null"))
         {
@@ -236,7 +236,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse string with both single/double quote - return null if not string
     /// </summary>
-    private static BsonExpression TryParseString(Tokenizer tokenizer)
+    private static BsonExpression? TryParseString(Tokenizer tokenizer)
     {
         if (tokenizer.Current.Type == TokenType.String)
         {
@@ -251,7 +251,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse json document - return null if not document token
     /// </summary>
-    private static BsonExpression TryParseDocument(Tokenizer tokenizer, bool root)
+    private static BsonExpression? TryParseDocument(Tokenizer tokenizer, bool root)
     {
         if (tokenizer.Current.Type != TokenType.OpenBrace) return null;
 
@@ -302,7 +302,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse array - return null if not array token
     /// </summary>
-    private static BsonExpression TryParseArray(Tokenizer tokenizer, bool root)
+    private static BsonExpression? TryParseArray(Tokenizer tokenizer, bool root)
     {
         if (tokenizer.Current.Type != TokenType.OpenBracket) return null;
 
@@ -337,7 +337,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse parameter - return null if not parameter token
     /// </summary>
-    private static BsonExpression TryParseParameter(Tokenizer tokenizer)
+    private static BsonExpression? TryParseParameter(Tokenizer tokenizer)
     {
         if (tokenizer.Current.Type != TokenType.At) return null;
 
@@ -356,7 +356,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse inner expression - return null if not bracket token
     /// </summary>
-    private static BsonExpression TryParseInnerExpression(Tokenizer tokenizer, bool root)
+    private static BsonExpression? TryParseInnerExpression(Tokenizer tokenizer, bool root)
     {
         if (tokenizer.Current.Type != TokenType.OpenParenthesis) return null;
 
@@ -372,7 +372,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Try parse method call - return null if not method call
     /// </summary>
-    private static BsonExpression TryParseMethodCall(Tokenizer tokenizer, bool root)
+    private static BsonExpression? TryParseMethodCall(Tokenizer tokenizer, bool root)
     {
         var token = tokenizer.Current;
 
@@ -411,7 +411,7 @@ internal class BsonExpressionParser
 
         var method = BsonExpression.GetMethod(token.Value, parameters.Count);
 
-        if (method == null) throw ERR_UNEXPECTED_TOKEN($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token);
+        if (method is null) throw ERR_UNEXPECTED_TOKEN($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token);
 
         return BsonExpression.Call(method, parameters.ToArray());
     }
@@ -419,7 +419,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Parse JSON-Path - return null if not method call
     /// </summary>
-    private static BsonExpression TryParsePath(Tokenizer tokenizer, bool root)
+    private static BsonExpression? TryParsePath(Tokenizer tokenizer, bool root)
     {
         // test $ or @ or WORD
         if (tokenizer.Current.Type != TokenType.At && tokenizer.Current.Type != TokenType.Dollar && tokenizer.Current.Type != TokenType.Word) return null;
@@ -558,7 +558,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Read next token as an operant - returns null if next token are not an operant
     /// </summary>
-    private static string ReadOperant(Tokenizer tokenizer)
+    private static string? ReadOperant(Tokenizer tokenizer)
     {
         var token = tokenizer.LookAhead(true);
 

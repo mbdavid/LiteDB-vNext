@@ -1,9 +1,7 @@
-﻿using System.Runtime;
+﻿namespace LiteDB.Engine;
 
-namespace LiteDB.Engine;
-
-[AutoInterface]
-internal class FileDisk : IFileDisk
+[AutoInterface(typeof(IDisposable))]
+internal class DiskStream : IDiskStream
 {
     private readonly IEngineSettings _settings;
     private readonly IStreamFactory _streamFactory;
@@ -13,7 +11,7 @@ internal class FileDisk : IFileDisk
 
     public string Name => Path.GetFileName(_settings.Filename);
 
-    public FileDisk(IServicesFactory factory)
+    public DiskStream(IServicesFactory factory)
     {
         _settings = factory.Settings;
         _streamFactory = factory.GetStreamFactory();
@@ -27,7 +25,7 @@ internal class FileDisk : IFileDisk
     {
         // get a new FileStream connected to file
         _stream = _streamFactory.GetStream(canWrite, 
-            canWrite ? FileOptions.RandomAccess : FileOptions.SequentialScan);
+            canWrite ? FileOptions.SequentialScan : FileOptions.RandomAccess);
 
         // reading file header
         var buffer = new byte[FILE_HEADER_SIZE];
@@ -75,7 +73,7 @@ internal class FileDisk : IFileDisk
     /// </summary>
     public async Task<bool> ReadPageAsync(long position, PageBuffer page)
     {
-        if (_contentStream is null) throw new InvalidOperationException("Datafile closed");
+        if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
 
         // add header file offset
         _contentStream.Position = position + FILE_HEADER_SIZE;
@@ -93,7 +91,7 @@ internal class FileDisk : IFileDisk
 
     public async Task WritePageAsync(PageBuffer page)
     {
-        if (_contentStream is null) throw new InvalidOperationException("Datafile closed");
+        if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
 
         ENSURE(page.Position != long.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
@@ -104,6 +102,19 @@ internal class FileDisk : IFileDisk
         page.Header.WriteToBuffer(page.Buffer);
 
         await _contentStream.WriteAsync(page.Buffer, 0, PAGE_SIZE);
+    }
+
+    /// <summary>
+    /// Write a specific byte in datafile with a flag/byte value - used to restore. Use sync write
+    /// </summary>
+    public void WriteFlag(int headerPosition, byte flag)
+    {
+        if (_stream is null) throw new InvalidOperationException("Datafile closed");
+
+        _stream.Position = headerPosition;
+        _stream.WriteByte(flag);
+
+        _stream.Flush();
     }
 
     public void Dispose()

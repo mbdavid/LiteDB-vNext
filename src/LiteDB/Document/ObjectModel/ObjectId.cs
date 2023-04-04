@@ -138,9 +138,9 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// if the given object is equal to the value of this instance. 
     /// Returns false otherwise.
     /// </summary>
-    public bool Equals(ObjectId other)
+    public bool Equals(ObjectId? other)
     {
-        return other != null && 
+        return other is not null && 
             this.Timestamp == other.Timestamp &&
             this.Machine == other.Machine &&
             this.Pid == other.Pid &&
