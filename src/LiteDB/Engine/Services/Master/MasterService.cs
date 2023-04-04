@@ -46,7 +46,7 @@ internal class MasterService : IMasterService
     /// </summary>
     public async Task ReadFromDiskAsync()
     {
-        var buffer = _bufferFactory.AllocateNewPage();
+        var page = _bufferFactory.AllocateNewPage(false);
         byte[]? bufferDocument = null;
 
         var reader = await _disk.RentDiskReaderAsync();
@@ -57,15 +57,15 @@ internal class MasterService : IMasterService
             var pagePosition = PageService.GetPagePosition(MASTER_PAGE_ID);
 
             // read first 8k
-            await reader.ReadPageAsync(pagePosition, buffer);
+            await reader.ReadPageAsync(pagePosition, page);
 
             // read document size
-            var masterLength = buffer.AsSpan(PAGE_HEADER_SIZE).ReadVariantLength(out _);
+            var masterLength = page.AsSpan(PAGE_HEADER_SIZE).ReadVariantLength(out _);
 
             // if $master document fit in one page, just read from buffer
             if (masterLength < PAGE_CONTENT_SIZE)
             {
-                var master = _reader.ReadDocument(buffer.AsSpan(PAGE_HEADER_SIZE), null, false, out _)!;
+                var master = _reader.ReadDocument(page.AsSpan(PAGE_HEADER_SIZE), null, false, out _)!;
 
                 this.UpdateDocument(master);
             }
@@ -76,7 +76,7 @@ internal class MasterService : IMasterService
                 bufferDocument = ArrayPool<byte>.Shared.Rent(masterLength);
 
                 // copy first page already read
-                Buffer.BlockCopy(buffer.Buffer, 0, bufferDocument, 0, PAGE_HEADER_SIZE);
+                Buffer.BlockCopy(page.Buffer, 0, bufferDocument, 0, PAGE_HEADER_SIZE);
 
                 // track how many bytes are readed (remove first page already read)
                 var bytesToRead = masterLength - PAGE_CONTENT_SIZE;
@@ -89,11 +89,11 @@ internal class MasterService : IMasterService
                     pagePosition += PAGE_SIZE;
 
                     // reuse same buffer (will be copied to bufferDocumnet)
-                    await reader.ReadPageAsync(pagePosition, buffer);
+                    await reader.ReadPageAsync(pagePosition, page);
 
                     var pageContentSize = bytesToRead > PAGE_CONTENT_SIZE ? PAGE_CONTENT_SIZE : bytesToRead;
 
-                    Buffer.BlockCopy(buffer.Buffer, 0, bufferDocument, docPosition, pageContentSize);
+                    Buffer.BlockCopy(page.Buffer, 0, bufferDocument, docPosition, pageContentSize);
 
                     bytesToRead -= pageContentSize;
                     docPosition += pageContentSize;
@@ -111,7 +111,7 @@ internal class MasterService : IMasterService
             if (bufferDocument is not null)  ArrayPool<byte>.Shared.Return(bufferDocument);
 
             // deallocate buffer
-            _bufferFactory.DeallocatePage(buffer);
+            _bufferFactory.DeallocatePage(page);
 
             // return reader disk
             _disk.ReturnDiskReader(reader);

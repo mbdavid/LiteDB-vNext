@@ -8,8 +8,6 @@
 [AutoInterface(typeof(IDisposable))]
 internal class BufferFactory : IBufferFactory
 {
-    private readonly IMemoryCacheService _memoryCache;
-
     /// <summary>
     /// A queue of all available (re-used) free page buffers. Rental model
     /// </summary>
@@ -20,15 +18,14 @@ internal class BufferFactory : IBufferFactory
     /// </summary>
     private int _pagesAllocated = 0;
 
-    public BufferFactory(IMemoryCacheService memoryCache)
+    public BufferFactory()
     {
-        _memoryCache = memoryCache;
     }
 
     /// <summary>
     /// Allocate, in memory, a new array with PAGE_SIZE inside a PageBuffer struct reference.
     /// </summary>
-    public PageBuffer AllocateNewPage()
+    public PageBuffer AllocateNewPage(bool isDirty)
     {
         if (_freePages.TryDequeue(out var page))
         {
@@ -37,7 +34,7 @@ internal class BufferFactory : IBufferFactory
 
         Interlocked.Increment(ref _pagesAllocated);
 
-        return new PageBuffer();
+        return new PageBuffer() { IsDirty = isDirty };
     }
 
     public void DeallocatePage(PageBuffer page)
@@ -49,30 +46,6 @@ internal class BufferFactory : IBufferFactory
 
         // neste momento posso escolher se adiciono no _freePages
         _freePages.Enqueue(page);
-    }
-
-    /// <summary>
-    /// Try convert a readable page buffer into a writable page buffer. If only current thread are using, convert it.
-    /// Otherwise return a new AllocateNewPage()
-    /// </summary>
-    public PageBuffer GetWritePage(PageBuffer readPage)
-    {
-        // if readBuffer are not used by anyone in cache (ShareCounter == 1 - only current thread), remove it
-        if (_memoryCache.TryRemovePageFromCache(readPage, 1))
-        {
-            // it's safe here to use readBuffer as writeBuffer (nobody else are reading)
-            return readPage;
-        }
-        else
-        {
-            // create a new page in memory
-            var buffer = this.AllocateNewPage();
-
-            // copy content from clean buffer to write buffer (if exists)
-            readPage.AsSpan().CopyTo(buffer.AsSpan());
-
-            return buffer;
-        }
     }
 
     public int CleanUp()

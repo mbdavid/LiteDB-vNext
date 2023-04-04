@@ -1,9 +1,10 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
+/// Should be a class to be used in heap
 /// * Shared (thread safe)
 /// </summary>
-internal struct PageBuffer
+internal class PageBuffer
 {
     /// <summary>
     /// Position on disk where this page came from or where this page must be stored
@@ -82,5 +83,18 @@ internal struct PageBuffer
     public bool IsHeaderEmpty()
     {
         return this.Buffer.AsSpan()[0..(PAGE_HEADER_SIZE - 1)].IsFullZero();
+    }
+
+    /// <summary>
+    /// Copy buffer content to another PageBuffer and reload Header
+    /// </summary>
+    public void CopyBufferTo(PageBuffer page)
+    {
+        // copy content
+        this.Buffer.AsSpan().CopyTo(page.Buffer);
+
+        // update page header
+        page.Header.ReadFromBuffer(page.AsSpan());
+
     }
 }

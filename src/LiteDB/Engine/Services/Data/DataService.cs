@@ -4,9 +4,9 @@
 internal class DataService : IDataService
 {
     /// <summary>
-    /// Get maximum data bytes[] that fit in 1 page = 8150
+    /// Get maximum data bytes[] that fit in 1 page = 7343 bytes
     /// </summary>
-    public const int MAX_DATA_BYTES_PER_PAGE = 7000;
+    public const int MAX_DATA_BYTES_PER_PAGE = AM_DATA_PAGE_SPACE_LARGE - 1;
 
     // dependency injection
     private readonly IAllocationMapService _allocationMap;
@@ -29,24 +29,24 @@ internal class DataService : IDataService
     /// </summary>
     public async Task<PageAddress> Insert(byte colID, BsonDocument doc)
     {
-        var bytesLeft = doc.GetBytesCount();
+        var docLength = doc.GetBytesCount();
 
         //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
         // rent an array to fit all document serialized
-        var bufferDoc = ArrayPool<byte>.Shared.Rent(bytesLeft);
+        var bufferDoc = ArrayPool<byte>.Shared.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
         _writer.WriteDocument(bufferDoc, doc, out _);
 
         var firstBlock = PageAddress.Empty;
-        var bytesToCopy = Math.Min(bytesLeft, MAX_DATA_BYTES_PER_PAGE);
+        var bytesToCopy = Math.Min(docLength, MAX_DATA_BYTES_PER_PAGE);
 
         // get first page
         var page = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
 
         // one single page
-        if (bytesToCopy <= bytesLeft)
+        if (bytesToCopy <= docLength)
         {
             var dataBlock = _dataPage.InsertDataBlock(page, bufferDoc, PageAddress.Empty);
 
@@ -55,33 +55,35 @@ internal class DataService : IDataService
         // multiple pages
         else
         {
-            var pages = new PageBuffer[bytesLeft % MAX_DATA_BYTES_PER_PAGE];
-            var pageIndex = 0;
+            var pageCount = docLength / MAX_DATA_BYTES_PER_PAGE + (docLength % MAX_DATA_BYTES_PER_PAGE == 0 ? 0 : 1);
+            var pages = new PageBuffer[pageCount];
 
+            // copy first page to array
             pages[0] = page;
 
-            // load/create all pages before
-            while (bytesLeft > 0)
+            // load all pages with full space available
+            for (var i = 1; i < pages.Length; i++)
             {
-                bytesToCopy = Math.Min(bytesLeft, MAX_DATA_BYTES_PER_PAGE);
+                bytesToCopy = i == pages.Length - 1 ? 
+                    (docLength - ((pages.Length - 1) * MAX_DATA_BYTES_PER_PAGE)) : 
+                    MAX_DATA_BYTES_PER_PAGE;
 
-                var nextPage = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
-
-                pages[++pageIndex] = nextPage;
-
-                bytesLeft -= bytesToCopy;
+                pages[i] = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
             }
 
             var nextBlock = PageAddress.Empty;
 
-            // copy document bytes in reverse page order (to be set next block)
+            // copy document bytes in reverse page order (to set next block)
             for (var i = pages.Length - 1; i >= 0; i--)
             {
                 var startIndex = i * MAX_DATA_BYTES_PER_PAGE;
-                var docLength = i == pages.Length - 1 ? bytesToCopy : MAX_DATA_BYTES_PER_PAGE;
+
+                bytesToCopy = i == pages.Length - 1 ?
+                    (docLength - ((pages.Length - 1) * MAX_DATA_BYTES_PER_PAGE)) :
+                    MAX_DATA_BYTES_PER_PAGE;
 
                 var dataBlock = _dataPage.InsertDataBlock(pages[i], 
-                    bufferDoc.AsSpan(startIndex, docLength), 
+                    bufferDoc.AsSpan(startIndex, bytesToCopy), 
                     nextBlock);
 
                 nextBlock = dataBlock.RowID;

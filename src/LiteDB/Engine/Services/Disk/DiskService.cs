@@ -99,7 +99,7 @@ internal class DiskService : IDiskService
 
         while (position < fileLength)
         {
-            var page = _bufferFactory.AllocateNewPage();
+            var page = _bufferFactory.AllocateNewPage(false);
 
             await _writer.ReadPageAsync(position, page);
 

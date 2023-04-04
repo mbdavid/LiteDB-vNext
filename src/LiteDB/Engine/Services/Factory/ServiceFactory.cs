@@ -35,13 +35,13 @@ internal partial class ServicesFactory : IServicesFactory
         _memoryCache = new MemoryCacheService();
         _indexCache = new IndexCacheService();
         _walIndex = new WalIndexService();
+        _bufferFactory = new BufferFactory();
 
         // settings dependency only
         _lock = new LockService(settings.Timeout);
         _streamFactory = new FileStreamFactory(settings);
 
         // other services dependencies
-        _bufferFactory = new BufferFactory(_memoryCache);
         _disk = new DiskService(settings, _bufferFactory, _streamFactory, this);
         _allocationMap = new AllocationMapService(_disk, _streamFactory, _bufferFactory);
         _master = new MasterService(_disk, _bufferFactory, _bsonReader, _bsonWriter);

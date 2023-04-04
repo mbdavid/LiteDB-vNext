@@ -167,7 +167,7 @@ internal class AllocationMapService : IAllocationMapService
         }
 
         // if there is no more free extend in any AM page, let's create a new allocation map page
-        var pageBuffer = _bufferFactory.AllocateNewPage();
+        var pageBuffer = _bufferFactory.AllocateNewPage(true);
 
         // get a new PageID based on last AM page
         var nextPageID = _pages.Last().PageID + AM_PAGE_STEP;

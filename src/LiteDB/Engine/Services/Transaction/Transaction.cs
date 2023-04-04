@@ -59,14 +59,16 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Try get page from local cache. If page not found, use ReadPage from disk
     /// </summary>
-    public async Task<PageBuffer> GetPageAsync(uint pageID)
+    public async Task<PageBuffer> GetPageAsync(uint pageID, bool writable)
     {
         if (_localPages.TryGetValue(pageID, out var page))
         {
+            ENSURE(writable, page.ShareCounter == 0, "page should not be in cache");
+
             return page;
         }
 
-        page = await this.ReadPageAsync(pageID, this.TransactionID); // transactionID = current ReadVersion
+        page = await this.ReadPageAsync(pageID, this.TransactionID, writable); // transactionID = current ReadVersion
 
         _localPages.Add(pageID, page);
 
@@ -76,7 +78,7 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Read a page from disk. Use direct position (data) or index log
     /// </summary>
-    private async Task<PageBuffer> ReadPageAsync(uint pageID, int readVersion)
+    private async Task<PageBuffer> ReadPageAsync(uint pageID, int readVersion, bool writable)
     {
         _reader ??= await _disk.RentDiskReaderAsync();
 
@@ -89,12 +91,34 @@ internal class Transaction : ITransaction
         // if page not found, allocate new page and read from disk
         if (page is null)
         {
-            page = _bufferFactory.AllocateNewPage();
+            page = _bufferFactory.AllocateNewPage(writable);
 
-            await _reader.ReadPageAsync(position, page.Value);
+            await _reader.ReadPageAsync(position, page);
+        }
+        // if found in cache but need to be writable
+        else if (writable)
+        {
+            // if readBuffer are not used by anyone in cache (ShareCounter == 1 - only current thread), remove it
+            if (_memoryCache.TryRemovePageFromCache(page, 1))
+            {
+                page.IsDirty = true;
+
+                // it's safe here to use readBuffer as writeBuffer (nobody else are reading)
+                return page;
+            }
+            else
+            {
+                // create a new page in memory
+                var newPage = _bufferFactory.AllocateNewPage(true);
+
+                // copy cache page content to new writable buffer
+                page.CopyBufferTo(newPage);
+
+                return newPage;
+            }
         }
 
-        return page.Value;
+        return page;
     }
 
     /// <summary>
@@ -102,13 +126,19 @@ internal class Transaction : ITransaction
     /// </summary>
     public async Task<PageBuffer> GetFreePageAsync(byte colID, PageType pageType, int bytesLength)
     {
-        //TODO: tenho que buscar primeiro no _localPages (manter em cache ultima retornada (por tipo)?
+        // first check if exists in localPages (TODO: como indexar isso??)
+        var localPage = _localPages.Values
+            .Where(x => x.Header.PageType == pageType && x.Header.FreeBytes >= bytesLength)
+            .FirstOrDefault();
 
+        if (localPage is not null) return localPage;
+
+        // request for allocation map service a new PageID for this collection
         var (pageID, isNew) = _allocationMap.GetFreePageID(colID, PageType.Data, bytesLength);
 
         if (isNew)
         {
-            var page = _bufferFactory.AllocateNewPage();
+            var page = _bufferFactory.AllocateNewPage(true);
 
             _dataPage.CreateNew(page, pageID, colID);
 
@@ -118,7 +148,7 @@ internal class Transaction : ITransaction
         }
         else
         {
-            var page = await this.GetPageAsync(pageID);
+            var page = await this.GetPageAsync(pageID, true);
 
             return page;
         }
