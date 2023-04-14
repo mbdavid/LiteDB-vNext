@@ -191,6 +191,7 @@ internal class AllocationMapService : IAllocationMapService
     {
         // nesse processo deve atualizar _collectionFreePages, adicionando as paginas no lugar certo
         // (não pode pre-existir, pois já foi "dequeue")
+        // tenho que cuidar a situação de paginas que ficam mudam o tipo para 
 
         // deve atualizar também o buffer das AM pages envolvidas.
         // Não há criação de AM pages aqui
@@ -201,7 +202,17 @@ internal class AllocationMapService : IAllocationMapService
             var allocationMapID = (int)(pageID / AM_PAGE_STEP);
             var extendIndex = (int)(pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
             var pageIndex = (int)(pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
-            byte value = 0; // calcular conforme page.Header.FreeSpace (0-7)
+            byte value = (page.Header.PageType, page.Header.FreeBytes) switch
+            {
+                (_, PAGE_CONTENT_SIZE) => 0, // empty page, no matter page type
+                (PageType.Data, >= AM_DATA_PAGE_SPACE_LARGE and < PAGE_CONTENT_SIZE) => 1,
+                (PageType.Data, >= AM_DATA_PAGE_SPACE_MEDIUM) => 2,
+                (PageType.Data, >= AM_DATA_PAGE_SPACE_SMALL) => 3,
+                (PageType.Data, < AM_DATA_PAGE_SPACE_SMALL) => 4,
+                (PageType.Index, >= AM_INDEX_PAGE_SPACE) => 5,
+                (PageType.Index, < AM_INDEX_PAGE_SPACE) => 6,
+                _ => throw new NotSupportedException()
+            };
 
             ENSURE(pageIndex != -1, "PageID cannot be an AM page ID");
 

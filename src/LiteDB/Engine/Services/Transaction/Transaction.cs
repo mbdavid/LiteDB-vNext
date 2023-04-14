@@ -53,7 +53,6 @@ internal class Transaction : ITransaction
             // enter in all
             await _lock.EnterCollectionWriteLockAsync(_writeCollections[i]);
         }
-
     }
 
     /// <summary>
@@ -154,16 +153,6 @@ internal class Transaction : ITransaction
         }
     }
 
-
-    /// <summary>
-    /// Add a new page recently created page to local cache
-    /// </summary>
-    public void AddPage(PageBuffer page)
-    {
-        _localPages.Add(page.Header.PageID, page);
-
-    }
-
     /// <summary>
     /// </summary>
     public async Task CommitAsync()
@@ -193,12 +182,14 @@ internal class Transaction : ITransaction
         // add pages to cache or decrement sharecount
         foreach(var page in _localPages.Values)
         {
+            // page already in cache
             if (page.ShareCounter > 0)
             {
                 page.Return();
             }
             else
             {
+                // try add this page in cache
                 var added = _memoryCache.AddPageInCache(page);
 
                 if (!added)
@@ -206,10 +197,10 @@ internal class Transaction : ITransaction
                     _bufferFactory.DeallocatePage(page);
                 }
             }
-
         }
 
-        var pagePositions = _localPages.Values
+        // update wal index with this new version
+        var pagePositions = dirtyPages
             .Select(x => (x.Header.PageID, x.Position));
 
         _walIndex.AddVersion(this.TransactionID, pagePositions);
