@@ -21,51 +21,61 @@ internal struct IndexNode
     private static int P_KEY(byte level) => P_PREV_NEXT + (level * PageAddress.SIZE * 2); // just after NEXT
 
     /// <summary>
-    /// RowID of this node inside a IndexPage (not persist)
+    /// Index position of this node inside a IndexPage (not persist)
     /// </summary>
-    public PageAddress RowID { get; }
+    public readonly PageAddress RowID;
+
+    /// <summary>
+    /// Segment location, on PageBuffer, where this index node are persisted (this data is not persisted)
+    /// This data change every page defrag - should used with version
+    /// </summary>
+    public readonly int Location;
 
     /// <summary>
     /// Index slot reference in CollectionIndex [1 byte]
     /// </summary>
-    public byte Slot { get; }
+    public readonly byte Slot;
 
     /// <summary>
     /// Skip-list level (0-31) - [1 byte]
     /// </summary>
-    public byte Level { get; }
+    public readonly byte Level;
 
     /// <summary>
     /// The object value that was indexed (max 255 bytes value)
     /// </summary>
-    public BsonValue Key { get; }
+    public readonly BsonValue Key;
 
     /// <summary>
     /// Reference for a datablock address
     /// </summary>
-    public PageAddress DataBlock { get; }
+    public readonly PageAddress DataBlock;
 
     /// <summary>
     /// Single linked-list for all nodes from a single document [5 bytes]
     /// </summary>
-    public PageAddress NextNode { get; private set; }
+    public PageAddress NextNode;
 
     /// <summary>
     /// Link to prev value (used in skip lists - Prev.Length = Next.Length) [5 bytes]
     /// </summary>
-    public PageAddress[] Prev { get; }
+    public readonly PageAddress[] Prev;
 
     /// <summary>
     /// Link to next value (used in skip lists - Prev.Length = Next.Length)
     /// </summary>
-    public PageAddress[] Next { get; }
+    public readonly PageAddress[] Next;
 
     /// <summary>
     /// Read index node from page block
     /// </summary>
-    public IndexNode(Span<byte> span, PageAddress rowID)
+    public IndexNode(PageBuffer page, PageAddress rowID, int location)
     {
-        this.RowID = rowID;
+        this.RowID = rowID; // reference position (PageID+Index)
+        this.Location = location; // location in page buffer
+
+        var span = page.AsSpan(location);
+
         this.Slot = span[P_SLOT];
         this.Level = span[P_LEVEL];
         this.DataBlock = span[P_DATA_BLOCK..].ReadPageAddress();
@@ -92,9 +102,11 @@ internal struct IndexNode
     /// <summary>
     /// Create new index node and persist into page block
     /// </summary>
-    public IndexNode(PageAddress position, Span<byte> span, byte slot, byte level, BsonValue key, PageAddress dataBlock)
+    public IndexNode(PageBuffer page, PageAddress rowID, int location, byte slot, byte level, BsonValue key, PageAddress dataBlock)
     {
-        this.RowID = position;
+        this.RowID = rowID;
+        this.Location = location;
+
         this.Slot = slot;
         this.Level = level;
         this.DataBlock = dataBlock;
@@ -102,6 +114,8 @@ internal struct IndexNode
         this.Next = new PageAddress[level];
         this.Prev = new PageAddress[level];
         this.Key = key;
+
+        var span = page.AsSpan(location);
 
         // persist in buffer read only data
         span[P_SLOT] = slot;
@@ -127,6 +141,7 @@ internal struct IndexNode
     public IndexNode(BsonDocument doc)
     {
         this.RowID = new PageAddress(0, 0);
+        this.Location = 0;
         this.Slot = 0;
         this.Level = 0;
         this.DataBlock = PageAddress.Empty;
@@ -149,7 +164,13 @@ internal struct IndexNode
     }
 
     /// <summary>
-    /// Update Prev[index] pointer (update in buffer too). Also, set page as dirty
+    /// Update Prev[index] pointer (update in buffer too).
+    /// </summary>
+    public void SetPrev(byte level, PageAddress value, PageBuffer page)
+        => SetPrev(level, value, page.AsSpan(this.Location));
+
+    /// <summary>
+    /// Update Prev[index] pointer (update in buffer too).
     /// </summary>
     public void SetPrev(byte level, PageAddress value, Span<byte> span)
     {
@@ -163,7 +184,13 @@ internal struct IndexNode
     }
 
     /// <summary>
-    /// Update Next[index] pointer (update in buffer too). Also, set page as dirty
+    /// Update Next[index] pointer (update in buffer too).
+    /// </summary>
+    public void SetNext(byte level, PageAddress value, PageBuffer page)
+        => SetNext(level, value, page.AsSpan(this.Location));
+
+    /// <summary>
+    /// Update Next[index] pointer (update in buffer too).
     /// </summary>
     public void SetNext(byte level, PageAddress value, Span<byte> span)
     {
@@ -185,7 +212,6 @@ internal struct IndexNode
     }
 
     #region Static Helpers
-
 
     /// <summary>
     /// Calculate how many bytes this node will need on page block
@@ -220,6 +246,6 @@ internal struct IndexNode
 
     public override string ToString()
     {
-        return $"Pos: [{this.RowID}] - Key: {this.Key}";
+        return $"RowID: [{this.RowID}] - Key: {this.Key}";
     }
 }

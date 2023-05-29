@@ -14,7 +14,7 @@ internal class AllocationMapPage
 
     private readonly int _allocationMapID;
 
-    private PageBuffer _page;
+    private readonly PageBuffer _page;
 
     public uint PageID => _page.Header.PageID;
 

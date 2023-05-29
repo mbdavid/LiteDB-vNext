@@ -12,6 +12,37 @@ internal class MasterService : IMasterService
     private readonly IBsonReader _reader;
     private readonly IBsonWriter _writer;
 
+    /*
+    # Master Document Structure
+    {
+        "collections": {
+            "<col-name>": {
+                "colID": 1,
+                "meta": { ... },
+                "indexes": {
+                    "<index-name>": {
+                        "slot": 0,
+                        "expr": "$._id",
+                        "unique": true,
+                        "headPageID": 8,
+                        "headIndex": 0,
+                        "tailPageID": 8,
+                        "tailIndex": 1,
+                        "meta": { ... }
+                    },
+                    //...
+                }
+            },
+            //...
+        },
+        "pragmas": {
+            "user_version": 0,
+            "limit": 0,
+            "checkpoint": 1000
+        }
+    }
+    */
+
     /// <summary>
     /// A dictionary with all collection indexed by collection name
     /// </summary>
@@ -43,8 +74,9 @@ internal class MasterService : IMasterService
 
     /// <summary>
     /// Initialize (when database open) reading first extend pages. Database should have no log data to read this
+    /// Initialize _master document instance
     /// </summary>
-    public async Task ReadFromDiskAsync()
+    public async Task InitializeAsync()
     {
         var page = _bufferFactory.AllocateNewPage(false);
         byte[]? bufferDocument = null;
@@ -53,11 +85,10 @@ internal class MasterService : IMasterService
 
         try
         {
-            // get first $master page
-            var pagePosition = PageService.GetPagePosition(MASTER_PAGE_ID);
+            var pagePositionID = (uint)MASTER_PAGE_ID;
 
-            // read first 8k
-            await reader.ReadPageAsync(pagePosition, page);
+            // get first $master page - first 8k
+            await reader.ReadPageAsync(pagePositionID, page);
 
             // read document size
             var masterLength = page.AsSpan(PAGE_HEADER_SIZE).ReadVariantLength(out _);
@@ -86,10 +117,10 @@ internal class MasterService : IMasterService
                 while(bytesToRead > 0)
                 {
                     // move to another page
-                    pagePosition += PAGE_SIZE;
+                    pagePositionID++;
 
                     // reuse same buffer (will be copied to bufferDocumnet)
-                    await reader.ReadPageAsync(pagePosition, page);
+                    await reader.ReadPageAsync(pagePositionID, page);
 
                     var pageContentSize = bytesToRead > PAGE_CONTENT_SIZE ? PAGE_CONTENT_SIZE : bytesToRead;
 
@@ -146,15 +177,28 @@ internal class MasterService : IMasterService
     }
 
     /// <summary>
-    /// Write all master document into page buffer. Must send as pages as needed according with document size/page content size
+    /// Write all master document into page buffer and write on this.
     /// </summary>
-    public void WriteMasterBuffer(BsonDocument master, PageBuffer[] pages)
+    public async Task WriteCollectionAsync(BsonDocument master, ITransaction transaction)
     {
-        if (pages.Length == 1)
-        {
-            var span = pages[0].AsSpan(PAGE_HEADER_SIZE, PAGE_CONTENT_SIZE);
+        // get master length to know if fits in 1 page or need many
+        var masterLength = master.GetBytesCount();
+        var initialMasterPageID = 1u;
+        var page = await transaction.GetPageAsync(initialMasterPageID, true);
 
-            _writer.WriteDocument(span, master, out _);
+        // setup first page header
+        page.Header.ColID = 0;
+        page.Header.ItemsCount = 1;
+        page.Header.PageType = PageType.Data;
+        page.Header.PageID = initialMasterPageID;
+
+        // if fits in 1 page
+        if (masterLength <= PAGE_CONTENT_SIZE)
+        {
+            page.Header.UsedBytes = (ushort)masterLength;
+
+            // serialize master document into page content area
+            _writer.WriteDocument(page.AsSpan(PAGE_HEADER_SIZE, PAGE_CONTENT_SIZE), master, out _);
         }
         else
         {
@@ -167,14 +211,21 @@ internal class MasterService : IMasterService
 
     #region Operations in $master
 
-    public BsonDocument AddCollection(string name, PageAddress head, PageAddress tail)
+    public byte NewColID()
     {
-        //TODO: validar
-        var master = new BsonDocument(_master!);
+        //TODO: testar limites
 
         var colID = Enumerable.Range(1, 250)
             .Where(x => this.Collections!.Values.Any(y => y.ColID == x) == false)
             .FirstOrDefault();
+
+        return (byte)colID;
+    }
+
+    public BsonDocument AddCollection(byte colID, string name, PageAddress head, PageAddress tail)
+    {
+        //TODO: validar
+        var master = new BsonDocument(_master!);
 
         master[MK_COL].AsDocument[name] = new BsonDocument
         {
@@ -194,9 +245,11 @@ internal class MasterService : IMasterService
         //TODO: validar
         var master = new BsonDocument(_master!);
 
-        var slot = Enumerable.Range(1, 32)
+        var slot = Enumerable.Range(1, byte.MaxValue)
             .Where(x => collection.Indexes.Values.Any(y => y.Slot == x) == false)
             .FirstOrDefault();
+
+        if (slot == byte.MaxValue) throw ERR($"{collection.Name} collection has reached the limit of {byte.MaxValue} indexes.");
 
         var indexes = master[MK_COL].AsDocument
             [collection.Name].AsDocument
@@ -221,20 +274,20 @@ internal class MasterService : IMasterService
 
     public BsonDocument DropIndex(byte colID, byte slot)
     {
-        var clone = new BsonDocument(_master!);
-        return clone;
+        var master = new BsonDocument(_master!);
+        return master;
     }
 
     public BsonDocument DropCollection(byte colID)
     {
-        var clone = new BsonDocument(_master!);
-        return clone;
+        var master = new BsonDocument(_master!);
+        return master;
     }
 
     public BsonDocument SetPragma(string pragma, BsonValue value)
     {
-        var clone = new BsonDocument(_master!);
-        return clone;
+        var master = new BsonDocument(_master!);
+        return master;
     }
 
     #endregion

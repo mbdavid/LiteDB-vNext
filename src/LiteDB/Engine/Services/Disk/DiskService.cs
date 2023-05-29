@@ -15,6 +15,9 @@ internal class DiskService : IDiskService
     private readonly IDiskStream _writer;
     private readonly ConcurrentQueue<IDiskStream> _readers = new ();
 
+    private uint _logStartPositionID;
+    private int _logEndPositionID;
+
     private bool _writeInit = false;
 
     public DiskService(IEngineSettings settings, 
@@ -92,16 +95,15 @@ internal class DiskService : IDiskService
     /// </summary>
     public async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
     {
-        long position = AM_FIRST_PAGE_ID * PAGE_SIZE;
+        uint positionID = AM_FIRST_PAGE_ID;
 
-        // using writer stream because this reads occurs on database open
-        var fileLength = _streamFactory.GetLength();
+        var lastPositionID = this.GetLastPositionID();
 
-        while (position < fileLength)
+        while (positionID <= lastPositionID)
         {
             var page = _bufferFactory.AllocateNewPage(false);
 
-            await _writer.ReadPageAsync(position, page);
+            await _writer.ReadPageAsync(positionID, page);
 
             if (page.IsHeaderEmpty())
             {
@@ -111,12 +113,16 @@ internal class DiskService : IDiskService
 
             yield return page;
 
-            position += (AM_PAGE_STEP * PAGE_SIZE);
+            positionID += AM_PAGE_STEP;
         }
     }
 
-    public async Task WritePagesAsync(IEnumerable<PageBuffer> pages)
+    /// <summary>
+    /// </summary>
+    public async Task WriteLogPagesAsync(IEnumerable<PageBuffer> pages)
     {
+        //TODO: disk lock here
+
         // set recovery flag in header file to true at first use
         if (_writeInit == false)
         {
@@ -126,10 +132,53 @@ internal class DiskService : IDiskService
 
         foreach (var page in pages)
         {
+            ENSURE(page.PositionID != uint.MaxValue, $"current page {page.PositionID} should be MaxValue");
+
+            // get next page position on log
+            page.PositionID = this.GetNextLogPositionID();
+
+            // write page to writer stream
             await _writer.WritePageAsync(page);
         }
 
+        // flush to disk
         await _writer.FlushAsync();
+    }
+
+    /// <summary>
+    /// Get next positionID in log
+    /// </summary>
+    public uint GetNextLogPositionID()
+    {
+        if (_logStartPositionID == 0 && _logEndPositionID == 0)
+        {
+            _logStartPositionID = this.GetLastPositionID() + 5; //TODO: calcular para proxima extend
+
+            _logEndPositionID = (int)_logStartPositionID;
+
+            return _logStartPositionID;
+        }
+
+        return (uint)Interlocked.Increment(ref _logEndPositionID);
+    }
+
+    /// <summary>
+    /// Calculate, using disk file length, last PositionID. Should considering FILE_HEADER_SIZE and celling pages.
+    /// </summary>
+    public uint GetLastPositionID()
+    {
+        var fileLength = _streamFactory.GetLength();
+
+        // fileLength must be, at least, FILE_HEADER
+        if (fileLength <= FILE_HEADER_SIZE) throw ERR($"Invalid datafile. Data file is too small (length = {fileLength}).");
+
+        var content = fileLength - FILE_HEADER_SIZE;
+        var celling = content % PAGE_SIZE > 0 ? 1 : 0;
+        var result = (uint)(content / PAGE_SIZE);
+
+        // if last page was not completed written, add missing bytes to complete
+
+        return (uint)(result + celling - 1);
     }
 
     public void Dispose()

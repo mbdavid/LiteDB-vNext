@@ -21,6 +21,7 @@ internal partial class ServicesFactory : IServicesFactory
     private readonly IMasterService _master;
     private readonly ITransactionMonitor _monitor;
 
+    private readonly IPageService _pageService;
     private readonly IDataPageService _dataPageService;
     private readonly IIndexPageService _indexPageService;
 
@@ -47,12 +48,11 @@ internal partial class ServicesFactory : IServicesFactory
         _master = new MasterService(_disk, _bufferFactory, _bsonReader, _bsonWriter);
         _monitor = new TransactionMonitor(this);
 
-        // create single instance of PageService to be used in both data/index page services
-        var pageService = new PageService();
+        // page service
+        _pageService = new PageService();
 
-        _dataPageService = new DataPageService(pageService);
-        _indexPageService = new IndexPageService(pageService);
-
+        _dataPageService = new DataPageService(_pageService);
+        _indexPageService = new IndexPageService(_pageService);
     }
 
     #region Singleton instances (Get/Properties)
@@ -77,7 +77,9 @@ internal partial class ServicesFactory : IServicesFactory
 
     public IIndexCacheService GetIndexCache() => _indexCache;
 
-    public IDataPageService GetDataPageService() =>_dataPageService;
+    public IPageService GetPageService() => _pageService;
+
+    public IDataPageService GetDataPageService() => _dataPageService;
 
     public IIndexPageService GetIndexPageService() => _indexPageService;
 
@@ -102,9 +104,6 @@ internal partial class ServicesFactory : IServicesFactory
     public IEngineContext CreateEngineContext() 
         => new EngineContext();
 
-    public IOpenCommand CreateOpenCommand(IEngineContext ctx) 
-        => new OpenCommand(this, ctx);
-
     public IDiskStream CreateDiskStream() 
         => new DiskStream(this);
 
@@ -118,9 +117,27 @@ internal partial class ServicesFactory : IServicesFactory
     public INewDatafile CreateNewDatafile() 
         => new NewDatafile(this);
 
-    public ITransaction CreateTransaction(int transactionID, byte[] writeCollections) 
-        => new Transaction(this, transactionID, writeCollections);
+    public ITransaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) 
+        => new Transaction(this, transactionID, writeCollections, readVersion);
 
+    public IDataService CreateDataService(ITransaction transaction)
+        => new DataService(this, transaction);
+
+    public IIndexService CreateIndexService(ITransaction transaction)
+        => new IndexService(this, transaction);
+
+    #region Commands
+
+    public IOpenCommand CreateOpenCommand(IEngineContext ctx)
+        => new OpenCommand(this, ctx);
+
+    public ICreateCollectionCommand CreateCreateCollectionCommand(IEngineContext ctx)
+        => new CreateCollectionCommand(this, ctx);
+
+    public IInsertCommand CreateInsertCommand(IEngineContext ctx)
+        => new InsertCommand(this, ctx);
+
+    #endregion
 
     #endregion
 

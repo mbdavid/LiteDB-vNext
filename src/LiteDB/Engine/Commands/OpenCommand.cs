@@ -39,7 +39,7 @@ internal class OpenCommand : IOpenCommand
         await _allocationMap.InitializeAsync();
 
         // read $master
-        await _master.ReadFromDiskAsync();
+        await _master.InitializeAsync();
 
         // update header/state
         _factory.SetStateOpen(fileHeader);

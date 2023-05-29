@@ -18,24 +18,24 @@ internal struct FileHeader
 
     #region Buffer Field Positions
 
-    public const int P_HEADER_INFO = 0;  // 0-26 (27 bytes)
-    public const int P_FILE_VERSION = 27; // 27-27 (1 byte)
+    public const int P_HEADER_INFO = 0;  // 0-26 [string(27)]
+    public const int P_FILE_VERSION = 27; // 27-27 [byte]
 
-    public const int P_ENCRYPTED = 28; // 28-28 (1 byte)
-    public const int P_ENCRYPTION_SALT = 29; // 29-44  (16 bytes)
+    public const int P_ENCRYPTED = 28; // 28-28 [byte]
+    public const int P_ENCRYPTION_SALT = 29; // 29-44 [guid]
 
-    public const int P_INSTANCE_ID = 45; // 45-61  (16 bytes)
-    public const int P_CREATION_TIME = 62; // 62-70 (8 bytes)
-    public const int P_COLLATION_LCID = 71; // 71-74 (4 bytes)
-    public const int P_COLLATION_OPTS = 75; // 75-78 (4 bytes)
-    public const int P_ENGINE_VER_MAJOR = 81; // 79-81 (1 byte "6.*.*")
-    public const int P_ENGINE_VER_MINOR = 82; // 79-81 (1 byte "*.1.*")
-    public const int P_ENGINE_VER_BUILD = 83; // 79-81 (1 byte "*.*.4")
+    public const int P_INSTANCE_ID = 45; // 45-60 [guid]
+    public const int P_CREATION_TIME = 61; // 61-68 [datetime-long]
+    public const int P_COLLATION_LCID = 69; // 69-72 [int]
+    public const int P_COLLATION_OPTS = 73; // 73-77 [int]
+    public const int P_ENGINE_VER_MAJOR = 77; // 77-79 [byte "6.*.*"]
+    public const int P_ENGINE_VER_MINOR = 78; // 77-79 [byte "*.1.*"]
+    public const int P_ENGINE_VER_BUILD = 79; // 77-79 [byte "*.*.4"]
 
-    // reserved 82-97 (15 bytes)
+    // reserved 80-97 (18 bytes)
 
-    public const int P_CHANGE_ID = 98; // (1 byte)
-    public const int P_RECOVERY = 99; // (1 byte)
+    public const int P_CHANGE_ID = 98; // [byte] ????
+    public const int P_RECOVERY = 99; // [byte]
 
     #endregion
 
@@ -124,7 +124,7 @@ internal struct FileHeader
         return array;
     }
 
-    public void ValidateHeader()
+    public void ValidateFileHeader()
     {
         if (_headerInfo != HEADER_INFO)
             throw ERR_INVALID_DATABASE();

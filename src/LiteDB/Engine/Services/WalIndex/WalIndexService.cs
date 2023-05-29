@@ -6,27 +6,44 @@ namespace LiteDB.Engine;
 
 /// <summary>
 /// Do all WAL index services based on LOG file - has only single instance per engine
+/// Do not work with PageBuffers, only with data position and version pointers
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface]
 internal class WalIndexService : IWalIndexService
 {
-    // dependency injection
+    /// <summary>
+    /// A indexed dictionary by PageID where each item are a sort list of read version and disk log position
+    /// </summary>
+    private readonly ConcurrentDictionary<uint, List<(int version, uint positionID)>> _index = new();
 
     /// <summary>
-    /// A indexed dictionary by PageID where each item are a sorter-list of read version and disk log position
+    /// Current read version
     /// </summary>
-    private readonly ConcurrentDictionary<uint, List<(int version, long position)>> _index = new();
+    private int _readVersion = 0;
+
+    /// <summary>
+    /// Minimal read version avaiable in WAL index (before checkpoint)
+    /// </summary>
+    public int MinReadVersion { get; private set; } = 1;
 
     public WalIndexService()
     {
     }
 
     /// <summary>
+    /// Get next read version when transaction starts
+    /// </summary>
+    public int GetNextReadVersion()
+    {
+        return Interlocked.Increment(ref _readVersion);
+    }
+
+    /// <summary>
     /// Get a page position (in disk) for a page that are inside WAL. 
     /// Returns MaxValue if not found
     /// </summary>
-    public long GetPagePosition(uint pageID, int version, out int walVersion)
+    public uint GetPagePositionID(uint pageID, int version, out int walVersion)
     {
         // initial value
         walVersion = 0;
@@ -35,12 +52,12 @@ internal class WalIndexService : IWalIndexService
         if (version == 0 || 
             _index.TryGetValue(pageID, out var listVersion) == false)
         {
-            return PageService.GetPagePosition(pageID);
+            return pageID;
         }
 
         // list are sorted by version number
         var idx = listVersion.Count;
-        var position = PageService.GetPagePosition(pageID); // not found (get from data)
+        var positionID = pageID; // not found (get from data)
 
         // get all page versions in wal-index
         // and then filter only equals-or-less then selected version
@@ -53,30 +70,30 @@ internal class WalIndexService : IWalIndexService
             if (ver <= version)
             {
                 walVersion = ver;
-                position = pos;
+                positionID = pos;
 
                 break;
             }
         }
 
-        return position;
+        return positionID;
     }
 
-    public void AddVersion(int version, IEnumerable<(uint pageID, long position)> pagePositions)
+    public void AddVersion(int version, IEnumerable<(uint pageID, uint positionID)> pagePositions)
     {
-        foreach (var (pageID, position) in pagePositions)
+        foreach (var (pageID, positionID) in pagePositions)
         {
             if (_index.TryGetValue(pageID, out var listVersion))
             {
                 // add version/position into pageID
-                listVersion.Add(new(version, position));
+                listVersion.Add(new(version, positionID));
             }
             else
             {
                 listVersion = new()
                 {
                     // add version/position into pageID
-                    new(version, position)
+                    new(version, positionID)
                 };
 
                 // add listVersion with first item in index for this pageID
@@ -85,8 +102,14 @@ internal class WalIndexService : IWalIndexService
         }
     }
 
+    /// <summary>
+    /// [ThreadSafe]
+    /// </summary>
     public void Clear()
     {
+        // reset minimal read version to next read version
+        this.MinReadVersion = _readVersion + 1;
+
         _index.Clear();
     }
 }

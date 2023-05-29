@@ -23,9 +23,17 @@ internal class Transaction : ITransaction
     //
     private readonly byte[] _writeCollections;
 
+    /// <summary>
+    /// Read wal version
+    /// </summary>
+    public int ReadVersion { get; private set; }
+
+    /// <summary>
+    /// Incremental transaction ID
+    /// </summary>
     public int TransactionID { get; }
 
-    public Transaction(IServicesFactory factory, int transactionID, byte[] writeCollections)
+    public Transaction(IServicesFactory factory, int transactionID, byte[] writeCollections, int readVersion)
     {
         _factory = factory;
         _disk = factory.GetDisk();
@@ -37,6 +45,8 @@ internal class Transaction : ITransaction
         _lock = factory.GetLock();
 
         this.TransactionID = transactionID;
+        this.ReadVersion = readVersion; // -1 means not initialized
+
         _writeCollections = writeCollections;
     }
 
@@ -53,6 +63,15 @@ internal class Transaction : ITransaction
             // enter in all
             await _lock.EnterCollectionWriteLockAsync(_writeCollections[i]);
         }
+
+        // if readVersion is -1 must be initialized with next read version from wal
+        if (this.ReadVersion == -1)
+        {
+            // initialize read version from wal
+            this.ReadVersion = _walIndex.GetNextReadVersion();
+        }
+
+        ENSURE(this.ReadVersion >= _walIndex.MinReadVersion, $"read version do not exists in wal index: {this.ReadVersion} >= {_walIndex.MinReadVersion}");
     }
 
     /// <summary>
@@ -67,7 +86,7 @@ internal class Transaction : ITransaction
             return page;
         }
 
-        page = await this.ReadPageAsync(pageID, this.TransactionID, writable); // transactionID = current ReadVersion
+        page = await this.ReadPageAsync(pageID, this.ReadVersion, writable);
 
         _localPages.Add(pageID, page);
 
@@ -82,17 +101,17 @@ internal class Transaction : ITransaction
         _reader ??= await _disk.RentDiskReaderAsync();
 
         // get disk position (data/log)
-        var position = _walIndex.GetPagePosition(pageID, readVersion, out _);
+        var positionID = _walIndex.GetPagePositionID(pageID, readVersion, out _);
 
         // test if available in cache
-        var page = _memoryCache.GetPage(position);
+        var page = _memoryCache.GetPage(positionID);
 
         // if page not found, allocate new page and read from disk
         if (page is null)
         {
             page = _bufferFactory.AllocateNewPage(writable);
 
-            await _reader.ReadPageAsync(position, page);
+            await _reader.ReadPageAsync(positionID, page);
         }
         // if found in cache but need to be writable
         else if (writable)
@@ -133,7 +152,7 @@ internal class Transaction : ITransaction
         if (localPage is not null) return localPage;
 
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = _allocationMap.GetFreePageID(colID, PageType.Data, bytesLength);
+        var (pageID, isNew) = _allocationMap.GetFreePageID(colID, pageType, bytesLength);
 
         if (isNew)
         {
@@ -167,14 +186,14 @@ internal class Transaction : ITransaction
 
             ENSURE(page.ShareCounter == 0, "page should not be on cache when saving");
 
-            page.Position = _allocationMap.GetNextLogPosition(page.Header.PageID);
-
+            // update page header
+            page.Header.PositionID = page.PositionID;
             page.Header.TransactionID = this.TransactionID;
             page.Header.IsConfirmed = i == (dirtyPages.Length - 1);
         }
 
         // write pages on disk and flush data
-        await _disk.WritePagesAsync(dirtyPages);
+        await _disk.WriteLogPagesAsync(dirtyPages);
 
         // update allocation map with all dirty pages
         _allocationMap.UpdateMap(dirtyPages);
@@ -201,15 +220,15 @@ internal class Transaction : ITransaction
 
         // update wal index with this new version
         var pagePositions = dirtyPages
-            .Select(x => (x.Header.PageID, x.Position));
+            .Select(x => (x.Header.PageID, x.PositionID));
 
-        _walIndex.AddVersion(this.TransactionID, pagePositions);
+        _walIndex.AddVersion(this.ReadVersion, pagePositions);
 
     }
 
     public void Rollback()
     {
-        
+        throw new NotImplementedException();
     }
 
     public void Dispose()

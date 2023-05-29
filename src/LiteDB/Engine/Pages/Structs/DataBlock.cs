@@ -16,16 +16,24 @@ internal struct DataBlock
     public readonly PageAddress RowID;
 
     /// <summary>
+    /// 
+    /// </summary>
+    public readonly int Location;
+
+    /// <summary>
     /// If document need more than 1 block, use this link to next block
     /// </summary>
-    public readonly PageAddress NextBlock;
+    public PageAddress NextBlock;
 
     /// <summary>
     /// Read new DataBlock from filled page block
     /// </summary>
-    public DataBlock(Span<byte> span, PageAddress rowID)
+    public DataBlock(PageBuffer page, PageAddress rowID, int location)
     {
         this.RowID = rowID;
+        this.Location = location;
+
+        var span = page.AsSpan(location);
 
         // byte 00-04: NextBlock (PageID, Index)
         this.NextBlock = span[P_NEXT_BLOCK..].ReadPageAddress();
@@ -34,11 +42,13 @@ internal struct DataBlock
     /// <summary>
     /// Create new DataBlock and fill into buffer
     /// </summary>
-    public DataBlock(Span<byte> span, PageAddress rowID, PageAddress nextBlock)
+    public DataBlock(PageBuffer page, PageAddress rowID, int location, PageAddress nextBlock)
     {
         this.RowID = rowID;
-
+        this.Location = location;
         this.NextBlock = nextBlock;
+
+        var span = page.AsSpan(location);
 
         // byte 00-04 (can be updated)
         span[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
@@ -46,6 +56,6 @@ internal struct DataBlock
 
     public override string ToString()
     {
-        return $"Pos: [{this.RowID}] - Next: [{this.NextBlock}]";
+        return $"RowID: [{this.RowID}] - Next: [{this.NextBlock}]";
     }
 }

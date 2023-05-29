@@ -9,10 +9,13 @@ internal struct PageHeader
 
     public const int P_PAGE_ID = 0;  // 00-03 [uint]
     public const int P_PAGE_TYPE = 4; // 04-04 [byte]
+    public const int P_POSITION_ID = 5; // 05-08 [uint]
 
-    public const int P_COL_ID = 5; // 05-05 [byte]
-    public const int P_TRANSACTION_ID = 6; // 06-10 [uint]
-    public const int P_IS_CONFIRMED = 11; // 11-11 [byte]
+    public const int P_COL_ID = 9; // 09-09 [byte]
+    public const int P_TRANSACTION_ID = 10; // 10-13 [int]
+    public const int P_IS_CONFIRMED = 14; // 14-14 [byte]
+
+    // reserved 15-22 (8 bytes)
 
     public const int P_ITEMS_COUNT = 23; // 23-23 [byte]
     public const int P_USED_BYTES = 24; // 24-25 [ushort]
@@ -20,7 +23,7 @@ internal struct PageHeader
     public const int P_NEXT_FREE_POSITION = 28; // 28-29 [ushort]
     public const int P_HIGHEST_INDEX = 30; // 30-30 [byte]
 
-    public const int P_CRC8 = 31; // 1 byte (last byte in header)
+    public const int P_CRC8 = 31; // 31-31 [byte] - last byte in page header
 
     #endregion
 
@@ -40,6 +43,11 @@ internal struct PageHeader
     /// Indicate the page type [1 byte]
     /// </summary>
     public PageType PageType = PageType.Empty;
+
+    /// <summary>
+    /// Represent position on disk (used in checkpoint defrag position order)
+    /// </summary>
+    public uint PositionID = uint.MaxValue;
 
     /// <summary>
     /// Get/Set collection ID index
@@ -72,9 +80,9 @@ internal struct PageHeader
     public ushort FragmentedBytes = 0;
 
     /// <summary>
-    /// Get next free position. Starts with 32 (first byte after header) - There is no fragmentation after this [2 bytes]
+    /// Get next free location on page. Starts with 32 (first byte after header) - There is no fragmentation after this [2 bytes]
     /// </summary>
-    public ushort NextFreePosition = PAGE_HEADER_SIZE;
+    public ushort NextFreeLocation = PAGE_HEADER_SIZE;
 
     /// <summary>
     /// Get last (highest) used index slot - use byte.MaxValue for empty [1 byte] -> 0-254 (255 items)
@@ -119,6 +127,7 @@ internal struct PageHeader
     {
         this.PageID = span[P_PAGE_ID..].ReadUInt32();
         this.PageType = (PageType)span[P_PAGE_TYPE];
+        this.PositionID = span[P_POSITION_ID..].ReadUInt32();
 
         this.ColID = span[P_COL_ID];
         this.TransactionID = span[P_TRANSACTION_ID..].ReadInt32();
@@ -127,7 +136,7 @@ internal struct PageHeader
         this.ItemsCount = span[P_ITEMS_COUNT];
         this.UsedBytes = span[P_USED_BYTES..2].ReadUInt16();
         this.FragmentedBytes = span[P_FRAGMENTED_BYTES..2].ReadUInt16();
-        this.NextFreePosition = span[P_NEXT_FREE_POSITION..2].ReadUInt16();
+        this.NextFreeLocation = span[P_NEXT_FREE_POSITION..2].ReadUInt16();
         this.HighestIndex = span[P_HIGHEST_INDEX];
 
         this.Crc8 = span[P_CRC8];
@@ -137,6 +146,7 @@ internal struct PageHeader
     {
         span[P_PAGE_ID..].WriteUInt32(this.PageID);
         span[P_PAGE_TYPE] = (byte)this.PageType;
+        span[P_POSITION_ID..].WriteUInt32(this.PositionID);
 
         span[P_COL_ID] = this.ColID;
         span[P_TRANSACTION_ID..].WriteInt32(this.TransactionID);
@@ -145,7 +155,7 @@ internal struct PageHeader
         span[P_ITEMS_COUNT] = this.ItemsCount;
         span[P_USED_BYTES..2].WriteUInt16(this.UsedBytes);
         span[P_FRAGMENTED_BYTES..2].WriteUInt16(this.FragmentedBytes);
-        span[P_NEXT_FREE_POSITION..2].WriteUInt16(this.NextFreePosition);
+        span[P_NEXT_FREE_POSITION..2].WriteUInt16(this.NextFreeLocation);
         span[P_HIGHEST_INDEX] = this.HighestIndex;
 
         span[P_CRC8] = this.Crc8;
@@ -165,24 +175,31 @@ internal struct PageHeader
     /// <summary>
     /// Get a free index slot in this page
     /// </summary>
-    public byte GetFreeIndex(Span<byte> span)
+    public byte GetFreeIndex(PageBuffer page)
     {
-        // check for all slot area to get first empty slot [safe for byte loop]
-        for (byte index = _startIndex; index <= this.HighestIndex; index++)
-        {
-            var positionAddr = PageService.CalcPositionAddr(index);
-            var position = span[positionAddr..2].ReadUInt16();
+        //// check for all slot area to get first empty slot [safe for byte loop]
+        //for (byte index = _startIndex; index <= this.HighestIndex; index++)
+        //{
+        //    var positionAddr = PageSegment.GetSegment(index);
+        //    var position = span[positionAddr..2].ReadUInt16();
 
-            // if position = 0 means this slot are not used
-            if (position == 0)
-            {
-                _startIndex = (byte)(index + 1);
+        //    // if position = 0 means this slot are not used
+        //    if (position == 0)
+        //    {
+        //        _startIndex = (byte)(index + 1);
 
-                return index;
-            }
-        }
-
-        return (byte)(this.HighestIndex + 1);
+        //        return index;
+        //    }
+        //}
+        throw new NotImplementedException();
+        //return (byte)(this.HighestIndex + 1);
     }
+
+    /// <summary>
+    /// Checks if segment position/length has a valid value (used for DEBUG)
+    /// </summary>
+    internal bool IsValidSegment(PageSegment segment) => 
+        segment.Location >= PAGE_HEADER_SIZE && segment.Location < (PAGE_SIZE - this.FooterSize) &&
+        segment.Length > 0 && segment.Length <= (PAGE_SIZE - PAGE_HEADER_SIZE - this.FooterSize);
 
 }

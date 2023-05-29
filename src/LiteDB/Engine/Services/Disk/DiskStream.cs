@@ -71,12 +71,12 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Read single page from disk using disk position. This position has FILE_HEADER_SIZE offset
     /// </summary>
-    public async Task<bool> ReadPageAsync(long position, PageBuffer page)
+    public async Task<bool> ReadPageAsync(uint positionID, PageBuffer page)
     {
         if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
 
-        // add header file offset
-        _contentStream.Position = position + FILE_HEADER_SIZE;
+        // set real position on stream
+        _contentStream.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
         var read = await _contentStream.ReadAsync(page.Buffer, 0, PAGE_SIZE);
 
@@ -84,7 +84,7 @@ internal class DiskStream : IDiskStream
         page.Header.ReadFromBuffer(page.Buffer);
 
         // update page position
-        page.Position = position;
+        page.PositionID = positionID;
 
         return read == PAGE_SIZE;
     }
@@ -93,13 +93,13 @@ internal class DiskStream : IDiskStream
     {
         if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
 
-        ENSURE(page.Position != long.MaxValue, "PageBuffer must have defined Position before WriteAsync");
-
-        // add header file offset
-        _contentStream.Position = page.Position + FILE_HEADER_SIZE;
+        ENSURE(page.PositionID != uint.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
         // before save on disk, update header page to buffer (first 32 bytes)
         page.Header.WriteToBuffer(page.Buffer);
+
+        // set real position on stream
+        _contentStream.Position = FILE_HEADER_SIZE + (page.PositionID * PAGE_SIZE);
 
         await _contentStream.WriteAsync(page.Buffer, 0, PAGE_SIZE);
     }

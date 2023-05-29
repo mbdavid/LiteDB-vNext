@@ -39,8 +39,9 @@ internal class DataService : IDataService
         // write all document into buffer doc before copy to pages
         _writer.WriteDocument(bufferDoc, doc, out _);
 
-        var firstBlock = PageAddress.Empty;
         var bytesToCopy = Math.Min(docLength, MAX_DATA_BYTES_PER_PAGE);
+
+        PageAddress firstBlock;
 
         // get first page
         var page = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);

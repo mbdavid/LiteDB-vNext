@@ -11,7 +11,7 @@ internal class MemoryCacheService : IMemoryCacheService
     /// <summary>
     /// A dictionary to cache use/re-use same data buffer across threads. Rent model
     /// </summary>
-    private ConcurrentDictionary<long, PageBuffer> _cache = new();
+    private ConcurrentDictionary<uint, PageBuffer> _cache = new();
 
     public MemoryCacheService()
     {
@@ -21,9 +21,9 @@ internal class MemoryCacheService : IMemoryCacheService
     /// Get a page from memory cache. If not exists, return null
     /// If exists, increase sharecounter (and must call Return() after use)
     /// </summary>
-    public PageBuffer? GetPage(long position)
+    public PageBuffer? GetPage(uint positionID)
     {
-        var found = _cache.TryGetValue(position, out PageBuffer page);
+        var found = _cache.TryGetValue(positionID, out PageBuffer page);
 
         if (found)
         {
@@ -40,10 +40,10 @@ internal class MemoryCacheService : IMemoryCacheService
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
-        ENSURE(page.Position != long.MaxValue, "PageBuffer must have a position before add in cache");
+        ENSURE(page.PositionID != uint.MaxValue, "PageBuffer must have a position before add in cache");
         ENSURE(page.ShareCounter == 0, "ShareCounter must be zero before add in cache");
 
-        var added = _cache.TryAdd(page.Position, page);
+        var added = _cache.TryAdd(page.PositionID, page);
 
         return added;
     }
@@ -59,14 +59,14 @@ internal class MemoryCacheService : IMemoryCacheService
         if (pageShareCounter > maxShareCounter) return false;
 
         // try delete this buffer
-        var deleted = _cache.TryRemove(page.Position, out _);
+        var deleted = _cache.TryRemove(page.PositionID, out _);
 
         if (deleted)
         {
             // if after remove from cache, shareCounter was modified, re-add into cache
             if (pageShareCounter != page.ShareCounter)
             {
-                var added = _cache.TryAdd(page.Position, page);
+                var added = _cache.TryAdd(page.PositionID, page);
 
                 ENSURE(added, "PageBuffer was already in cache after remove/re-add");
 

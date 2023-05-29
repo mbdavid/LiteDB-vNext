@@ -62,6 +62,19 @@ public partial class LiteEngine : ILiteEngine
         return true;
     }
 
+    public async Task<bool> CreateCollectionAsync(string collectionName)
+    {
+        using var ctx = _factory.CreateEngineContext();
+
+        var create = _factory.CreateCreateCollectionCommand(ctx);
+
+        await create.ExecuteAsync(collectionName);
+
+        return true;
+    }
+
+
+
     #endregion
 
     public void Dispose()

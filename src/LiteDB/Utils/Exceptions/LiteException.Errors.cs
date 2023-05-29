@@ -5,6 +5,9 @@
 /// </summary>
 public partial class LiteException
 {
+    internal static LiteException ERR(string message) =>
+        new(0, message);
+
     internal static LiteException ERR_FILE_NOT_FOUND(string filename) =>
         new(1, $"File '{filename}' not found.");
 

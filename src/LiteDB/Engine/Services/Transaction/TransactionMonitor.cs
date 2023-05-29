@@ -25,10 +25,10 @@ internal class TransactionMonitor : ITransactionMonitor
         _factory = factory;
     }
 
-    public async Task<ITransaction> CreateTransactionAsync(byte[] writeCollections)
+    public async Task<ITransaction> CreateTransactionAsync(byte[] writeCollections, int readVersion = -1)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
-        var transaction = _factory.CreateTransaction(transactionID, writeCollections);
+        var transaction = _factory.CreateTransaction(transactionID, writeCollections, readVersion);
 
         _transactions.TryAdd(transactionID, transaction);
 
@@ -39,7 +39,7 @@ internal class TransactionMonitor : ITransactionMonitor
 
     /// <summary>
     /// </summary>
-    public void ReleaseTransaction(Transaction transaction)
+    public void ReleaseTransaction(ITransaction transaction)
     {
         // dispose current transaction
         transaction.Dispose();

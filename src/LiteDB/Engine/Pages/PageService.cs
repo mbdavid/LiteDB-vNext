@@ -4,29 +4,9 @@
 internal class PageService : IPageService
 {
     /// <summary>
-    /// Get a page block item based on index slot
-    /// </summary>
-    public Span<byte> Get(PageBuffer page, byte index, bool readOnly)
-    {
-        // get read
-        var span = page.AsSpan();
-
-        // read slot address
-        var positionAddr = CalcPositionAddr(index);
-        var lengthAddr = CalcLengthAddr(index);
-
-        // read segment position/length
-        var position = span[positionAddr..2].ReadUInt16();
-        var length = span[lengthAddr..2].ReadUInt16();
-
-        // return buffer slice with content only data
-        return span[position..length];
-    }
-
-    /// <summary>
     /// Get a new page segment for this length content using fixed index
     /// </summary>
-    public Span<byte> Insert(PageBuffer page, ushort bytesLength, byte index, bool isNewInsert)
+    public PageSegment Insert(PageBuffer page, ushort bytesLength, byte index, bool isNewInsert)
     {
         ENSURE(index != byte.MaxValue, "index must be 0-254");
 
@@ -41,7 +21,7 @@ internal class PageService : IPageService
         // calculate how many continuous bytes are available in this page
         var continuousBlocks = header.FreeBytes - header.FragmentedBytes - (isNewInsert ? PageHeader.SLOT_SIZE : 0);
 
-        ENSURE(continuousBlocks == PAGE_SIZE - header.NextFreePosition - header.FooterSize - (isNewInsert ? PageHeader.SLOT_SIZE : 0), "continuosBlock must be same as from NextFreePosition");
+        ENSURE(continuousBlocks == PAGE_SIZE - header.NextFreeLocation - header.FooterSize - (isNewInsert ? PageHeader.SLOT_SIZE : 0), "continuosBlock must be same as from NextFreePosition");
 
         // if continuous blocks are not big enough for this data, must run page defrag
         if (bytesLength > continuousBlocks)
@@ -57,30 +37,29 @@ internal class PageService : IPageService
         }
 
         // get segment addresses
-        var positionAddr = CalcPositionAddr(index);
-        var lengthAddr = CalcLengthAddr(index);
+        var segmentAddr = PageSegment.GetSegmentAddr(index);
 
-        ENSURE(span[positionAddr..].ReadUInt16() == 0, "slot position must be empty before use");
-        ENSURE(span[lengthAddr..].ReadUInt16() == 0, "slot length must be empty before use");
+        ENSURE(span[segmentAddr.Location..].ReadUInt16() == 0, "slot position must be empty before use");
+        ENSURE(span[segmentAddr.Length..].ReadUInt16() == 0, "slot length must be empty before use");
 
-        // get next free position in page
-        var position = header.NextFreePosition;
+        // get next free location in page
+        var location = header.NextFreeLocation;
 
-        // write this page position in my position address
-        span[positionAddr..].WriteUInt16(position);
+        // write this page location in my location address
+        span[segmentAddr.Location..2].WriteUInt16(location);
 
         // write page segment length in my length address
-        span[lengthAddr..].WriteUInt16(bytesLength);
+        span[segmentAddr.Length..2].WriteUInt16(bytesLength);
 
-        // update next free position and counters
+        // update next free location and counters
         header.ItemsCount++;
         header.UsedBytes += bytesLength;
-        header.NextFreePosition += bytesLength;
+        header.NextFreeLocation += bytesLength;
 
-        ENSURE(position + bytesLength <= (PAGE_SIZE - (header.HighestIndex + 1) * PageHeader.SLOT_SIZE), "new buffer slice could not override footer area");
+        ENSURE(location + bytesLength <= (PAGE_SIZE - (header.HighestIndex + 1) * PageHeader.SLOT_SIZE), "new buffer slice could not override footer area");
 
         // create page segment based new inserted segment
-        return span[position..(position + bytesLength)];
+        return new (location, (location + bytesLength));
     }
 
     /// <summary>
@@ -93,11 +72,10 @@ internal class PageService : IPageService
         ref var header = ref page.Header;
 
         // read block position on index slot
-        var positionAddr = CalcPositionAddr(index);
-        var lengthAddr = CalcLengthAddr(index);
+        var segmentAddr = PageSegment.GetSegmentAddr(index);
 
-        var position = span[positionAddr..].ReadUInt16();
-        var length = span[lengthAddr..].ReadUInt16();
+        var position = span[segmentAddr.Location..2].ReadUInt16();
+        var length = span[segmentAddr.Length..2].ReadUInt16();
 
         ENSURE(this.IsValidPos(header, position), "invalid segment position");
         ENSURE(this.IsValidLen(header, length), "invalid segment length");
@@ -114,12 +92,12 @@ internal class PageService : IPageService
         span[position..(position + length)].Fill(0);
 
         // check if deleted segment are at end of page
-        var isLastSegment = (position + length == header.NextFreePosition);
+        var isLastSegment = (position + length == header.NextFreeLocation);
 
         if (isLastSegment)
         {
             // update next free position with this deleted position
-            header.NextFreePosition = position;
+            header.NextFreeLocation = position;
         }
         else
         {
@@ -143,7 +121,7 @@ internal class PageService : IPageService
             ENSURE(header.UsedBytes == 0, "should be no bytes used in clean page");
             DEBUG(span[PAGE_HEADER_SIZE..PAGE_CONTENT_SIZE].IsFullZero(), "all content area must be 0");
 
-            header.NextFreePosition = PAGE_HEADER_SIZE;
+            header.NextFreeLocation = PAGE_HEADER_SIZE;
             header.FragmentedBytes = 0;
         }
     }
@@ -152,7 +130,7 @@ internal class PageService : IPageService
     /// Update segment bytes with new data. Current page must have bytes enougth for this new size. Index will not be changed
     /// Update will try use same segment to store. If not possible, write on end of page (with possible Defrag operation)
     /// </summary>
-    public Span<byte> Update(PageBuffer page, byte index, ushort bytesLength)
+    public PageSegment Update(PageBuffer page, byte index, ushort bytesLength)
     {
         ENSURE(bytesLength > 0, "must update more than 0 bytes");
 
@@ -172,7 +150,7 @@ internal class PageService : IPageService
         ENSURE(this.IsValidLen(header, length), "invalid segment length");
 
         // check if deleted segment are at end of page
-        var isLastSegment = (position + length == header.NextFreePosition);
+        var isLastSegment = (position + length == header.NextFreeLocation);
 
         // best situation: same length
         if (bytesLength == length)
@@ -187,7 +165,7 @@ internal class PageService : IPageService
             if (isLastSegment)
             {
                 // if is at end of page, must get back unused blocks 
-                header.NextFreePosition -= diff;
+                header.NextFreeLocation -= diff;
             }
             else
             {
@@ -221,7 +199,7 @@ internal class PageService : IPageService
             if (isLastSegment)
             {
                 // if segment is end of page, must update next free position to current segment position
-                header.NextFreePosition = position;
+                header.NextFreeLocation = position;
             }
             else
             {
@@ -317,7 +295,7 @@ internal class PageService : IPageService
 
         // clear fragment blocks (page are in a continuous segment)
         header.FragmentedBytes = 0;
-        header.NextFreePosition = next;
+        header.NextFreeLocation = next;
     }
 
     /// <summary>
@@ -357,40 +335,5 @@ internal class PageService : IPageService
         // there is no more slots used
         header.HighestIndex = byte.MaxValue;
     }
-
-
-    #region Static Helpers
-
-    /// <summary>
-    /// Returns a size of specified number of pages
-    /// </summary>
-    public static long GetPagePosition(uint pageID) => checked((long)pageID * PAGE_SIZE);
-
-    /// <summary>
-    /// Returns a size of specified number of pages
-    /// </summary>
-    public static long GetPagePosition(int pageID) => GetPagePosition((uint)pageID);
-
-    /// <summary>
-    /// Get buffer offset position where one page segment length are located (based on index slot)
-    /// </summary>
-    public static int CalcPositionAddr(byte index) => PAGE_SIZE - ((index + 1) * PageHeader.SLOT_SIZE) + 2;
-
-    /// <summary>
-    /// Get buffer offset position where one page segment length are located (based on index slot)
-    /// </summary>
-    public static int CalcLengthAddr(byte index) => PAGE_SIZE - ((index + 1) * PageHeader.SLOT_SIZE);
-
-    /// <summary>
-    /// Checks if segment position has a valid value (used for DEBUG)
-    /// </summary>
-    private bool IsValidPos(PageHeader header, ushort position) => position >= PAGE_HEADER_SIZE && position < (PAGE_SIZE - header.FooterSize);
-
-    /// <summary>
-    /// Checks if segment length has a valid value (used for DEBUG)
-    /// </summary>
-    private bool IsValidLen(PageHeader header, ushort length) => length > 0 && length <= (PAGE_SIZE - PAGE_HEADER_SIZE - header.FooterSize);
-
-    #endregion
 
 }

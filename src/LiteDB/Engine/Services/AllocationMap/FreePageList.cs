@@ -5,7 +5,8 @@
 /// </summary>
 internal class FreePageList
 {
-    private readonly Queue<uint> _pages = new ();
+    private readonly Queue<uint> _left = new();
+    private readonly Queue<uint> _right = new();
 
     /// <summary>
     /// Get/Set to indicate this list was not fully loaded because reach limit
@@ -16,15 +17,14 @@ internal class FreePageList
     {
     }
 
-    public int Count => _pages.Count;
+    public int Count => _left.Count + _right.Count;
 
     /// <summary>
     /// Insert PageID at begin of queue. Used when need insert a new pageID
     /// </summary>
     public void Insert(uint pageID)
     {
-        //TODO: implementar no inicio da fila
-        _pages.Enqueue(pageID);
+        _left.Enqueue(pageID);
     }
 
     /// <summary>
@@ -32,14 +32,19 @@ internal class FreePageList
     /// </summary>
     public void Enqueue(uint pageID)
     {
-        _pages.Enqueue(pageID);
+        _right.Enqueue(pageID);
     }
 
     /// <summary>
-    /// Remove first PageID from queue and move to next
+    /// Return dequeue elements from  
     /// </summary>
     public uint Dequeue()
     {
-        return _pages.Dequeue();
+        if (_left.Count > 0)
+        {
+            return _left.Dequeue();
+        }
+
+        return _right.Dequeue();
     }
 }

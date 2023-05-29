@@ -23,11 +23,6 @@ internal class AllocationMapService : IAllocationMapService
     /// </summary>
     private readonly CollectionFreePages[] _collectionFreePages = new CollectionFreePages[byte.MaxValue];
 
-    /// <summary>
-    /// Start position on log. Should use GetNextLogPosition()
-    /// </summary>
-    private long _logPosition;
-
     public AllocationMapService(IDiskService disk, IStreamFactory streamFactory, IBufferFactory bufferFactory)
     {
         _disk = disk;
@@ -52,21 +47,6 @@ internal class AllocationMapService : IAllocationMapService
             // add AM page to instance
             _pages.Add(page);
         }
-
-        // initialize log position based on current file length
-        _logPosition = _streamFactory.GetLength();
-    }
-
-    /// <summary>
-    /// Get a new page position to be used in log
-    /// </summary>
-    public long GetNextLogPosition(uint pageID)
-    {
-        var position = Interlocked.Add(ref _logPosition, PAGE_SIZE);
-
-        ENSURE(position > PageService.GetPagePosition(pageID), "log position must be greater than pageID");
-
-        return position;
     }
 
     /// <summary>
