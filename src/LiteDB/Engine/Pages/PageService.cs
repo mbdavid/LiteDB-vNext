@@ -6,7 +6,7 @@ internal class PageService : IPageService
     /// <summary>
     /// Get a new page segment for this length content using fixed index
     /// </summary>
-    public PageSegment Insert(PageBuffer page, ushort bytesLength, byte index, bool isNewInsert)
+    protected PageSegment Insert(PageBuffer page, ushort bytesLength, byte index, bool isNewInsert)
     {
         ENSURE(index != byte.MaxValue, "index must be 0-254");
 
@@ -59,50 +59,44 @@ internal class PageService : IPageService
         ENSURE(location + bytesLength <= (PAGE_SIZE - (header.HighestIndex + 1) * PageHeader.SLOT_SIZE), "new buffer slice could not override footer area");
 
         // create page segment based new inserted segment
-        return new (location, (location + bytesLength));
+        return new (location, bytesLength);
     }
 
     /// <summary>
-    /// Remove index slot about this page block
+    /// Remove index slot about this page segment
     /// </summary>
-    public void Delete(PageBuffer page, byte index)
+    protected void Delete(PageBuffer page, byte index)
     {
         // get span and header instance (dirty)
         var span = page.AsSpan();
         ref var header = ref page.Header;
 
         // read block position on index slot
-        var segmentAddr = PageSegment.GetSegmentAddr(index);
+        var segment = PageSegment.GetSegment(page, index, out var segmentAddr);
 
-        var position = span[segmentAddr.Location..2].ReadUInt16();
-        var length = span[segmentAddr.Length..2].ReadUInt16();
-
-        ENSURE(this.IsValidPos(header, position), "invalid segment position");
-        ENSURE(this.IsValidLen(header, length), "invalid segment length");
-
-        // clear both position/length
-        span[positionAddr..].WriteUInt16(0);
-        span[lengthAddr..].WriteUInt16(0);
+        // clear both location/length
+        span[segmentAddr.Location..].WriteUInt16(0);
+        span[segmentAddr.Length..].WriteUInt16(0);
 
         // add as free blocks
         header.ItemsCount--;
-        header.UsedBytes -= length;
+        header.UsedBytes -= segment.Length;
 
         // clean block area with \0
-        span[position..(position + length)].Fill(0);
+        span.Slice(segment).Fill(0);
 
         // check if deleted segment are at end of page
-        var isLastSegment = (position + length == header.NextFreeLocation);
+        var isLastSegment = (segment.EndLocation == header.NextFreeLocation);
 
         if (isLastSegment)
         {
-            // update next free position with this deleted position
-            header.NextFreeLocation = position;
+            // update next free location with this deleted segment
+            header.NextFreeLocation = segment.Location;
         }
         else
         {
             // if segment is in middle of the page, add this blocks as fragment block
-            header.FragmentedBytes += length;
+            header.FragmentedBytes += segment.Length;
         }
 
         // if deleted if are HighestIndex, update HighestIndex
@@ -130,7 +124,7 @@ internal class PageService : IPageService
     /// Update segment bytes with new data. Current page must have bytes enougth for this new size. Index will not be changed
     /// Update will try use same segment to store. If not possible, write on end of page (with possible Defrag operation)
     /// </summary>
-    public PageSegment Update(PageBuffer page, byte index, ushort bytesLength)
+    protected PageSegment Update(PageBuffer page, byte index, ushort bytesLength)
     {
         ENSURE(bytesLength > 0, "must update more than 0 bytes");
 
@@ -138,29 +132,21 @@ internal class PageService : IPageService
         var span = page.AsSpan();
         ref var header = ref page.Header;
 
-        // read slot address
-        var positionAddr = CalcPositionAddr(index);
-        var lengthAddr = CalcLengthAddr(index);
+        // read page segment
+        var segment = PageSegment.GetSegment(page, index, out var segmentAddr);
 
-        // read segment position/length
-        var position = span[positionAddr..].ReadUInt16();
-        var length = span[lengthAddr..].ReadUInt16();
-
-        ENSURE(this.IsValidPos(header, position), "invalid segment position");
-        ENSURE(this.IsValidLen(header, length), "invalid segment length");
-
-        // check if deleted segment are at end of page
-        var isLastSegment = (position + length == header.NextFreeLocation);
+        // check if current segment are at end of page
+        var isLastSegment = (segment.EndLocation == header.NextFreeLocation);
 
         // best situation: same length
-        if (bytesLength == length)
+        if (bytesLength == segment.Length)
         {
-            return span[position..(position + length)];
+            return segment;
         }
         // when new length are less than original length (will fit in current segment)
-        else if (bytesLength < length)
+        else if (bytesLength < segment.Length)
         {
-            var diff = (ushort)(length - bytesLength); // bytes removed (should > 0)
+            var diff = (ushort)(segment.Length - bytesLength); // bytes removed (should > 0)
 
             if (isLastSegment)
             {
@@ -177,39 +163,36 @@ internal class PageService : IPageService
             header.UsedBytes -= diff;
 
             // update length
-            span[lengthAddr..].WriteUInt16(bytesLength);
+            span[segmentAddr.Length..].WriteUInt16(bytesLength);
 
             // clear fragment bytes
-            var clearStart = position + bytesLength;
-            var clearEnd = clearStart + diff;
+            span.Slice(segment.Location + bytesLength, diff).Fill(0);
 
-            span[clearStart..clearEnd].Fill(0);
-
-            return span[position..(position + bytesLength)];
+            return new (segment.Location, bytesLength);
         }
         // when new length are large than current segment must remove current item and add again
         else
         {
             // clear current block
-            span[position..(position + length)].Fill(0);
+            span.Slice(segment).Fill(0);
 
             header.ItemsCount--;
-            header.UsedBytes -= length;
+            header.UsedBytes -= segment.Length;
 
             if (isLastSegment)
             {
-                // if segment is end of page, must update next free position to current segment position
-                header.NextFreeLocation = position;
+                // if segment is end of page, must update next free location to current segment location
+                header.NextFreeLocation = segment.Location;
             }
             else
             {
                 // if segment is on middle of page, add content length as fragment bytes
-                header.FragmentedBytes += length;
+                header.FragmentedBytes += segment.Length;
             }
 
-            // clear slot index position/length
-            span[positionAddr..].WriteUInt16(0);
-            span[lengthAddr..].WriteUInt16(0);
+            // clear slot index location/length
+            span[segmentAddr.Location..].WriteUInt16(0);
+            span[segmentAddr.Length..].WriteUInt16(0);
 
             // call insert
             return this.Insert(page, bytesLength, index, false);
@@ -220,82 +203,80 @@ internal class PageService : IPageService
     /// Defrag method re-organize all byte data content removing all fragmented data. This will move all page blocks
     /// to create a single continuous content area (just after header area). No index block will be changed (only positions)
     /// </summary>
-    public void Defrag(PageBuffer page)
+    protected void Defrag(PageBuffer page)
     {
-        // get span and header instance (dirty)
-        var span = page.AsSpan();
-        ref var header = ref page.Header;
+        //// get span and header instance (dirty)
+        //var span = page.AsSpan();
+        //ref var header = ref page.Header;
 
-        ENSURE(header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
-        ENSURE(header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
+        //ENSURE(header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
+        //ENSURE(header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
 
-        //LOG($"defrag page #{this.PageID} (fragments: {this.FragmentedBytes})", "DISK");
+        ////LOG($"defrag page #{this.PageID} (fragments: {this.FragmentedBytes})", "DISK");
 
-        // first get all blocks inside this page sorted by position (position, index)
-        var blocks = new SortedList<ushort, byte>();
+        //// first get all blocks inside this page sorted by position (position, index)
+        //var blocks = new SortedList<ushort, byte>();
 
-        // use int to avoid byte overflow
-        for (int index = 0; index <= header.HighestIndex; index++)
-        {
-            var positionAddr = CalcPositionAddr((byte)index);
-            var position = span[positionAddr..].ReadUInt16();
+        //// use int to avoid byte overflow
+        //for (int index = 0; index <= header.HighestIndex; index++)
+        //{
+        //    var positionAddr = CalcPositionAddr((byte)index);
+        //    var position = span[positionAddr..].ReadUInt16();
 
-            // get only used index
-            if (position != 0)
-            {
-                ENSURE(this.IsValidPos(header, position), "invalid segment position");
+        //    // get only used index
+        //    if (position != 0)
+        //    {
+        //        ENSURE(this.IsValidPos(header, position), "invalid segment position");
 
-                // sort by position
-                blocks.Add(position, (byte)index);
-            }
-        }
+        //        // sort by position
+        //        blocks.Add(position, (byte)index);
+        //    }
+        //}
 
-        // here first block position
-        var next = (ushort)PAGE_HEADER_SIZE;
+        //// here first block position
+        //var next = (ushort)PAGE_HEADER_SIZE;
 
-        // now, list all segments order by Position
-        foreach (var slot in blocks)
-        {
-            var index = slot.Value;
-            var position = slot.Key;
+        //// now, list all segments order by Position
+        //foreach (var slot in blocks)
+        //{
+        //    var index = slot.Value;
+        //    var position = slot.Key;
 
-            // get segment length
-            var lengthAddr = CalcLengthAddr(index);
-            var length = span[lengthAddr..].ReadUInt16();
+        //    // get segment length
+        //    var lengthAddr = CalcLengthAddr(index);
+        //    var length = span[lengthAddr..].ReadUInt16();
 
-            ENSURE(this.IsValidLen(header, length), "invalid segment length");
+        //    ENSURE(this.IsValidLen(header, length), "invalid segment length");
 
-            // if current segment are not as excpect, copy buffer to right position (excluding empty space)
-            if (position != next)
-            {
-                ENSURE(position > next, "current segment position must be greater than current empty space");
+        //    // if current segment are not as excpect, copy buffer to right position (excluding empty space)
+        //    if (position != next)
+        //    {
+        //        ENSURE(position > next, "current segment position must be greater than current empty space");
 
-                throw new NotImplementedException("revisar em debug");
+        //        // copy from original position into new (correct) position
+        //        var source = span[position..(position + length)];
+        //        var dest = span[next..(next + length)];
 
-                // copy from original position into new (correct) position
-                var source = span[position..(position + length)];
-                var dest = span[next..(next + length)];
+        //        source.CopyTo(dest);
 
-                source.CopyTo(dest);
+        //        // update index slot with this new block position
+        //        var positionAddr = CalcPositionAddr(index);
 
-                // update index slot with this new block position
-                var positionAddr = CalcPositionAddr(index);
+        //        // update position in footer
+        //        span[positionAddr..].WriteUInt16(next);
+        //    }
 
-                // update position in footer
-                span[positionAddr..].WriteUInt16(next);
-            }
+        //    next += length;
+        //}
 
-            next += length;
-        }
+        //// fill all non-used content area with 0
+        //var endContent = PAGE_SIZE - header.FooterSize;
 
-        // fill all non-used content area with 0
-        var endContent = PAGE_SIZE - header.FooterSize;
+        //span[next..endContent].Fill(0);
 
-        span[next..endContent].Fill(0);
-
-        // clear fragment blocks (page are in a continuous segment)
-        header.FragmentedBytes = 0;
-        header.NextFreeLocation = next;
+        //// clear fragment blocks (page are in a continuous segment)
+        //header.FragmentedBytes = 0;
+        //header.NextFreeLocation = next;
     }
 
     /// <summary>
@@ -304,7 +285,7 @@ internal class PageService : IPageService
     /// </summary>
     private void UpdateHighestIndex(PageBuffer page)
     {
-        // get span and header instance (dirty)
+        // get span and header instance
         var span = page.AsSpan();
         ref var header = ref page.Header;
 
@@ -320,12 +301,11 @@ internal class PageService : IPageService
         // start from current - 1 to 0 (should use "int" because for use ">= 0")
         for (int index = header.HighestIndex - 1; index >= 0; index--)
         {
-            var positionAddr = CalcPositionAddr((byte)index);
-            var position = span[positionAddr..].ReadUInt16();
+            var segmentAddr = PageSegment.GetSegmentAddr((byte)index);
 
-            if (position != 0)
+            if (segmentAddr.Location != 0)
             {
-                ENSURE(this.IsValidPos(header, position), "invalid segment position");
+                ENSURE(segmentAddr.Length > 0, $"segment address {segmentAddr} contains a empty length on page {page}");
 
                 header.HighestIndex = (byte)index;
                 return;

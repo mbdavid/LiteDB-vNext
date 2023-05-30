@@ -3,15 +3,8 @@
 namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class DataPageService : IDataPageService
+internal class DataPageService : PageService, IDataPageService
 {
-    private readonly IPageService _pageService;
-
-    public DataPageService(IPageService pageService)
-    {
-        _pageService = pageService;
-    }
-
     /// <summary>
     /// Initialize an empty PageBuffer as DataPage
     /// </summary>
@@ -25,23 +18,23 @@ internal class DataPageService : IDataPageService
     /// <summary>
     /// Write a new document (or document fragment) into a DataPage
     /// </summary>
-    public DataBlock InsertDataBlock(PageBuffer page, Span<byte> span, PageAddress nextBlock)
+    public DataBlock InsertDataBlock(PageBuffer page, Span<byte> buffer, PageAddress nextBlock)
     {
         // get required bytes this update
-        var bytesLength = (ushort)(span.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
+        var bytesLength = (ushort)(buffer.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
 
         // get a new index block
-        var newIndex = page.Header.GetFreeIndex(page.Buffer);
+        var newIndex = page.Header.GetFreeIndex(page);
 
-        // get block from PageBlock
-        var block = _pageService.Insert(page, bytesLength, newIndex, true);
+        // get page segment for this data block
+        var segment = base.Insert(page, bytesLength, newIndex, true);
 
         var rowID = new PageAddress(page.Header.PageID, newIndex);
 
-        var dataBlock = new DataBlock(span, rowID, nextBlock);
+        var dataBlock = new DataBlock(buffer, rowID, nextBlock);
 
         // copy content from span source to block right position 
-        span.CopyTo(block[DataBlock.P_BUFFER..block.Length]);
+        buffer.CopyTo(segment[DataBlock.P_BUFFER..segment.Length]);
 
         return dataBlock;
     }

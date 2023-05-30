@@ -239,7 +239,12 @@ internal static class SpanExtensions
 
     #endregion
 
-    #region Check Methods
+    #region Utils
+
+    public static Span<byte> Slice(this Span<byte> span, PageSegment segment)
+    {
+        return span.Slice(segment.Location, segment.Length);
+    }
 
     public static bool IsFullZero(this Span<byte> span)
     {

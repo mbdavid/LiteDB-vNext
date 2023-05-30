@@ -8,14 +8,19 @@ internal struct PageSegment
     /// <summary>
     /// Segment location on page buffer
     /// </summary>
-    public readonly int Location;
+    public readonly ushort Location;
 
     /// <summary>
     /// Segment length
     /// </summary>
-    public readonly int Length;
+    public readonly ushort Length;
 
-    public PageSegment(int location, int length)
+    /// <summary>
+    /// Get final location (Location + Length)
+    /// </summary>
+    public ushort EndLocation => (ushort)(this.Location + this.Length);
+
+    public PageSegment(ushort location, ushort length)
     {
         this.Location = location;
         this.Length = length;
@@ -24,20 +29,24 @@ internal struct PageSegment
     /// <summary>
     /// Get a page segment location/length using index
     /// </summary>
-    public static PageSegment GetSegment(PageBuffer page, byte index)
+    public static PageSegment GetSegment(PageBuffer page, byte index, out PageSegment segmentAddr)
     {
         // get read
         var span = page.AsSpan();
 
         // read slot address
-        var segmentAddr = GetSegmentAddr(index);
+        segmentAddr = GetSegmentAddr(index);
 
         // read segment position/length
-        var location = span[segmentAddr.Location..2].ReadUInt16();
-        var length = span[segmentAddr.Length..2].ReadUInt16();
+        var location = span[segmentAddr.Location..].ReadUInt16();
+        var length = span[segmentAddr.Length..].ReadUInt16();
 
-        // return buffer slice with content only data
-        return new(location, length);
+        // create new segment based on location and length from page footer
+        var segment = new PageSegment(location, length);
+
+        ENSURE(page.Header.IsValidSegment(segment), $"invalid segment {segment}");
+
+        return segment;
     }
 
     /// <summary>
@@ -49,6 +58,6 @@ internal struct PageSegment
         var locationAddr = PAGE_SIZE - ((index + 1) * PageHeader.SLOT_SIZE) + 2;
         var lengthAddr = PAGE_SIZE - ((index + 1) * PageHeader.SLOT_SIZE);
 
-        return new(locationAddr, lengthAddr);
+        return new((ushort)locationAddr, (ushort)lengthAddr);
     }
 }
