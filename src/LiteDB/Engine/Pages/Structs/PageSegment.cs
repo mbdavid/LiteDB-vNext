@@ -1,9 +1,12 @@
 ﻿namespace LiteDB.Engine;
 
+/// <summary>
+/// Represent a single page segment with Location (position) and Length
+/// </summary>
 internal struct PageSegment
 {
     /// <summary>
-    /// Location on page buffer where this segment start
+    /// Segment location on page buffer
     /// </summary>
     public readonly int Location;
 

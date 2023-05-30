@@ -26,12 +26,6 @@ internal struct IndexNode
     public readonly PageAddress RowID;
 
     /// <summary>
-    /// Segment location, on PageBuffer, where this index node are persisted (this data is not persisted)
-    /// This data change every page defrag - should used with version
-    /// </summary>
-    public readonly int Location;
-
-    /// <summary>
     /// Index slot reference in CollectionIndex [1 byte]
     /// </summary>
     public readonly byte Slot;
@@ -69,10 +63,9 @@ internal struct IndexNode
     /// <summary>
     /// Read index node from page block
     /// </summary>
-    public IndexNode(PageBuffer page, PageAddress rowID, int location)
+    public IndexNode(PageBuffer page, PageAddress rowID)
     {
         this.RowID = rowID; // reference position (PageID+Index)
-        this.Location = location; // location in page buffer
 
         var span = page.AsSpan(location);
 
@@ -102,10 +95,9 @@ internal struct IndexNode
     /// <summary>
     /// Create new index node and persist into page block
     /// </summary>
-    public IndexNode(PageBuffer page, PageAddress rowID, int location, byte slot, byte level, BsonValue key, PageAddress dataBlock)
+    public IndexNode(PageBuffer page, PageAddress rowID, byte slot, byte level, BsonValue key, PageAddress dataBlock)
     {
         this.RowID = rowID;
-        this.Location = location;
 
         this.Slot = slot;
         this.Level = level;
@@ -114,6 +106,8 @@ internal struct IndexNode
         this.Next = new PageAddress[level];
         this.Prev = new PageAddress[level];
         this.Key = key;
+
+        PageService.
 
         var span = page.AsSpan(location);
 

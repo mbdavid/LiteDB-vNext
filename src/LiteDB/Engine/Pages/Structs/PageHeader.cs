@@ -123,8 +123,10 @@ internal struct PageHeader
     {
     }
 
-    public void ReadFromBuffer(Span<byte> span)
+    public void ReadFromPage(PageBuffer page)
     {
+        var span = page.AsSpan();
+
         this.PageID = span[P_PAGE_ID..].ReadUInt32();
         this.PageType = (PageType)span[P_PAGE_TYPE];
         this.PositionID = span[P_POSITION_ID..].ReadUInt32();
@@ -142,8 +144,10 @@ internal struct PageHeader
         this.Crc8 = span[P_CRC8];
     }
 
-    public void WriteToBuffer(Span<byte> span)
+    public void WriteToPage(PageBuffer page)
     {
+        var span = page.AsSpan(0, PAGE_HEADER_SIZE);
+
         span[P_PAGE_ID..].WriteUInt32(this.PageID);
         span[P_PAGE_TYPE] = (byte)this.PageType;
         span[P_POSITION_ID..].WriteUInt32(this.PositionID);
@@ -160,7 +164,6 @@ internal struct PageHeader
 
         span[P_CRC8] = this.Crc8;
     }
-
 
     /// <summary>
     /// Store start index used in GetFreeIndex to avoid always run full loop over all indexes

@@ -16,11 +16,6 @@ internal struct DataBlock
     public readonly PageAddress RowID;
 
     /// <summary>
-    /// 
-    /// </summary>
-    public readonly int Location;
-
-    /// <summary>
     /// If document need more than 1 block, use this link to next block
     /// </summary>
     public PageAddress NextBlock;
@@ -28,7 +23,7 @@ internal struct DataBlock
     /// <summary>
     /// Read new DataBlock from filled page block
     /// </summary>
-    public DataBlock(PageBuffer page, PageAddress rowID, int location)
+    public DataBlock(PageBuffer page, PageAddress rowID, PageSegment segment)
     {
         this.RowID = rowID;
         this.Location = location;
