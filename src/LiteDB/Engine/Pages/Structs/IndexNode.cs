@@ -67,7 +67,8 @@ internal struct IndexNode
     {
         this.RowID = rowID; // reference position (PageID+Index)
 
-        var span = page.AsSpan(location);
+        var segment = PageSegment.GetSegment(page, rowID.Index);
+        var span = page.AsSpan(segment);
 
         this.Slot = span[P_SLOT];
         this.Level = span[P_LEVEL];
@@ -107,9 +108,8 @@ internal struct IndexNode
         this.Prev = new PageAddress[level];
         this.Key = key;
 
-        PageService.
-
-        var span = page.AsSpan(location);
+        var segment = PageSegment.GetSegment(page, rowID.Index);
+        var span = page.AsSpan(segment);
 
         // persist in buffer read only data
         span[P_SLOT] = slot;
@@ -135,7 +135,6 @@ internal struct IndexNode
     public IndexNode(BsonDocument doc)
     {
         this.RowID = new PageAddress(0, 0);
-        this.Location = 0;
         this.Slot = 0;
         this.Level = 0;
         this.DataBlock = PageAddress.Empty;
@@ -166,7 +165,7 @@ internal struct IndexNode
     /// <summary>
     /// Update Prev[index] pointer (update in buffer too).
     /// </summary>
-    public void SetPrev(byte level, PageAddress value, Span<byte> span)
+    public void SetPrev(PageBuffer page, byte level, PageAddress value)
     {
         ENSURE(level <= this.Level, "out of index in level");
 

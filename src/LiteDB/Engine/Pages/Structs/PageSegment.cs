@@ -49,6 +49,8 @@ internal struct PageSegment
         return segment;
     }
 
+    public override string ToString() => $"{this.Location}/{this.Length}";
+
     /// <summary>
     /// Get segment address at footer page. Returns only footer address reference (not real page segment)
     /// </summary>

@@ -58,6 +58,11 @@ internal class PageBuffer
         return this.Buffer.AsSpan(start);
     }
 
+    public Span<byte> AsSpan(PageSegment segment)
+    {
+        return this.Buffer.AsSpan(segment.Location, segment.Length);
+    }
+
     public Span<byte> AsSpan(int start, int length)
     {
         return this.Buffer.AsSpan(start, length);
@@ -94,7 +99,9 @@ internal class PageBuffer
         this.Buffer.AsSpan().CopyTo(page.Buffer);
 
         // update page header
-        page.Header.ReadFromBuffer(page.AsSpan());
+        page.Header.ReadFromPage(page);
 
     }
+
+    public override string ToString() => $"PageID: {Header.PageID} / PositionID: {Header.PositionID}";
 }
