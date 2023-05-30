@@ -32,13 +32,19 @@ internal struct PageSegment
         // read slot address
         var segmentAddr = GetSegmentAddr(index);
 
-        // read segment position/length
+        // read segment location/length
         var location = span[segmentAddr.Location..2].ReadUInt16();
         var length = span[segmentAddr.Length..2].ReadUInt16();
 
+        var segment = new PageSegment(location, length);
+
+        ENSURE(!page.Header.IsValidSegment(segment), $"invalid segment {segment} on page {page}");
+
         // return buffer slice with content only data
-        return new(location, length);
+        return segment;
     }
+
+    public override string ToString() => $"{this.Location}/{this.Length}";
 
     /// <summary>
     /// Get segment address at footer page. Returns only footer address reference (not real page segment)

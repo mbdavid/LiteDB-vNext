@@ -23,12 +23,14 @@ internal struct DataBlock
     /// <summary>
     /// Read new DataBlock from filled page block
     /// </summary>
-    public DataBlock(PageBuffer page, PageAddress rowID, PageSegment segment)
+    public DataBlock(PageBuffer page, PageAddress rowID)
     {
         this.RowID = rowID;
-        this.Location = location;
 
-        var span = page.AsSpan(location);
+        ENSURE(page.Header.PageID == rowID.PageID, $"PageID {page.Header.PageID} and RowID.PageID {rowID.PageID} must be the same value");
+
+        var segment = PageSegment.GetSegment(page, rowID.Index);
+        var span = page.AsSpan(segment);
 
         // byte 00-04: NextBlock (PageID, Index)
         this.NextBlock = span[P_NEXT_BLOCK..].ReadPageAddress();
