@@ -8,7 +8,7 @@ internal class Constants
     /// <summary>
     /// Initial file data descriptor size (before start database - use offset in Stream)
     /// </summary>
-    public const int FILE_HEADER_SIZE = 100;
+    public const int FILE_HEADER_SIZE = 96;
 
     /// <summary>
     /// The size of each page in disk - use 8192 as all major databases

@@ -34,8 +34,8 @@ internal struct FileHeader
 
     // reserved 80-97 (18 bytes)
 
-    public const int P_CHANGE_ID = 98; // [byte] ????
-    public const int P_RECOVERY = 99; // [byte]
+    //public const int P_CHANGE_ID = 98; // [byte] ????
+    public const int P_RECOVERY = 95; // [byte]
 
     #endregion
 

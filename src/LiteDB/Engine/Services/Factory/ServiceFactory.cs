@@ -124,6 +124,9 @@ internal partial class ServicesFactory : IServicesFactory
 
     #region Commands
 
+    public ICheckpointCommand CreateCheckpointCommand(IEngineContext ctx)
+        => new CheckpointCommand(this, ctx);
+
     public IOpenCommand CreateOpenCommand(IEngineContext ctx)
         => new OpenCommand(this, ctx);
 

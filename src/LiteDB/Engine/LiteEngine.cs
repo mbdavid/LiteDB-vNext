@@ -73,6 +73,17 @@ public partial class LiteEngine : ILiteEngine
         return true;
     }
 
+    public async Task<bool> CheckpointAsync()
+    {
+        using var ctx = _factory.CreateEngineContext();
+
+        var create = _factory.CreateCheckpointCommand(ctx);
+
+        await create.ExecuteAsync();
+
+        return true;
+    }
+
 
 
     #endregion
