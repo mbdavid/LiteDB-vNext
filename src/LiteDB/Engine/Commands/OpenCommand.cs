@@ -24,11 +24,11 @@ internal class OpenCommand : IOpenCommand
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        if (_factory.State != EngineState.Close) throw new Exception("must be closed");
+        if (_factory.State != EngineState.Close) throw ERR("must be closed");
 
         await _lock.EnterExclusiveAsync();
 
-        if (_factory.State != EngineState.Close) throw new Exception("must be closed");
+        if (_factory.State != EngineState.Close) throw ERR("must be closed");
 
         // open/create data file and returns file header
         var fileHeader = await _disk.InitializeAsync();

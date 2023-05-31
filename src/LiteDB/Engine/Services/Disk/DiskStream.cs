@@ -81,7 +81,7 @@ internal class DiskStream : IDiskStream
         var read = await _contentStream.ReadAsync(page.Buffer, 0, PAGE_SIZE);
 
         // after read content from file, update header info in page
-        page.Header.ReadFromBuffer(page.Buffer);
+        page.Header.ReadFromPage(page);
 
         // update page position
         page.PositionID = positionID;
@@ -96,7 +96,7 @@ internal class DiskStream : IDiskStream
         ENSURE(page.PositionID != uint.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
         // before save on disk, update header page to buffer (first 32 bytes)
-        page.Header.WriteToBuffer(page.Buffer);
+        page.Header.WriteToPage(page);
 
         // set real position on stream
         _contentStream.Position = FILE_HEADER_SIZE + (page.PositionID * PAGE_SIZE);

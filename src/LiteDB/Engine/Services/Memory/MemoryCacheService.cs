@@ -36,12 +36,14 @@ internal class MemoryCacheService : IMemoryCacheService
     }
 
     /// <summary>
-    /// Add a new page to cache. Buffer must contains all data for postion in disk (data/log)
+    /// Add a new page to cache
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
         ENSURE(page.PositionID != uint.MaxValue, "PageBuffer must have a position before add in cache");
-        ENSURE(page.ShareCounter == 0, "ShareCounter must be zero before add in cache");
+        ENSURE(page.ShareCounter == PAGE_NO_CACHE, "ShareCounter must be zero before add in cache");
+
+        page.ShareCounter = 0; // initialize share counter
 
         var added = _cache.TryAdd(page.PositionID, page);
 

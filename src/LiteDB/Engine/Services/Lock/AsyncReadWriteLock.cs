@@ -20,11 +20,11 @@ internal class AsyncReaderWriterLock : IDisposable
 
     public async Task AcquireWriterLock(CancellationToken token = default)
     {
-        await _writeSemaphore.WaitAsync(token).ConfigureAwait(false);
+        await _writeSemaphore.WaitAsync(_timeout, token).ConfigureAwait(false);
 
         try
         {
-            await _readSemaphore.WaitAsync(token).ConfigureAwait(false);
+            await _readSemaphore.WaitAsync(_timeout, token).ConfigureAwait(false);
         }
         catch
         {
@@ -41,13 +41,13 @@ internal class AsyncReaderWriterLock : IDisposable
 
     public async Task AcquireReaderLock(CancellationToken token = default)
     {
-        await _writeSemaphore.WaitAsync(token).ConfigureAwait(false);
+        await _writeSemaphore.WaitAsync(_timeout, token).ConfigureAwait(false);
 
         if (Interlocked.Increment(ref _readerCount) == 1)
         {
             try
             {
-                await _readSemaphore.WaitAsync(token).ConfigureAwait(false);
+                await _readSemaphore.WaitAsync(_timeout, token).ConfigureAwait(false);
             }
             catch
             {

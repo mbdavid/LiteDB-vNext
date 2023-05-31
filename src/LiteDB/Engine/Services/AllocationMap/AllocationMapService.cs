@@ -21,7 +21,7 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// A struct, per colID, to store a list of pages with available space
     /// </summary>
-    private readonly CollectionFreePages[] _collectionFreePages = new CollectionFreePages[byte.MaxValue];
+    private readonly CollectionFreePages[] _collectionFreePages = new CollectionFreePages[256];
 
     public AllocationMapService(IDiskService disk, IStreamFactory streamFactory, IBufferFactory bufferFactory)
     {
@@ -55,10 +55,9 @@ internal class AllocationMapService : IAllocationMapService
     /// </summary>  
     public (uint, bool) GetFreePageID(byte colID, PageType type, int length)
     {
-        //TODO: sombrio, posso retornar uma pagina com tamanho menor do solicitado?
-        // o chamador que peça uma nova com o restante (while)
-
-        var freePages = _collectionFreePages[colID];
+        // get (or create) collection free pages for this colID
+        var freePages = _collectionFreePages[colID] = 
+            _collectionFreePages[colID] ?? new CollectionFreePages();
 
         if (type == PageType.Data)
         {
@@ -110,6 +109,7 @@ internal class AllocationMapService : IAllocationMapService
         }
 
         //TODO: nesse ponto eu poderia tentar dar um "Reload" na freePages pra carregar mais (se tiver mais)
+        // HasMore = true??
 
         // there is no page available with a best fit - create a new page
         if (freePages.EmptyPages.Count > 0)
@@ -201,7 +201,9 @@ internal class AllocationMapService : IAllocationMapService
             // update buffer map
             mapPage.UpdateMap(extendIndex, pageIndex, value);
 
-            var freePages = _collectionFreePages[page.Header.ColID];
+            // get (or create) collection free page for this collection
+            var freePages = _collectionFreePages[page.Header.ColID] = 
+                _collectionFreePages[page.Header.ColID] ?? new CollectionFreePages();
 
             switch (value)
             {

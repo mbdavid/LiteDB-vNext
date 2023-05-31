@@ -11,6 +11,7 @@ internal class DataService : IDataService
     // dependency injection
     private readonly IAllocationMapService _allocationMap;
     private readonly IDataPageService _dataPage;
+    private readonly IBsonReader _reader;
     private readonly IBsonWriter _writer;
 
     private readonly ITransaction _transaction;
@@ -19,6 +20,7 @@ internal class DataService : IDataService
     {
         _allocationMap = factory.GetAllocationMap();
         _dataPage = factory.GetDataPageService();
+        _reader = factory.GetBsonReader();
         _writer = factory.GetBsonWriter();
 
         _transaction = transaction;
@@ -27,7 +29,7 @@ internal class DataService : IDataService
     /// <summary>
     /// Insert BsonDocument into new data pages
     /// </summary>
-    public async Task<PageAddress> Insert(byte colID, BsonDocument doc)
+    public async Task<PageAddress> InsertDocumentAsync(byte colID, BsonDocument doc)
     {
         var docLength = doc.GetBytesCount();
 
@@ -98,124 +100,175 @@ internal class DataService : IDataService
 
         return firstBlock;
     }
-/*
 
     /// <summary>
-    /// Update document using same page position as reference
+    /// Update existing document in a single or multiple pages
     /// </summary>
-    public void Update(CollectionPage col, PageAddress blockAddress, BsonDocument doc)
+    public async Task UpdateDocumentAsync(PageAddress rowID, BsonDocument doc)
     {
-        var bytesLeft = doc.GetBytesCount(true);
+        var docLength = doc.GetBytesCount();
 
-        if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
+        //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
-        DataBlock lastBlock = null;
-        var updateAddress = blockAddress;
+        // rent an array to fit all document serialized
+        var bufferDoc = ArrayPool<byte>.Shared.Rent(docLength);
 
-        IEnumerable <BufferSlice> source()
+        // write all document into buffer doc before copy to pages
+        _writer.WriteDocument(bufferDoc, doc, out _);
+
+        // get current datablock (for first one)
+        var page = await _transaction.GetPageAsync(rowID.PageID, true);
+        var dataBlock = new DataBlock(page, rowID);
+
+        // TODO: tá implementado só pra 1 pagina
+        _dataPage.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(0, docLength), PageAddress.Empty);
+
+        // return array to pool
+        ArrayPool<byte>.Shared.Return(bufferDoc);
+    }
+
+    /// <summary>
+    /// Read a single document in a single/multiple pages
+    /// </summary>
+    public async Task<BsonDocument> ReadDocumentAsync(PageAddress rowID, HashSet<string>? fields)
+    {
+        var page = await _transaction.GetPageAsync(rowID.PageID, false);
+
+        // read document size
+        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+
+        var dataBlock = new DataBlock(page, rowID);
+
+        if (dataBlock.NextBlock.IsEmpty)
         {
-            var bytesToCopy = 0;
+            var doc = _reader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
+                fields, false, out var _);
 
-            while (bytesLeft > 0)
+            return doc!;
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+    }
+    /*
+
+        /// <summary>
+        /// Update document using same page position as reference
+        /// </summary>
+        public void Update(CollectionPage col, PageAddress blockAddress, BsonDocument doc)
+        {
+            var bytesLeft = doc.GetBytesCount(true);
+
+            if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
+
+            DataBlock lastBlock = null;
+            var updateAddress = blockAddress;
+
+            IEnumerable <BufferSlice> source()
             {
-                // if last block contains new block sequence, continue updating
-                if (updateAddress.IsEmpty == false)
+                var bytesToCopy = 0;
+
+                while (bytesLeft > 0)
                 {
-                    var dataPage = _snapshot.GetPage<DataPage>(updateAddress.PageID);
-                    var currentBlock = dataPage.GetBlock(updateAddress.Index);
-
-                    // try get full page size content (do not add DATA_BLOCK_FIXED_SIZE because will be added in UpdateBlock)
-                    bytesToCopy = Math.Min(bytesLeft, dataPage.FreeBytes + currentBlock.Buffer.Count);
-
-                    var updateBlock = dataPage.UpdateBlock(currentBlock, bytesToCopy);
-
-                    _snapshot.AddOrRemoveFreeDataList(dataPage);
-
-                    yield return updateBlock.Buffer;
-
-                    lastBlock = updateBlock;
-
-                    // go to next address (if exists)
-                    updateAddress = updateBlock.NextBlock;
-                }
-                else
-                {
-                    bytesToCopy = Math.Min(bytesLeft, MAX_DATA_BYTES_PER_PAGE);
-                    var dataPage = _snapshot.GetFreeDataPage(bytesToCopy + DataBlock.DATA_BLOCK_FIXED_SIZE);
-                    var insertBlock = dataPage.InsertBlock(bytesToCopy, true);
-
-                    if (lastBlock != null)
+                    // if last block contains new block sequence, continue updating
+                    if (updateAddress.IsEmpty == false)
                     {
-                        lastBlock.SetNextBlock(insertBlock.Position);
+                        var dataPage = _snapshot.GetPage<DataPage>(updateAddress.PageID);
+                        var currentBlock = dataPage.GetBlock(updateAddress.Index);
+
+                        // try get full page size content (do not add DATA_BLOCK_FIXED_SIZE because will be added in UpdateBlock)
+                        bytesToCopy = Math.Min(bytesLeft, dataPage.FreeBytes + currentBlock.Buffer.Count);
+
+                        var updateBlock = dataPage.UpdateBlock(currentBlock, bytesToCopy);
+
+                        _snapshot.AddOrRemoveFreeDataList(dataPage);
+
+                        yield return updateBlock.Buffer;
+
+                        lastBlock = updateBlock;
+
+                        // go to next address (if exists)
+                        updateAddress = updateBlock.NextBlock;
+                    }
+                    else
+                    {
+                        bytesToCopy = Math.Min(bytesLeft, MAX_DATA_BYTES_PER_PAGE);
+                        var dataPage = _snapshot.GetFreeDataPage(bytesToCopy + DataBlock.DATA_BLOCK_FIXED_SIZE);
+                        var insertBlock = dataPage.InsertBlock(bytesToCopy, true);
+
+                        if (lastBlock != null)
+                        {
+                            lastBlock.SetNextBlock(insertBlock.Position);
+                        }
+
+                        _snapshot.AddOrRemoveFreeDataList(dataPage);
+
+                        yield return insertBlock.Buffer;
+
+                        lastBlock = insertBlock;
                     }
 
-                    _snapshot.AddOrRemoveFreeDataList(dataPage);
-
-                    yield return insertBlock.Buffer;
-
-                    lastBlock = insertBlock;
+                    bytesLeft -= bytesToCopy;
                 }
 
-                bytesLeft -= bytesToCopy;
+                // old document was bigger than current, must delete extend blocks
+                if (lastBlock.NextBlock.IsEmpty == false)
+                {
+                    var nextBlockAddress = lastBlock.NextBlock;
+
+                    lastBlock.SetNextBlock(PageAddress.Empty);
+
+                    this.Delete(nextBlockAddress);
+                }
             }
 
-            // old document was bigger than current, must delete extend blocks
-            if (lastBlock.NextBlock.IsEmpty == false)
+            // consume all source bytes to write BsonDocument direct into PageBuffer
+            // must be fastest as possible
+            using (var w = new BufferWriter(source()))
             {
-                var nextBlockAddress = lastBlock.NextBlock;
-
-                lastBlock.SetNextBlock(PageAddress.Empty);
-
-                this.Delete(nextBlockAddress);
+                // already bytes count calculate at method start
+                w.WriteDocument(doc, false);
+                w.Consume();
             }
         }
 
-        // consume all source bytes to write BsonDocument direct into PageBuffer
-        // must be fastest as possible
-        using (var w = new BufferWriter(source()))
+        /// <summary>
+        /// Get all buffer slices that address block contains. Need use BufferReader to read document
+        /// </summary>
+        public IEnumerable<BufferSlice> Read(PageAddress address)
         {
-            // already bytes count calculate at method start
-            w.WriteDocument(doc, false);
-            w.Consume();
-        }
-    }
+            while (address != PageAddress.Empty)
+            {
+                var dataPage = _snapshot.GetPage<DataPage>(address.PageID);
 
-    /// <summary>
-    /// Get all buffer slices that address block contains. Need use BufferReader to read document
-    /// </summary>
-    public IEnumerable<BufferSlice> Read(PageAddress address)
-    {
-        while (address != PageAddress.Empty)
+                var block = dataPage.GetBlock(address.Index);
+
+                yield return block.Buffer;
+
+                address = block.NextBlock;
+            }
+        }
+
+        /// <summary>
+        /// Delete all datablock that contains a document (can use multiples data blocks)
+        /// </summary>
+        public void Delete(PageAddress blockAddress)
         {
-            var dataPage = _snapshot.GetPage<DataPage>(address.PageID);
+            // delete all document blocks
+            while(blockAddress != PageAddress.Empty)
+            {
+                var page = _snapshot.GetPage<DataPage>(blockAddress.PageID);
+                var block = page.GetBlock(blockAddress.Index);
 
-            var block = dataPage.GetBlock(address.Index);
+                // delete block inside page
+                page.DeleteBlock(blockAddress.Index);
 
-            yield return block.Buffer;
+                // fix page empty list (or delete page)
+                _snapshot.AddOrRemoveFreeDataList(page);
 
-            address = block.NextBlock;
+                blockAddress = block.NextBlock;
+            }
         }
-    }
-
-    /// <summary>
-    /// Delete all datablock that contains a document (can use multiples data blocks)
-    /// </summary>
-    public void Delete(PageAddress blockAddress)
-    {
-        // delete all document blocks
-        while(blockAddress != PageAddress.Empty)
-        {
-            var page = _snapshot.GetPage<DataPage>(blockAddress.PageID);
-            var block = page.GetBlock(blockAddress.Index);
-
-            // delete block inside page
-            page.DeleteBlock(blockAddress.Index);
-
-            // fix page empty list (or delete page)
-            _snapshot.AddOrRemoveFreeDataList(page);
-
-            blockAddress = block.NextBlock;
-        }
-    }
-*/
+    */
 }

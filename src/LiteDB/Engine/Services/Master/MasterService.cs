@@ -7,10 +7,13 @@
 internal class MasterService : IMasterService
 {
     // dependency injection
+    private readonly IServicesFactory _factory;
     private readonly IDiskService _disk;
     private readonly IBufferFactory _bufferFactory;
     private readonly IBsonReader _reader;
     private readonly IBsonWriter _writer;
+
+    #region $master document structure
 
     /*
     # Master Document Structure
@@ -43,6 +46,8 @@ internal class MasterService : IMasterService
     }
     */
 
+    #endregion
+
     /// <summary>
     /// A dictionary with all collection indexed by collection name
     /// </summary>
@@ -58,16 +63,13 @@ internal class MasterService : IMasterService
     /// </summary>
     private BsonDocument? _master;
 
-    public MasterService(
-        IDiskService disk,
-        IBufferFactory bufferFactory,
-        IBsonReader reader,
-        IBsonWriter writer)
+    public MasterService(IServicesFactory factory)
     {
-        _disk = disk;
-        _bufferFactory = bufferFactory;
-        _reader = reader;
-        _writer = writer;
+        _factory = factory;
+        _disk = factory.GetDisk();
+        _bufferFactory = factory.GetBufferFactory();
+        _reader = factory.GetBsonReader();
+        _writer = factory.GetBsonWriter();
     }
 
     #region Read/Write $master
@@ -78,75 +80,17 @@ internal class MasterService : IMasterService
     /// </summary>
     public async Task InitializeAsync()
     {
-        var page = _bufferFactory.AllocateNewPage(false);
-        byte[]? bufferDocument = null;
+        // create a a local transaction (not from monitor)
+        using var transaction = new Transaction(_factory, 0, new byte[0], 0);
 
-        var reader = await _disk.RentDiskReaderAsync();
+        // initialize data service with new transaction
+        var dataService = new DataService(_factory, transaction);
 
-        try
-        {
-            var pagePositionID = (uint)MASTER_PAGE_ID;
+        // read $master document
+        var master = await dataService.ReadDocumentAsync(MASTER_ROW_ID, null);
 
-            // get first $master page - first 8k
-            await reader.ReadPageAsync(pagePositionID, page);
-
-            // read document size
-            var masterLength = page.AsSpan(PAGE_HEADER_SIZE).ReadVariantLength(out _);
-
-            // if $master document fit in one page, just read from buffer
-            if (masterLength < PAGE_CONTENT_SIZE)
-            {
-                var master = _reader.ReadDocument(page.AsSpan(PAGE_HEADER_SIZE), null, false, out _)!;
-
-                this.UpdateDocument(master);
-            }
-            // otherwise, read as many pages as needed to read full master collection
-            else
-            {
-                // create, in memory, a new array with full size of document
-                bufferDocument = ArrayPool<byte>.Shared.Rent(masterLength);
-
-                // copy first page already read
-                Buffer.BlockCopy(page.Buffer, 0, bufferDocument, 0, PAGE_HEADER_SIZE);
-
-                // track how many bytes are readed (remove first page already read)
-                var bytesToRead = masterLength - PAGE_CONTENT_SIZE;
-                var docPosition = PAGE_CONTENT_SIZE;
-
-                // read all document from multiples buffer segments
-                while(bytesToRead > 0)
-                {
-                    // move to another page
-                    pagePositionID++;
-
-                    // reuse same buffer (will be copied to bufferDocumnet)
-                    await reader.ReadPageAsync(pagePositionID, page);
-
-                    var pageContentSize = bytesToRead > PAGE_CONTENT_SIZE ? PAGE_CONTENT_SIZE : bytesToRead;
-
-                    Buffer.BlockCopy(page.Buffer, 0, bufferDocument, docPosition, pageContentSize);
-
-                    bytesToRead -= pageContentSize;
-                    docPosition += pageContentSize;
-                }
-
-                // read $master document from full buffer document
-                var master = _reader.ReadDocument(bufferDocument, null, false, out _)!;
-
-                this.UpdateDocument(master);
-            }
-        }
-        finally
-        {
-            // return array to pool to be re-used
-            if (bufferDocument is not null)  ArrayPool<byte>.Shared.Return(bufferDocument);
-
-            // deallocate buffer
-            _bufferFactory.DeallocatePage(page);
-
-            // return reader disk
-            _disk.ReturnDiskReader(reader);
-        }
+        // update current instance with new $master loaded
+        this.UpdateDocument(master);
     }
 
     /// <summary>
@@ -177,34 +121,14 @@ internal class MasterService : IMasterService
     }
 
     /// <summary>
-    /// Write all master document into page buffer and write on this.
+    /// Write all master document into page buffer and write on this. Must use a real transaction
+    /// to store all pages into log
     /// </summary>
     public async Task WriteCollectionAsync(BsonDocument master, ITransaction transaction)
     {
-        // get master length to know if fits in 1 page or need many
-        var masterLength = master.GetBytesCount();
-        var initialMasterPageID = 1u;
-        var page = await transaction.GetPageAsync(initialMasterPageID, true);
+        var dataService = new DataService(_factory, transaction);
 
-        // setup first page header
-        page.Header.ColID = 0;
-        page.Header.ItemsCount = 1;
-        page.Header.PageType = PageType.Data;
-        page.Header.PageID = initialMasterPageID;
-
-        // if fits in 1 page
-        if (masterLength <= PAGE_CONTENT_SIZE)
-        {
-            page.Header.UsedBytes = (ushort)masterLength;
-
-            // serialize master document into page content area
-            _writer.WriteDocument(page.AsSpan(PAGE_HEADER_SIZE, PAGE_CONTENT_SIZE), master, out _);
-        }
-        else
-        {
-            //TODO: slitar em um array alugado e salvar nas paginas
-            throw new NotImplementedException();
-        }
+        await dataService.UpdateDocumentAsync(MASTER_ROW_ID, master);
     }
 
     #endregion
@@ -303,7 +227,7 @@ internal class MasterService : IMasterService
         [MK_PRAGMA] = new BsonDocument
         {
             [MK_PRAGMA_USER_VERSION] = 0,
-            [MK_PRAGMA_LIMIT_SIZE] = 0,
+            [MK_PRAGMA_LIMIT_SIZE] = 0L, // should be long
             [MK_PRAGMA_CHECKPOINT] = CHECKPOINT_SIZE,
         }
     };

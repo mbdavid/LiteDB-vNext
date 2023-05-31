@@ -12,9 +12,12 @@ internal class PageBuffer
     public uint PositionID = uint.MaxValue;
 
     /// <summary>
-    /// Contains how many threads are sharing this buffer slice for read. Used for cache service
+    /// Contains how many threads are sharing this page buffer for read.
+    /// If ShareCounter = -1 means this PageBuffer are not shared in cache (can be changed)
+    /// If ShareCounter = 0 means this PageBuffer are on cache but no one are using (can be dispose if needed)
+    /// If ShareCounter > 0 means this PageBuffer contains 1 or more threads reading this page (can't be changed)
     /// </summary>
-    public int ShareCounter = 0;
+    public int ShareCounter = PAGE_NO_CACHE;
 
     /// <summary>
     /// Last time this buffer was hit by cache
@@ -42,7 +45,7 @@ internal class PageBuffer
 
     public void Reset()
     {
-        this.ShareCounter = 0;
+        this.ShareCounter = PAGE_NO_CACHE;
         this.Timestamp = 0;
         this.PositionID = uint.MaxValue;
         this.IsDirty = false;
@@ -70,6 +73,8 @@ internal class PageBuffer
 
     public void Rent()
     {
+        ENSURE(this.ShareCounter != PAGE_NO_CACHE, $"rent page {this} only for cache");
+
         Interlocked.Increment(ref this.ShareCounter);
 
         this.Timestamp = DateTime.UtcNow.Ticks;
@@ -77,6 +82,8 @@ internal class PageBuffer
 
     public void Return()
     {
+        ENSURE(this.ShareCounter != PAGE_NO_CACHE, $"rent page {this} only for cache");
+
         Interlocked.Decrement(ref this.ShareCounter);
 
         ENSURE(this.ShareCounter < 0, "ShareCounter cached page must be large than 0");
@@ -87,7 +94,7 @@ internal class PageBuffer
     /// </summary>
     public bool IsHeaderEmpty()
     {
-        return this.Buffer.AsSpan()[0..(PAGE_HEADER_SIZE - 1)].IsFullZero();
+        return this.Buffer.AsSpan(0, PAGE_HEADER_SIZE).IsFullZero();
     }
 
     /// <summary>
@@ -103,5 +110,5 @@ internal class PageBuffer
 
     }
 
-    public override string ToString() => $"PageID: {Header.PageID} / PositionID: {Header.PositionID}";
+    public override string ToString() => $"PageID: {Header.PageID} / PositionID: {this.PositionID}";
 }

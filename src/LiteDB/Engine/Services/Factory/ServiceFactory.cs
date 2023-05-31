@@ -21,7 +21,6 @@ internal partial class ServicesFactory : IServicesFactory
     private readonly IMasterService _master;
     private readonly ITransactionMonitor _monitor;
 
-    private readonly IPageService _pageService;
     private readonly IDataPageService _dataPageService;
     private readonly IIndexPageService _indexPageService;
 
@@ -37,6 +36,8 @@ internal partial class ServicesFactory : IServicesFactory
         _indexCache = new IndexCacheService();
         _walIndex = new WalIndexService();
         _bufferFactory = new BufferFactory();
+        _dataPageService = new DataPageService();
+        _indexPageService = new IndexPageService();
 
         // settings dependency only
         _lock = new LockService(settings.Timeout);
@@ -45,14 +46,11 @@ internal partial class ServicesFactory : IServicesFactory
         // other services dependencies
         _disk = new DiskService(settings, _bufferFactory, _streamFactory, this);
         _allocationMap = new AllocationMapService(_disk, _streamFactory, _bufferFactory);
-        _master = new MasterService(_disk, _bufferFactory, _bsonReader, _bsonWriter);
+
+        // full factory dependencies
+        _master = new MasterService(this);
         _monitor = new TransactionMonitor(this);
 
-        // page service
-        _pageService = new PageService();
-
-        _dataPageService = new DataPageService(_pageService);
-        _indexPageService = new IndexPageService(_pageService);
     }
 
     #region Singleton instances (Get/Properties)
@@ -76,8 +74,6 @@ internal partial class ServicesFactory : IServicesFactory
     public IMemoryCacheService GetMemoryCache() => _memoryCache;
 
     public IIndexCacheService GetIndexCache() => _indexCache;
-
-    public IPageService GetPageService() => _pageService;
 
     public IDataPageService GetDataPageService() => _dataPageService;
 

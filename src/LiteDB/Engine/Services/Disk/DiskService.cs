@@ -41,16 +41,11 @@ internal class DiskService : IDiskService
         // if file not exists, create empty database
         if (_streamFactory.Exists() == false)
         {
-            var fileHeader = new FileHeader(_settings);
-
-            // create new file and write 
-            await _writer.CreateAsync(fileHeader);
-
             // intialize new database class factory
             var newFile = _factory.CreateNewDatafile();
 
             // create first AM page and $master 
-            await newFile.CreateAsync(_writer);
+            var fileHeader = await newFile.CreateAsync(_writer);
 
             return fileHeader;
         }
@@ -119,7 +114,7 @@ internal class DiskService : IDiskService
 
     /// <summary>
     /// </summary>
-    public async Task WriteLogPagesAsync(IEnumerable<PageBuffer> pages)
+    public async Task WriteLogPagesAsync(PageBuffer[] pages)
     {
         //TODO: disk lock here
 
@@ -130,9 +125,11 @@ internal class DiskService : IDiskService
             _writer.WriteFlag(FileHeader.P_RECOVERY, 1);
         }
 
-        foreach (var page in pages)
+        for (var i = 0; i < pages.Length; i++)
         {
-            ENSURE(page.PositionID != uint.MaxValue, $"current page {page.PositionID} should be MaxValue");
+            var page = pages[i];
+
+            ENSURE(page.PositionID == uint.MaxValue, $"current page {page.PositionID} should be MaxValue");
 
             // get next page position on log
             page.PositionID = this.GetNextLogPositionID();

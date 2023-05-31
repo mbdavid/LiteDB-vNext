@@ -1,24 +1,33 @@
-﻿namespace LiteDB.Engine;
+﻿using static System.Net.Mime.MediaTypeNames;
+
+namespace LiteDB.Engine;
 
 internal struct DataBlock
 {
     /// <summary>
     /// Get fixed part of DataBlock (5 bytes)
     /// </summary>
-    public const int DATA_BLOCK_FIXED_SIZE = PageAddress.SIZE; // NextBlock
+    public const int DATA_BLOCK_FIXED_SIZE = 1 + // data block type (reserved)
+                                             PageAddress.SIZE; // NextBlock
 
-    public const int P_NEXT_BLOCK = 0;  // 00-04 [pageAddress]
-    public const int P_BUFFER = 5;       // 05-EOF [bytes[]]
+    public const int P_BLOCK_TYPE = 0; // 00-00 [byte]
+    public const int P_NEXT_BLOCK = 1; // 01-05 [pageAddress]
+    public const int P_BUFFER = 6;     // 06-EOF [bytes[]]
 
     /// <summary>
-    /// Block RowID
+    /// Data block RowID on DataPage (not persisted)
     /// </summary>
     public readonly PageAddress RowID;
 
     /// <summary>
+    /// Define block type (reserved for future use)
+    /// </summary>
+    public readonly byte BlockType;
+
+    /// <summary>
     /// If document need more than 1 block, use this link to next block
     /// </summary>
-    public PageAddress NextBlock;
+    public readonly PageAddress NextBlock;
 
     /// <summary>
     /// Read new DataBlock from filled page block
@@ -29,25 +38,26 @@ internal struct DataBlock
 
         ENSURE(page.Header.PageID == rowID.PageID, $"PageID {page.Header.PageID} and RowID.PageID {rowID.PageID} must be the same value");
 
-        var segment = PageSegment.GetSegment(page, rowID.Index);
+        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
         var span = page.AsSpan(segment);
 
-        // byte 00-04: NextBlock (PageID, Index)
+        this.BlockType = span[P_BLOCK_TYPE];
         this.NextBlock = span[P_NEXT_BLOCK..].ReadPageAddress();
     }
 
     /// <summary>
     /// Create new DataBlock and fill into buffer
     /// </summary>
-    public DataBlock(PageBuffer page, PageAddress rowID, int location, PageAddress nextBlock)
+    public DataBlock(PageBuffer page, PageAddress rowID, PageAddress nextBlock)
     {
         this.RowID = rowID;
-        this.Location = location;
+        this.BlockType = 1; // reserved
         this.NextBlock = nextBlock;
 
-        var span = page.AsSpan(location);
+        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+        var span = page.AsSpan(segment);
 
-        // byte 00-04 (can be updated)
+        span[P_BLOCK_TYPE] = this.BlockType;
         span[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
     }
 

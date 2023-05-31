@@ -10,10 +10,14 @@ internal class Transaction : ITransaction
     private readonly IDiskService _disk;
     private readonly IWalIndexService _walIndex;
     private readonly IAllocationMapService _allocationMap;
+    private readonly IIndexPageService _indexPage;
     private readonly IDataPageService _dataPage;
     private readonly IBufferFactory _bufferFactory;
     private readonly IMemoryCacheService _memoryCache;
     private readonly ILockService _lock;
+
+    // count how many locks this transaction contains
+    private int _lockCounter = 0;
 
     private IDiskStream? _reader;
 
@@ -41,6 +45,7 @@ internal class Transaction : ITransaction
         _memoryCache = factory.GetMemoryCache();
         _walIndex = factory.GetWalIndex();
         _allocationMap = factory.GetAllocationMap();
+        _indexPage = factory.GetIndexPageService();
         _dataPage = factory.GetDataPageService();
         _lock = factory.GetLock();
 
@@ -58,10 +63,15 @@ internal class Transaction : ITransaction
         // enter transaction lock
         await _lock.EnterTransactionAsync();
 
+        _lockCounter = 1;
+
         for(var i = 0; i < _writeCollections.Length; i++)
         {
             // enter in all
             await _lock.EnterCollectionWriteLockAsync(_writeCollections[i]);
+
+            // increment lockCounter to dispose control
+            _lockCounter++;
         }
 
         // if readVersion is -1 must be initialized with next read version from wal
@@ -94,7 +104,7 @@ internal class Transaction : ITransaction
     }
 
     /// <summary>
-    /// Read a page from disk. Use direct position (data) or index log
+    /// Read a data/index page from disk (data or log). Can return page from global cache
     /// </summary>
     private async Task<PageBuffer> ReadPageAsync(uint pageID, int readVersion, bool writable)
     {
@@ -158,8 +168,18 @@ internal class Transaction : ITransaction
         {
             var page = _bufferFactory.AllocateNewPage(true);
 
-            _dataPage.CreateNew(page, pageID, colID);
+            // initialize empty page as data/index page
+            if (pageType == PageType.Data)
+            {
+                _dataPage.InitializeDataPage(page, pageID, colID);
+            }
+            else if (pageType == PageType.Index)
+            {
+                _indexPage.InitializeIndexPage(page, pageID, colID);
+            }
+            else throw new NotSupportedException();
 
+            // add in local cache
             _localPages.Add(pageID, page);
 
             return page;
@@ -177,17 +197,17 @@ internal class Transaction : ITransaction
     public async Task CommitAsync()
     {
         var dirtyPages = _localPages.Values
-            .Where(x => x.IsDirty)
+            //.Where(x => x.IsDirty)
             .ToArray();
 
         for (var i = 0; i < dirtyPages.Length; i++)
         {
             var page = dirtyPages[i];
 
-            ENSURE(page.ShareCounter == 0, "page should not be on cache when saving");
+            ENSURE(page.ShareCounter == PAGE_NO_CACHE, "page should not be on cache when saving");
 
             // update page header
-            page.Header.PositionID = page.PositionID;
+            page.PositionID = uint.MaxValue;
             page.Header.TransactionID = this.TransactionID;
             page.Header.IsConfirmed = i == (dirtyPages.Length - 1);
         }
@@ -201,7 +221,7 @@ internal class Transaction : ITransaction
         // add pages to cache or decrement sharecount
         foreach(var page in _localPages.Values)
         {
-            // page already in cache
+            // page already in cache (was not changed)
             if (page.ShareCounter > 0)
             {
                 page.Return();
@@ -233,13 +253,19 @@ internal class Transaction : ITransaction
 
     public void Dispose()
     {
-        for (var i = 0; i < _writeCollections.Length; i++)
+        if (_lockCounter == 0) return; // no locks
+
+        while (_lockCounter > 1)
         {
-            // exit in all collection locks
-            _lock.ExitCollectionWriteLock(_writeCollections[i]);
+            _lock.ExitCollectionWriteLock(_writeCollections[_lockCounter - 2]);
+            _lockCounter--;
         }
 
         // exit lock transaction
         _lock.ExitTransaction();
+
+        _lockCounter--;
+
+        ENSURE(_lockCounter == 0, "missing release lock in transaction");
     }
 }

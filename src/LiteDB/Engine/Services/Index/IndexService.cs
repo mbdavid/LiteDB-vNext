@@ -12,7 +12,6 @@ internal class IndexService : IIndexService
     // dependency injection
     private readonly IAllocationMapService _allocationMap;
     private readonly IIndexPageService _indexPage;
-    private readonly IPageService _pageService;
     private readonly IBsonWriter _writer;
     private readonly ITransaction _transaction;
     private readonly Collation _collation;
@@ -22,7 +21,6 @@ internal class IndexService : IIndexService
     {
         _allocationMap = factory.GetAllocationMap();
         _indexPage = factory.GetIndexPageService();
-        _pageService = factory.GetPageService();
         _writer = factory.GetBsonWriter();
 
         _transaction = transaction;
@@ -46,12 +44,11 @@ internal class IndexService : IIndexService
         var tail = _indexPage.InsertIndexNode(page, 0, MAX_LEVEL_LENGTH, BsonValue.MaxValue, PageAddress.Empty, bytesLength);
 
         // link head-to-tail with double link list in first level
-        head.SetNext(0, tail.RowID, page);
-        tail.SetPrev(0, head.RowID, page);
+        head.SetNext(page, 0, tail.RowID);
+        tail.SetPrev(page, 0, head.RowID);
 
         return (head, tail);
     }
-
 
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
@@ -170,12 +167,12 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Get a node/pageBuffer inside a page using PageAddress. RowID must be a valid position
     /// </summary>
-    public async Task<(IndexNode node, PageBuffer page)> GetNodeAsync(PageAddress position, bool writable)
+    public async Task<(IndexNode node, PageBuffer page)> GetNodeAsync(PageAddress rowID, bool writable)
     {
         /* BUSCA DA CACHE ?? PODE SER ALTERAVEL! */
-        var page = await _transaction.GetPageAsync(position.PageID, writable);
+        var page = await _transaction.GetPageAsync(rowID.PageID, writable);
 
-        return (_indexPage.GetIndexNode(page, position.Index), page);
+        return (new IndexNode(page, rowID), page);
     }
 
     /*

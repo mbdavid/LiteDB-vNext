@@ -136,9 +136,9 @@ internal struct PageHeader
         this.IsConfirmed = span[P_IS_CONFIRMED] != 0;
 
         this.ItemsCount = span[P_ITEMS_COUNT];
-        this.UsedBytes = span[P_USED_BYTES..2].ReadUInt16();
-        this.FragmentedBytes = span[P_FRAGMENTED_BYTES..2].ReadUInt16();
-        this.NextFreeLocation = span[P_NEXT_FREE_POSITION..2].ReadUInt16();
+        this.UsedBytes = span[P_USED_BYTES..].ReadUInt16();
+        this.FragmentedBytes = span[P_FRAGMENTED_BYTES..].ReadUInt16();
+        this.NextFreeLocation = span[P_NEXT_FREE_POSITION..].ReadUInt16();
         this.HighestIndex = span[P_HIGHEST_INDEX];
 
         this.Crc8 = span[P_CRC8];
@@ -157,9 +157,9 @@ internal struct PageHeader
         span[P_IS_CONFIRMED] = this.IsConfirmed ? (byte)1 : (byte)0;
 
         span[P_ITEMS_COUNT] = this.ItemsCount;
-        span[P_USED_BYTES..2].WriteUInt16(this.UsedBytes);
-        span[P_FRAGMENTED_BYTES..2].WriteUInt16(this.FragmentedBytes);
-        span[P_NEXT_FREE_POSITION..2].WriteUInt16(this.NextFreeLocation);
+        span[P_USED_BYTES..].WriteUInt16(this.UsedBytes);
+        span[P_FRAGMENTED_BYTES..].WriteUInt16(this.FragmentedBytes);
+        span[P_NEXT_FREE_POSITION..].WriteUInt16(this.NextFreeLocation);
         span[P_HIGHEST_INDEX] = this.HighestIndex;
 
         span[P_CRC8] = this.Crc8;
@@ -180,22 +180,24 @@ internal struct PageHeader
     /// </summary>
     public byte GetFreeIndex(PageBuffer page)
     {
-        //// check for all slot area to get first empty slot [safe for byte loop]
-        //for (byte index = _startIndex; index <= this.HighestIndex; index++)
-        //{
-        //    var positionAddr = PageSegment.GetSegment(index);
-        //    var position = span[positionAddr..2].ReadUInt16();
+        var span = page.AsSpan();
 
-        //    // if position = 0 means this slot are not used
-        //    if (position == 0)
-        //    {
-        //        _startIndex = (byte)(index + 1);
+        // check for all slot area to get first empty slot [safe for byte loop]
+        for (byte index = _startIndex; index <= this.HighestIndex; index++)
+        {
+            var segmentAddr = PageSegment.GetSegmentAddr(index);
+            var location = span[segmentAddr.Location..].ReadUInt16();
 
-        //        return index;
-        //    }
-        //}
-        throw new NotImplementedException();
-        //return (byte)(this.HighestIndex + 1);
+            // if location = 0 means this slot are not used
+            if (location == 0)
+            {
+                _startIndex = (byte)(index + 1);
+
+                return index;
+            }
+        }
+
+        return (byte)(this.HighestIndex + 1);
     }
 
     /// <summary>

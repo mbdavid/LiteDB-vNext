@@ -485,13 +485,24 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     /// 10xxxxxx xxxxxxxx                    14 bits 128-16383
     /// 11xxxxxx xxxxxxxx xxxxxxxx xxxxxxxx  30 bits 16383-1.073.741.823 (1Gb)
     /// </summary>
-    internal static int GetVariantLength(int dataLength)
+    internal static int GetVariantLengthFromData(int dataLength)
     {
         return dataLength switch
         {
             < 128 => 1, // 7 bits
             < 16384 => 2, // 14 bits
             < 1073741823 => 4, // 30 bits
+            _ => throw ERR_TOO_LARGE_VARIANT()
+        };
+    }
+
+    internal static int GetVariantLengthFromValue(int valueLength)
+    {
+        return valueLength switch
+        {
+            < (128 - 1) => 1, // 7 bits
+            < (16384 - 2) => 2, // 14 bits
+            < (1073741823 - 4) => 4, // 30 bits
             _ => throw ERR_TOO_LARGE_VARIANT()
         };
     }

@@ -3,7 +3,7 @@
 /// <summary>
 /// Class with all constants used in LiteDB + Debbuger HELPER
 /// </summary>
-public class Constants
+internal class Constants
 {
     /// <summary>
     /// Initial file data descriptor size (before start database - use offset in Stream)
@@ -93,7 +93,12 @@ public class Constants
     /// <summary>
     /// Get colID for $master document
     /// </summary>
-    public const byte MASTER_COL_ID = byte.MaxValue;
+    public const byte MASTER_COL_ID = 255;
+
+    /// <summary>
+    /// Get colID for $master document
+    /// </summary>
+    public static PageAddress MASTER_ROW_ID = new (MASTER_PAGE_ID, 0);
 
     /// <summary>
     /// Get how many bytes $master can be store (8 pages)
@@ -120,9 +125,14 @@ public class Constants
     public const string MK_PRAGMA_CHECKPOINT = "checkpoint";
 
     /// <summary>
+    /// Define when ShareCounter (on PageBuffer) are in cache or not
+    /// </summary>
+    public const int PAGE_NO_CACHE = -1; 
+
+    /// <summary>
     /// Define index name max length
     /// </summary>
-    public static int INDEX_NAME_MAX_LENGTH = 32;
+    public const int INDEX_NAME_MAX_LENGTH = 32;
 
     /// <summary>
     /// Max level used on skip list (index).

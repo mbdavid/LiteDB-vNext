@@ -58,31 +58,34 @@ internal class AllocationMapPage
         // if this page contais all empty extends, there is no need to read all buffer
         if (_emptyExtends.Count == AM_EXTEND_COUNT) return;
 
-        var span = _page.AsSpan();
 
         ENSURE(_emptyExtends.Count == 0, "empty extends will be loaded here and can't have any page before here");
 
         for (var extendIndex = 0; extendIndex < AM_EXTEND_COUNT; extendIndex++)
         {
             // extend position on buffer
-            var position = PAGE_HEADER_SIZE + (extendIndex * AM_EXTEND_SIZE);
+            var position = PAGE_HEADER_SIZE + (extendIndex * AM_BYTES_PER_EXTEND);
+
+            var span = _page.AsSpan();
 
             // check if empty colID (means empty extend)
             var colID = span[position];
 
             if (colID == 0)
             {
-                DEBUG(span[position..(position + AM_BYTES_PER_EXTEND)].IsFullZero(), $"all page extend allocation map should be empty at {position}");
+                DEBUG(span.Slice(position, AM_BYTES_PER_EXTEND).IsFullZero(), $"all page extend allocation map should be empty at {position}");
 
                 _emptyExtends.Enqueue(extendIndex);
             }
+            // for all other (except $master collection)
             else
             {
                 // get 3 bytes from extend to read 8 sequencial pages free spaces
-                var pagesBytes = span[(position + 1)..(position + AM_BYTES_PER_EXTEND - 2)];
+                var pagesBytes = span.Slice(position + 1, AM_BYTES_PER_EXTEND - 1);
 
-                // get free page lists from collection
-                var freePages = collectionFreePages[colID];
+                // get (or create) free page lists from collection
+                var freePages = collectionFreePages[colID] =
+                    collectionFreePages[colID] ?? new CollectionFreePages();
 
                 // read all extend pages and add to collection free pages
                 this.ReadExtend(freePages, extendIndex, pagesBytes);
@@ -188,7 +191,7 @@ internal class AllocationMapPage
         var position = PAGE_HEADER_SIZE + (extendIndex *  AM_BYTES_PER_EXTEND);
 
         // get 3 pageBytes
-        var pageBytes = _page.AsSpan(position + 1, position + AM_BYTES_PER_EXTEND);
+        var pageBytes = _page.AsSpan(position + 1, AM_BYTES_PER_EXTEND - 1);
 
         // mark buffer as dirty (in map page this should be manual)
         _page.IsDirty = true;

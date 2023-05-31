@@ -3,47 +3,33 @@
 namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class IndexPageService : IIndexPageService
+internal class IndexPageService : PageService, IIndexPageService
 {
-    private readonly IPageService _pageService;
-
-    public IndexPageService(IPageService pageService)
-    {
-        _pageService = pageService;
-    }
-
-    public void CreateNew(PageBuffer page, uint pageID, byte colID)
+    /// <summary>
+    /// Initialize an empty PageBuffer as IndexPage
+    /// </summary>
+    public void InitializeIndexPage(PageBuffer page, uint pageID, byte colID)
     {
         page.Header.PageID = pageID;
         page.Header.PageType = PageType.Index;
         page.Header.ColID = colID;
     }
 
-    public IndexNode GetIndexNode(PageBuffer page, byte index)
-    {
-        var segment = _pageService.Get(page, index, out var location);
-        var position = new PageAddress(page.Header.PageID, index);
-
-        var node = new IndexNode(segment, position, location);
-
-        return node;
-    }
-
     /// <summary>
-    /// Insert new IndexNode. After call this, "node" instance can't be changed
+    /// Insert new IndexNode into an index page
     /// </summary>
     public IndexNode InsertIndexNode(PageBuffer page, byte slot, byte level, BsonValue key, PageAddress dataBlock, ushort bytesLength)
     {
         // get a new index block
-        var index = page.Header.GetFreeIndex(page.Buffer);
+        var index = page.Header.GetFreeIndex(page);
 
-        var position = new PageAddress(page.Header.PageID, index);
+        var rowID = new PageAddress(page.Header.PageID, index);
 
         // create new segment on page
-        var segment = _pageService.Insert(page, bytesLength, index, true);
+        base.Insert(page, bytesLength, index, true);
 
         // create a new index node
-        var node = new IndexNode(position, segment, slot, level, key, dataBlock);
+        var node = new IndexNode(page, rowID, slot, level, key, dataBlock);
 
         return node;
     }
@@ -53,6 +39,6 @@ internal class IndexPageService : IIndexPageService
     /// </summary>
     public void DeleteIndexNode(PageBuffer page, byte index)
     {
-        _pageService.Delete(page, index);
+        base.Delete(page, index);
     }
 }

@@ -25,10 +25,10 @@ internal class CreateCollectionCommand : ICreateCollectionCommand
 
     public async Task ExecuteAsync(string collectionName, CancellationToken cancellationToken = default)
     {
-        if (_factory.State != EngineState.Open) throw new Exception("must be open");
+        if (_factory.State != EngineState.Open) throw ERR("must be open");
 
-        // create a new transaction locking colID = 0 ($master)
-        var transaction = await _monitor.CreateTransactionAsync(new byte[] { 0 });
+        // create a new transaction locking colID = 255 ($master)
+        var transaction = await _monitor.CreateTransactionAsync(new byte[] { MASTER_COL_ID });
 
         // get a new colID
         var colID = _master.NewColID();

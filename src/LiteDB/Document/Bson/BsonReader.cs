@@ -30,7 +30,7 @@ public class BsonReader : IBsonReader
 
             var fieldSkip = remaining != null && remaining.Contains(key) == false;
 
-            var value = ReadValue(span[offset..], fieldSkip, out var valueLength);
+            var value = this.ReadValue(span[offset..], fieldSkip, out var valueLength);
 
             offset += valueLength;
 
@@ -55,7 +55,7 @@ public class BsonReader : IBsonReader
 
         while (offset < length)
         {
-            var value = ReadValue(span[offset..], false, out var valueLength);
+            var value = this.ReadValue(span[offset..], false, out var valueLength);
 
             array.Add(value!);
 
@@ -78,7 +78,7 @@ public class BsonReader : IBsonReader
             case BsonTypeCode.String:
                 var strLength = span[1..].ReadVariantLength(out var varSLen);
                 length = 1 + varSLen + strLength;
-                return skip ? null : new BsonString(span[(1 + varSLen)..(1 + varSLen + strLength)].ReadString());
+                return skip ? null : new BsonString(span.Slice(1 + varSLen, strLength).ReadString());
 
             case BsonTypeCode.Document:
                 var doc = this.ReadDocument(span[1..], null, skip, out var docLength);

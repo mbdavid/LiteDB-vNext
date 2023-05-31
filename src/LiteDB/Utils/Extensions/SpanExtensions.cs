@@ -53,7 +53,7 @@ internal static class SpanExtensions
 
     public static Guid ReadGuid(this Span<byte> span)
     {
-        return new Guid(span);
+        return new Guid(span[..16]);
     }
 
     public static DateTime ReadDateTime(this Span<byte> span, bool utc = true)
@@ -209,7 +209,7 @@ internal static class SpanExtensions
     /// </summary>
     public static void WriteVariantLength(this Span<byte> span, int dataLength, out int varLen)
     {
-        varLen = BsonValue.GetVariantLength(dataLength);
+        varLen = BsonValue.GetVariantLengthFromData(dataLength);
 
         if (varLen == 1)
         {

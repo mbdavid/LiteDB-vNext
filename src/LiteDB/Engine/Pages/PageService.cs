@@ -46,10 +46,10 @@ internal class PageService : IPageService
         var location = header.NextFreeLocation;
 
         // write this page location in my location address
-        span[segmentAddr.Location..2].WriteUInt16(location);
+        span[segmentAddr.Location..].WriteUInt16(location);
 
         // write page segment length in my length address
-        span[segmentAddr.Length..2].WriteUInt16(bytesLength);
+        span[segmentAddr.Length..].WriteUInt16(bytesLength);
 
         // update next free location and counters
         header.ItemsCount++;
@@ -281,7 +281,7 @@ internal class PageService : IPageService
 
     /// <summary>
     /// Update HighestIndex based on current HighestIndex (step back looking for next used slot)
-    /// Used only in Delete() operation
+    /// * Used only in Delete() operation *
     /// </summary>
     private void UpdateHighestIndex(PageBuffer page)
     {
@@ -302,11 +302,10 @@ internal class PageService : IPageService
         for (int index = header.HighestIndex - 1; index >= 0; index--)
         {
             var segmentAddr = PageSegment.GetSegmentAddr((byte)index);
+            var location = span[segmentAddr.Location..2].ReadUInt16();
 
-            if (segmentAddr.Location != 0)
+            if (location != 0)
             {
-                ENSURE(segmentAddr.Length > 0, $"segment address {segmentAddr} contains a empty length on page {page}");
-
                 header.HighestIndex = (byte)index;
                 return;
             }

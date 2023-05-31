@@ -40,8 +40,8 @@ internal class WalIndexService : IWalIndexService
     }
 
     /// <summary>
-    /// Get a page position (in disk) for a page that are inside WAL. 
-    /// Returns MaxValue if not found
+    /// Get a page positionID (in disk) for a page that are inside WAL. 
+    /// If page is not in WAL index, return positionID on datafile
     /// </summary>
     public uint GetPagePositionID(uint pageID, int version, out int walVersion)
     {
@@ -52,6 +52,7 @@ internal class WalIndexService : IWalIndexService
         if (version == 0 || 
             _index.TryGetValue(pageID, out var listVersion) == false)
         {
+            // in datafile - pageID = positionID
             return pageID;
         }
 
