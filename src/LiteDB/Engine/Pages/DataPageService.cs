@@ -59,4 +59,12 @@ internal class DataPageService : PageService, IDataPageService
         // copy content from buffer to page
         buffer.CopyTo(page.AsSpan(segment.Location + DataBlock.DATA_BLOCK_FIXED_SIZE));
     }
+
+    /// <summary>
+    /// Delete a single datablock from page
+    /// </summary>
+    public void DeleteDataBlock(PageBuffer page, byte index)
+    {
+        base.Delete(page, index);
+    }
 }

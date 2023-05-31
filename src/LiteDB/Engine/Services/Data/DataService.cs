@@ -151,6 +151,32 @@ internal class DataService : IDataService
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Delete a full document from a single or multiple pages
+    /// </summary>
+    public async Task DeleteDocumentAsync(PageAddress rowID)
+    {
+        var page = await _transaction.GetPageAsync(rowID.PageID, false);
+
+        var dataBlock = new DataBlock(page, rowID);
+
+        // delete first data block
+        _dataPage.DeleteDataBlock(page, rowID.Index);
+
+        // keeping deleting all next pages/data blocks until nextBlock is empty
+        while (!dataBlock.NextBlock.IsEmpty)
+        {
+            // get next page
+            page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID, false);
+
+            dataBlock = new DataBlock(page, dataBlock.NextBlock);
+
+            // delete datablock
+            _dataPage.DeleteDataBlock(page, dataBlock.NextBlock.Index);
+        }
+    }
+
     /*
 
         /// <summary>
