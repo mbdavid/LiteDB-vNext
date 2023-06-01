@@ -1,4 +1,8 @@
-﻿using System.Xml.Linq;
+﻿using System.Data;
+using System.Net;
+using System.Runtime.ConstrainedExecution;
+using System.Security.Permissions;
+using System.Xml.Linq;
 
 namespace LiteDB.Engine;
 
@@ -68,10 +72,10 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private async Task<IndexNode> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, byte level, IndexNode? last)
+    private async Task<IndexNode> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, byte insertLevel, IndexNode? last)
     {
         // get a free index page for head note
-        var bytesLength = (ushort)IndexNode.GetNodeLength(level, key, out var keyLength);
+        var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevel, key, out var keyLength);
 
         // test for index key maxlength
         if (keyLength > MAX_INDEX_KEY_LENGTH) throw ERR($"Index key must be less than {MAX_INDEX_KEY_LENGTH} bytes.");
@@ -80,58 +84,58 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreePageAsync(colID, PageType.Index, bytesLength);
 
         // create node in buffer
-        var createdNode = _indexPage.InsertIndexNode(page,index.Slot, level, key, dataBlock, bytesLength);
+        var node = _indexPage.InsertIndexNode(page,index.Slot, insertLevel, key, dataBlock, bytesLength);
 
         // now, let's link my index node on right place
-        var current = await this.GetNodeAsync(index.Head, true);
+        var left = index.Head;
+        var leftNode = await this.GetNodeAsync(left, true);
 
-        // using as cache last
-        IndexNode? cache = null;
-
-        // scan from top left
-        for (int i = MAX_LEVEL_LENGTH - 1; i >= 0; i--)
+        // for: scan from top to bottom
+        for (byte currentLevel = MAX_LEVEL_LENGTH - 1; currentLevel >= 0; currentLevel--)
         {
-            // head/tail are not linked between 1-31 (level 0 always has a next)
-            if (current.node.Next[i].IsEmpty) continue;
+            var right = leftNode.node.Next[currentLevel];
 
-            // get current from next
-            current = await this.GetNodeAsync(current.node.Next[i], true);
+            // while: scan from left to right
+            while (right.IsEmpty == false)
+            {
+                var rightNode = await this.GetNodeAsync(right, true);
 
-            // get cache for last node
-            //**cache = cache != null && cache.Value.Position == current.node.Next[i] ? cache : await this.GetNodeAsync(current.node.Next[i], true);
+                // read next node to compare
+                var diff = rightNode.node.Key.CompareTo(key, _collation);
 
-            // for(; <while_not_this>; <do_this>) { ... }
-            //for (; current.node.Next[i].IsEmpty == false; current = cache.Value)
-            //{
-            //    // get cache for last node
-            //    cache = cache != null && cache.Value.Position == current.Next[i] ? cache : await this.GetNodeAsync(current.Next[i], true);
+                // if unique and diff == 0, throw index exception (must rollback transaction - others nodes can be dirty)
+                if (diff == 0 && index.Unique) throw ERR("IndexDuplicateKey(index.Name, key)");
 
-            //    // read next node to compare
-            //    var diff = cache.Value.Key.CompareTo(key, _collation);
+                if (diff == 1) break; // stop going right
 
-            //    // if unique and diff = 0, throw index exception (must rollback transaction - others nodes can be dirty)
-            //    if (diff == 0 && index.Unique) throw LiteException.IndexDuplicateKey(index.Name, key);
+                leftNode = rightNode;
+                right = rightNode.node.Next[currentLevel];
+            }
 
-            //    if (diff == 1) break;
-            //}
+            if (currentLevel <= insertLevel) // level == length
+            {
+                // prev: immediately before new node
+                // node: new inserted node
+                // next: right node from prev (where left is pointing)
 
-            //if (i <= (level - 1)) // level == length
-            //{
-            //    // cur = current (immediately before - prev)
-            //    // node = new inserted node
-            //    // next = next node (where cur is pointing)
+                var prev = leftNode.node.RowID;
+                var next = leftNode.node.Next[currentLevel];
 
-            //    createdNode.SetNext((byte)i, current.Next[i], );
-            //    createdNode.SetPrev((byte)i, current.Position);
-            //    current.SetNext((byte)i, createdNode.Position);
+                // if next is empty, use tail (last key)
+                if (next.IsEmpty) next = index.Tail;
 
-            //    var next = this.GetNode(createdNode.Next[i]);
+                // set new node pointer links with current level sibling
+                node.SetNext(page, currentLevel, next);
+                node.SetPrev(page, currentLevel, prev);
+                
+                // fix sibling pointer to new node
+                leftNode.node.SetNext(leftNode.page, currentLevel, node.RowID);
 
-            //    if (next != null)
-            //    {
-            //        next.SetPrev((byte)i, createdNode.Position);
-            //    }
-            //}
+                right = node.Next[currentLevel];
+
+                var rightNode = await this.GetNodeAsync(right, true);
+                rightNode.node.SetPrev(rightNode.page, currentLevel, node.RowID);
+            }
         }
 
         //// if last node exists, create a double link list
@@ -144,7 +148,7 @@ internal class IndexService : IIndexService
         //    last.SetNextNode(createdNode.Position);
         //}
 
-        return createdNode;
+        return node;
     }
 
 
@@ -175,134 +179,6 @@ internal class IndexService : IIndexService
         return (new IndexNode(page, rowID), page);
     }
 
-    /*
-        /// <summary>
-        /// Gets all node list from passed node rowid (forward only)
-        /// </summary>
-        public async IAsyncEnumerable<IndexNode> GetNodeListAsync(PageAddress rowID, bool writable)
-        {
-            while (rowID.IsEmpty)
-            {
-                var node = await this.GetNodeAsync(rowID, writable);
-
-                yield return node;
-
-                rowID = node.NextNode;
-            }
-        }
-
-        /// <summary>
-        /// Deletes all indexes nodes from pkNode
-        /// </summary>
-        public void DeleteAll(PageAddress pkAddress)
-        {
-            var node = this.GetNode(pkAddress);
-            var indexes = _snapshot.CollectionPage.GetCollectionIndexesSlots();
-
-            while (node != null)
-            {
-                this.DeleteSingleNode(node, indexes[node.Slot]);
-
-                // move to next node
-                node = this.GetNode(node.NextNode);
-            }
-        }
-
-        /// <summary>
-        /// Deletes all list of nodes in toDelete - fix single linked-list and return last non-delete node
-        /// </summary>
-        public IndexNode DeleteList(PageAddress pkAddress, HashSet<PageAddress> toDelete)
-        {
-            var last = this.GetNode(pkAddress);
-            var node = this.GetNode(last.NextNode); // starts in first node after PK
-            var indexes = _snapshot.CollectionPage.GetCollectionIndexesSlots();
-
-            while (node != null)
-            {
-                if (toDelete.Contains(node.Position))
-                {
-                    this.DeleteSingleNode(node, indexes[node.Slot]);
-
-                    // fix single-linked list from last non-delete delete
-                    last.SetNextNode(node.NextNode);
-                }
-                else
-                {
-                    // last non-delete node to set "NextNode"
-                    last = node;
-                }
-
-                // move to next node
-                node = this.GetNode(node.NextNode);
-            }
-
-            return last;
-        }
-
-        /// <summary>
-        /// Delete a single index node - fix tree double-linked list levels
-        /// </summary>
-        private void DeleteSingleNode(IndexNode node, CollectionIndex index)
-        {
-            for (int i = node.Level - 1; i >= 0; i--)
-            {
-                // get previous and next nodes (between my deleted node)
-                var prevNode = this.GetNode(node.Prev[i]);
-                var nextNode = this.GetNode(node.Next[i]);
-
-                if (prevNode != null)
-                {
-                    prevNode.SetNext((byte)i, node.Next[i]);
-                }
-                if (nextNode != null)
-                {
-                    nextNode.SetPrev((byte)i, node.Prev[i]);
-                }
-            }
-
-            node.Page.DeleteIndexNode(node.Position.Index);
-
-            _snapshot.AddOrRemoveFreeIndexList(node.Page, ref index.FreeIndexPageList);
-        }
-
-        /// <summary>
-        /// Delete all index nodes from a specific collection index. Scan over all PK nodes, read all nodes list and remove
-        /// </summary>
-        public void DropIndex(CollectionIndex index)
-        {
-            var slot = index.Slot;
-            var pkIndex = _snapshot.CollectionPage.PK;
-
-            foreach(var pkNode in this.FindAll(pkIndex, Query.Ascending))
-            {
-                var next = pkNode.NextNode;
-                var last = pkNode;
-
-                while (next != PageAddress.Empty)
-                {
-                    var node = this.GetNode(next);
-
-                    if (node.Slot == slot)
-                    {
-                        // delete node from page (mark as dirty)
-                        node.Page.DeleteIndexNode(node.Position.Index);
-
-                        last.SetNextNode(node.NextNode);
-                    }
-                    else
-                    {
-                        last = node;
-                    }
-
-                    next = node.NextNode;
-                }
-            }
-
-            // removing head/tail index nodes
-            this.GetNode(index.Head).Page.DeleteIndexNode(index.Head.Index);
-            this.GetNode(index.Tail).Page.DeleteIndexNode(index.Tail.Index);
-        }
-    */
     #region Find
 
     /// <summary>
@@ -331,33 +207,40 @@ internal class IndexService : IIndexService
     /// If index are unique, return unique value - if index are not unique, return first found (can start, middle or end)
     /// If not found but sibling = true, returns near node (only non-unique index)
     /// </summary>
-    public async Task<IndexNode?> Find(IndexDocument index, BsonValue value, bool sibling, int order)
+    public async Task<IndexNode?> Find(IndexDocument index, BsonValue key, bool sibling, int order)
     {
-        var cur = order == Query.Ascending ? 
-            await this.GetNodeAsync(index.Head, false) : 
-            await this.GetNodeAsync(index.Tail, false);
+        var left = order == Query.Ascending ? index.Head : index.Tail;
+        var leftNode = await this.GetNodeAsync(left, false);
 
-        //for (int i = index.MaxLevel - 1; i >= 0; i--)
-        //{
-        //    for (; cur.GetNextPrev((byte)i, order).IsEmpty == false; cur = this.GetNode(cur.GetNextPrev((byte)i, order)))
-        //    {
-        //        var next = this.GetNode(cur.GetNextPrev((byte)i, order));
-        //        var diff = next.Key.CompareTo(value, _collation);
+        for (byte level = MAX_LEVEL_LENGTH - 1; level >= 0; level--)
+        {
+            var right = leftNode.node.GetNextPrev(level, order);
 
-        //        if (diff == order && (i > 0 || !sibling)) break;
-        //        if (diff == order && i == 0 && sibling)
-        //        {
-        //            // is head/tail?
-        //            return (next.Key.IsMinValue || next.Key.IsMaxValue) ? null : next;
-        //        }
+            while (right.IsEmpty == false)
+            {
+                var rightNode = await this.GetNodeAsync(right, false);
 
-        //        // if equals, return index node
-        //        if (diff == 0)
-        //        {
-        //            return next;
-        //        }
-        //    }
-        //}
+                var diff = rightNode.node.Key.CompareTo(key, _collation);
+                
+                if (diff == order && (level > 0 || !sibling)) break; // go down one level
+
+                if (diff == order && level == 0 && sibling)
+                {
+                    // is head/tail?
+                    return (rightNode.node.Key.IsMinValue || rightNode.node.Key.IsMaxValue) ? null : rightNode.node;
+                }
+
+                // if equals, return index node
+                if (diff == 0)
+                {
+                    return rightNode.node;
+                }
+
+                leftNode = rightNode;
+                right = leftNode.node.GetNextPrev(level, order);
+            }
+
+        }
 
         return null;
     }

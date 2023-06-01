@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Transactions;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// Do all WAL index services based on LOG file - has only single instance per engine

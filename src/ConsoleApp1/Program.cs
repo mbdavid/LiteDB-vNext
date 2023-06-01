@@ -18,6 +18,7 @@ using(var engine = new LiteEngine(settings))
 
     var created = await engine.CreateCollectionAsync("col1");
 
+    await engine.CheckpointAsync();
 }
 
 Console.WriteLine("End");

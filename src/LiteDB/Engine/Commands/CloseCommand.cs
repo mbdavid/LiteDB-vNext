@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class OpenCommand : IOpenCommand
+internal class CloseCommand : ICloseCommand
 {
     private readonly IServicesFactory _factory;
     private readonly IDiskService _disk;
@@ -11,7 +11,7 @@ internal class OpenCommand : IOpenCommand
 
     private readonly IEngineContext _ctx;
 
-    public OpenCommand(IServicesFactory factory, IEngineContext ctx)
+    public CloseCommand(IServicesFactory factory, IEngineContext ctx)
     {
         _factory = factory;
         _disk = factory.GetDisk();
@@ -28,24 +28,8 @@ internal class OpenCommand : IOpenCommand
 
         await _lock.EnterExclusiveAsync();
 
-        if (_factory.State != EngineState.Close) throw ERR("must be closed");
-
-        // open/create data file and returns file header
-        var fileHeader = await _disk.InitializeAsync();
-
-        if (fileHeader.Recovery) throw new NotImplementedException();
-
-        // initialize AM service
-        await _allocationMap.InitializeAsync();
-
-        // read $master
-        await _master.InitializeAsync();
-
-        // update header/state
-        _factory.SetState(EngineState.Open, fileHeader);
 
         // release exclusive
         _lock.ExitExclusive();
-        // se deu erro, o state = closed
     }
 }

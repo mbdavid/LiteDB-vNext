@@ -20,6 +20,21 @@ internal class DiskService : IDiskService
 
     private bool _writeInit = false;
 
+    /// <summary>
+    /// Get start log position ID
+    /// </summary>
+    public uint LogStartPositionID => _logStartPositionID;
+
+    /// <summary>
+    /// Get end log position ID
+    /// </summary>
+    public uint LogEndPositionID => (uint)_logEndPositionID;
+
+    /// <summary>
+    /// Get all reference pages that are in log and must be 
+    /// </summary>
+    public List<uint> LogPages;
+
     public DiskService(IEngineSettings settings, 
         IBufferFactory bufferFactory,
         IStreamFactory streamFactory,
@@ -92,7 +107,7 @@ internal class DiskService : IDiskService
     {
         uint positionID = AM_FIRST_PAGE_ID;
 
-        var lastPositionID = this.GetLastPositionID();
+        var lastPositionID = this.GetLastFilePositionID();
 
         while (positionID <= lastPositionID)
         {
@@ -149,7 +164,7 @@ internal class DiskService : IDiskService
     {
         if (_logStartPositionID == 0 && _logEndPositionID == 0)
         {
-            _logStartPositionID = this.GetLastPositionID() + 5; //TODO: calcular para proxima extend
+            _logStartPositionID = this.GetLastFilePositionID() + 5; //TODO: calcular para proxima extend
 
             _logEndPositionID = (int)_logStartPositionID;
 
@@ -162,7 +177,7 @@ internal class DiskService : IDiskService
     /// <summary>
     /// Calculate, using disk file length, last PositionID. Should considering FILE_HEADER_SIZE and celling pages.
     /// </summary>
-    public uint GetLastPositionID()
+    public uint GetLastFilePositionID()
     {
         var fileLength = _streamFactory.GetLength();
 

@@ -11,6 +11,8 @@ internal partial class ServicesFactory : IServicesFactory
     private readonly IBufferFactory _bufferFactory;
     private readonly IMemoryCacheService _memoryCache;
     private readonly IIndexCacheService _indexCache;
+
+    private readonly ILogService _logService;
     private readonly IWalIndexService _walIndex;
 
     private readonly ILockService _lock;
@@ -28,7 +30,8 @@ internal partial class ServicesFactory : IServicesFactory
     {
         this.Settings = settings;
 
-        // initialize per-engine classes instances
+        // initialize per-engine classes instances (no actions!)
+
         // no dependencies
         _bsonReader = new BsonReader();
         _bsonWriter = new BsonWriter();
@@ -46,6 +49,8 @@ internal partial class ServicesFactory : IServicesFactory
         // other services dependencies
         _disk = new DiskService(settings, _bufferFactory, _streamFactory, this);
         _allocationMap = new AllocationMapService(_disk, _streamFactory, _bufferFactory);
+
+        _logService = new LogService(_disk);
 
         // full factory dependencies
         _master = new MasterService(this);
@@ -142,12 +147,24 @@ internal partial class ServicesFactory : IServicesFactory
 
     #region Modified State Methods
 
-    public void SetStateOpen(FileHeader header)
+    public void SetState(EngineState state, FileHeader? header)
     {
-        if (this.State != EngineState.Close) throw new InvalidOperationException("Engine must be closed before open");
+        if (state == EngineState.Open)
+        {
+            if (this.State != EngineState.Close) throw new InvalidOperationException("Engine must be closed before open");
 
-        this.FileHeader = header;
-        this.State = EngineState.Open;
+            this.FileHeader = header!;
+            this.State = EngineState.Open;
+        }
+        else if (state == EngineState.Shutdown)
+        {
+            this.State = EngineState.Shutdown;
+        }
+        else if (state == EngineState.Close)
+        {
+            this.State = EngineState.Close;
+        }
+
     }
 
     #endregion

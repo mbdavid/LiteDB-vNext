@@ -166,6 +166,8 @@ internal struct IndexNode
     /// </summary>
     public void SetNextNode(PageBuffer page, PageAddress nextNode)
     {
+        ENSURE(this.RowID.PageID == page.Header.PageID, $"should be same index page {page}");
+
         this.NextNode = nextNode;
 
         var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
@@ -179,6 +181,7 @@ internal struct IndexNode
     /// </summary>
     public void SetPrev(PageBuffer page, byte level, PageAddress prev)
     {
+        ENSURE(this.RowID.PageID == page.Header.PageID, $"should be same index page {page}");
         ENSURE(level <= this.Level, "out of index in level");
 
         this.Prev[level] = prev;
@@ -196,6 +199,7 @@ internal struct IndexNode
     /// </summary>
     public void SetNext(PageBuffer page, byte level, PageAddress next)
     {
+        ENSURE(this.RowID.PageID == page.Header.PageID, $"should be same index page {page}");
         ENSURE(level <= this.Level, "out of index in level");
 
         this.Next[level] = next;

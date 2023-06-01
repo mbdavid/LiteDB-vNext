@@ -6,6 +6,7 @@ internal class CheckpointCommand : ICheckpointCommand
     private readonly IServicesFactory _factory;
     private readonly IDiskService _disk;
     private readonly ILockService _lock;
+    private readonly IMemoryCacheService _memoryCache;
     private readonly IMasterService _master;
     private readonly IAllocationMapService _allocationMap;
 
@@ -16,6 +17,7 @@ internal class CheckpointCommand : ICheckpointCommand
         _factory = factory;
         _disk = factory.GetDisk();
         _lock = factory.GetLock();
+        _memoryCache = factory.GetMemoryCache();
         _master = factory.GetMaster();
         _allocationMap = factory.GetAllocationMap();
 
@@ -26,8 +28,15 @@ internal class CheckpointCommand : ICheckpointCommand
     {
         if (_factory.State == EngineState.Open) throw ERR("must be closed");
 
+        // checkpoint require exclusive lock (no readers/writers)
         await _lock.EnterExclusiveAsync();
 
+        // at this point, there is no open transaction
+        // all pages in cache are ShareCounter = 0
+
+        _disk.GetNextLogPositionID
+
+        
 
 
 
