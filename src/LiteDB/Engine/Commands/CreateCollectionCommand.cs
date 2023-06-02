@@ -48,9 +48,11 @@ internal class CreateCollectionCommand : ICreateCollectionCommand
         // write all dirty pages into disk
         await transaction.CommitAsync();
 
+        // update master document
+        _master.UpdateDocument(master);
+
         // release transaction
         _monitor.ReleaseTransaction(transaction);
-
 
     }
 }

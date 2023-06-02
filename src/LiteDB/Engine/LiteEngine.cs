@@ -73,6 +73,17 @@ public partial class LiteEngine : ILiteEngine
         return true;
     }
 
+    public async Task<int> InsertAsync(string collectionName, BsonDocument document)
+    {
+        using var ctx = _factory.CreateEngineContext();
+
+        var create = _factory.CreateInsertCommand(ctx);
+
+        await create.ExecuteAsync(collectionName, document);
+
+        return 0;
+    }
+
     public async Task<bool> CheckpointAsync()
     {
         using var ctx = _factory.CreateEngineContext();

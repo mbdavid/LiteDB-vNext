@@ -9,8 +9,8 @@ internal struct IndexNode
     /// Fixed length of IndexNode (13 bytes)
     /// </summary>
     private const int INDEX_NODE_FIXED_SIZE = 1 + // Slot (1 byte)
-                                              1 + // Levels (1 byte)
                                               1 + // Index type (1 byte)
+                                              1 + // Levels (1 byte)
                                               PageAddress.SIZE + // DataBlock (5 bytes)
                                               PageAddress.SIZE;  // NextNode (5 bytes)
 
@@ -20,7 +20,7 @@ internal struct IndexNode
     private const int P_DATA_BLOCK = 3; // 03-07 [PageAddress]
     private const int P_NEXT_NODE = 8; // 08-12 [PageAddress]
     private const int P_PREV_NEXT = 13; // 13-(_level * 5 [PageAddress] * 2 [prev-next])
-    private static int P_KEY(byte level) => P_PREV_NEXT + (level * PageAddress.SIZE * 2); // just after NEXT
+    private static int P_KEY(int levels) => P_PREV_NEXT + (levels * PageAddress.SIZE * 2); // just after NEXT
 
     /// <summary>
     /// Index address of this node inside a IndexPage (not persist)
@@ -38,9 +38,9 @@ internal struct IndexNode
     public readonly byte IndexType;
 
     /// <summary>
-    /// Skip-list level (0-31) - [1 byte]
+    /// Amount of skipped-list levels (1-32) - [1 byte]
     /// </summary>
-    public readonly byte Level;
+    public readonly byte Levels;
 
     /// <summary>
     /// The object value that was indexed (max 255 bytes value)
@@ -79,14 +79,14 @@ internal struct IndexNode
 
         this.Slot = span[P_SLOT];
         this.IndexType = span[P_INDEX_TYPE];
-        this.Level = span[P_LEVEL];
+        this.Levels = span[P_LEVEL];
         this.DataBlock = span[P_DATA_BLOCK..].ReadPageAddress();
         this.NextNode = span[P_NEXT_NODE..].ReadPageAddress();
 
-        this.Next = new PageAddress[this.Level];
-        this.Prev = new PageAddress[this.Level];
+        this.Next = new PageAddress[this.Levels];
+        this.Prev = new PageAddress[this.Levels];
 
-        for (var i = 0; i < this.Level; i++)
+        for (var i = 0; i < this.Levels; i++)
         {
             var prevAddr = P_PREV_NEXT + (i * PageAddress.SIZE * 2);
             var nextAddr = P_PREV_NEXT + (i * PageAddress.SIZE * 2) + PageAddress.SIZE;
@@ -95,7 +95,7 @@ internal struct IndexNode
             this.Next[i] = span[nextAddr..].ReadPageAddress();
         }
 
-        var keyPosition = P_KEY(this.Level);
+        var keyPosition = P_KEY(this.Levels);
 
         // read bson value from buffer
         this.Key = span[keyPosition..].ReadBsonValue(out _);
@@ -104,17 +104,17 @@ internal struct IndexNode
     /// <summary>
     /// Create new index node and persist into page block
     /// </summary>
-    public IndexNode(PageBuffer page, PageAddress rowID, byte slot, byte level, BsonValue key, PageAddress dataBlock)
+    public IndexNode(PageBuffer page, PageAddress rowID, byte slot, int levels, BsonValue key, PageAddress dataBlock)
     {
         this.RowID = rowID;
 
         this.Slot = slot;
         this.IndexType = 1; // skip list node (reserved)
-        this.Level = level;
+        this.Levels = (byte)levels;
         this.DataBlock = dataBlock;
         this.NextNode = PageAddress.Empty;
-        this.Next = new PageAddress[level];
-        this.Prev = new PageAddress[level];
+        this.Next = new PageAddress[levels];
+        this.Prev = new PageAddress[levels];
         this.Key = key;
 
         var segment = PageSegment.GetSegment(page, rowID.Index, out _);
@@ -123,11 +123,11 @@ internal struct IndexNode
         // persist in buffer read only data
         span[P_SLOT] = slot;
         span[P_INDEX_TYPE] = this.IndexType;
-        span[P_LEVEL] = level;
+        span[P_LEVEL] = (byte)levels;
         span[P_DATA_BLOCK..].WritePageAddress(dataBlock);
         span[P_NEXT_NODE..].WritePageAddress(PageAddress.Empty);
 
-        for (byte i = 0; i < level; i++)
+        for (byte i = 0; i < levels; i++)
         {
             var prevAddr = P_PREV_NEXT + (i * PageAddress.SIZE * 2);
             var nextAddr = P_PREV_NEXT + (i * PageAddress.SIZE * 2) + PageAddress.SIZE;
@@ -138,7 +138,7 @@ internal struct IndexNode
             span[nextAddr..].WritePageAddress(PageAddress.Empty);
         }
 
-        var keyPosition = P_KEY(level);
+        var keyPosition = P_KEY(levels);
 
         // writing key value
         span[keyPosition..].WriteBsonValue(key, out _);
@@ -151,11 +151,11 @@ internal struct IndexNode
     {
         this.RowID = new PageAddress(0, 0);
         this.Slot = 0;
-        this.Level = 0;
+        this.Levels = 1;
         this.DataBlock = PageAddress.Empty;
         this.NextNode = PageAddress.Empty;
-        this.Next = new PageAddress[0];
-        this.Prev = new PageAddress[0];
+        this.Next = new PageAddress[this.Levels];
+        this.Prev = new PageAddress[this.Levels];
 
         // index node key IS document
         this.Key = doc;
@@ -179,10 +179,10 @@ internal struct IndexNode
     /// <summary>
     /// Update Prev[index] pointer (update in buffer too).
     /// </summary>
-    public void SetPrev(PageBuffer page, byte level, PageAddress prev)
+    public void SetPrev(PageBuffer page, int level, PageAddress prev)
     {
         ENSURE(this.RowID.PageID == page.Header.PageID, $"should be same index page {page}");
-        ENSURE(level <= this.Level, "out of index in level");
+        ENSURE(level < this.Levels, "out of index in level");
 
         this.Prev[level] = prev;
 
@@ -197,14 +197,14 @@ internal struct IndexNode
     /// <summary>
     /// Update Next[index] pointer (update in buffer too).
     /// </summary>
-    public void SetNext(PageBuffer page, byte level, PageAddress next)
+    public void SetNext(PageBuffer page, int level, PageAddress next)
     {
         ENSURE(this.RowID.PageID == page.Header.PageID, $"should be same index page {page}");
-        ENSURE(level <= this.Level, "out of index in level");
+        ENSURE(level < this.Levels, "out of index in level");
 
         this.Next[level] = next;
 
-        var nextAddr = P_NEXT_NODE + (level * PageAddress.SIZE * 2) + PageAddress.SIZE;
+        var nextAddr = P_PREV_NEXT + (level * PageAddress.SIZE * 2) + PageAddress.SIZE;
 
         var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
         var span = page.AsSpan(segment);
@@ -215,7 +215,7 @@ internal struct IndexNode
     /// <summary>
     /// Returns Next (order == 1) OR Prev (order == -1)
     /// </summary>
-    public PageAddress GetNextPrev(byte level, int order)
+    public PageAddress GetNextPrev(int level, int order)
     {
         return order == Query.Ascending ? this.Next[level] : this.Prev[level];
     }
@@ -225,12 +225,12 @@ internal struct IndexNode
     /// <summary>
     /// Calculate how many bytes this node will need on page block
     /// </summary>
-    public static int GetNodeLength(byte level, BsonValue key, out int keyLength)
+    public static int GetNodeLength(int levels, BsonValue key, out int keyLength)
     {
         keyLength = GetKeyLength(key);
 
         return INDEX_NODE_FIXED_SIZE +
-            (level * 2 * PageAddress.SIZE) + // prev/next
+            (levels * 2 * PageAddress.SIZE) + // prev/next
             keyLength; // key
     }
 

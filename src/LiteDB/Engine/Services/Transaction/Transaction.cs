@@ -91,7 +91,7 @@ internal class Transaction : ITransaction
     {
         if (_localPages.TryGetValue(pageID, out var page))
         {
-            ENSURE(writable, page.ShareCounter == 0, "page should not be in cache");
+            ENSURE(writable, page.ShareCounter == PAGE_NO_CACHE, "page should not be in cache");
 
             return page;
         }

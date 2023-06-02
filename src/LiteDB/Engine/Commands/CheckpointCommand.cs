@@ -34,7 +34,7 @@ internal class CheckpointCommand : ICheckpointCommand
         // at this point, there is no open transaction
         // all pages in cache are ShareCounter = 0
 
-        _disk.GetNextLogPositionID
+        //_disk.GetNextLogPositionID
 
         
 

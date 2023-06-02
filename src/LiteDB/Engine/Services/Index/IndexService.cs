@@ -38,14 +38,14 @@ internal class IndexService : IIndexService
     public async Task<(IndexNode head, IndexNode tail)> CreateHeadTailNodesAsync(byte colID)
     {
         // get how many bytes needed for each head/tail (both has same size)
-        var bytesLength = (ushort)IndexNode.GetNodeLength(MAX_LEVEL_LENGTH, BsonValue.MinValue, out _);
+        var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, BsonValue.MinValue, out _);
 
         // get a new empty index page for this collection
         var page = await _transaction.GetFreePageAsync(colID, PageType.Index, PAGE_CONTENT_SIZE);
 
         // add head/tail nodes into page
-        var head = _indexPage.InsertIndexNode(page, 0, MAX_LEVEL_LENGTH, BsonValue.MinValue, PageAddress.Empty, bytesLength);
-        var tail = _indexPage.InsertIndexNode(page, 0, MAX_LEVEL_LENGTH, BsonValue.MaxValue, PageAddress.Empty, bytesLength);
+        var head = _indexPage.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MinValue, PageAddress.Empty, bytesLength);
+        var tail = _indexPage.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MaxValue, PageAddress.Empty, bytesLength);
 
         // link head-to-tail with double link list in first level
         head.SetNext(page, 0, tail.RowID);
@@ -72,27 +72,28 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private async Task<IndexNode> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, byte insertLevel, IndexNode? last)
+    private async Task<IndexNode> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNode? last)
     {
         // get a free index page for head note
-        var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevel, key, out var keyLength);
+        var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, key, out var keyLength);
 
         // test for index key maxlength
-        if (keyLength > MAX_INDEX_KEY_LENGTH) throw ERR($"Index key must be less than {MAX_INDEX_KEY_LENGTH} bytes.");
+        if (keyLength > INDEX_MAX_KEY_LENGTH) throw ERR($"Index key must be less than {INDEX_MAX_KEY_LENGTH} bytes.");
 
         // get page with avaiable space to add this node
         var page = await _transaction.GetFreePageAsync(colID, PageType.Index, bytesLength);
 
         // create node in buffer
-        var node = _indexPage.InsertIndexNode(page,index.Slot, insertLevel, key, dataBlock, bytesLength);
+        var node = _indexPage.InsertIndexNode(page,index.Slot, insertLevels, key, dataBlock, bytesLength);
 
         // now, let's link my index node on right place
         var left = index.Head;
         var leftNode = await this.GetNodeAsync(left, true);
 
         // for: scan from top to bottom
-        for (byte currentLevel = MAX_LEVEL_LENGTH - 1; currentLevel >= 0; currentLevel--)
+        for (int i = INDEX_MAX_LEVELS - 1; i >= 0; i--)
         {
+            var currentLevel = (byte)i;
             var right = leftNode.node.Next[currentLevel];
 
             // while: scan from left to right
@@ -112,7 +113,7 @@ internal class IndexService : IIndexService
                 right = rightNode.node.Next[currentLevel];
             }
 
-            if (currentLevel <= insertLevel) // level == length
+            if (currentLevel <= insertLevels - 1) // level == length
             {
                 // prev: immediately before new node
                 // node: new inserted node
@@ -152,20 +153,25 @@ internal class IndexService : IIndexService
     }
 
 
+    public static byte[] altura = new byte[] { 2, 5, 1, 4, 3, 2, 1, 2, 1, 2 };
+    public static int prox = 0;
+
     /// <summary>
-    /// Flip coin - skip list - returns level node (start in 0)
+    /// Flip coin (skipped list): returns how many levels the node will have (starts in 1, max of INDEX_MAX_LEVELS)
     /// </summary>
-    public byte Flip()
+    public int Flip()
     {
-        byte level = 0;
+        return altura[prox++];
+
+        byte levels = 1;
 
         for (int R = _random.Next(); (R & 1) == 1; R >>= 1)
         {
-            level++;
-            if (level == MAX_LEVEL_LENGTH - 1) break;
+            levels++;
+            if (levels == INDEX_MAX_LEVELS) break;
         }
 
-        return level;
+        return levels;
     }
 
     /// <summary>
@@ -184,7 +190,7 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Return all index nodes from an index
     /// </summary>
-    public async IAsyncEnumerable<IndexNode> FindAll(IndexDocument index, int order)
+    public async IAsyncEnumerable<IndexNode> FindAllAsync(IndexDocument index, int order)
     {
         var cur = order == Query.Ascending ? 
             await this.GetNodeAsync(index.Tail, false) : await this.GetNodeAsync(index.Head, false);
@@ -207,12 +213,12 @@ internal class IndexService : IIndexService
     /// If index are unique, return unique value - if index are not unique, return first found (can start, middle or end)
     /// If not found but sibling = true, returns near node (only non-unique index)
     /// </summary>
-    public async Task<IndexNode?> Find(IndexDocument index, BsonValue key, bool sibling, int order)
+    public async Task<IndexNode?> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
     {
         var left = order == Query.Ascending ? index.Head : index.Tail;
         var leftNode = await this.GetNodeAsync(left, false);
 
-        for (byte level = MAX_LEVEL_LENGTH - 1; level >= 0; level--)
+        for (var level = INDEX_MAX_LEVELS - 1; level >= 0; level--)
         {
             var right = leftNode.node.GetNextPrev(level, order);
 
@@ -237,7 +243,7 @@ internal class IndexService : IIndexService
                 }
 
                 leftNode = rightNode;
-                right = leftNode.node.GetNextPrev(level, order);
+                right = rightNode.node.GetNextPrev(level, order);
             }
 
         }

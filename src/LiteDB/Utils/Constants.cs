@@ -132,22 +132,17 @@ internal class Constants
     /// <summary>
     /// Define index name max length
     /// </summary>
-    public const int INDEX_NAME_MAX_LENGTH = 32;
+    public const int INDEX_MAX_NAME_LENGTH = 32;
 
     /// <summary>
     /// Max level used on skip list (index).
     /// </summary>
-    public const int MAX_LEVEL_LENGTH = 32;
+    public const int INDEX_MAX_LEVELS = 32;
 
     /// <summary>
     /// Max size of a index entry - usde for string, binary, array and documents. Need fit in 1 byte length
     /// </summary>
-    public const int MAX_INDEX_KEY_LENGTH = 1023;
-
-    /// <summary>
-    /// Get max length of 1 single index node
-    /// </summary>
-    public const int MAX_INDEX_LENGTH = 1400;
+    public const int INDEX_MAX_KEY_LENGTH = 1023;
 
     /// <summary>
     /// Get default checkpoint size (in pages). This value is used inside pragma

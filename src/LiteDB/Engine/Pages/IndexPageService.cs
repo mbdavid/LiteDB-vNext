@@ -18,7 +18,7 @@ internal class IndexPageService : PageService, IIndexPageService
     /// <summary>
     /// Insert new IndexNode into an index page
     /// </summary>
-    public IndexNode InsertIndexNode(PageBuffer page, byte slot, byte level, BsonValue key, PageAddress dataBlock, ushort bytesLength)
+    public IndexNode InsertIndexNode(PageBuffer page, byte slot, int levels, BsonValue key, PageAddress dataBlock, ushort bytesLength)
     {
         // get a new index block
         var index = page.Header.GetFreeIndex(page);
@@ -29,7 +29,7 @@ internal class IndexPageService : PageService, IIndexPageService
         base.Insert(page, bytesLength, index, true);
 
         // create a new index node
-        var node = new IndexNode(page, rowID, slot, level, key, dataBlock);
+        var node = new IndexNode(page, rowID, slot, levels, key, dataBlock);
 
         return node;
     }
