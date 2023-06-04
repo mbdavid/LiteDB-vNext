@@ -40,6 +40,7 @@ internal partial class ServicesFactory : IServicesFactory
         _walIndex = new WalIndexService();
         _bufferFactory = new BufferFactory();
         _dataPageService = new DataPageService();
+        _logService = new LogService();
         _indexPageService = new IndexPageService();
 
         // settings dependency only
@@ -47,10 +48,9 @@ internal partial class ServicesFactory : IServicesFactory
         _streamFactory = new FileStreamFactory(settings);
 
         // other services dependencies
-        _disk = new DiskService(settings, _bufferFactory, _streamFactory, this);
+        _disk = new DiskService(settings, _bufferFactory, _streamFactory, _logService, this);
         _allocationMap = new AllocationMapService(_disk, _streamFactory, _bufferFactory);
 
-        _logService = new LogService(_disk);
 
         // full factory dependencies
         _master = new MasterService(this);
@@ -91,6 +91,8 @@ internal partial class ServicesFactory : IServicesFactory
     public IAllocationMapService GetAllocationMap() => _allocationMap;
 
     public IMasterService GetMaster() => _master;
+
+    public ILogService GetLogService() => _logService;
 
     public IWalIndexService GetWalIndex() => _walIndex;
 

@@ -8,6 +8,7 @@ internal class OpenCommand : IOpenCommand
     private readonly ILockService _lock;
     private readonly IMasterService _master;
     private readonly IAllocationMapService _allocationMap;
+    private readonly ILogService _logService;
 
     private readonly IEngineContext _ctx;
 
@@ -18,6 +19,7 @@ internal class OpenCommand : IOpenCommand
         _lock = factory.GetLock();
         _master = factory.GetMaster();
         _allocationMap = factory.GetAllocationMap();
+        _logService = factory.GetLogService();
 
         _ctx = ctx;
     }
@@ -34,6 +36,9 @@ internal class OpenCommand : IOpenCommand
         var fileHeader = await _disk.InitializeAsync();
 
         if (fileHeader.Recovery) throw new NotImplementedException();
+
+        // initialize log service
+        _logService.Initialize(_disk.GetLastFilePositionID());
 
         // initialize AM service
         await _allocationMap.InitializeAsync();

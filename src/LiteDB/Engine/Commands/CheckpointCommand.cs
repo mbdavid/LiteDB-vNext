@@ -8,6 +8,7 @@ internal class CheckpointCommand : ICheckpointCommand
     private readonly ILockService _lock;
     private readonly IMemoryCacheService _memoryCache;
     private readonly IMasterService _master;
+    private readonly ILogService _logService;
     private readonly IAllocationMapService _allocationMap;
 
     private readonly IEngineContext _ctx;
@@ -19,6 +20,7 @@ internal class CheckpointCommand : ICheckpointCommand
         _lock = factory.GetLock();
         _memoryCache = factory.GetMemoryCache();
         _master = factory.GetMaster();
+        _logService = factory.GetLogService();
         _allocationMap = factory.GetAllocationMap();
 
         _ctx = ctx;
@@ -34,7 +36,7 @@ internal class CheckpointCommand : ICheckpointCommand
         // at this point, there is no open transaction
         // all pages in cache are ShareCounter = 0
 
-        //_disk.GetNextLogPositionID
+        var result = await _logService.Checkpoint(_disk);
 
         
 

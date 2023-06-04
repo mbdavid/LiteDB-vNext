@@ -39,11 +39,10 @@ internal class InsertCommand : IInsertCommand
 
         var pk = collection.Indexes["_id"];
 
-        var keys = new BsonValue[] { 12,17,20,25,31,38,39,44,50,55  };
+        var keys = new BsonValue[] { 12,17,20,25,31,38,39,44,50,55 };
 
         foreach(var key in keys)
         {
-
             await indexer.AddNodeAsync(collection.ColID, pk, key, PageAddress.Empty, null);
         }
 

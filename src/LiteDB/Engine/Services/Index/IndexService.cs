@@ -63,10 +63,10 @@ internal class IndexService : IIndexService
         if (key.IsMaxValue || key.IsMinValue) throw ERR($"BsonValue MaxValue/MinValue are not supported as index key");
 
         // random level (flip coin mode) - return number between 0-31
-        var level = this.Flip();
+        var levels = this.Flip();
 
         // call AddNode with key value
-        return await this.AddNodeAsync(colID, index, key, dataBlock, level, last);
+        return await this.AddNodeAsync(colID, index, key, dataBlock, levels, last);
     }
 
     /// <summary>
@@ -153,7 +153,7 @@ internal class IndexService : IIndexService
     }
 
 
-    public static byte[] altura = new byte[] { 2, 5, 1, 4, 3, 2, 1, 2, 1, 2 };
+    public static byte[] altura = new byte[] { 2, 5, 1, 4, 3, 2, 1, 2, 1, 4 };
     public static int prox = 0;
 
     /// <summary>

@@ -10,25 +10,13 @@ internal class DiskService : IDiskService
     private readonly IServicesFactory _factory;
     private readonly IBufferFactory _bufferFactory;
     private readonly IStreamFactory _streamFactory;
+    private readonly ILogService _logService;
     private readonly IEngineSettings _settings;
 
     private readonly IDiskStream _writer;
     private readonly ConcurrentQueue<IDiskStream> _readers = new ();
 
-    private uint _logStartPositionID;
-    private int _logEndPositionID;
-
     private bool _writeInit = false;
-
-    /// <summary>
-    /// Get start log position ID
-    /// </summary>
-    public uint LogStartPositionID => _logStartPositionID;
-
-    /// <summary>
-    /// Get end log position ID
-    /// </summary>
-    public uint LogEndPositionID => (uint)_logEndPositionID;
 
     /// <summary>
     /// Get all reference pages that are in log and must be 
@@ -38,11 +26,13 @@ internal class DiskService : IDiskService
     public DiskService(IEngineSettings settings, 
         IBufferFactory bufferFactory,
         IStreamFactory streamFactory,
+        ILogService logService,
         IServicesFactory factory)
     {
         _settings = settings;
         _bufferFactory = bufferFactory;
         _streamFactory = streamFactory;
+        _logService = logService;
         _factory = factory;
 
         _writer = factory.CreateDiskStream();
@@ -147,31 +137,17 @@ internal class DiskService : IDiskService
             ENSURE(page.PositionID == uint.MaxValue, $"current page {page.PositionID} should be MaxValue");
 
             // get next page position on log
-            page.PositionID = this.GetNextLogPositionID();
+            page.PositionID = _logService.GetNextLogPositionID();
 
             // write page to writer stream
             await _writer.WritePageAsync(page);
+
+            // add page header only into log memory list
+            _logService.AddLogPage(page.Header);
         }
 
         // flush to disk
         await _writer.FlushAsync();
-    }
-
-    /// <summary>
-    /// Get next positionID in log
-    /// </summary>
-    public uint GetNextLogPositionID()
-    {
-        if (_logStartPositionID == 0 && _logEndPositionID == 0)
-        {
-            _logStartPositionID = this.GetLastFilePositionID() + 5; //TODO: calcular para proxima extend
-
-            _logEndPositionID = (int)_logStartPositionID;
-
-            return _logStartPositionID;
-        }
-
-        return (uint)Interlocked.Increment(ref _logEndPositionID);
     }
 
     /// <summary>
