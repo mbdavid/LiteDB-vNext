@@ -1,10 +1,4 @@
-﻿using System.Data;
-using System.Net;
-using System.Runtime.ConstrainedExecution;
-using System.Security.Permissions;
-using System.Xml.Linq;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// Implement a Index service - Add/Remove index nodes on SkipList
@@ -140,29 +134,24 @@ internal class IndexService : IIndexService
         }
 
         //// if last node exists, create a double link list
-        //if (last != null)
+        //if (last.HasValue)
         //{
         //    ENSURE(last.Value.NextNode == PageAddress.Empty, "last index node must point to null");
-
+        //
         //    // reload 'last' index node in case the IndexPage has gone through a defrag
         //    last = this.GetNode(last.Position);
         //    last.SetNextNode(createdNode.Position);
+        //    last.Value.SetNext(page???)
         //}
 
         return node;
     }
-
-
-    public static byte[] altura = new byte[] { 2, 5, 1, 4, 3, 2, 1, 2, 1, 4 };
-    public static int prox = 0;
 
     /// <summary>
     /// Flip coin (skipped list): returns how many levels the node will have (starts in 1, max of INDEX_MAX_LEVELS)
     /// </summary>
     public int Flip()
     {
-        return altura[prox++];
-
         byte levels = 1;
 
         for (int R = _random.Next(); (R & 1) == 1; R >>= 1)

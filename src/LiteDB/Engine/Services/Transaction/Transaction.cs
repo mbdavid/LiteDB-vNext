@@ -109,7 +109,7 @@ internal class Transaction : ITransaction
     /// </summary>
     private async Task<PageBuffer> ReadPageAsync(uint pageID, int readVersion, bool writable)
     {
-        _reader ??= await _disk.RentDiskReaderAsync();
+        _reader ??= _disk.RentDiskReader();
 
         // get disk position (data/log)
         var positionID = _walIndex.GetPagePositionID(pageID, readVersion, out _);

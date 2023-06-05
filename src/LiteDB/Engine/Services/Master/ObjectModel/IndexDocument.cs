@@ -1,6 +1,4 @@
-﻿using System.Xml.Linq;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class IndexDocument
 {

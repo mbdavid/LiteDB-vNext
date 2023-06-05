@@ -10,7 +10,6 @@ internal partial class ServicesFactory : IServicesFactory
     private readonly IBsonWriter _bsonWriter;
     private readonly IBufferFactory _bufferFactory;
     private readonly IMemoryCacheService _memoryCache;
-    private readonly IIndexCacheService _indexCache;
 
     private readonly ILogService _logService;
     private readonly IWalIndexService _walIndex;
@@ -75,8 +74,6 @@ internal partial class ServicesFactory : IServicesFactory
     public IBufferFactory GetBufferFactory() => _bufferFactory;
 
     public IMemoryCacheService GetMemoryCache() => _memoryCache;
-
-    public IIndexCacheService GetIndexCache() => _indexCache;
 
     public IDataPageService GetDataPageService() => _dataPageService;
 

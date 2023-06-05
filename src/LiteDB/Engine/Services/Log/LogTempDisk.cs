@@ -14,6 +14,9 @@ internal class LogTempDisk
         _lastPositionID = logEndPositionID - 1;
     }
 
+    /// <summary>
+    /// Add a page into temp log. If page are new, add in next position
+    /// </summary>
     public void AddNewPage(PageBuffer page)
     {
         // test if page already exists
@@ -29,7 +32,7 @@ internal class LogTempDisk
     /// <summary>
     /// Get page position (in temp area) using logPositionID. Returns MaxValue if not found
     /// </summary>
-    public uint GetPagePositionID(uint logPositionID)
+    public uint GetTempPositionID(uint logPositionID)
     {
         if (_tempPages.TryGetValue(logPositionID, out var tempPositionID))
         {

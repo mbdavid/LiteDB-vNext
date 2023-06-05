@@ -1,6 +1,4 @@
-﻿using System.Runtime;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class FileStreamFactory : IStreamFactory
 {

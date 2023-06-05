@@ -1,6 +1,4 @@
-﻿using static System.Net.Mime.MediaTypeNames;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal struct DataBlock
 {

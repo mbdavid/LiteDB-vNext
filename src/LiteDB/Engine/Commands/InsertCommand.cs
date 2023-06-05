@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 [AutoInterface]
 internal class InsertCommand : IInsertCommand

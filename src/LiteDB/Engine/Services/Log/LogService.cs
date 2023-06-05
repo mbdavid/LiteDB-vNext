@@ -1,7 +1,4 @@
-﻿using System.IO;
-using System.IO.Pipes;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// * Singleton (thread safe)
@@ -34,7 +31,7 @@ internal class LogService : ILogService
     {
         _lastPageID = lastFilePositionID;
 
-        _logPositionID = (int)lastFilePositionID + 5; //TODO: calcular para proxima extend
+        _logPositionID = (int)(lastFilePositionID + 5); //TODO: calcular para proxima extend
     }
 
     /// <summary>
@@ -68,9 +65,13 @@ internal class LogService : ILogService
 
     public async Task<int> CheckpointAsync(IDiskService disk, LogTempDisk? tempPages)
     {
-        if (_confirmedTransactions.Count == 0) return 0;
+        var logLength = _logPages.Count;
 
-        var logEndPositionID = _logPages[^1].PositionID;
+        if (logLength == 0) return 0;
+
+        var logEndPositionID = (uint)_logPositionID;
+
+        ENSURE(_logPositionID == _logPages[^1].PositionID, $"last log page must positionID = {_logPositionID}");
 
         // get writer stream from disk service
         var stream = disk.GetDiskWriter();
@@ -85,8 +86,8 @@ internal class LogService : ILogService
             // check if page is in a confirmed transaction
             if (!_confirmedTransactions.Contains(header.TransactionID)) continue;
 
-            // checks if is temp area
-            var tempPositionID = temp.GetPagePositionID(header.PositionID);
+            // checks if is temp log
+            var tempPositionID = temp.GetTempPositionID(header.PositionID);
 
             // get file from log position or temp position
             var filePositionID = tempPositionID == uint.MaxValue ?
@@ -137,7 +138,7 @@ internal class LogService : ILogService
         // disk flush
         await stream.FlushAsync();
 
-        return 1;
+        return logLength;
     }
 
     /// <summary>

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// * Singleton (thread safe)

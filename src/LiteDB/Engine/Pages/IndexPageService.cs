@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 [AutoInterface]
 internal class IndexPageService : PageService, IIndexPageService
