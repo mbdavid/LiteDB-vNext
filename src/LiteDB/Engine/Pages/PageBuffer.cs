@@ -9,7 +9,7 @@ internal class PageBuffer
     /// <summary>
     /// Position on disk where this page came from or where this page must be stored
     /// </summary>
-    public uint PositionID = uint.MaxValue;
+    public int PositionID = int.MaxValue;
 
     /// <summary>
     /// Contains how many threads are sharing this page buffer for read.
@@ -51,7 +51,7 @@ internal class PageBuffer
     {
         this.ShareCounter = PAGE_NO_CACHE;
         this.Timestamp = 0;
-        this.PositionID = uint.MaxValue;
+        this.PositionID = int.MaxValue;
         this.IsDirty = false;
     }
 

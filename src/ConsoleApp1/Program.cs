@@ -3,19 +3,25 @@ global using LiteDB;
 global using LiteDB.Engine;
 
 
-var source = "{_id:10, true , -9}";
+var path = @"C:\Temp\litedb-v6-001.db";
 
-var t = new Tokenizer(source);
-var t2 = new Tokenizer2(source);
+File.Delete(path);
 
-var token = t.ReadToken(); // {
-var next = t.LookAhead(); // _id
+var settings = new EngineSettings
+{
+    Filename = path
+};
 
-var token2 = t.ReadToken();
+using (var engine = new LiteEngine(settings))
+{
+    var opened = await engine.OpenAsync();
 
+    var created = await engine.CreateCollectionAsync("col1");
 
+    await engine.InsertAsync("col1", new BsonDocument());
 
-
+    await engine.CheckpointAsync();
+}
 
 
 Console.WriteLine("End");

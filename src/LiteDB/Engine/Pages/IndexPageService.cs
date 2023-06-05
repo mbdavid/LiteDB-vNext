@@ -6,7 +6,7 @@ internal class IndexPageService : PageService, IIndexPageService
     /// <summary>
     /// Initialize an empty PageBuffer as IndexPage
     /// </summary>
-    public void InitializeIndexPage(PageBuffer page, uint pageID, byte colID)
+    public void InitializeIndexPage(PageBuffer page, int pageID, byte colID)
     {
         page.Header.PageID = pageID;
         page.Header.PageType = PageType.Index;

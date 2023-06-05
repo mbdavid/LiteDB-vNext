@@ -94,7 +94,7 @@ internal class DiskService : IDiskService
     /// </summary>
     public async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
     {
-        uint positionID = AM_FIRST_PAGE_ID;
+        var positionID = AM_FIRST_PAGE_ID;
 
         var lastPositionID = this.GetLastFilePositionID();
 
@@ -133,7 +133,7 @@ internal class DiskService : IDiskService
         {
             var page = pages[i];
 
-            ENSURE(page.PositionID == uint.MaxValue, $"current page {page.PositionID} should be MaxValue");
+            ENSURE(page.PositionID == int.MaxValue, $"current page {page.PositionID} should be MaxValue");
 
             // get next page position on log
             page.PositionID = _logService.GetNextLogPositionID();
@@ -152,7 +152,7 @@ internal class DiskService : IDiskService
     /// <summary>
     /// Calculate, using disk file length, last PositionID. Should considering FILE_HEADER_SIZE and celling pages.
     /// </summary>
-    public uint GetLastFilePositionID()
+    public int GetLastFilePositionID()
     {
         var fileLength = _streamFactory.GetLength();
 
@@ -161,11 +161,11 @@ internal class DiskService : IDiskService
 
         var content = fileLength - FILE_HEADER_SIZE;
         var celling = content % PAGE_SIZE > 0 ? 1 : 0;
-        var result = (uint)(content / PAGE_SIZE);
+        var result = content / PAGE_SIZE;
 
         // if last page was not completed written, add missing bytes to complete
 
-        return (uint)(result + celling - 1);
+        return (int)(result + celling - 1);
     }
 
     public void Dispose()

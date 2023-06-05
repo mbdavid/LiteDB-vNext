@@ -6,7 +6,7 @@ internal class DataPageService : PageService, IDataPageService
     /// <summary>
     /// Initialize an empty PageBuffer as DataPage
     /// </summary>
-    public void InitializeDataPage(PageBuffer page, uint pageID, byte colID)
+    public void InitializeDataPage(PageBuffer page, int pageID, byte colID)
     {
         page.Header.PageID = pageID;
         page.Header.PageType = PageType.Data;

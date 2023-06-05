@@ -50,7 +50,7 @@ internal class AllocationMapService : IAllocationMapService
     /// Return a page ID with space available to store 'length' bytes. Support only DataPages and IndexPages.
     /// Return pageID and a bool that indicates if this page is a new empty page (must be created)
     /// </summary>  
-    public (uint, bool) GetFreePageID(byte colID, PageType type, int length)
+    public (int, bool) GetFreePageID(byte colID, PageType type, int length)
     {
         // get (or create) collection free pages for this colID
         var freePages = _collectionFreePages[colID] = 
@@ -125,7 +125,7 @@ internal class AllocationMapService : IAllocationMapService
     /// Return the first empty pageID created for this collection in this new extend
     /// This method populate collectionFreePages[colID] with 8 new empty pages
     /// </summary>
-    private uint CreateNewExtend(byte colID, CollectionFreePages freePages)
+    private int CreateNewExtend(byte colID, CollectionFreePages freePages)
     {
         //TODO: lock, pois não pode ter 2 threads aqui
 
@@ -176,9 +176,9 @@ internal class AllocationMapService : IAllocationMapService
         foreach(var page in modifiedPages)
         {
             var pageID = page.Header.PageID;
-            var allocationMapID = (int)(pageID / AM_PAGE_STEP);
-            var extendIndex = (int)(pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
-            var pageIndex = (int)(pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
+            var allocationMapID = (pageID / AM_PAGE_STEP);
+            var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+            var pageIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
             byte value = (page.Header.PageType, page.Header.FreeBytes) switch
             {
                 (_, PAGE_CONTENT_SIZE) => 0, // empty page, no matter page type

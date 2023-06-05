@@ -70,7 +70,7 @@ internal static class SpanExtensions
 
     public static PageAddress ReadPageAddress(this Span<byte> span)
     {
-        return new PageAddress(span.ReadUInt32(), span[4]);
+        return new PageAddress(span.ReadInt32(), span[4]);
     }
 
     public static string ReadString(this Span<byte> span)
@@ -170,7 +170,7 @@ internal static class SpanExtensions
 
     public static void WritePageAddress(this Span<byte> span, PageAddress value)
     {
-        span.WriteUInt32(value.PageID);
+        span.WriteInt32(value.PageID);
         span[4] = value.Index;
     }
 

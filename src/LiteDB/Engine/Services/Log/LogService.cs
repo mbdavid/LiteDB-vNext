@@ -11,7 +11,7 @@ internal class LogService : ILogService
     private readonly IMemoryCacheService _memoryCache;
     private readonly IWalIndexService _walIndex;
 
-    private uint _lastPageID;
+    private int _lastPageID;
     private int _logPositionID;
 
     private readonly List<PageHeader> _logPages = new();
@@ -27,19 +27,19 @@ internal class LogService : ILogService
         _walIndex = walIndex;
     }
 
-    public void Initialize(uint lastFilePositionID)
+    public void Initialize(int lastFilePositionID)
     {
         _lastPageID = lastFilePositionID;
 
-        _logPositionID = (int)(lastFilePositionID + 5); //TODO: calcular para proxima extend
+        _logPositionID = lastFilePositionID + 5; //TODO: calcular para proxima extend
     }
 
     /// <summary>
     /// Get next positionID in log
     /// </summary>
-    public uint GetNextLogPositionID()
+    public int GetNextLogPositionID()
     {
-        return (uint)Interlocked.Increment(ref _logPositionID);
+        return Interlocked.Increment(ref _logPositionID);
     }
 
     /// <summary>
@@ -69,15 +69,13 @@ internal class LogService : ILogService
 
         if (logLength == 0) return 0;
 
-        var logEndPositionID = (uint)_logPositionID;
-
         ENSURE(_logPositionID == _logPages[^1].PositionID, $"last log page must positionID = {_logPositionID}");
 
         // get writer stream from disk service
         var stream = disk.GetDiskWriter();
 
         // get a temp or create a new 
-        var temp = tempPages ?? new LogTempDisk(logEndPositionID);
+        var temp = tempPages ?? new LogTempDisk(_logPositionID);
 
         for (var i = 0; i < _logPages.Count; i++)
         {
@@ -90,7 +88,7 @@ internal class LogService : ILogService
             var tempPositionID = temp.GetTempPositionID(header.PositionID);
 
             // get file from log position or temp position
-            var filePositionID = tempPositionID == uint.MaxValue ?
+            var filePositionID = tempPositionID == int.MaxValue ?
                 header.PositionID : tempPositionID;
 
             // if page positionID is less than pageID, copy to temp buffer
@@ -144,7 +142,7 @@ internal class LogService : ILogService
     /// <summary>
     /// Get page from cache (remove if found) or create a new from page factory
     /// </summary>
-    private async Task<PageBuffer> GetLogPageAsync(IDiskStream stream, uint positionID)
+    private async Task<PageBuffer> GetLogPageAsync(IDiskStream stream, int positionID)
     {
         // try get page from cache
         var page = _memoryCache.TryRemove(positionID);

@@ -23,7 +23,7 @@ internal class Transaction : ITransaction
     private IDiskStream? _reader;
 
     // local page cache - contains only data/index pages about this collection
-    private readonly IDictionary<uint, PageBuffer> _localPages = new Dictionary<uint, PageBuffer>();
+    private readonly Dictionary<int, PageBuffer> _localPages = new();
 
     // all writable collections ID (must be lock on init)
     private readonly byte[] _writeCollections;
@@ -88,7 +88,7 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Try get page from local cache. If page not found, use ReadPage from disk
     /// </summary>
-    public async Task<PageBuffer> GetPageAsync(uint pageID, bool writable)
+    public async Task<PageBuffer> GetPageAsync(int pageID, bool writable)
     {
         if (_localPages.TryGetValue(pageID, out var page))
         {
@@ -107,7 +107,7 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Read a data/index page from disk (data or log). Can return page from global cache
     /// </summary>
-    private async Task<PageBuffer> ReadPageAsync(uint pageID, int readVersion, bool writable)
+    private async Task<PageBuffer> ReadPageAsync(int pageID, int readVersion, bool writable)
     {
         _reader ??= _disk.RentDiskReader();
 
@@ -211,7 +211,7 @@ internal class Transaction : ITransaction
             ENSURE(page.ShareCounter == PAGE_NO_CACHE, "page should not be on cache when saving");
 
             // update page header
-            page.PositionID = uint.MaxValue;
+            page.PositionID = int.MaxValue;
             page.Header.TransactionID = this.TransactionID;
             page.Header.IsConfirmed = i == (dirtyPages.Length - 1);
         }

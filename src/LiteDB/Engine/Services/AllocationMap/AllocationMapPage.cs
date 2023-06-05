@@ -16,12 +16,12 @@ internal class AllocationMapPage
 
     private readonly PageBuffer _page;
 
-    public uint PageID => _page.Header.PageID;
+    public int PageID => _page.Header.PageID;
 
     /// <summary>
     /// Create a new AllocationMapPage
     /// </summary>
-    public AllocationMapPage(uint pageID, PageBuffer page)
+    public AllocationMapPage(int pageID, PageBuffer page)
     {
         _page = page;
 
@@ -163,7 +163,7 @@ internal class AllocationMapPage
         // add all pages as emptyPages in freePages list
         for (var i = 0; i < AM_EXTEND_SIZE; i++)
         {
-            freePages.EmptyPages.Enqueue((uint)(firstPageID + i));
+            freePages.EmptyPages.Enqueue(firstPageID + i);
         }
 
         // get page span
@@ -230,25 +230,24 @@ internal class AllocationMapPage
         }
     }
 
+    /// <summary>
+    /// Get PageID from a block page based on ExtendID (0, 1, ..) and PageIndex (0-7)
+    /// </summary>
+    public int GetBlockPageID(int extendIndex, int pageIndex)
+    {
+        return (_allocationMapID * AM_PAGE_STEP +
+             extendIndex * AM_EXTEND_SIZE +
+             pageIndex + 1);
+    }
+
     #region Static Helpers
 
     /// <summary>
     /// Returns a AllocationMapID from a allocation map pageID. Must return 0, 1, 2, 3
     /// </summary>
-    public static int GetAllocationMapID(uint pageID)
+    public static int GetAllocationMapID(int pageID)
     {
-        return (int)(pageID - AM_FIRST_PAGE_ID) % AM_EXTEND_COUNT;
-    }
-
-    /// <summary>
-    /// Get PageID from a block page based on ExtendID (0, 1, ..) and PageIndex (0-7)
-    /// </summary>
-    public uint GetBlockPageID(int extendIndex, int pageIndex)
-    {
-        return (uint)
-            (_allocationMapID * AM_PAGE_STEP +
-             extendIndex * AM_EXTEND_SIZE + 
-             pageIndex + 1);
+        return (pageID - AM_FIRST_PAGE_ID) % AM_EXTEND_COUNT;
     }
 
     #endregion

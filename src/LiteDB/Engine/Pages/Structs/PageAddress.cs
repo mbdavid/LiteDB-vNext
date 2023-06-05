@@ -9,12 +9,12 @@ internal struct PageAddress : IEquatable<PageAddress>
 {
     public const int SIZE = 5;
 
-    public static PageAddress Empty = new (uint.MaxValue, byte.MaxValue);
+    public static PageAddress Empty = new (int.MaxValue, byte.MaxValue);
 
     /// <summary>
     /// PageID (4 bytes)
     /// </summary>
-    public readonly uint PageID;
+    public readonly int PageID;
 
     /// <summary>
     /// Page Segment index inside page (1 bytes)
@@ -24,7 +24,7 @@ internal struct PageAddress : IEquatable<PageAddress>
     /// <summary>
     /// Returns true if this PageAdress is empty value
     /// </summary>
-    public bool IsEmpty => this.PageID == uint.MaxValue && this.Index == byte.MaxValue;
+    public bool IsEmpty => this.PageID == int.MaxValue && this.Index == byte.MaxValue;
 
     public override bool Equals(object other) => this.Equals((PageAddress)other);
 
@@ -54,7 +54,7 @@ internal struct PageAddress : IEquatable<PageAddress>
         }
     }
 
-    public PageAddress(uint pageID, byte index)
+    public PageAddress(int pageID, byte index)
     {
         this.PageID = pageID;
         this.Index = index;

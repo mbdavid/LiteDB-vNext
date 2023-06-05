@@ -19,8 +19,8 @@ internal class IndexDocument
         this.Slot = (byte)doc[MK_IDX_SLOT].AsInt32;
         this.Expr = BsonExpression.Create(doc[MK_IDX_EXPR]);
         this.Unique = doc[MK_IDX_UNIQUE];
-        this.Head = new PageAddress((uint)doc[MK_IDX_HEAD_PAGE_ID], (byte)doc[MK_IDX_HEAD_INDEX]);
-        this.Tail = new PageAddress((uint)doc[MK_IDX_TAIL_PAGE_ID], (byte)doc[MK_IDX_TAIL_INDEX]);
+        this.Head = new PageAddress(doc[MK_IDX_HEAD_PAGE_ID], (byte)doc[MK_IDX_HEAD_INDEX]);
+        this.Tail = new PageAddress(doc[MK_IDX_TAIL_PAGE_ID], (byte)doc[MK_IDX_TAIL_INDEX]);
         this.Meta = doc[MK_META].AsDocument;
     }
 }

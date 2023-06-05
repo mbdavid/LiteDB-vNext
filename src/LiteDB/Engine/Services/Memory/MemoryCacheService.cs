@@ -11,7 +11,7 @@ internal class MemoryCacheService : IMemoryCacheService
     /// <summary>
     /// A dictionary to cache use/re-use same data buffer across threads. Rent model
     /// </summary>
-    private ConcurrentDictionary<uint, PageBuffer> _cache = new();
+    private ConcurrentDictionary<int, PageBuffer> _cache = new();
 
     public MemoryCacheService()
     {
@@ -21,7 +21,7 @@ internal class MemoryCacheService : IMemoryCacheService
     /// Get a page from memory cache. If not exists, return null
     /// If exists, increase sharecounter (and must call Return() after use)
     /// </summary>
-    public PageBuffer? GetPage(uint positionID)
+    public PageBuffer? GetPage(int positionID)
     {
         var found = _cache.TryGetValue(positionID, out PageBuffer page);
 
@@ -43,7 +43,7 @@ internal class MemoryCacheService : IMemoryCacheService
     /// <summary>
     /// Remove page from cache. Must not be in use
     /// </summary>
-    public PageBuffer? TryRemove(uint positionID)
+    public PageBuffer? TryRemove(int positionID)
     {
         if (_cache.TryRemove(positionID, out PageBuffer page))
         {
@@ -60,7 +60,7 @@ internal class MemoryCacheService : IMemoryCacheService
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
-        ENSURE(page.PositionID != uint.MaxValue, "PageBuffer must have a position before add in cache");
+        ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
         ENSURE(page.ShareCounter == PAGE_NO_CACHE, "ShareCounter must be zero before add in cache");
 
         page.ShareCounter = 0; // initialize share counter

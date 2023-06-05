@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a single page segment with Location (position) and Length
 /// </summary>
-internal struct PageSegment
+internal readonly struct PageSegment
 {
     /// <summary>
     /// Segment location on page buffer

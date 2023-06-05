@@ -121,7 +121,7 @@ internal class Constants
     public const string MK_META = "meta";
     public const string MK_PRAGMA = "pragmas";
     public const string MK_PRAGMA_USER_VERSION = "user_version";
-    public const string MK_PRAGMA_LIMIT_SIZE = "limit";
+    public const string MK_PRAGMA_LIMIT_SIZE_ID = "limit";
     public const string MK_PRAGMA_CHECKPOINT = "checkpoint";
 
     /// <summary>

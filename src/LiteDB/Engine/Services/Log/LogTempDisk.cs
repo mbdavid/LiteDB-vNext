@@ -5,11 +5,11 @@
 /// </summary>
 internal class LogTempDisk
 {
-    private uint _lastPositionID;
+    private int _lastPositionID;
 
-    private Dictionary<uint, uint> _tempPages = new();
+    private Dictionary<int, int> _tempPages = new();
 
-    public LogTempDisk(uint logEndPositionID)
+    public LogTempDisk(int logEndPositionID)
     {
         _lastPositionID = logEndPositionID - 1;
     }
@@ -32,13 +32,13 @@ internal class LogTempDisk
     /// <summary>
     /// Get page position (in temp area) using logPositionID. Returns MaxValue if not found
     /// </summary>
-    public uint GetTempPositionID(uint logPositionID)
+    public int GetTempPositionID(int logPositionID)
     {
         if (_tempPages.TryGetValue(logPositionID, out var tempPositionID))
         {
             return tempPositionID;
         }
 
-        return uint.MaxValue;
+        return int.MaxValue;
     }
 }

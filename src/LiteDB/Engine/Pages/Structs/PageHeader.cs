@@ -7,9 +7,9 @@ internal struct PageHeader
 {
     #region Buffer Field Positions
 
-    public const int P_PAGE_ID = 0;  // 00-03 [uint]
+    public const int P_PAGE_ID = 0;  // 00-03 [int]
     public const int P_PAGE_TYPE = 4; // 04-04 [byte]
-    public const int P_POSITION_ID = 5; // 05-08 [uint]
+    public const int P_POSITION_ID = 5; // 05-08 [int]
 
     public const int P_COL_ID = 9; // 09-09 [byte]
     public const int P_TRANSACTION_ID = 10; // 10-13 [int]
@@ -37,7 +37,7 @@ internal struct PageHeader
     /// <summary>
     /// Represent page number - start in 0 with HeaderPage [4 bytes]
     /// </summary>
-    public uint PageID = uint.MaxValue;
+    public int PageID = int.MaxValue;
 
     /// <summary>
     /// Indicate the page type [1 byte]
@@ -47,7 +47,7 @@ internal struct PageHeader
     /// <summary>
     /// Represent position on disk (used in checkpoint defrag position order)
     /// </summary>
-    public uint PositionID = uint.MaxValue;
+    public int PositionID = int.MaxValue;
 
     /// <summary>
     /// Get/Set collection ID index
@@ -127,9 +127,9 @@ internal struct PageHeader
     {
         var span = page.AsSpan();
 
-        this.PageID = span[P_PAGE_ID..].ReadUInt32();
+        this.PageID = span[P_PAGE_ID..].ReadInt32();
         this.PageType = (PageType)span[P_PAGE_TYPE];
-        this.PositionID = span[P_POSITION_ID..].ReadUInt32();
+        this.PositionID = span[P_POSITION_ID..].ReadInt32();
 
         this.ColID = span[P_COL_ID];
         this.TransactionID = span[P_TRANSACTION_ID..].ReadInt32();
@@ -148,9 +148,9 @@ internal struct PageHeader
     {
         var span = page.AsSpan(0, PAGE_HEADER_SIZE);
 
-        span[P_PAGE_ID..].WriteUInt32(this.PageID);
+        span[P_PAGE_ID..].WriteInt32(this.PageID);
         span[P_PAGE_TYPE] = (byte)this.PageType;
-        span[P_POSITION_ID..].WriteUInt32(this.PositionID);
+        span[P_POSITION_ID..].WriteInt32(this.PositionID);
 
         span[P_COL_ID] = this.ColID;
         span[P_TRANSACTION_ID..].WriteInt32(this.TransactionID);
@@ -183,7 +183,7 @@ internal struct PageHeader
         var span = page.AsSpan();
 
         // check for all slot area to get first empty slot [safe for byte loop]
-        for (byte index = _startIndex; index <= this.HighestIndex; index++)
+        for (var index = _startIndex; index <= this.HighestIndex; index++)
         {
             var segmentAddr = PageSegment.GetSegmentAddr(index);
             var location = span[segmentAddr.Location..].ReadUInt16();

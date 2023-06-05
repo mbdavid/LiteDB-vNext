@@ -85,7 +85,7 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Read single page from disk using disk position. This position has FILE_HEADER_SIZE offset
     /// </summary>
-    public async Task<bool> ReadPageAsync(uint positionID, PageBuffer page)
+    public async Task<bool> ReadPageAsync(int positionID, PageBuffer page)
     {
         if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
 
@@ -107,7 +107,7 @@ internal class DiskStream : IDiskStream
     {
         if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
 
-        ENSURE(page.PositionID != uint.MaxValue, "PageBuffer must have defined Position before WriteAsync");
+        ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
         // before save on disk, update header page to buffer (first 32 bytes)
         page.Header.WriteToPage(page);
@@ -121,7 +121,7 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Write an empty (full \0) PAGE_SIZE using positionID
     /// </summary>
-    public async Task WriteEmptyAsync(uint positionID)
+    public async Task WriteEmptyAsync(int positionID)
     {
         if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
 
@@ -134,7 +134,7 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Set new file length using lastPageID as end of file
     /// </summary>
-    public void SetSize(uint lastPageID)
+    public void SetSize(int lastPageID)
     {
         if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
 

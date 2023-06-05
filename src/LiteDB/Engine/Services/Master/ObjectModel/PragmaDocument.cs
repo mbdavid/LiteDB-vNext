@@ -10,7 +10,7 @@ internal class PragmaDocument
     /// <summary>
     /// Max limit of datafile (in bytes) (default: MaxValue)
     /// </summary>
-    public long LimitSize { get; private set; } = long.MaxValue;
+    public int LimitSizeID { get; private set; } = 0;
 
     /// <summary>
     /// When LOG file gets larger than checkpoint size (in pages), do a soft checkpoint (and also do a checkpoint at shutdown)
@@ -24,7 +24,7 @@ internal class PragmaDocument
     public PragmaDocument(BsonDocument doc)
     {
         this.UserVersion = doc[MK_PRAGMA_USER_VERSION];
-        this.LimitSize = doc[MK_PRAGMA_LIMIT_SIZE];
+        this.LimitSizeID = doc[MK_PRAGMA_LIMIT_SIZE_ID];
         this.Checkpoint = doc[MK_PRAGMA_CHECKPOINT];
     }
 }

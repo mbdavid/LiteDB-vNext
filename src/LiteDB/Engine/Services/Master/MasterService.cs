@@ -227,7 +227,7 @@ internal class MasterService : IMasterService
         [MK_PRAGMA] = new BsonDocument
         {
             [MK_PRAGMA_USER_VERSION] = 0,
-            [MK_PRAGMA_LIMIT_SIZE] = 0L, // should be long
+            [MK_PRAGMA_LIMIT_SIZE_ID] = 0,
             [MK_PRAGMA_CHECKPOINT] = CHECKPOINT_SIZE,
         }
     };
