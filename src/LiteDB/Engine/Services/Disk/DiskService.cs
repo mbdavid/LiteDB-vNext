@@ -14,14 +14,15 @@ internal class DiskService : IDiskService
     private readonly IEngineSettings _settings;
 
     private readonly IDiskStream _writer;
+    private FileHeader _fileHeader = new();
+
     private readonly ConcurrentQueue<IDiskStream> _readers = new ();
 
     private bool _writeInit = false;
 
-    /// <summary>
-    /// Get all reference pages that are in log and must be 
-    /// </summary>
-    public List<uint> LogPages;
+    public IDiskStream GetDiskWriter() => _writer;
+
+    public FileHeader FileHeader => _fileHeader;
 
     public DiskService(IEngineSettings settings, 
         IBufferFactory bufferFactory,
@@ -50,23 +51,21 @@ internal class DiskService : IDiskService
             var newFile = _factory.CreateNewDatafile();
 
             // create first AM page and $master 
-            var fileHeader = await newFile.CreateAsync(_writer);
-
-            return fileHeader;
+            _fileHeader = await newFile.CreateAsync(_writer);
         }
         else
         {
             // read header page buffer from start of disk
-            var fileHeader = await _writer.OpenAsync(true);
-
-            return fileHeader;
+            _fileHeader = await _writer.OpenAsync(true);
         }
+
+        return _fileHeader;
     }
 
     /// <summary>
     /// Rent a disk reader from pool. Must return after use
     /// </summary>
-    public async Task<IDiskStream> RentDiskReaderAsync()
+    public IDiskStream RentDiskReader()
     {
         if (_readers.TryDequeue(out var reader))
         {
@@ -76,8 +75,8 @@ internal class DiskService : IDiskService
         // create new diskstream
         reader = _factory.CreateDiskStream();
 
-        // and open to read-only
-        await reader.OpenAsync(false);
+        // and open to read-only (use saved header)
+        reader.Open(_fileHeader);
 
         return reader;
     }

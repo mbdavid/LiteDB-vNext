@@ -1,4 +1,7 @@
-﻿namespace LiteDB.Engine;
+﻿using System.IO;
+using System.IO.Pipes;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// * Singleton (thread safe)
@@ -6,61 +9,40 @@
 [AutoInterface]
 internal class LogService : ILogService
 {
-    private struct TempPage
-    {
-        public readonly uint LogPositionID;
-        public readonly uint FilePositionID;
-
-        public override int GetHashCode() => (int)this.LogPositionID;
-    }
-
-
     // dependency injection
+    private readonly IBufferFactory _bufferFactory;
+    private readonly IMemoryCacheService _memoryCache;
+    private readonly IWalIndexService _walIndex;
 
-    private uint _logStartPositionID;
-    private int _logEndPositionID;
-    private bool _init = false;
+    private uint _lastPageID;
+    private int _logPositionID;
 
-    private List<PageHeader> _pageHeaders = new();
-    private HashSet<int> _confirmedTransactions = new();
-    private HashSet<TempPage> _tempPages = new();
+    private readonly List<PageHeader> _logPages = new();
+    private readonly HashSet<int> _confirmedTransactions = new();
+
+    public LogService(
+        IMemoryCacheService memoryCache,
+        IBufferFactory bufferFactory,
+        IWalIndexService walIndex)
+    {
+        _memoryCache = memoryCache;
+        _bufferFactory = bufferFactory;
+        _walIndex = walIndex;
+    }
 
     public void Initialize(uint lastFilePositionID)
     {
-        _init = true;
+        _lastPageID = lastFilePositionID;
 
-        _logStartPositionID = lastFilePositionID + 5; //TODO: calcular para proxima extend
-
-        _logEndPositionID = (int)_logStartPositionID;
-
-        _pageHeaders.Clear();
-        _confirmedTransactions.Clear();
-        _tempPages.Clear();
+        _logPositionID = (int)lastFilePositionID + 5; //TODO: calcular para proxima extend
     }
-
-    ///// <summary>
-    ///// Get start log position ID
-    ///// </summary>
-    //public uint LogStartPositionID => _logStartPositionID;
-
-    ///// <summary>
-    ///// Get end log position ID
-    ///// </summary>
-    //public uint LogEndPositionID => (uint)_logEndPositionID;
 
     /// <summary>
     /// Get next positionID in log
     /// </summary>
     public uint GetNextLogPositionID()
     {
-        // do not increment on first time
-        if (_init)
-        {
-            _init = false;
-            return _logStartPositionID;
-        }
-
-        return (uint)Interlocked.Increment(ref _logEndPositionID);
+        return (uint)Interlocked.Increment(ref _logPositionID);
     }
 
     /// <summary>
@@ -75,36 +57,104 @@ internal class LogService : ILogService
             _confirmedTransactions.Add(header.TransactionID);
         }
 
-        _pageHeaders.Add(header);
+        // update _lastPageID
+        if (header.PageID > _lastPageID)
+        {
+            _lastPageID = header.PageID;
+        }
+
+        _logPages.Add(header);
     }
 
-    public async Task<int> Checkpoint(IDiskService disk)
+    public async Task<int> CheckpointAsync(IDiskService disk, LogTempDisk? tempPages)
     {
-        
-        for(var i = 0; i < _pageHeaders.Count; i++)
+        if (_confirmedTransactions.Count == 0) return 0;
+
+        var logEndPositionID = _logPages[^1].PositionID;
+
+        // get writer stream from disk service
+        var stream = disk.GetDiskWriter();
+
+        // get a temp or create a new 
+        var temp = tempPages ?? new LogTempDisk(logEndPositionID);
+
+        for (var i = 0; i < _logPages.Count; i++)
         {
-            var header = _pageHeaders[i];
+            var header = _logPages[i];
 
             // check if page is in a confirmed transaction
             if (!_confirmedTransactions.Contains(header.TransactionID)) continue;
 
-            // se a pagina for pra tras ou igual, copia
-            if (header.PositionID <= header.PageID)
+            // checks if is temp area
+            var tempPositionID = temp.GetPagePositionID(header.PositionID);
+
+            // get file from log position or temp position
+            var filePositionID = tempPositionID == uint.MaxValue ?
+                header.PositionID : tempPositionID;
+
+            // if page positionID is less than pageID, copy to temp buffer
+            if (header.PositionID < header.PageID)
             {
+                // get page from cache or disk
+                var targetPage = await this.GetLogPageAsync(stream, header.PageID);
 
+                // copy target page to buffer
+                temp.AddNewPage(targetPage);
 
-                //await disk.WriteDataPage()
+                // write page to destination
+                await stream.WritePageAsync(targetPage);
             }
-            else
-            {
-                // adiciona no tempDisk
-            }
 
+            // get page from file position ID (log or 
+            var page = await this.GetLogPageAsync(stream, filePositionID);
 
+            // move page from log to data
+            page.PositionID = page.Header.PositionID = page.Header.PageID;
+            page.Header.TransactionID = 0;
+            page.Header.IsConfirmed = false;
 
+            // write page on disk
+            await stream.WritePageAsync(page);
+
+            // and now can re-enter to cache
+            _memoryCache.AddPageInCache(page);
+
+            // if this log 
+            var needEmpty = filePositionID <= _lastPageID;
+
+            if (needEmpty) await stream.WriteEmptyAsync(filePositionID);
         }
 
-        // for do temp disk
+        // crop file after lastPageID
+        stream.SetSize(_lastPageID);
 
+        // empty all wal index pointer
+        _walIndex.Clear();
+
+        // clear all log pages
+        _logPages.Clear();
+
+        // disk flush
+        await stream.FlushAsync();
+
+        return 1;
+    }
+
+    /// <summary>
+    /// Get page from cache (remove if found) or create a new from page factory
+    /// </summary>
+    private async Task<PageBuffer> GetLogPageAsync(IDiskStream stream, uint positionID)
+    {
+        // try get page from cache
+        var page = _memoryCache.TryRemove(positionID);
+
+        if (page is null)
+        {
+            page = _bufferFactory.AllocateNewPage(true);
+
+            await stream.ReadPageAsync(positionID, page);
+        }
+
+        return page;
     }
 }

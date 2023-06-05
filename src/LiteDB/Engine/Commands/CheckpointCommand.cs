@@ -36,7 +36,7 @@ internal class CheckpointCommand : ICheckpointCommand
         // at this point, there is no open transaction
         // all pages in cache are ShareCounter = 0
 
-        var result = await _logService.Checkpoint(_disk);
+        var result = await _logService.CheckpointAsync(_disk, null);
 
         
 

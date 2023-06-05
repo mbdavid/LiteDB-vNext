@@ -19,12 +19,13 @@ internal class Transaction : ITransaction
     // count how many locks this transaction contains
     private int _lockCounter = 0;
 
+    // rented reader stream
     private IDiskStream? _reader;
 
     // local page cache - contains only data/index pages about this collection
     private readonly IDictionary<uint, PageBuffer> _localPages = new Dictionary<uint, PageBuffer>();
 
-    //
+    // all writable collections ID (must be lock on init)
     private readonly byte[] _writeCollections;
 
     /// <summary>
@@ -196,8 +197,11 @@ internal class Transaction : ITransaction
     /// </summary>
     public async Task CommitAsync()
     {
+        // qualquer erro que der aqui dentro tem q dar fatal exception
+
+        // get dirty pages only //TODO: can be re-used array?
         var dirtyPages = _localPages.Values
-            //.Where(x => x.IsDirty)
+            .Where(x => x.IsDirty)
             .ToArray();
 
         for (var i = 0; i < dirtyPages.Length; i++)
@@ -224,7 +228,7 @@ internal class Transaction : ITransaction
             // page already in cache (was not changed)
             if (page.ShareCounter > 0)
             {
-                page.Return();
+                _memoryCache.ReturnPage(page);
             }
             else
             {
@@ -240,19 +244,53 @@ internal class Transaction : ITransaction
 
         // update wal index with this new version
         var pagePositions = dirtyPages
-            .Select(x => (x.Header.PageID, x.PositionID));
+            .Select(x => (x.Header.PageID, x.PositionID))
+#if DEBUG
+            .ToArray()
+#endif
+            ;
 
         _walIndex.AddVersion(this.ReadVersion, pagePositions);
 
+        // clear page buffer references
+        _localPages.Clear();
     }
 
     public void Rollback()
     {
-        throw new NotImplementedException();
+        // add pages to cache or decrement sharecount
+        foreach (var page in _localPages.Values)
+        {
+            if (page.IsDirty)
+            {
+                _bufferFactory.DeallocatePage(page);
+            }
+            else
+            {
+                ENSURE(page.ShareCounter == PAGE_NO_CACHE, $"{page} must be writable (not in cache)");
+
+                // try add this page in cache
+                var added = _memoryCache.AddPageInCache(page);
+
+                if (!added)
+                {
+                    _bufferFactory.DeallocatePage(page);
+                }
+            }
+        }
+
+        // clear page buffer references
+        _localPages.Clear();
     }
 
     public void Dispose()
     {
+        // return reader if used
+        if (_reader is not null)
+        {
+            _disk.ReturnDiskReader(_reader);
+        }
+
         if (_lockCounter == 0) return; // no locks
 
         while (_lockCounter > 1)

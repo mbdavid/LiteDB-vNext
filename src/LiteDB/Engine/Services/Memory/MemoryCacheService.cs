@@ -27,7 +27,27 @@ internal class MemoryCacheService : IMemoryCacheService
 
         if (found)
         {
-            page.Rent();
+            ENSURE(page.ShareCounter != PAGE_NO_CACHE, $"rent page {page} only for cache");
+
+            // increment ShareCounter to be used by another transaction
+            Interlocked.Increment(ref page.ShareCounter);
+
+            page.Timestamp = DateTime.UtcNow.Ticks;
+
+            return page;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Remove page from cache. Must not be in use
+    /// </summary>
+    public PageBuffer? TryRemove(uint positionID)
+    {
+        if (_cache.TryRemove(positionID, out PageBuffer page))
+        {
+            ENSURE(page.ShareCounter == 0, $"page {page} should not be in use");
 
             return page;
         }
@@ -82,8 +102,18 @@ internal class MemoryCacheService : IMemoryCacheService
         return deleted;
     }
 
+    public void ReturnPage(PageBuffer page)
+    {
+        Interlocked.Decrement(ref page.ShareCounter);
+
+        ENSURE(page.ShareCounter < 0, $"ShareCounter cached page {page} must be large than 0");
+
+    }
+
     public int CleanUp()
     {
+
+
         // faz um for e limpa toda _cache que tiver shared = 0 (chama dispose)
         // retorna quantas paginas estão na _cache ainda
         // não precisa de lock exclusivo para rodar

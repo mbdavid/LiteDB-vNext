@@ -39,6 +39,10 @@ internal class PageBuffer
     /// </summary>
     public readonly byte[] Buffer = new byte[PAGE_SIZE];
 
+    public bool IsData => this.PositionID <= this.Header.PageID;
+    public bool IsLog => this.PositionID > this.Header.PageID;
+    public bool IsTempLog => this.IsLog && this.PositionID != this.Header.PositionID;
+
     public PageBuffer()
     {
     }
@@ -69,24 +73,6 @@ internal class PageBuffer
     public Span<byte> AsSpan(int start, int length)
     {
         return this.Buffer.AsSpan(start, length);
-    }
-
-    public void Rent()
-    {
-        ENSURE(this.ShareCounter != PAGE_NO_CACHE, $"rent page {this} only for cache");
-
-        Interlocked.Increment(ref this.ShareCounter);
-
-        this.Timestamp = DateTime.UtcNow.Ticks;
-    }
-
-    public void Return()
-    {
-        ENSURE(this.ShareCounter != PAGE_NO_CACHE, $"rent page {this} only for cache");
-
-        Interlocked.Decrement(ref this.ShareCounter);
-
-        ENSURE(this.ShareCounter < 0, "ShareCounter cached page must be large than 0");
     }
 
     /// <summary>

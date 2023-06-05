@@ -24,7 +24,7 @@ internal class DiskStream : IDiskStream
     public async Task<FileHeader> OpenAsync(bool canWrite)
     {
         // get a new FileStream connected to file
-        _stream = _streamFactory.GetStream(canWrite, 
+        _stream = _streamFactory.GetStream(canWrite,
             canWrite ? FileOptions.SequentialScan : FileOptions.RandomAccess);
 
         // reading file header
@@ -42,6 +42,20 @@ internal class DiskStream : IDiskStream
             _stream;
 
         return header;
+    }
+
+    /// <summary>
+    /// Open stream with no FileHeader read
+    /// </summary>
+    public void Open(FileHeader header)
+    {
+        // get a new FileStream connected to file
+        _stream = _streamFactory.GetStream(false, FileOptions.RandomAccess);
+
+        // for content stream, use AesStream (for encrypted file) or same _stream
+        _contentStream = header.Encrypted ?
+            new AesStream(_stream, _settings.Password ?? "", header.EncryptionSalt) :
+            _stream;
     }
 
     /// <summary>
@@ -102,6 +116,32 @@ internal class DiskStream : IDiskStream
         _contentStream.Position = FILE_HEADER_SIZE + (page.PositionID * PAGE_SIZE);
 
         await _contentStream.WriteAsync(page.Buffer, 0, PAGE_SIZE);
+    }
+
+    /// <summary>
+    /// Write an empty (full \0) PAGE_SIZE using positionID
+    /// </summary>
+    public async Task WriteEmptyAsync(uint positionID)
+    {
+        if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
+
+        // set real position on stream
+        _contentStream.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
+
+        await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE);
+    }
+
+    /// <summary>
+    /// Set new file length using lastPageID as end of file
+    /// </summary>
+    public void SetSize(uint lastPageID)
+    {
+        if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
+
+        var fileLength = FILE_HEADER_SIZE +
+            ((lastPageID + 1) * PAGE_SIZE);
+
+        _stream.SetLength(fileLength);
     }
 
     /// <summary>

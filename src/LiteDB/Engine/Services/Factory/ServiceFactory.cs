@@ -36,16 +36,16 @@ internal partial class ServicesFactory : IServicesFactory
         _bsonReader = new BsonReader();
         _bsonWriter = new BsonWriter();
         _memoryCache = new MemoryCacheService();
-        _indexCache = new IndexCacheService();
         _walIndex = new WalIndexService();
         _bufferFactory = new BufferFactory();
         _dataPageService = new DataPageService();
-        _logService = new LogService();
         _indexPageService = new IndexPageService();
 
         // settings dependency only
         _lock = new LockService(settings.Timeout);
         _streamFactory = new FileStreamFactory(settings);
+
+        _logService = new LogService(_memoryCache, _bufferFactory, _walIndex);
 
         // other services dependencies
         _disk = new DiskService(settings, _bufferFactory, _streamFactory, _logService, this);
@@ -65,8 +65,6 @@ internal partial class ServicesFactory : IServicesFactory
     public EngineState State { get; private set; } = EngineState.Close;
 
     public Exception? Exception { get; private set; }
-
-    public FileHeader? FileHeader { get; private set; }
 
     public ConcurrentDictionary<string, object> Application { get; } = new();
 
@@ -149,13 +147,12 @@ internal partial class ServicesFactory : IServicesFactory
 
     #region Modified State Methods
 
-    public void SetState(EngineState state, FileHeader? header)
+    public void SetState(EngineState state)
     {
         if (state == EngineState.Open)
         {
             if (this.State != EngineState.Close) throw new InvalidOperationException("Engine must be closed before open");
 
-            this.FileHeader = header!;
             this.State = EngineState.Open;
         }
         else if (state == EngineState.Shutdown)

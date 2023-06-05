@@ -28,7 +28,7 @@ internal class IndexService : IIndexService
         _writer = factory.GetBsonWriter();
 
         _transaction = transaction;
-        _collation = factory.FileHeader!.Value.Collation;
+        _collation = factory.GetDisk().FileHeader.Collation;
         _random = new();
     }
 
