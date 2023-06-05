@@ -1,201 +1,40 @@
-﻿namespace LiteDB;
+﻿using System.Text;
 
-#region TokenType definition
-
-/// <summary>
-/// ASCII char names: https://www.ascii.cl/htmlcodes.htm
-/// </summary>
-internal enum TokenType
-{
-    /// <summary> { </summary>
-    OpenBrace,
-    /// <summary> } </summary>
-    CloseBrace,
-    /// <summary> [ </summary>
-    OpenBracket,
-    /// <summary> ] </summary>
-    CloseBracket,
-    /// <summary> ( </summary>
-    OpenParenthesis,
-    /// <summary> ) </summary>
-    CloseParenthesis,
-    /// <summary> , </summary>
-    Comma,
-    /// <summary> : </summary>
-    Colon,
-    /// <summary> ; </summary>
-    SemiColon,
-    /// <summary> =&gt; </summary>
-    Arrow,
-    /// <summary> @ </summary>
-    At,
-    /// <summary> # </summary>
-    Hashtag,
-    /// <summary> ~ </summary>
-    Til,
-    /// <summary> . </summary>
-    Period,
-    /// <summary> &amp; </summary>
-    Ampersand,
-    /// <summary> $ </summary>
-    Dollar,
-    /// <summary> ! </summary>
-    Exclamation,
-    /// <summary> != </summary>
-    NotEquals,
-    /// <summary> = </summary>
-    Equals,
-    /// <summary> &gt; </summary>
-    Greater,
-    /// <summary> &gt;= </summary>
-    GreaterOrEquals,
-    /// <summary> &lt; </summary>
-    Less,
-    /// <summary> &lt;= </summary>
-    LessOrEquals,
-    /// <summary> - </summary>
-    Minus,
-    /// <summary> + </summary>
-    Plus,
-    /// <summary> * </summary>
-    Asterisk,
-    /// <summary> / </summary>
-    Slash,
-    /// <summary> \ </summary>
-    Backslash,
-    /// <summary> % </summary>
-    Percent,
-    /// <summary> "..." or '...' </summary>
-    String,
-    /// <summary> [0-9]+ </summary>
-    Int,
-    /// <summary> [0-9]+.[0-9] </summary>
-    Double,
-    /// <summary> \n\r\t \u0032 </summary>
-    Whitespace,
-    /// <summary> [a-Z_$]+[a-Z0-9_$] </summary>
-    Word,
-    EOF,
-    Unknown
-}
-
-#endregion
-
-#region Token definition
-
-/// <summary>
-/// Represent a single string token
-/// </summary>
-internal class Token
-{
-    public Token(TokenType tokenType, string value, long position)
-    {
-        this.Position = position;
-        this.Value = value;
-        this.Type = tokenType;
-    }
-
-    public TokenType Type { get; private set; }
-    public string Value { get; private set; }
-    public long Position { get; private set; }
-
-    /// <summary>
-    /// Expect if token is type (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type)
-    {
-        if (this.Type != type)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Expect for type1 OR type2 (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type1, TokenType type2)
-    {
-        if (this.Type != type1 && this.Type != type2)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Expect for type1 OR type2 OR type3 (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type1, TokenType type2, TokenType type3)
-    {
-        if (this.Type != type1 && this.Type != type2 && this.Type != type3)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    public Token Expect(string value, bool ignoreCase = true)
-    {
-        if (!this.Is(value, ignoreCase))
-        {
-            throw ERR_UNEXPECTED_TOKEN(this, value);
-        }
-
-        return this;
-    }
-
-    public bool Is(string value, bool ignoreCase = true)
-    {
-        return 
-            this.Type == TokenType.Word &&
-            value.Equals(this.Value, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-    }
-
-    public override string ToString()
-    {
-        return this.Value + " (" + this.Type + ")";
-    }
-}
-
-#endregion
+namespace LiteDB;
 
 /// <summary>
 /// Class to tokenize TextReader input used in JsonRead/BsonExpressions
 /// This class are not thread safe
 /// </summary>
-internal class Tokenizer
+internal class Tokenizer2
 {
     private TextReader _reader;
     private char _char = '\0';
-    private Token? _current = null;
-    private Token? _ahead = null;
+    private Token2? _current = null;
+    private Token2? _ahead = null;
     private bool _eof = false;
     private long _position = 0;
 
     public bool EOF => _eof && _ahead == null;
     public long Position => _position;
-    public Token Current => _current!;
+    public Token2 Current => _current!;
 
     /// <summary>
     /// If EOF throw an invalid token exception (used in while()) otherwise return "false" (not EOF)
     /// </summary>
     public bool CheckEOF()
     {
-        if (_eof) throw ERR_UNEXPECTED_TOKEN(this.Current);
+        if (_eof) throw new Exception(this.Current.ToString());
 
         return false;
     }
 
-    public Tokenizer(string source)
+    public Tokenizer2(string source)
         : this(new StringReader(source))
     {
     }
 
-    public Tokenizer(TextReader reader)
+    public Tokenizer2(TextReader reader)
     {
         _reader = reader;
 
@@ -243,11 +82,11 @@ internal class Tokenizer
     /// <summary>
     /// Look for next token but keeps in buffer when run "ReadToken()" again.
     /// </summary>
-    public Token LookAhead(bool eatWhitespace = true, int tokensCount = 1)
+    public Token2 LookAhead(bool eatWhitespace = true, int tokensCount = 1)
     {
         if (_ahead != null)
         {
-            if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
+            if (eatWhitespace && _ahead.Type == TokenType2.Whitespace)
             {
                 _ahead = this.ReadNext(eatWhitespace);
             }
@@ -261,14 +100,14 @@ internal class Tokenizer
     /// <summary>
     /// Read next token (or from ahead buffer).
     /// </summary>
-    public Token ReadToken(bool eatWhitespace = true)
+    public Token2 ReadToken(bool eatWhitespace = true)
     {
         if (_ahead == null)
         {
             return _current = this.ReadNext(eatWhitespace);
         }
 
-        if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
+        if (eatWhitespace && _ahead.Type == TokenType2.Whitespace)
         {
             _ahead = this.ReadNext(eatWhitespace);
         }
@@ -281,87 +120,87 @@ internal class Tokenizer
     /// <summary>
     /// Read next token from reader
     /// </summary>
-    private Token ReadNext(bool eatWhitespace)
+    private Token2 ReadNext(bool eatWhitespace)
     {
         // remove whitespace before get next token
         if (eatWhitespace) this.EatWhitespace();
 
         if (_eof)
         {
-            return new Token(TokenType.EOF, "", _position);
+            return new Token2(TokenType2.EOF, "", _position);
         }
 
-        Token? token = null;
+        Token2? token = null;
 
         switch (_char)
         {
             case '{':
-                token = new Token(TokenType.OpenBrace, "{", _position);
+                token = new Token2(TokenType2.OpenBrace, "{", _position);
                 this.ReadChar();
                 break;
 
             case '}':
-                token = new Token(TokenType.CloseBrace, "}", _position);
+                token = new Token2(TokenType2.CloseBrace, "}", _position);
                 this.ReadChar();
                 break;
 
             case '[':
-                token = new Token(TokenType.OpenBracket, "[", _position);
+                token = new Token2(TokenType2.OpenBracket, "[", _position);
                 this.ReadChar();
                 break;
 
             case ']':
-                token = new Token(TokenType.CloseBracket, "]", _position);
+                token = new Token2(TokenType2.CloseBracket, "]", _position);
                 this.ReadChar();
                 break;
 
             case '(':
-                token = new Token(TokenType.OpenParenthesis, "(", _position);
+                token = new Token2(TokenType2.OpenParenthesis, "(", _position);
                 this.ReadChar();
                 break;
 
             case ')':
-                token = new Token(TokenType.CloseParenthesis, ")", _position);
+                token = new Token2(TokenType2.CloseParenthesis, ")", _position);
                 this.ReadChar();
                 break;
 
             case ',':
-                token = new Token(TokenType.Comma, ",", _position);
+                token = new Token2(TokenType2.Comma, ",", _position);
                 this.ReadChar();
                 break;
 
             case ':':
-                token = new Token(TokenType.Colon, ":", _position);
+                token = new Token2(TokenType2.Colon, ":", _position);
                 this.ReadChar();
                 break;
 
             case ';':
-                token = new Token(TokenType.SemiColon, ";", _position);
+                token = new Token2(TokenType2.SemiColon, ";", _position);
                 this.ReadChar();
                 break;
 
             case '@':
-                token = new Token(TokenType.At, "@", _position);
+                token = new Token2(TokenType2.At, "@", _position);
                 this.ReadChar();
                 break;
 
             case '#':
-                token = new Token(TokenType.Hashtag, "#", _position);
+                token = new Token2(TokenType2.Hashtag, "#", _position);
                 this.ReadChar();
                 break;
 
             case '~':
-                token = new Token(TokenType.Til, "~", _position);
+                token = new Token2(TokenType2.Til, "~", _position);
                 this.ReadChar();
                 break;
 
             case '.':
-                token = new Token(TokenType.Period, ".", _position);
+                token = new Token2(TokenType2.Period, ".", _position);
                 this.ReadChar();
                 break;
 
             case '&':
-                token = new Token(TokenType.Ampersand, "&", _position);
+                token = new Token2(TokenType2.Ampersand, "&", _position);
                 this.ReadChar();
                 break;
 
@@ -369,11 +208,11 @@ internal class Tokenizer
                 this.ReadChar();
                 if (IsWordChar(_char, true))
                 {
-                    token = new Token(TokenType.Word, "$" + this.ReadWord(), _position);
+                    token = new Token2(TokenType2.Word, "$" + this.ReadWord(), _position);
                 }
                 else
                 {
-                    token = new Token(TokenType.Dollar, "$", _position);
+                    token = new Token2(TokenType2.Dollar, "$", _position);
                 }
                 break;
 
@@ -381,12 +220,12 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '=')
                 {
-                    token = new Token(TokenType.NotEquals, "!=", _position);
+                    token = new Token2(TokenType2.NotEquals, "!=", _position);
                     this.ReadChar();
                 }
                 else
                 {
-                    token = new Token(TokenType.Exclamation, "!", _position);
+                    token = new Token2(TokenType2.Exclamation, "!", _position);
                 }
                 break;
 
@@ -394,12 +233,12 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '>')
                 {
-                    token = new Token(TokenType.Arrow, "=>", _position);
+                    token = new Token2(TokenType2.Arrow, "=>", _position);
                     this.ReadChar();
                 }
                 else
                 {
-                    token = new Token(TokenType.Equals, "=", _position);
+                    token = new Token2(TokenType2.Equals, "=", _position);
                 }
                 break;
 
@@ -407,12 +246,12 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '=')
                 {
-                    token = new Token(TokenType.GreaterOrEquals, ">=", _position);
+                    token = new Token2(TokenType2.GreaterOrEquals, ">=", _position);
                     this.ReadChar();
                 }
                 else
                 {
-                    token = new Token(TokenType.Greater, ">", _position);
+                    token = new Token2(TokenType2.Greater, ">", _position);
                 }
                 break;
 
@@ -420,12 +259,12 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '=')
                 {
-                    token = new Token(TokenType.LessOrEquals, "<=", _position);
+                    token = new Token2(TokenType2.LessOrEquals, "<=", _position);
                     this.ReadChar();
                 }
                 else
                 {
-                    token = new Token(TokenType.Less, "<", _position);
+                    token = new Token2(TokenType2.Less, "<", _position);
                 }
                 break;
 
@@ -438,37 +277,37 @@ internal class Tokenizer
                 }
                 else
                 {
-                    token = new Token(TokenType.Minus, "-", _position);
+                    token = new Token2(TokenType2.Minus, "-", _position);
                 }
                 break;
 
             case '+':
-                token = new Token(TokenType.Plus, "+", _position);
+                token = new Token2(TokenType2.Plus, "+", _position);
                 this.ReadChar();
                 break;
 
             case '*':
-                token = new Token(TokenType.Asterisk, "*", _position);
+                token = new Token2(TokenType2.Asterisk, "*", _position);
                 this.ReadChar();
                 break;
 
             case '/':
-                token = new Token(TokenType.Slash, "/", _position);
+                token = new Token2(TokenType2.Slash, "/", _position);
                 this.ReadChar();
                 break;
             case '\\':
-                token = new Token(TokenType.Backslash, @"\", _position);
+                token = new Token2(TokenType2.Backslash, @"\", _position);
                 this.ReadChar();
                 break;
 
             case '%':
-                token = new Token(TokenType.Percent, "%", _position);
+                token = new Token2(TokenType2.Percent, "%", _position);
                 this.ReadChar();
                 break;
 
             case '\"':
             case '\'':
-                token = new Token(TokenType.String, this.ReadString(_char), _position);
+                token = new Token2(TokenType2.String, this.ReadString(_char), _position);
                 break;
 
             case '0':
@@ -483,7 +322,7 @@ internal class Tokenizer
             case '9':
                 var dbl = false;
                 var number = this.ReadNumber(ref dbl);
-                token = new Token(dbl ? TokenType.Double : TokenType.Int, number, _position);
+                token = new Token2(dbl ? TokenType2.Double : TokenType2.Int, number, _position);
                 break;
 
             case ' ':
@@ -496,14 +335,14 @@ internal class Tokenizer
                     sb.Append(_char);
                     this.ReadChar();
                 }
-                token = new Token(TokenType.Whitespace, sb.ToString(), _position);
+                token = new Token2(TokenType2.Whitespace, sb.ToString(), _position);
                 break;
 
             default:
                 // test if first char is an word 
                 if (IsWordChar(_char, true))
                 {
-                    token = new Token(TokenType.Word, this.ReadWord(), _position);
+                    token = new Token2(TokenType2.Word, this.ReadWord(), _position);
                 }
                 else
                 {
@@ -512,7 +351,7 @@ internal class Tokenizer
                 break;
         }
 
-        return token ?? new Token(TokenType.Unknown, _char.ToString(), _position);
+        return token ?? new Token2(TokenType2.Unknown, _char.ToString(), _position);
     }
 
     /// <summary>
