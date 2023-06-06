@@ -14,7 +14,7 @@ var settings = new EngineSettings
 
 using (var engine = new LiteEngine(settings))
 {
-    var opened = await engine.OpenAsync();
+    await engine.OpenAsync();
 
     var created = await engine.CreateCollectionAsync("col1");
 

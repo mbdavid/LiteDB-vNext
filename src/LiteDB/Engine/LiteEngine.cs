@@ -49,55 +49,7 @@ public partial class LiteEngine : ILiteEngine
 
     #endregion
 
-    #region Open/Close database
-
-    public async Task<bool> OpenAsync()
-    {
-        using var ctx = _factory.CreateEngineContext();
-
-        var open = _factory.CreateOpenCommand(ctx);
-
-        await open.ExecuteAsync();
-
-        return true;
-    }
-
-    public async Task<bool> CreateCollectionAsync(string collectionName)
-    {
-        using var ctx = _factory.CreateEngineContext();
-
-        var create = _factory.CreateCreateCollectionCommand(ctx);
-
-        await create.ExecuteAsync(collectionName);
-
-        return true;
-    }
-
-    public async Task<int> InsertAsync(string collectionName, BsonDocument document)
-    {
-        using var ctx = _factory.CreateEngineContext();
-
-        var create = _factory.CreateInsertCommand(ctx);
-
-        await create.ExecuteAsync(collectionName, document);
-
-        return 0;
-    }
-
-    public async Task<bool> CheckpointAsync()
-    {
-        using var ctx = _factory.CreateEngineContext();
-
-        var create = _factory.CreateCheckpointCommand(ctx);
-
-        await create.ExecuteAsync();
-
-        return true;
-    }
-
-
-
-    #endregion
+    // to see all methods, look at /Commands files (partial class from ILiteEngine)
 
     public void Dispose()
     {

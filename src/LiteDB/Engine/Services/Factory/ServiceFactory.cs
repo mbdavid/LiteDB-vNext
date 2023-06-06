@@ -124,22 +124,6 @@ internal partial class ServicesFactory : IServicesFactory
     public IIndexService CreateIndexService(ITransaction transaction)
         => new IndexService(this, transaction);
 
-    #region Commands
-
-    public ICheckpointCommand CreateCheckpointCommand(IEngineContext ctx)
-        => new CheckpointCommand(this, ctx);
-
-    public IOpenCommand CreateOpenCommand(IEngineContext ctx)
-        => new OpenCommand(this, ctx);
-
-    public ICreateCollectionCommand CreateCreateCollectionCommand(IEngineContext ctx)
-        => new CreateCollectionCommand(this, ctx);
-
-    public IInsertCommand CreateInsertCommand(IEngineContext ctx)
-        => new InsertCommand(this, ctx);
-
-    #endregion
-
     #endregion
 
     #region Modified State Methods
