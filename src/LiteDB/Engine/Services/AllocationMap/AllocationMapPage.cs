@@ -16,7 +16,7 @@ internal class AllocationMapPage
 
     private readonly PageBuffer _page;
 
-    public int PageID => _page.Header.PageID;
+    public PageBuffer Page => _page;
 
     /// <summary>
     /// Create a new AllocationMapPage

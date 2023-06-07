@@ -50,7 +50,7 @@ internal struct FileHeader
     public readonly Collation Collation;
     public readonly Version EngineVersion;
 
-    public readonly bool Recovery;
+    public bool Recovery;
 
     /// <summary>
     /// Read file header from a existing buffer data

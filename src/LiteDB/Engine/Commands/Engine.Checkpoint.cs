@@ -18,7 +18,6 @@ public partial class LiteEngine : ILiteEngine
 
         var result = await logService.CheckpointAsync(diskService, null);
 
-
         // release exclusive
         lockService.ExitExclusive();
 

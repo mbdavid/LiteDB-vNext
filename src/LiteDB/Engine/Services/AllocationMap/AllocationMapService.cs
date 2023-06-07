@@ -47,6 +47,22 @@ internal class AllocationMapService : IAllocationMapService
     }
 
     /// <summary>
+    /// Write all dirty pages direct into disk (there is no log file to amp)
+    /// </summary>
+    public async Task WriteAllChangesAsync()
+    {
+        var writer = _disk.GetDiskWriter();
+
+        foreach(var page in _pages)
+        {
+            if (page.Page.IsDirty)
+            {
+                await writer.WritePageAsync(page.Page);
+            }
+        }
+    }
+
+    /// <summary>
     /// Return a page ID with space available to store 'length' bytes. Support only DataPages and IndexPages.
     /// Return pageID and a bool that indicates if this page is a new empty page (must be created)
     /// </summary>  
@@ -147,7 +163,7 @@ internal class AllocationMapService : IAllocationMapService
         var pageBuffer = _bufferFactory.AllocateNewPage(true);
 
         // get a new PageID based on last AM page
-        var nextPageID = _pages.Last().PageID + AM_PAGE_STEP;
+        var nextPageID = _pages.Last().Page.Header.PageID + AM_PAGE_STEP;
 
         // create new AM page and add to list
         var newPage = new AllocationMapPage(nextPageID, pageBuffer);

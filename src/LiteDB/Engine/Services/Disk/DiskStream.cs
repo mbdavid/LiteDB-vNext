@@ -87,10 +87,8 @@ internal class DiskStream : IDiskStream
     /// </summary>
     public async Task<bool> ReadPageAsync(int positionID, PageBuffer page)
     {
-        if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
-
         // set real position on stream
-        _contentStream.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
+        _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
         var read = await _contentStream.ReadAsync(page.Buffer, 0, PAGE_SIZE);
 
@@ -105,15 +103,13 @@ internal class DiskStream : IDiskStream
 
     public async Task WritePageAsync(PageBuffer page)
     {
-        if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
-
         ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
         // before save on disk, update header page to buffer (first 32 bytes)
         page.Header.WriteToPage(page);
 
         // set real position on stream
-        _contentStream.Position = FILE_HEADER_SIZE + (page.PositionID * PAGE_SIZE);
+        _contentStream!.Position = FILE_HEADER_SIZE + (page.PositionID * PAGE_SIZE);
 
         await _contentStream.WriteAsync(page.Buffer, 0, PAGE_SIZE);
     }
@@ -123,10 +119,8 @@ internal class DiskStream : IDiskStream
     /// </summary>
     public async Task WriteEmptyAsync(int positionID)
     {
-        if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
-
         // set real position on stream
-        _contentStream.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
+        _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
         await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE);
     }
@@ -136,12 +130,10 @@ internal class DiskStream : IDiskStream
     /// </summary>
     public void SetSize(int lastPageID)
     {
-        if (_stream is null || _contentStream is null) throw new InvalidOperationException("Datafile closed");
-
         var fileLength = FILE_HEADER_SIZE +
             ((lastPageID + 1) * PAGE_SIZE);
 
-        _stream.SetLength(fileLength);
+        _stream!.SetLength(fileLength);
     }
 
     /// <summary>
@@ -149,16 +141,18 @@ internal class DiskStream : IDiskStream
     /// </summary>
     public void WriteFlag(int headerPosition, byte flag)
     {
-        if (_stream is null) throw new InvalidOperationException("Datafile closed");
-
-        _stream.Position = headerPosition;
+        _stream!.Position = headerPosition;
         _stream.WriteByte(flag);
 
         _stream.Flush();
     }
 
+    /// <summary>
+    /// Close stream (disconect from disk)
+    /// </summary>
     public void Dispose()
     {
+        _stream?.Dispose();
         _contentStream?.Dispose();
     }
 }

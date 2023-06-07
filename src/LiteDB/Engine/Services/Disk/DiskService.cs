@@ -18,8 +18,6 @@ internal class DiskService : IDiskService
 
     private readonly ConcurrentQueue<IDiskStream> _readers = new ();
 
-    private bool _writeInit = false;
-
     public IDiskStream GetDiskWriter() => _writer;
 
     public FileHeader FileHeader => _fileHeader;
@@ -123,9 +121,10 @@ internal class DiskService : IDiskService
         //TODO: disk lock here
 
         // set recovery flag in header file to true at first use
-        if (_writeInit == false)
+        if (!_fileHeader.Recovery)
         {
-            _writeInit = true;
+            _fileHeader.Recovery = true;
+
             _writer.WriteFlag(FileHeader.P_RECOVERY, 1);
         }
 
@@ -170,7 +169,20 @@ internal class DiskService : IDiskService
 
     public void Dispose()
     {
-        //TODO: implementar fechamento de todos os streams
-        // desalocar header
+        // if file was changed, update file header check byte
+        if (_fileHeader.Recovery)
+        {
+            _writer.WriteFlag(FileHeader.P_RECOVERY, 0);
+
+            // update file header
+            _fileHeader.Recovery = false;
+
+            _writer.Dispose();
+        }
+
+        foreach(var reader in _readers)
+        {
+            reader.Dispose();
+        }
     }
 }
