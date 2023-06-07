@@ -9,19 +9,24 @@ internal class DataService : IDataService
     public const int MAX_DATA_BYTES_PER_PAGE = AM_DATA_PAGE_SPACE_LARGE - 1;
 
     // dependency injection
-    private readonly IAllocationMapService _allocationMap;
-    private readonly IDataPageService _dataPage;
-    private readonly IBsonReader _reader;
-    private readonly IBsonWriter _writer;
+    private readonly IAllocationMapService _allocationMapService;
+    private readonly IDataPageService _dataPageService;
+    private readonly IBsonReader _bsonReader;
+    private readonly IBsonWriter _bsonWriter;
 
     private readonly ITransaction _transaction;
 
-    public DataService(IServicesFactory factory, ITransaction transaction)
+    public DataService(
+        IAllocationMapService allocationMapService, 
+        IDataPageService dataPageService,
+        IBsonReader bsonReader,
+        IBsonWriter bsonWriter,
+        ITransaction transaction)
     {
-        _allocationMap = factory.GetAllocationMap();
-        _dataPage = factory.GetDataPageService();
-        _reader = factory.GetBsonReader();
-        _writer = factory.GetBsonWriter();
+        _allocationMapService = allocationMapService; 
+        _dataPageService = dataPageService;
+        _bsonReader = bsonReader;
+        _bsonWriter = bsonWriter;
 
         _transaction = transaction;
     }
@@ -39,7 +44,7 @@ internal class DataService : IDataService
         var bufferDoc = ArrayPool<byte>.Shared.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
-        _writer.WriteDocument(bufferDoc, doc, out _);
+        _bsonWriter.WriteDocument(bufferDoc, doc, out _);
 
         var bytesToCopy = Math.Min(docLength, MAX_DATA_BYTES_PER_PAGE);
 
@@ -51,7 +56,7 @@ internal class DataService : IDataService
         // one single page
         if (bytesToCopy <= docLength)
         {
-            var dataBlock = _dataPage.InsertDataBlock(page, bufferDoc, PageAddress.Empty);
+            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc, PageAddress.Empty);
 
             firstBlock = dataBlock.RowID;
         }
@@ -85,7 +90,7 @@ internal class DataService : IDataService
                     (docLength - ((pages.Length - 1) * MAX_DATA_BYTES_PER_PAGE)) :
                     MAX_DATA_BYTES_PER_PAGE;
 
-                var dataBlock = _dataPage.InsertDataBlock(pages[i], 
+                var dataBlock = _dataPageService.InsertDataBlock(pages[i], 
                     bufferDoc.AsSpan(startIndex, bytesToCopy), 
                     nextBlock);
 
@@ -114,14 +119,14 @@ internal class DataService : IDataService
         var bufferDoc = ArrayPool<byte>.Shared.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
-        _writer.WriteDocument(bufferDoc, doc, out _);
+        _bsonWriter.WriteDocument(bufferDoc, doc, out _);
 
         // get current datablock (for first one)
         var page = await _transaction.GetPageAsync(rowID.PageID, true);
         var dataBlock = new DataBlock(page, rowID);
 
         // TODO: tá implementado só pra 1 pagina
-        _dataPage.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(0, docLength), PageAddress.Empty);
+        _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(0, docLength), PageAddress.Empty);
 
         // return array to pool
         ArrayPool<byte>.Shared.Return(bufferDoc);
@@ -141,7 +146,7 @@ internal class DataService : IDataService
 
         if (dataBlock.NextBlock.IsEmpty)
         {
-            var doc = _reader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
+            var doc = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
                 fields, false, out var _);
 
             return doc!;
@@ -162,7 +167,7 @@ internal class DataService : IDataService
         var dataBlock = new DataBlock(page, rowID);
 
         // delete first data block
-        _dataPage.DeleteDataBlock(page, rowID.Index);
+        _dataPageService.DeleteDataBlock(page, rowID.Index);
 
         // keeping deleting all next pages/data blocks until nextBlock is empty
         while (!dataBlock.NextBlock.IsEmpty)
@@ -173,7 +178,7 @@ internal class DataService : IDataService
             dataBlock = new DataBlock(page, dataBlock.NextBlock);
 
             // delete datablock
-            _dataPage.DeleteDataBlock(page, dataBlock.NextBlock.Index);
+            _dataPageService.DeleteDataBlock(page, dataBlock.NextBlock.Index);
         }
     }
 

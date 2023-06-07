@@ -6,17 +6,16 @@ public partial class LiteEngine : ILiteEngine
     {
         if (_factory.State != EngineState.Open) throw ERR("must be open");
 
-        var lockService = _factory.GetLock();
-        var diskService = _factory.GetDisk();
-        var logService = _factory.GetLogService();
-        var allocationMapService = _factory.GetAllocationMap();
-        var writer = diskService.GetDiskWriter();
+        var lockService = _factory.LockService;
+        var diskService = _factory.DiskService;
+        var logService = _factory.LogService;
+        var allocationMapService = _factory.AllocationMapService;
 
         // must enter in exclusive lock
         await lockService.EnterExclusiveAsync();
 
         // set engine state to shutdown
-        _factory.SetState(EngineState.Shutdown);
+        _factory.State = EngineState.Shutdown;
 
         // do checkpoint
         await logService.CheckpointAsync(diskService, null);
@@ -28,7 +27,7 @@ public partial class LiteEngine : ILiteEngine
         diskService.Dispose();
 
         // set state to close
-        _factory.SetState(EngineState.Close);
+        _factory.State = EngineState.Close;
 
         // release exclusive
         lockService.ExitExclusive();

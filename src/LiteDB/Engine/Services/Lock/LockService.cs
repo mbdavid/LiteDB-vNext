@@ -8,18 +8,20 @@
 [AutoInterface(typeof(IDisposable))]
 internal class LockService : ILockService
 {
+    private readonly TimeSpan _timeout;
+
     private readonly AsyncReaderWriterLock _database;
     private readonly AsyncReaderWriterLock[] _collections;
 
     public LockService(TimeSpan timeout)
     {
+        _timeout = timeout;
+
         // allocate main database async locker
         _database = new AsyncReaderWriterLock(timeout);
 
-        // allocate all 255 possible collections
-        _collections = Enumerable.Range(0, byte.MaxValue + 1)
-            .Select(x => new AsyncReaderWriterLock(timeout))
-            .ToArray();
+        // allocate all 0-255 possible collections
+        _collections = new AsyncReaderWriterLock[byte.MaxValue + 1];
     }
 
     /// <summary>
@@ -66,7 +68,9 @@ internal class LockService : ILockService
     /// </summary>
     public async Task EnterCollectionWriteLockAsync(byte colID)
     {
-        await _collections[colID].AcquireWriterLock();
+        var locker = _collections[colID] ??= new AsyncReaderWriterLock(_timeout);
+
+        await locker.AcquireWriterLock();
     }
 
     /// <summary>
@@ -86,7 +90,7 @@ internal class LockService : ILockService
 
             foreach (var collection in _collections)
             {
-                collection.Dispose();
+                collection?.Dispose();
             }
         }
         catch (SynchronizationLockException)

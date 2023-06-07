@@ -6,15 +6,14 @@
 internal class Transaction : ITransaction
 {
     // dependency injection
-    private readonly IServicesFactory _factory;
-    private readonly IDiskService _disk;
-    private readonly IWalIndexService _walIndex;
-    private readonly IAllocationMapService _allocationMap;
-    private readonly IIndexPageService _indexPage;
-    private readonly IDataPageService _dataPage;
+    private readonly IDiskService _diskService;
+    private readonly IWalIndexService _walIndexService;
+    private readonly IAllocationMapService _allocationMapService;
+    private readonly IIndexPageService _indexPageService;
+    private readonly IDataPageService _dataPageService;
     private readonly IBufferFactory _bufferFactory;
-    private readonly IMemoryCacheService _memoryCache;
-    private readonly ILockService _lock;
+    private readonly ICacheService _cacheService;
+    private readonly ILockService _lockService;
 
     // count how many locks this transaction contains
     private int _lockCounter = 0;
@@ -38,17 +37,25 @@ internal class Transaction : ITransaction
     /// </summary>
     public int TransactionID { get; }
 
-    public Transaction(IServicesFactory factory, int transactionID, byte[] writeCollections, int readVersion)
+    public Transaction(
+        IDiskService diskService,
+        IBufferFactory bufferFactory,
+        ICacheService cacheService,
+        IWalIndexService walIndexService,
+        IAllocationMapService allocationMapService,
+        IIndexPageService indexPageService,
+        IDataPageService dataPageService,
+        ILockService lockService,
+        int transactionID, byte[] writeCollections, int readVersion)
     {
-        _factory = factory;
-        _disk = factory.GetDisk();
-        _bufferFactory = factory.GetBufferFactory();
-        _memoryCache = factory.GetMemoryCache();
-        _walIndex = factory.GetWalIndex();
-        _allocationMap = factory.GetAllocationMap();
-        _indexPage = factory.GetIndexPageService();
-        _dataPage = factory.GetDataPageService();
-        _lock = factory.GetLock();
+        _diskService = diskService;
+        _bufferFactory = bufferFactory;
+        _cacheService = cacheService;
+        _walIndexService = walIndexService;
+        _allocationMapService = allocationMapService;
+        _indexPageService = indexPageService;
+        _dataPageService = dataPageService;
+        _lockService = lockService;
 
         this.TransactionID = transactionID;
         this.ReadVersion = readVersion; // -1 means not initialized
@@ -62,14 +69,14 @@ internal class Transaction : ITransaction
     public async Task InitializeAsync()
     {
         // enter transaction lock
-        await _lock.EnterTransactionAsync();
+        await _lockService.EnterTransactionAsync();
 
         _lockCounter = 1;
 
         for(var i = 0; i < _writeCollections.Length; i++)
         {
             // enter in all
-            await _lock.EnterCollectionWriteLockAsync(_writeCollections[i]);
+            await _lockService.EnterCollectionWriteLockAsync(_writeCollections[i]);
 
             // increment lockCounter to dispose control
             _lockCounter++;
@@ -79,10 +86,10 @@ internal class Transaction : ITransaction
         if (this.ReadVersion == -1)
         {
             // initialize read version from wal
-            this.ReadVersion = _walIndex.GetNextReadVersion();
+            this.ReadVersion = _walIndexService.GetNextReadVersion();
         }
 
-        ENSURE(this.ReadVersion >= _walIndex.MinReadVersion, $"read version do not exists in wal index: {this.ReadVersion} >= {_walIndex.MinReadVersion}");
+        ENSURE(this.ReadVersion >= _walIndexService.MinReadVersion, $"read version do not exists in wal index: {this.ReadVersion} >= {_walIndexService.MinReadVersion}");
     }
 
     /// <summary>
@@ -109,13 +116,13 @@ internal class Transaction : ITransaction
     /// </summary>
     private async Task<PageBuffer> ReadPageAsync(int pageID, int readVersion, bool writable)
     {
-        _reader ??= _disk.RentDiskReader();
+        _reader ??= _diskService.RentDiskReader();
 
         // get disk position (data/log)
-        var positionID = _walIndex.GetPagePositionID(pageID, readVersion, out _);
+        var positionID = _walIndexService.GetPagePositionID(pageID, readVersion, out _);
 
         // test if available in cache
-        var page = _memoryCache.GetPage(positionID);
+        var page = _cacheService.GetPage(positionID);
 
         // if page not found, allocate new page and read from disk
         if (page is null)
@@ -128,7 +135,7 @@ internal class Transaction : ITransaction
         else if (writable)
         {
             // if readBuffer are not used by anyone in cache (ShareCounter == 1 - only current thread), remove it
-            if (_memoryCache.TryRemovePageFromCache(page, 1))
+            if (_cacheService.TryRemovePageFromCache(page, 1))
             {
                 page.IsDirty = true;
 
@@ -163,7 +170,7 @@ internal class Transaction : ITransaction
         if (localPage is not null) return localPage;
 
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = _allocationMap.GetFreePageID(colID, pageType, bytesLength);
+        var (pageID, isNew) = _allocationMapService.GetFreePageID(colID, pageType, bytesLength);
 
         if (isNew)
         {
@@ -172,11 +179,11 @@ internal class Transaction : ITransaction
             // initialize empty page as data/index page
             if (pageType == PageType.Data)
             {
-                _dataPage.InitializeDataPage(page, pageID, colID);
+                _dataPageService.InitializeDataPage(page, pageID, colID);
             }
             else if (pageType == PageType.Index)
             {
-                _indexPage.InitializeIndexPage(page, pageID, colID);
+                _indexPageService.InitializeIndexPage(page, pageID, colID);
             }
             else throw new NotSupportedException();
 
@@ -217,10 +224,10 @@ internal class Transaction : ITransaction
         }
 
         // write pages on disk and flush data
-        await _disk.WriteLogPagesAsync(dirtyPages);
+        await _diskService.WriteLogPagesAsync(dirtyPages);
 
         // update allocation map with all dirty pages
-        _allocationMap.UpdateMap(dirtyPages);
+        _allocationMapService.UpdateMap(dirtyPages);
 
         // add pages to cache or decrement sharecount
         foreach(var page in _localPages.Values)
@@ -228,12 +235,12 @@ internal class Transaction : ITransaction
             // page already in cache (was not changed)
             if (page.ShareCounter > 0)
             {
-                _memoryCache.ReturnPage(page);
+                _cacheService.ReturnPage(page);
             }
             else
             {
                 // try add this page in cache
-                var added = _memoryCache.AddPageInCache(page);
+                var added = _cacheService.AddPageInCache(page);
 
                 if (!added)
                 {
@@ -250,7 +257,7 @@ internal class Transaction : ITransaction
 #endif
             ;
 
-        _walIndex.AddVersion(this.ReadVersion, pagePositions);
+        _walIndexService.AddVersion(this.ReadVersion, pagePositions);
 
         // clear page buffer references
         _localPages.Clear();
@@ -270,7 +277,7 @@ internal class Transaction : ITransaction
                 ENSURE(page.ShareCounter == PAGE_NO_CACHE, $"{page} must be writable (not in cache)");
 
                 // try add this page in cache
-                var added = _memoryCache.AddPageInCache(page);
+                var added = _cacheService.AddPageInCache(page);
 
                 if (!added)
                 {
@@ -288,19 +295,19 @@ internal class Transaction : ITransaction
         // return reader if used
         if (_reader is not null)
         {
-            _disk.ReturnDiskReader(_reader);
+            _diskService.ReturnDiskReader(_reader);
         }
 
         if (_lockCounter == 0) return; // no locks
 
         while (_lockCounter > 1)
         {
-            _lock.ExitCollectionWriteLock(_writeCollections[_lockCounter - 2]);
+            _lockService.ExitCollectionWriteLock(_writeCollections[_lockCounter - 2]);
             _lockCounter--;
         }
 
         // exit lock transaction
-        _lock.ExitTransaction();
+        _lockService.ExitTransaction();
 
         _lockCounter--;
 

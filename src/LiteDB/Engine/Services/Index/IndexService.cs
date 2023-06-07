@@ -8,21 +8,20 @@
 internal class IndexService : IIndexService
 {
     // dependency injection
-    private readonly IAllocationMapService _allocationMap;
-    private readonly IIndexPageService _indexPage;
-    private readonly IBsonWriter _writer;
+    private readonly IIndexPageService _indexPageService;
     private readonly ITransaction _transaction;
     private readonly Collation _collation;
     private readonly Random _random; // do not use as static (Random are not thread safe)
 
-    public IndexService(IServicesFactory factory, ITransaction transaction)
+    public IndexService(
+        IIndexPageService indexPageService,
+        Collation collation,
+        ITransaction transaction)
     {
-        _allocationMap = factory.GetAllocationMap();
-        _indexPage = factory.GetIndexPageService();
-        _writer = factory.GetBsonWriter();
-
+        _indexPageService = indexPageService;
+        _collation = collation;
         _transaction = transaction;
-        _collation = factory.GetDisk().FileHeader.Collation;
+
         _random = new();
     }
 
@@ -38,8 +37,8 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreePageAsync(colID, PageType.Index, PAGE_CONTENT_SIZE);
 
         // add head/tail nodes into page
-        var head = _indexPage.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MinValue, PageAddress.Empty, bytesLength);
-        var tail = _indexPage.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MaxValue, PageAddress.Empty, bytesLength);
+        var head = _indexPageService.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MinValue, PageAddress.Empty, bytesLength);
+        var tail = _indexPageService.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MaxValue, PageAddress.Empty, bytesLength);
 
         // link head-to-tail with double link list in first level
         head.SetNext(page, 0, tail.RowID);
@@ -78,7 +77,7 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreePageAsync(colID, PageType.Index, bytesLength);
 
         // create node in buffer
-        var node = _indexPage.InsertIndexNode(page,index.Slot, insertLevels, key, dataBlock, bytesLength);
+        var node = _indexPageService.InsertIndexNode(page,index.Slot, insertLevels, key, dataBlock, bytesLength);
 
         // now, let's link my index node on right place
         var left = index.Head;

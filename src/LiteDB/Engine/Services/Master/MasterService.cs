@@ -8,10 +8,6 @@ internal class MasterService : IMasterService
 {
     // dependency injection
     private readonly IServicesFactory _factory;
-    private readonly IDiskService _disk;
-    private readonly IBufferFactory _bufferFactory;
-    private readonly IBsonReader _reader;
-    private readonly IBsonWriter _writer;
 
     #region $master document structure
 
@@ -66,10 +62,6 @@ internal class MasterService : IMasterService
     public MasterService(IServicesFactory factory)
     {
         _factory = factory;
-        _disk = factory.GetDisk();
-        _bufferFactory = factory.GetBufferFactory();
-        _reader = factory.GetBsonReader();
-        _writer = factory.GetBsonWriter();
     }
 
     #region Read/Write $master
@@ -81,10 +73,10 @@ internal class MasterService : IMasterService
     public async Task InitializeAsync()
     {
         // create a a local transaction (not from monitor)
-        using var transaction = new Transaction(_factory, 0, new byte[0], 0);
+        using var transaction = _factory.CreateTransaction(0, new byte[0], 0);
 
         // initialize data service with new transaction
-        var dataService = new DataService(_factory, transaction);
+        var dataService = _factory.CreateDataService(transaction);
 
         // read $master document
         var master = await dataService.ReadDocumentAsync(MASTER_ROW_ID, null);
@@ -126,7 +118,7 @@ internal class MasterService : IMasterService
     /// </summary>
     public async Task WriteCollectionAsync(BsonDocument master, ITransaction transaction)
     {
-        var dataService = new DataService(_factory, transaction);
+        var dataService = _factory.CreateDataService(transaction);
 
         await dataService.UpdateDocumentAsync(MASTER_ROW_ID, master);
     }

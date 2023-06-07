@@ -6,9 +6,9 @@ public partial class LiteEngine : ILiteEngine
     {
         if (_factory.State == EngineState.Open) throw ERR("must be closed");
 
-        var lockService = _factory.GetLock();
-        var diskService = _factory.GetDisk();
-        var logService = _factory.GetLogService();
+        var lockService = _factory.LockService;
+        var diskService = _factory.DiskService;
+        var logService = _factory.LogService;
 
         // checkpoint require exclusive lock (no readers/writers)
         await lockService.EnterExclusiveAsync();

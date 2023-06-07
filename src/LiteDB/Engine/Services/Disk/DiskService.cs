@@ -11,7 +11,6 @@ internal class DiskService : IDiskService
     private readonly IBufferFactory _bufferFactory;
     private readonly IStreamFactory _streamFactory;
     private readonly ILogService _logService;
-    private readonly IEngineSettings _settings;
 
     private readonly IDiskStream _writer;
     private FileHeader _fileHeader = new();
@@ -22,13 +21,12 @@ internal class DiskService : IDiskService
 
     public FileHeader FileHeader => _fileHeader;
 
-    public DiskService(IEngineSettings settings, 
+    public DiskService(
         IBufferFactory bufferFactory,
         IStreamFactory streamFactory,
         ILogService logService,
         IServicesFactory factory)
     {
-        _settings = settings;
         _bufferFactory = bufferFactory;
         _streamFactory = streamFactory;
         _logService = logService;

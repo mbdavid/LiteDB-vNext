@@ -3,19 +3,21 @@
 [AutoInterface]
 internal class NewDatafile : INewDatafile
 {
-    private readonly IServicesFactory _factory;
     private readonly IBufferFactory _bufferFactory;
-    private readonly IBsonWriter _writer;
+    private readonly IBsonWriter _bsonWriter;
     private readonly IDataPageService _dataPageService;
     private readonly IEngineSettings _settings;
 
-    public NewDatafile(IServicesFactory factory)
+    public NewDatafile(
+        IBufferFactory bufferFactory,
+        IBsonWriter bsonWriter,
+        IDataPageService dataPageService,
+        IEngineSettings settings)
     {
-        _factory = factory;
-        _bufferFactory = factory.GetBufferFactory();
-        _writer = _factory.GetBsonWriter();
-        _dataPageService =  _factory.GetDataPageService();
-        _settings = factory.Settings;
+        _bufferFactory = bufferFactory;
+        _bsonWriter = bsonWriter;
+        _dataPageService =  dataPageService;
+        _settings = settings;
     }
 
     /// <summary>
@@ -51,7 +53,7 @@ internal class NewDatafile : INewDatafile
         var masterBuffer = ArrayPool<byte>.Shared.Rent(masterDoc.GetBytesCount());
 
         // serialize $master document 
-        _writer.WriteDocument(masterBuffer, masterDoc, out _);
+        _bsonWriter.WriteDocument(masterBuffer, masterDoc, out _);
 
         // insert $master document into master page
         _dataPageService.InsertDataBlock(masterPage, masterBuffer, PageAddress.Empty);

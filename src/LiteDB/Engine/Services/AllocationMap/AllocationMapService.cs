@@ -6,8 +6,7 @@
 [AutoInterface(typeof(IDisposable))]
 internal class AllocationMapService : IAllocationMapService
 {
-    private readonly IDiskService _disk;
-    private readonly IStreamFactory _streamFactory;
+    private readonly IDiskService _diskService;
     private readonly IBufferFactory _bufferFactory;
 
     /// <summary>
@@ -16,15 +15,18 @@ internal class AllocationMapService : IAllocationMapService
     private readonly List<AllocationMapPage> _pages = new();
 
     /// <summary>
-    /// A struct, per colID, to store a list of pages with available space
+    /// A struct, per colID (0-255), to store a list of pages with available space
     /// </summary>
-    private readonly CollectionFreePages[] _collectionFreePages = new CollectionFreePages[256];
+    private readonly CollectionFreePages[] _collectionFreePages;
 
-    public AllocationMapService(IDiskService disk, IStreamFactory streamFactory, IBufferFactory bufferFactory)
+    public AllocationMapService(
+        IDiskService diskService, 
+        IBufferFactory bufferFactory)
     {
-        _disk = disk;
-        _streamFactory = streamFactory;
+        _diskService = diskService;
         _bufferFactory = bufferFactory;
+
+        _collectionFreePages = new CollectionFreePages[byte.MaxValue + 1];
     }
 
     /// <summary>
@@ -33,7 +35,7 @@ internal class AllocationMapService : IAllocationMapService
     public async Task InitializeAsync()
     {
         // read all allocation maps pages on disk
-        await foreach (var pageBuffer in _disk.ReadAllocationMapPages())
+        await foreach (var pageBuffer in _diskService.ReadAllocationMapPages())
         {
             // get page buffer from disk
             var page = new AllocationMapPage(pageBuffer);
@@ -51,7 +53,7 @@ internal class AllocationMapService : IAllocationMapService
     /// </summary>
     public async Task WriteAllChangesAsync()
     {
-        var writer = _disk.GetDiskWriter();
+        var writer = _diskService.GetDiskWriter();
 
         foreach(var page in _pages)
         {
@@ -69,8 +71,7 @@ internal class AllocationMapService : IAllocationMapService
     public (int, bool) GetFreePageID(byte colID, PageType type, int length)
     {
         // get (or create) collection free pages for this colID
-        var freePages = _collectionFreePages[colID] = 
-            _collectionFreePages[colID] ?? new CollectionFreePages();
+        var freePages = _collectionFreePages[colID] ??= new CollectionFreePages();
 
         if (type == PageType.Data)
         {

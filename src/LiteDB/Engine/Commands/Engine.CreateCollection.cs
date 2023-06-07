@@ -6,8 +6,8 @@ public partial class LiteEngine : ILiteEngine
     {
         if (_factory.State != EngineState.Open) throw ERR("must be open");
 
-        var masterService = _factory.GetMaster();
-        var monitorService = _factory.GetMonitor();
+        var masterService = _factory.MasterService;
+        var monitorService = _factory.MonitorService;
 
         // create a new transaction locking colID = 255 ($master)
         var transaction = await monitorService.CreateTransactionAsync(new byte[] { MASTER_COL_ID });

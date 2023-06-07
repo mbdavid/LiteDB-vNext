@@ -11,10 +11,12 @@ internal class DiskStream : IDiskStream
 
     public string Name => Path.GetFileName(_settings.Filename);
 
-    public DiskStream(IServicesFactory factory)
+    public DiskStream(
+        IEngineSettings settings, 
+        IStreamFactory streamFactory)
     {
-        _settings = factory.Settings;
-        _streamFactory = factory.GetStreamFactory();
+        _settings = settings;
+        _streamFactory = streamFactory;
     }
 
     /// <summary>

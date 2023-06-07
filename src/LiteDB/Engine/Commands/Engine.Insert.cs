@@ -6,8 +6,8 @@ public partial class LiteEngine : ILiteEngine
     {
         if (_factory.State != EngineState.Open) throw new Exception("must be open");
 
-        var masterService = _factory.GetMaster();
-        var monitorService = _factory.GetMonitor();
+        var masterService = _factory.MasterService;
+        var monitorService = _factory.MonitorService;
 
         if (masterService.Collections!.TryGetValue(collectionName, out var collection)) throw ERR("criar antes");
 

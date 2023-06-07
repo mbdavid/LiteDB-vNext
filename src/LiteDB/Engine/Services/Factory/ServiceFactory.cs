@@ -6,96 +6,64 @@
 [AutoInterface]
 internal partial class ServicesFactory : IServicesFactory
 {
-    private readonly IBsonReader _bsonReader;
-    private readonly IBsonWriter _bsonWriter;
-    private readonly IBufferFactory _bufferFactory;
-    private readonly IMemoryCacheService _memoryCache;
-
-    private readonly ILogService _logService;
-    private readonly IWalIndexService _walIndex;
-
-    private readonly ILockService _lock;
-    private readonly IStreamFactory _streamFactory;
-
-    private readonly IDiskService _disk;
-    private readonly IAllocationMapService _allocationMap;
-    private readonly IMasterService _master;
-    private readonly ITransactionMonitor _monitor;
-
-    private readonly IDataPageService _dataPageService;
-    private readonly IIndexPageService _indexPageService;
-
-    public ServicesFactory(IEngineSettings settings)
-    {
-        this.Settings = settings;
-
-        // initialize per-engine classes instances (no actions!)
-
-        // no dependencies
-        _bsonReader = new BsonReader();
-        _bsonWriter = new BsonWriter();
-        _memoryCache = new MemoryCacheService();
-        _walIndex = new WalIndexService();
-        _bufferFactory = new BufferFactory();
-        _dataPageService = new DataPageService();
-        _indexPageService = new IndexPageService();
-
-        // settings dependency only
-        _lock = new LockService(settings.Timeout);
-        _streamFactory = new FileStreamFactory(settings);
-
-        _logService = new LogService(_memoryCache, _bufferFactory, _walIndex);
-
-        // other services dependencies
-        _disk = new DiskService(settings, _bufferFactory, _streamFactory, _logService, this);
-        _allocationMap = new AllocationMapService(_disk, _streamFactory, _bufferFactory);
-
-
-        // full factory dependencies
-        _master = new MasterService(this);
-        _monitor = new TransactionMonitor(this);
-
-    }
-
-    #region Singleton instances (Get/Properties)
-
     public IEngineSettings Settings { get; }
 
-    public EngineState State { get; private set; } = EngineState.Close;
+    public EngineState State { get; set; } = EngineState.Close;
 
-    public Exception? Exception { get; private set; }
+    public Exception? Exception { get; set; }
 
     public ConcurrentDictionary<string, object> Application { get; } = new();
 
-    public IBsonReader GetBsonReader() => _bsonReader;
+    public IBsonReader BsonReader { get; }
+    public IBsonWriter BsonWriter { get; }
 
-    public IBsonWriter GetBsonWriter() => _bsonWriter;
+    public IBufferFactory BufferFactory { get; }
+    public IStreamFactory StreamFactory { get; }
 
-    public IBufferFactory GetBufferFactory() => _bufferFactory;
+    public ICacheService CacheService { get; }
 
-    public IMemoryCacheService GetMemoryCache() => _memoryCache;
+    public ILogService LogService { get; }
+    public IWalIndexService WalIndexService { get; }
 
-    public IDataPageService GetDataPageService() => _dataPageService;
+    public ILockService LockService { get; }
 
-    public IIndexPageService GetIndexPageService() => _indexPageService;
+    public IDiskService DiskService { get; }
+    public IAllocationMapService AllocationMapService { get; }
+    public IMasterService MasterService { get; }
+    public ITransactionMonitor MonitorService { get; }
 
-    public IDiskService GetDisk() => _disk;
+    public IDataPageService DataPageService { get; }
+    public IIndexPageService IndexPageService { get; }
 
-    public IStreamFactory GetStreamFactory() => _streamFactory;
+    public ServicesFactory(IEngineSettings settings)
+    {
+        // get settings instance
+        this.Settings = settings;
 
-    public IAllocationMapService GetAllocationMap() => _allocationMap;
+        // intial state
+        this.State = EngineState.Close;
+        this.Exception = null;
 
-    public IMasterService GetMaster() => _master;
+        // no dependencies
+        this.BsonReader = new BsonReader();
+        this.BsonWriter = new BsonWriter();
+        this.CacheService = new CacheService();
+        this.WalIndexService = new WalIndexService();
+        this.BufferFactory = new BufferFactory();
+        this.DataPageService = new DataPageService();
+        this.IndexPageService = new IndexPageService();
 
-    public ILogService GetLogService() => _logService;
+        // settings dependency only
+        this.LockService = new LockService(settings.Timeout);
+        this.StreamFactory = new FileStreamFactory(settings);
 
-    public IWalIndexService GetWalIndex() => _walIndex;
-
-    public ITransactionMonitor GetMonitor() => _monitor;
-
-    public ILockService GetLock() => _lock;
-
-    #endregion
+        // other services dependencies
+        this.LogService = new LogService(this.CacheService, this.BufferFactory, this.WalIndexService);
+        this.DiskService = new DiskService(this.BufferFactory, this.StreamFactory, this.LogService, this);
+        this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);
+        this.MasterService = new MasterService(this);
+        this.MonitorService = new TransactionMonitor(this);
+    }
 
     #region Transient instances (Create prefix)
 
@@ -103,7 +71,7 @@ internal partial class ServicesFactory : IServicesFactory
         => new EngineContext();
 
     public IDiskStream CreateDiskStream() 
-        => new DiskStream(this);
+        => new DiskStream(this.Settings, this.StreamFactory);
 
     public IStreamFactory CreateStreamFactory(bool readOnly)
     {
@@ -112,40 +80,34 @@ internal partial class ServicesFactory : IServicesFactory
         return new FileStreamFactory(this.Settings);
     }
 
-    public INewDatafile CreateNewDatafile() 
-        => new NewDatafile(this);
+    public INewDatafile CreateNewDatafile() => new NewDatafile(
+        this.BufferFactory, 
+        this.BsonWriter, 
+        this.DataPageService,
+        this.Settings);
 
-    public ITransaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) 
-        => new Transaction(this, transactionID, writeCollections, readVersion);
+    public ITransaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) => new Transaction(
+        this.DiskService,
+        this.BufferFactory,
+        this.CacheService,
+        this.WalIndexService,
+        this.AllocationMapService,
+        this.IndexPageService,
+        this.DataPageService,
+        this.LockService,
+        transactionID, writeCollections, readVersion);
 
-    public IDataService CreateDataService(ITransaction transaction)
-        => new DataService(this, transaction);
+    public IDataService CreateDataService(ITransaction transaction) => new DataService(
+        this.AllocationMapService, 
+        this.DataPageService, 
+        this.BsonReader, 
+        this.BsonWriter, 
+        transaction);
 
-    public IIndexService CreateIndexService(ITransaction transaction)
-        => new IndexService(this, transaction);
-
-    #endregion
-
-    #region Modified State Methods
-
-    public void SetState(EngineState state)
-    {
-        if (state == EngineState.Open)
-        {
-            if (this.State != EngineState.Close) throw new InvalidOperationException("Engine must be closed before open");
-
-            this.State = EngineState.Open;
-        }
-        else if (state == EngineState.Shutdown)
-        {
-            this.State = EngineState.Shutdown;
-        }
-        else if (state == EngineState.Close)
-        {
-            this.State = EngineState.Close;
-        }
-
-    }
+    public IIndexService CreateIndexService(ITransaction transaction) => new IndexService(
+        this.IndexPageService, 
+        this.DiskService.FileHeader.Collation, 
+        transaction);
 
     #endregion
 }

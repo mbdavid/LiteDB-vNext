@@ -6,14 +6,14 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class MemoryCacheService : IMemoryCacheService
+internal class CacheService : ICacheService
 {
     /// <summary>
     /// A dictionary to cache use/re-use same data buffer across threads. Rent model
     /// </summary>
-    private ConcurrentDictionary<int, PageBuffer> _cache = new();
+    private readonly ConcurrentDictionary<int, PageBuffer> _cache = new();
 
-    public MemoryCacheService()
+    public CacheService()
     {
     }
 

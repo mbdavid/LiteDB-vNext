@@ -8,8 +8,8 @@ internal class LogService : ILogService
 {
     // dependency injection
     private readonly IBufferFactory _bufferFactory;
-    private readonly IMemoryCacheService _memoryCache;
-    private readonly IWalIndexService _walIndex;
+    private readonly ICacheService _cacheService;
+    private readonly IWalIndexService _walIndexService;
 
     private int _lastPageID;
     private int _logPositionID;
@@ -18,13 +18,13 @@ internal class LogService : ILogService
     private readonly HashSet<int> _confirmedTransactions = new();
 
     public LogService(
-        IMemoryCacheService memoryCache,
+        ICacheService cacheService,
         IBufferFactory bufferFactory,
-        IWalIndexService walIndex)
+        IWalIndexService walIndexService)
     {
-        _memoryCache = memoryCache;
+        _cacheService = cacheService;
         _bufferFactory = bufferFactory;
-        _walIndex = walIndex;
+        _walIndexService = walIndexService;
     }
 
     public void Initialize(int lastFilePositionID)
@@ -39,7 +39,12 @@ internal class LogService : ILogService
     /// </summary>
     public int GetNextLogPositionID()
     {
-        return Interlocked.Increment(ref _logPositionID);
+        var next = Interlocked.Increment(ref _logPositionID);
+
+        // test if next log position is not an AMP
+        if (next % AM_EXTEND_COUNT == 0) next = Interlocked.Increment(ref _logPositionID);
+
+        return next;
     }
 
     /// <summary>
@@ -102,6 +107,8 @@ internal class LogService : ILogService
 
                 // write page to destination
                 await stream.WritePageAsync(targetPage);
+
+                //TODO: conferir como desalocar a pagina
             }
 
             // get page from file position ID (log or 
@@ -116,7 +123,7 @@ internal class LogService : ILogService
             await stream.WritePageAsync(page);
 
             // and now can re-enter to cache
-            _memoryCache.AddPageInCache(page);
+            _cacheService.AddPageInCache(page);
 
             // if this log 
             var needEmpty = filePositionID <= _lastPageID;
@@ -128,7 +135,7 @@ internal class LogService : ILogService
         stream.SetSize(_lastPageID);
 
         // empty all wal index pointer
-        _walIndex.Clear();
+        _walIndexService.Clear();
 
         // clear all log pages
         _logPages.Clear();
@@ -145,7 +152,7 @@ internal class LogService : ILogService
     private async Task<PageBuffer> GetLogPageAsync(IDiskStream stream, int positionID)
     {
         // try get page from cache
-        var page = _memoryCache.TryRemove(positionID);
+        var page = _cacheService.TryRemove(positionID);
 
         if (page is null)
         {
