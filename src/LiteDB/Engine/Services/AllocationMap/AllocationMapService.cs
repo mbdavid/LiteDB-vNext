@@ -35,7 +35,7 @@ internal class AllocationMapService : IAllocationMapService
     public async Task InitializeAsync()
     {
         // read all allocation maps pages on disk
-        await foreach (var pageBuffer in _diskService.ReadAllocationMapPages())
+        await foreach (var pageBuffer in this.ReadAllocationMapPages())
         {
             // get page buffer from disk
             var page = new AllocationMapPage(pageBuffer);
@@ -45,6 +45,35 @@ internal class AllocationMapService : IAllocationMapService
 
             // add AM page to instance
             _pages.Add(page);
+        }
+    }
+
+
+    /// <summary>
+    /// Read all allocation map pages. Allocation map pages contains initial position and fixed interval between other pages
+    /// </summary>
+    private async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
+    {
+        var positionID = AM_FIRST_PAGE_ID;
+
+        var lastPositionID = _diskService.GetLastFilePositionID();
+        var writer = _diskService.GetDiskWriter();
+
+        while (positionID <= lastPositionID)
+        {
+            var page = _bufferFactory.AllocateNewPage(false);
+
+            await writer.ReadPageAsync(positionID, page);
+
+            if (page.IsHeaderEmpty())
+            {
+                _bufferFactory.DeallocatePage(page);
+                break;
+            }
+
+            yield return page;
+
+            positionID += AM_PAGE_STEP;
         }
     }
 
@@ -248,6 +277,13 @@ internal class AllocationMapService : IAllocationMapService
 
     public void Dispose()
     {
-        // limpar paginas
+        // deallocate all amp
+        foreach(var page in _pages)
+        {
+            _bufferFactory.DeallocatePage(page.Page);
+        }
+
+        // clear list to be ready to use
+        _pages.Clear();
     }
 }

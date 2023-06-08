@@ -30,7 +30,7 @@ internal partial class ServicesFactory : IServicesFactory
     public IDiskService DiskService { get; }
     public IAllocationMapService AllocationMapService { get; }
     public IMasterService MasterService { get; }
-    public ITransactionMonitor MonitorService { get; }
+    public IMonitorService MonitorService { get; }
 
     public IDataPageService DataPageService { get; }
     public IIndexPageService IndexPageService { get; }
@@ -59,10 +59,10 @@ internal partial class ServicesFactory : IServicesFactory
 
         // other services dependencies
         this.LogService = new LogService(this.CacheService, this.BufferFactory, this.WalIndexService);
-        this.DiskService = new DiskService(this.BufferFactory, this.StreamFactory, this.LogService, this);
+        this.DiskService = new DiskService(this.StreamFactory, this.LogService, this);
         this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);
         this.MasterService = new MasterService(this);
-        this.MonitorService = new TransactionMonitor(this);
+        this.MonitorService = new MonitorService(this);
     }
 
     #region Transient instances (Create prefix)

@@ -264,42 +264,5 @@ internal class DataService : IDataService
             }
         }
 
-        /// <summary>
-        /// Get all buffer slices that address block contains. Need use BufferReader to read document
-        /// </summary>
-        public IEnumerable<BufferSlice> Read(PageAddress address)
-        {
-            while (address != PageAddress.Empty)
-            {
-                var dataPage = _snapshot.GetPage<DataPage>(address.PageID);
-
-                var block = dataPage.GetBlock(address.Index);
-
-                yield return block.Buffer;
-
-                address = block.NextBlock;
-            }
-        }
-
-        /// <summary>
-        /// Delete all datablock that contains a document (can use multiples data blocks)
-        /// </summary>
-        public void Delete(PageAddress blockAddress)
-        {
-            // delete all document blocks
-            while(blockAddress != PageAddress.Empty)
-            {
-                var page = _snapshot.GetPage<DataPage>(blockAddress.PageID);
-                var block = page.GetBlock(blockAddress.Index);
-
-                // delete block inside page
-                page.DeleteBlock(blockAddress.Index);
-
-                // fix page empty list (or delete page)
-                _snapshot.AddOrRemoveFreeDataList(page);
-
-                blockAddress = block.NextBlock;
-            }
-        }
     */
 }

@@ -99,7 +99,7 @@ internal class Transaction : ITransaction
     {
         if (_localPages.TryGetValue(pageID, out var page))
         {
-            ENSURE(writable, page.ShareCounter == PAGE_NO_CACHE, "page should not be in cache");
+            ENSURE(writable, page.ShareCounter == NO_CACHE, "page should not be in cache");
 
             return page;
         }
@@ -215,7 +215,7 @@ internal class Transaction : ITransaction
         {
             var page = dirtyPages[i];
 
-            ENSURE(page.ShareCounter == PAGE_NO_CACHE, "page should not be on cache when saving");
+            ENSURE(page.ShareCounter == NO_CACHE, "page should not be on cache when saving");
 
             // update page header
             page.PositionID = int.MaxValue;
@@ -274,7 +274,7 @@ internal class Transaction : ITransaction
             }
             else
             {
-                ENSURE(page.ShareCounter == PAGE_NO_CACHE, $"{page} must be writable (not in cache)");
+                ENSURE(page.ShareCounter == NO_CACHE, $"{page} must be writable (not in cache)");
 
                 // try add this page in cache
                 var added = _cacheService.AddPageInCache(page);
@@ -311,6 +311,7 @@ internal class Transaction : ITransaction
 
         _lockCounter--;
 
-        ENSURE(_lockCounter == 0, "missing release lock in transaction");
+        ENSURE(_localPages.Count == 0, $"missing dispose pages in transaction {this}");
+        ENSURE(_lockCounter == 0, $"missing release lock in transaction {this}");
     }
 }

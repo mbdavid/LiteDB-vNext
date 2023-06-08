@@ -5,7 +5,7 @@
 /// Do not work with PageBuffers, only with data position and version pointers
 /// * Singleton (thread safe)
 /// </summary>
-[AutoInterface]
+[AutoInterface(typeof(IDisposable))]
 internal class WalIndexService : IWalIndexService
 {
     /// <summary>
@@ -106,6 +106,16 @@ internal class WalIndexService : IWalIndexService
     {
         // reset minimal read version to next read version
         this.MinReadVersion = _readVersion + 1;
+
+        _index.Clear();
+    }
+
+    public void Dispose()
+    {
+        // reset fields
+        _readVersion = 0;
+
+        this.MinReadVersion = 1;
 
         _index.Clear();
     }

@@ -17,7 +17,7 @@ internal class PageBuffer
     /// If ShareCounter = 0 means this PageBuffer are on cache but no one are using (can be dispose if needed)
     /// If ShareCounter > 0 means this PageBuffer contains 1 or more threads reading this page (can't be changed)
     /// </summary>
-    public int ShareCounter = PAGE_NO_CACHE;
+    public int ShareCounter = NO_CACHE;
 
     /// <summary>
     /// Last time this buffer was hit by cache
@@ -49,7 +49,7 @@ internal class PageBuffer
 
     public void Reset()
     {
-        this.ShareCounter = PAGE_NO_CACHE;
+        this.ShareCounter = NO_CACHE;
         this.Timestamp = 0;
         this.PositionID = int.MaxValue;
         this.IsDirty = false;

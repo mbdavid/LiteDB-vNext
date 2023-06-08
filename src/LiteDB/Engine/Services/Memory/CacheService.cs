@@ -27,7 +27,7 @@ internal class CacheService : ICacheService
 
         if (found)
         {
-            ENSURE(page.ShareCounter != PAGE_NO_CACHE, $"rent page {page} only for cache");
+            ENSURE(page.ShareCounter != NO_CACHE, $"rent page {page} only for cache");
 
             // increment ShareCounter to be used by another transaction
             Interlocked.Increment(ref page.ShareCounter);
@@ -61,7 +61,7 @@ internal class CacheService : ICacheService
     public bool AddPageInCache(PageBuffer page)
     {
         ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
-        ENSURE(page.ShareCounter == PAGE_NO_CACHE, "ShareCounter must be zero before add in cache");
+        ENSURE(page.ShareCounter == NO_CACHE, "ShareCounter must be zero before add in cache");
 
         page.ShareCounter = 0; // initialize share counter
 
@@ -123,5 +123,10 @@ internal class CacheService : ICacheService
 
     public void Dispose()
     {
+        ENSURE(_cache.Count(x => x.Value.ShareCounter != 0) == 0, "cache must be clean before dipose");
+
+
+        // deattach PageBuffers from _cache object
+        _cache.Clear();
     }
 }

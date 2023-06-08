@@ -127,7 +127,7 @@ internal class Constants
     /// <summary>
     /// Define when ShareCounter (on PageBuffer) are in cache or not
     /// </summary>
-    public const int PAGE_NO_CACHE = -1; 
+    public const int NO_CACHE = -1; 
 
     /// <summary>
     /// Define index name max length

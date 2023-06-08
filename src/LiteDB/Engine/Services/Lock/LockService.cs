@@ -20,7 +20,7 @@ internal class LockService : ILockService
         // allocate main database async locker
         _database = new AsyncReaderWriterLock(timeout);
 
-        // allocate all 0-255 possible collections
+        // create all 0-255 possible collections (initialize only used)
         _collections = new AsyncReaderWriterLock[byte.MaxValue + 1];
     }
 

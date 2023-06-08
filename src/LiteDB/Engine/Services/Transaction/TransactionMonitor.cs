@@ -5,7 +5,7 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class TransactionMonitor : ITransactionMonitor
+internal class MonitorService : IMonitorService
 {
     // dependency injection
     private readonly IServicesFactory _factory;
@@ -20,7 +20,7 @@ internal class TransactionMonitor : ITransactionMonitor
     // expose open transactions
     public ICollection<ITransaction> Transactions => _transactions.Values;
 
-    public TransactionMonitor(IServicesFactory factory)
+    public MonitorService(IServicesFactory factory)
     {
         _factory = factory;
     }

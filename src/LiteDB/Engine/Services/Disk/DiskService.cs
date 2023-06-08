@@ -8,7 +8,6 @@ internal class DiskService : IDiskService
 {
     // dependency injection
     private readonly IServicesFactory _factory;
-    private readonly IBufferFactory _bufferFactory;
     private readonly IStreamFactory _streamFactory;
     private readonly ILogService _logService;
 
@@ -22,12 +21,10 @@ internal class DiskService : IDiskService
     public FileHeader FileHeader => _fileHeader;
 
     public DiskService(
-        IBufferFactory bufferFactory,
         IStreamFactory streamFactory,
         ILogService logService,
         IServicesFactory factory)
     {
-        _bufferFactory = bufferFactory;
         _streamFactory = streamFactory;
         _logService = logService;
         _factory = factory;
@@ -83,33 +80,6 @@ internal class DiskService : IDiskService
     public void ReturnDiskReader(IDiskStream reader)
     {
         _readers.Enqueue(reader);
-    }
-
-    /// <summary>
-    /// Read all allocation map pages. Allocation map pages contains initial position and fixed interval between other pages
-    /// </summary>
-    public async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
-    {
-        var positionID = AM_FIRST_PAGE_ID;
-
-        var lastPositionID = this.GetLastFilePositionID();
-
-        while (positionID <= lastPositionID)
-        {
-            var page = _bufferFactory.AllocateNewPage(false);
-
-            await _writer.ReadPageAsync(positionID, page);
-
-            if (page.IsHeaderEmpty())
-            {
-                _bufferFactory.DeallocatePage(page);
-                break;
-            }
-
-            yield return page;
-
-            positionID += AM_PAGE_STEP;
-        }
     }
 
     /// <summary>
