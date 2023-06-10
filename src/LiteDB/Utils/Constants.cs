@@ -101,28 +101,9 @@ internal class Constants
     public static PageAddress MASTER_ROW_ID = new (MASTER_PAGE_ID, 0);
 
     /// <summary>
-    /// Get how many bytes $master can be store (8 pages)
+    /// Get max colID for collections to be used by user
     /// </summary>
-    public const int MASTER_DOC_SIZE = AM_EXTEND_SIZE * PAGE_CONTENT_SIZE;
-
-    /// <summary>
-    /// Get a list of keys used inside $master collection (MK = master key)
-    /// </summary>
-    public const string MK_COL = "collections";
-    public const string MK_COL_ID = "colID";
-    public const string MK_INDEX = "indexes";
-    public const string MK_IDX_SLOT = "slot";
-    public const string MK_IDX_EXPR = "expr";
-    public const string MK_IDX_UNIQUE = "unique";
-    public const string MK_IDX_HEAD_PAGE_ID = "headPageID";
-    public const string MK_IDX_HEAD_INDEX = "headIndex";
-    public const string MK_IDX_TAIL_PAGE_ID = "tailPageID";
-    public const string MK_IDX_TAIL_INDEX = "tailIndex";
-    public const string MK_META = "meta";
-    public const string MK_PRAGMA = "pragmas";
-    public const string MK_PRAGMA_USER_VERSION = "user_version";
-    public const string MK_PRAGMA_LIMIT_SIZE_ID = "limit";
-    public const string MK_PRAGMA_CHECKPOINT = "checkpoint";
+    public const int MASTER_COL_LIMIT = 250;
 
     /// <summary>
     /// Define when ShareCounter (on PageBuffer) are in cache or not

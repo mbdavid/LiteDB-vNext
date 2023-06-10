@@ -4,17 +4,20 @@
 internal class NewDatafile : INewDatafile
 {
     private readonly IBufferFactory _bufferFactory;
+    private readonly IMasterMapper _masterMapper;
     private readonly IBsonWriter _bsonWriter;
     private readonly IDataPageService _dataPageService;
     private readonly IEngineSettings _settings;
 
     public NewDatafile(
         IBufferFactory bufferFactory,
+        IMasterMapper masterMapper,
         IBsonWriter bsonWriter,
         IDataPageService dataPageService,
         IEngineSettings settings)
     {
         _bufferFactory = bufferFactory;
+        _masterMapper = masterMapper;
         _bsonWriter = bsonWriter;
         _dataPageService =  dataPageService;
         _settings = settings;
@@ -49,7 +52,8 @@ internal class NewDatafile : INewDatafile
         _dataPageService.InitializeDataPage(masterPage, MASTER_PAGE_ID, MASTER_COL_ID);
 
         // create new/empty $master document
-        var masterDoc = MasterService.CreateNewMaster();
+        var master = new MasterDocument();
+        var masterDoc = _masterMapper.MapToDocument(master);
         var masterBuffer = ArrayPool<byte>.Shared.Rent(masterDoc.GetBytesCount());
 
         // serialize $master document 

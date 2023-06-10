@@ -5,27 +5,34 @@ internal class PragmaDocument
     /// <summary>
     /// Internal user version control to detect database changes
     /// </summary>
-    public int UserVersion { get; private set; } = 0;
+    public int UserVersion { get; set; } = 0;
 
     /// <summary>
     /// Max limit of datafile (in bytes) (default: MaxValue)
     /// </summary>
-    public int LimitSizeID { get; private set; } = 0;
+    public int LimitSizeID { get; set; } = 0;
 
     /// <summary>
     /// When LOG file gets larger than checkpoint size (in pages), do a soft checkpoint (and also do a checkpoint at shutdown)
     /// Checkpoint = 0 means there's no auto-checkpoint nor shutdown checkpoint
     /// </summary>
-    public int Checkpoint { get; private set; } = 1000;
+    public int Checkpoint { get; set; } = CHECKPOINT_SIZE;
 
     /// <summary>
-    /// Read pragma information from a BsonDocument
+    /// Initial pragma values
     /// </summary>
-    public PragmaDocument(BsonDocument doc)
+    public PragmaDocument()
     {
-        this.UserVersion = doc[MK_PRAGMA_USER_VERSION];
-        this.LimitSizeID = doc[MK_PRAGMA_LIMIT_SIZE_ID];
-        this.Checkpoint = doc[MK_PRAGMA_CHECKPOINT];
+    }
+
+    /// <summary>
+    /// Clone object instance constructor
+    /// </summary>
+    public PragmaDocument(PragmaDocument other)
+    {
+        this.UserVersion = other.UserVersion;
+        this.LimitSizeID = other.LimitSizeID;
+        this.Checkpoint = other.Checkpoint;
     }
 }
 

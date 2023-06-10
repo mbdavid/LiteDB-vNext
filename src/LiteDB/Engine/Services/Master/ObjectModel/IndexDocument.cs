@@ -2,26 +2,28 @@
 
 internal class IndexDocument
 {
-    public byte Slot { get; }
-    public string Name { get; }
-    public BsonExpression Expr { get; }
-    public bool Unique { get; }
-    public PageAddress Head { get; }
-    public PageAddress Tail { get; }
-    public BsonDocument Meta { get; }
+    public byte Slot { get; init; }
+    public string Name { get; init; }
+    public BsonExpression Expr { get; init; }
+    public bool Unique { get; init; }
+    public PageAddress Head { get; init; }
+    public PageAddress Tail { get; init; }
+
+    public IndexDocument()
+    {
+    }
 
     /// <summary>
-    /// Load index document from $master.collections[0].indexes
+    /// Clone object instance constructor
     /// </summary>
-    public IndexDocument(string name, BsonDocument doc)
+    public IndexDocument(IndexDocument other)
     {
-        this.Name = name;
-        this.Slot = (byte)doc[MK_IDX_SLOT].AsInt32;
-        this.Expr = BsonExpression.Create(doc[MK_IDX_EXPR]);
-        this.Unique = doc[MK_IDX_UNIQUE];
-        this.Head = new PageAddress(doc[MK_IDX_HEAD_PAGE_ID], (byte)doc[MK_IDX_HEAD_INDEX]);
-        this.Tail = new PageAddress(doc[MK_IDX_TAIL_PAGE_ID], (byte)doc[MK_IDX_TAIL_INDEX]);
-        this.Meta = doc[MK_META].AsDocument;
+        this.Slot = other.Slot;
+        this.Name = other.Name;
+        this.Expr = other.Expr;
+        this.Unique = other.Unique;
+        this.Head = other.Head;
+        this.Tail = other.Tail;
     }
 }
 

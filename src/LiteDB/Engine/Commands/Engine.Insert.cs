@@ -6,10 +6,14 @@ public partial class LiteEngine : ILiteEngine
     {
         if (_factory.State != EngineState.Open) throw new Exception("must be open");
 
+        // dependency injection
         var masterService = _factory.MasterService;
         var monitorService = _factory.MonitorService;
 
-        if (masterService.Collections!.TryGetValue(collectionName, out var collection)) throw ERR("criar antes");
+        // get current $master
+        var master = masterService.GetMaster(false);
+
+        if (master.Collections.TryGetValue(collectionName, out var collection)) throw ERR("criar antes");
 
         // create a new transaction locking colID
         var transaction = await monitorService.CreateTransactionAsync(new byte[] { collection.ColID });

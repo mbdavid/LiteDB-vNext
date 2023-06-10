@@ -2,27 +2,22 @@
 
 internal class CollectionDocument
 {
-    public byte ColID { get; }
-    public string Name { get; }
-    public Dictionary<string, IndexDocument> Indexes { get; } = new (StringComparer.OrdinalIgnoreCase);
-    public BsonDocument Meta { get; }
+    public byte ColID { get; init; }
+    public string Name { get; set; } // can be changed in RenameCollection
+    public Dictionary<string, IndexDocument> Indexes { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public CollectionDocument(string name, BsonDocument doc)
+    public CollectionDocument()
     {
-        this.Name = name;
-        this.ColID = (byte)doc[MK_COL_ID].AsInt32;
-        this.Meta = doc[MK_META].AsDocument;
+    }
 
-        // get indexes as a document (each key is one slot)
-        var indexes = doc[MK_INDEX].AsDocument;
-
-        foreach (var indexName in indexes.Keys)
-        {
-            var indexDoc = indexes[indexName].AsDocument;
-            var index = new IndexDocument(indexName, indexDoc);
-
-            this.Indexes[index.Name] = index;
-        }
+    /// <summary>
+    /// Clone object instance constructor
+    /// </summary>
+    public CollectionDocument(CollectionDocument other)
+    {
+        this.ColID = other.ColID;
+        this.Name = other.Name;
+        this.Indexes = new Dictionary<string, IndexDocument>(other.Indexes);
     }
 }
 
