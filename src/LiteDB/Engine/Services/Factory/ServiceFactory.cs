@@ -84,6 +84,7 @@ internal partial class ServicesFactory : IServicesFactory
 
     public INewDatafile CreateNewDatafile() => new NewDatafile(
         this.BufferFactory, 
+        this.MasterMapper,
         this.BsonWriter, 
         this.DataPageService,
         this.Settings);
@@ -100,7 +101,6 @@ internal partial class ServicesFactory : IServicesFactory
         transactionID, writeCollections, readVersion);
 
     public IDataService CreateDataService(ITransaction transaction) => new DataService(
-        this.AllocationMapService, 
         this.DataPageService, 
         this.BsonReader, 
         this.BsonWriter, 

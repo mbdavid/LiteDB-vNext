@@ -13,7 +13,7 @@ internal class MonitorService : IMonitorService
     // concurrent data-structures
     private readonly ConcurrentDictionary<int, ITransaction> _transactions = new();
 
-    private readonly ConcurrentDictionary<int, object> _openCursors = new();
+    //private readonly ConcurrentDictionary<int, object> _openCursors = new();
 
     private int _lastTransactionID = 0;
 

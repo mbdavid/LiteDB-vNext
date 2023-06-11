@@ -9,7 +9,6 @@ internal class DataService : IDataService
     public const int MAX_DATA_BYTES_PER_PAGE = AM_DATA_PAGE_SPACE_LARGE - 1;
 
     // dependency injection
-    private readonly IAllocationMapService _allocationMapService;
     private readonly IDataPageService _dataPageService;
     private readonly IBsonReader _bsonReader;
     private readonly IBsonWriter _bsonWriter;
@@ -17,13 +16,11 @@ internal class DataService : IDataService
     private readonly ITransaction _transaction;
 
     public DataService(
-        IAllocationMapService allocationMapService, 
         IDataPageService dataPageService,
         IBsonReader bsonReader,
         IBsonWriter bsonWriter,
         ITransaction transaction)
     {
-        _allocationMapService = allocationMapService; 
         _dataPageService = dataPageService;
         _bsonReader = bsonReader;
         _bsonWriter = bsonWriter;
@@ -123,7 +120,7 @@ internal class DataService : IDataService
 
         // get current datablock (for first one)
         var page = await _transaction.GetPageAsync(rowID.PageID, true);
-        var dataBlock = new DataBlock(page, rowID);
+        //var dataBlock = new DataBlock(page, rowID);
 
         // TODO: tá implementado só pra 1 pagina
         _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(0, docLength), PageAddress.Empty);

@@ -3,8 +3,8 @@
 internal class IndexDocument
 {
     public byte Slot { get; init; }
-    public string Name { get; init; }
-    public BsonExpression Expr { get; init; }
+    public required string Name { get; init; }
+    public required BsonExpression Expr { get; init; }
     public bool Unique { get; init; }
     public PageAddress Head { get; init; }
     public PageAddress Tail { get; init; }
