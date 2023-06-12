@@ -3,7 +3,7 @@
 /// <summary>
 /// All supported BsonTypes supported in AutoId insert operation
 /// </summary>
-public enum BsonAutoId
+public enum BsonAutoId : byte
 {
     Int32 = 2,
     Int64 = 3,

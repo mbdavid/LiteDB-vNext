@@ -28,13 +28,12 @@ internal partial class ServicesFactory : IServicesFactory
     public IWalIndexService WalIndexService { get; }
 
     public ILockService LockService { get; }
-
     public IDiskService DiskService { get; }
     public IAllocationMapService AllocationMapService { get; }
     public IMasterMapper MasterMapper { get; }
     public IMasterService MasterService { get; }
     public IMonitorService MonitorService { get; }
-
+    public IAutoIdService AutoIdService { get; }
     public IDataPageService DataPageService { get; }
     public IIndexPageService IndexPageService { get; }
 
@@ -55,6 +54,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.DataPageService = new DataPageService();
         this.IndexPageService = new IndexPageService();
         this.MasterMapper = new MasterMapper();
+        this.AutoIdService = new AutoIdService();
 
         // settings dependency only
         this.LockService = new LockService(settings.Timeout);

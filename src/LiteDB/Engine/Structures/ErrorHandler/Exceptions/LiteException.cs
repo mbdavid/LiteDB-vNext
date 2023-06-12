@@ -1,4 +1,4 @@
-﻿namespace LiteDB;
+﻿namespace LiteDB; // the "Engine" sufix name was not used to maintain compatibility with previous versions
 
 /// <summary>
 /// The main exception for LiteDB
