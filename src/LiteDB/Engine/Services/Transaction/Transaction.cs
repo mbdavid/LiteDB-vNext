@@ -121,8 +121,10 @@ internal class Transaction : ITransaction
         // get disk position (data/log)
         var positionID = _walIndexService.GetPagePositionID(pageID, readVersion, out _);
 
-        // test if available in cache
-        var page = _cacheService.GetPage(positionID);
+        // get a page from cache (if writable, this page are not linked to cache anymore)
+        var page = writable ? 
+            _cacheService.GetPageWrite(positionID) :
+            _cacheService.GetPageRead(positionID);
 
         // if page not found, allocate new page and read from disk
         if (page is null)
@@ -130,28 +132,6 @@ internal class Transaction : ITransaction
             page = _bufferFactory.AllocateNewPage(writable);
 
             await _reader.ReadPageAsync(positionID, page);
-        }
-        // if found in cache but need to be writable
-        else if (writable)
-        {
-            // if readBuffer are not used by anyone in cache (ShareCounter == 1 - only current thread), remove it
-            if (_cacheService.TryRemovePageFromCache(page, 1))
-            {
-                page.IsDirty = true;
-
-                // it's safe here to use readBuffer as writeBuffer (nobody else are reading)
-                return page;
-            }
-            else
-            {
-                // create a new page in memory
-                var newPage = _bufferFactory.AllocateNewPage(true);
-
-                // copy cache page content to new writable buffer
-                page.CopyBufferTo(newPage);
-
-                return newPage;
-            }
         }
 
         return page;
@@ -292,6 +272,8 @@ internal class Transaction : ITransaction
 
     public void Dispose()
     {
+        ENSURE(_localPages.Count == 0, $"no pages in transaction before dispose");
+
         // return reader if used
         if (_reader is not null)
         {

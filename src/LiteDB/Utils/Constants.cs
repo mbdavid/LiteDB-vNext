@@ -131,6 +131,11 @@ internal class Constants
     public const int CHECKPOINT_SIZE = 1000;
 
     /// <summary>
+    /// Max number to keep pages in cache. After this, a CleanUp() should be execute
+    /// </summary>
+    public const int CACHE_LIMIT = 20000;
+
+    /// <summary>
     /// Define how many documents will be keep in memory until clear cache and remove support to orderby/groupby
     /// </summary>
     public const int VIRTUAL_INDEX_MAX_CACHE = 2000;

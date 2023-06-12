@@ -48,7 +48,6 @@ internal partial class ServicesFactory : IServicesFactory
         // no dependencies
         this.BsonReader = new BsonReader();
         this.BsonWriter = new BsonWriter();
-        this.CacheService = new CacheService();
         this.WalIndexService = new WalIndexService();
         this.BufferFactory = new BufferFactory();
         this.DataPageService = new DataPageService();
@@ -60,6 +59,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.StreamFactory = new FileStreamFactory(settings);
 
         // other services dependencies
+        this.CacheService = new CacheService(this.BufferFactory);
         this.LogService = new LogService(this.CacheService, this.BufferFactory, this.WalIndexService);
         this.DiskService = new DiskService(this.StreamFactory, this.LogService, this);
         this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);

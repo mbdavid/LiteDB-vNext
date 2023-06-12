@@ -47,13 +47,21 @@ internal class PageBuffer
     {
     }
 
+    /// <summary>
+    /// Reset references (PositionID, ShareCounter, Timestamp, IsDirty)
+    /// </summary>
     public void Reset()
     {
+        this.PositionID = int.MaxValue;
         this.ShareCounter = NO_CACHE;
         this.Timestamp = 0;
-        this.PositionID = int.MaxValue;
         this.IsDirty = false;
     }
+
+    /// <summary>
+    /// Calculate CRC8 for content area (32-8192)
+    /// </summary>
+    public byte ComputeCrc8() => Crc8.ComputeChecksum(this.Buffer.AsSpan(PAGE_HEADER_SIZE));
 
     public Span<byte> AsSpan()
     {

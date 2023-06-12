@@ -107,6 +107,9 @@ internal class DiskStream : IDiskStream
     {
         ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
+        // update crc8 page
+        page.Header.Crc8 = page.ComputeCrc8();
+
         // before save on disk, update header page to buffer (first 32 bytes)
         page.Header.WriteToPage(page);
 

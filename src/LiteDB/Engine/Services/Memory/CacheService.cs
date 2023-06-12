@@ -8,36 +8,76 @@
 [AutoInterface(typeof(IDisposable))]
 internal class CacheService : ICacheService
 {
+    // dependency injection
+    private readonly IBufferFactory _bufferFactory;
+
     /// <summary>
     /// A dictionary to cache use/re-use same data buffer across threads. Rent model
     /// </summary>
     private readonly ConcurrentDictionary<int, PageBuffer> _cache = new();
 
-    public CacheService()
+    public CacheService(IBufferFactory bufferFactory)
     {
+        _bufferFactory = bufferFactory;
     }
 
     /// <summary>
     /// Get a page from memory cache. If not exists, return null
     /// If exists, increase sharecounter (and must call Return() after use)
     /// </summary>
-    public PageBuffer? GetPage(int positionID)
+    public PageBuffer? GetPageRead(int positionID)
     {
         var found = _cache.TryGetValue(positionID, out PageBuffer page);
 
-        if (found)
+        if (!found) return null;
+
+        ENSURE(page.ShareCounter != NO_CACHE, $"rent page {page} only for cache");
+
+        // increment ShareCounter to be used by another transaction
+        Interlocked.Increment(ref page.ShareCounter);
+
+        page.Timestamp = DateTime.UtcNow.Ticks;
+
+        return page;
+    }
+
+    /// <summary>
+    /// Get a page from memory cache. If not exists, return null
+    /// If exists, checks if ShareCounter == 0, remove from _cache and returns.
+    /// If ShareCounter > 0, create a new PageBuffer with copied content
+    /// </summary>
+    public PageBuffer? GetPageWrite(int positionID)
+    {
+        // try find page using remove
+        var found = _cache.TryRemove(positionID, out PageBuffer page);
+
+        if (!found) return null;
+
+        // if no one are using, reset page and returns
+        if (page.ShareCounter == 0)
         {
-            ENSURE(page.ShareCounter != NO_CACHE, $"rent page {page} only for cache");
-
-            // increment ShareCounter to be used by another transaction
-            Interlocked.Increment(ref page.ShareCounter);
-
-            page.Timestamp = DateTime.UtcNow.Ticks;
+            page.Reset();
 
             return page;
         }
+        else
+        {
+            // if page is in use, create a new page
+            var newPage = _bufferFactory.AllocateNewPage(false);
 
-        return null;
+            // copy all content for this new created page
+            page.CopyBufferTo(newPage);
+
+            // re-add page on cache
+            var added = _cache.TryAdd(positionID, page);
+
+            if (!added)
+            {
+                throw new NotImplementedException("problema de concorrencia. não posso descartar paginas.. como fazer? manter em lista paralela?");
+            }
+
+            return newPage;
+        }
     }
 
     /// <summary>
@@ -49,6 +89,9 @@ internal class CacheService : ICacheService
         {
             ENSURE(page.ShareCounter == 0, $"page {page} should not be in use");
 
+            // reset page (not in cache anymore)
+            page.Reset();
+
             return page;
         }
 
@@ -56,12 +99,25 @@ internal class CacheService : ICacheService
     }
 
     /// <summary>
-    /// Add a new page to cache
+    /// Add a new page to cache. Returns true if page was added. If returns false,
+    /// page are not in cache and must be released in bufferFactory
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
         ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
         ENSURE(page.ShareCounter == NO_CACHE, "ShareCounter must be zero before add in cache");
+
+        // before add, checks cache limit and cleanup if full
+        if (_cache.Count >= CACHE_LIMIT)
+        {
+            var clean = this.CleanUp();
+
+            // all pages are in use, do not add this page in cache (cache full used)
+            if (clean == 0)
+            {
+                return false;
+            }
+        }
 
         page.ShareCounter = 0; // initialize share counter
 
@@ -70,55 +126,60 @@ internal class CacheService : ICacheService
         return added;
     }
 
-    /// <summary>
-    /// Try remove page from cache based on shareCounter limit.
-    /// </summary>
-    public bool TryRemovePageFromCache(PageBuffer page, int maxShareCounter)
-    {
-        var pageShareCounter = page.ShareCounter;
-
-        // if shareCounter from buffer are larger than shareCounter parameter, can't be removed from cache (is in use)
-        if (pageShareCounter > maxShareCounter) return false;
-
-        // try delete this buffer
-        var deleted = _cache.TryRemove(page.PositionID, out _);
-
-        if (deleted)
-        {
-            // if after remove from cache, shareCounter was modified, re-add into cache
-            if (pageShareCounter != page.ShareCounter)
-            {
-                var added = _cache.TryAdd(page.PositionID, page);
-
-                ENSURE(added, "PageBuffer was already in cache after remove/re-add");
-
-                return false;
-            }
-
-            // after remove this page from cache, clear Position/ShareCounter
-            page.Reset();
-        }
-
-        return deleted;
-    }
-
     public void ReturnPage(PageBuffer page)
     {
         Interlocked.Decrement(ref page.ShareCounter);
 
         ENSURE(page.ShareCounter < 0, $"ShareCounter cached page {page} must be large than 0");
-
     }
 
+    /// <summary>
+    /// Try remove pages with ShareCounter = 0 (not in use) and release this
+    /// pages from cache. Returns how many pages was removed
+    /// </summary>
     public int CleanUp()
     {
+        var limit = (int)(CACHE_LIMIT * .3); // 30% of CACHE_LIMIT
 
+        var positions = _cache.Values
+            .Where(x => x.ShareCounter == 0)
+            .OrderByDescending(x => x.Timestamp)
+            .Select(x => x.PositionID)
+            .Take(limit)
+            .ToArray();
 
-        // faz um for e limpa toda _cache que tiver shared = 0 (chama dispose)
-        // retorna quantas paginas estão na _cache ainda
-        // não precisa de lock exclusivo para rodar
-        // faz gum GC
-        return 0;
+        var total = 0;
+
+        foreach(var positionID in positions)
+        {
+            var removed = _cache.TryRemove(positionID, out var page);
+
+            if (!removed) continue;
+
+            // 
+            if (page.ShareCounter == 0)
+            {
+                // set page out of cache
+                page.Reset();
+
+                // deallocate page
+                _bufferFactory.DeallocatePage(page);
+
+                total++;
+            }
+            else
+            {
+                // page should be re-added to cache
+                var added = _cache.TryAdd(positionID, page);
+
+                if (!added)
+                {
+                    throw new NotImplementedException("problema de concorrencia. não posso descartar paginas.. como fazer? manter em lista paralela?");
+                }
+            }
+        }
+
+        return total;
     }
 
     public void Dispose()
