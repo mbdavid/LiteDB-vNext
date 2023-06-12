@@ -11,6 +11,7 @@ internal partial class ServicesFactory : IServicesFactory
     public IEngineSettings Settings { get; }
 
     public EngineState State { get; set; } = EngineState.Close;
+    public FileHeader FileHeader { get; set; }
 
     public Exception? Exception { get; set; }
 
@@ -110,7 +111,7 @@ internal partial class ServicesFactory : IServicesFactory
 
     public IIndexService CreateIndexService(ITransaction transaction) => new IndexService(
         this.IndexPageService, 
-        this.DiskService.FileHeader.Collation, 
+        this.FileHeader.Collation, 
         transaction);
 
     public void Dispose()
@@ -131,6 +132,10 @@ internal partial class ServicesFactory : IServicesFactory
         this.BufferFactory.Dispose();
 
         this.State = EngineState.Close;
+        this.FileHeader = new();
+
+        // keeps "Exception" value (will be clean in open)
+
     }
 
     #endregion

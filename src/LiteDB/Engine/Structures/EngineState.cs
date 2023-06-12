@@ -9,7 +9,12 @@ public enum EngineState
     /// Initial state - all services are disposed no touch on file
     /// </summary>
     Close,
-    
+
+    /// <summary>
+    /// Database are in recovery process
+    /// </summary>
+    Recovery,
+
     /// <summary>
     /// Database are created and initialized ok. Any recovery already made.
     /// Ready to use
@@ -17,9 +22,14 @@ public enum EngineState
     Open,
 
     /// <summary>
-    /// Database are in shutdown mode - called by user or Critical exception.
+    /// Database are in shutdown process - called by user or Critical exception.
     /// No one can use until back to initial state: Closed
     /// </summary>
-    Shutdown
+    Shutdown,
+
+    /// <summary>
+    /// Database are in rebuild process
+    /// </summary>
+    Rebuild
 
 }

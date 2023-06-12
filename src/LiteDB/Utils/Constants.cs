@@ -101,7 +101,7 @@ internal class Constants
     public static PageAddress MASTER_ROW_ID = new (MASTER_PAGE_ID, 0);
 
     /// <summary>
-    /// Get max colID for collections to be used by user
+    /// Get max colID for collections to be used by user (1..LIMIT)
     /// </summary>
     public const int MASTER_COL_LIMIT = 250;
 

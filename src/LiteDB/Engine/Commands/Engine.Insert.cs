@@ -10,12 +10,12 @@ public partial class LiteEngine : ILiteEngine
         var autoIdService = _factory.AutoIdService;
         var masterService = _factory.MasterService;
         var monitorService = _factory.MonitorService;
-        var collation = _factory.DiskService.FileHeader.Collation;
+        var collation = _factory.FileHeader.Collation;
 
         // get current $master
         var master = masterService.GetMaster(false);
 
-        // if collection not exists, create before
+        // if collection do not exists, create in another transaction
         if (!master.Collections.TryGetValue(collectionName, out var collection))
         {
             // create new collection

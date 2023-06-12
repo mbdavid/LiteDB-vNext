@@ -73,7 +73,7 @@ internal class DiskStream : IDiskStream
         // writing file header
         _stream.Position = 0;
 
-        await _stream.WriteAsync(fileHeader.GetBuffer(), 0, FILE_HEADER_SIZE);
+        await _stream.WriteAsync(fileHeader.ToArray(), 0, FILE_HEADER_SIZE);
 
         // for content stream, use AesStream (for encrypted file) or same _stream
         _contentStream = fileHeader.Encrypted ?

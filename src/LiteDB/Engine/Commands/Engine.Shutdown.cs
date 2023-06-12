@@ -10,6 +10,7 @@ public partial class LiteEngine : ILiteEngine
         var diskService = _factory.DiskService;
         var logService = _factory.LogService;
         var allocationMapService = _factory.AllocationMapService;
+        var writer = diskService.GetDiskWriter();
 
         // must enter in exclusive lock
         await lockService.EnterExclusiveAsync();
@@ -22,6 +23,12 @@ public partial class LiteEngine : ILiteEngine
 
         // persist all dirty amp into disk
         await allocationMapService.WriteAllChangesAsync();
+
+        // if file was changed, update file header check byte
+        if (_factory.FileHeader.IsFileDirty)
+        {
+            writer.WriteFlag(FileHeader.P_IS_FILE_DIRTY, 0);
+        }
 
         // release exclusive
         lockService.ExitExclusive();

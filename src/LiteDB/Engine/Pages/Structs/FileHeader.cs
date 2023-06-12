@@ -2,7 +2,7 @@ namespace LiteDB.Engine;
 
 /// <summary>
 /// First initial data structure at start of disk. 
-/// All information data here are immutable. Only flag controls are changed (ChangeID, Recovery)
+/// All information data here are immutable. Only flag controls are changed (IsDirty)
 /// </summary>
 internal struct FileHeader
 {
@@ -35,7 +35,7 @@ internal struct FileHeader
     // reserved 80-97 (18 bytes)
 
     //public const int P_CHANGE_ID = 98; // [byte] ????
-    public const int P_RECOVERY = 95; // [byte]
+    public const int P_IS_FILE_DIRTY = 95; // [byte]
 
     #endregion
 
@@ -50,7 +50,7 @@ internal struct FileHeader
     public readonly Collation Collation;
     public readonly Version EngineVersion;
 
-    public bool Recovery;
+    public bool IsFileDirty;
 
     /// <summary>
     /// Read file header from a existing buffer data
@@ -77,7 +77,7 @@ internal struct FileHeader
 
         this.EngineVersion = new Version(major, minor, build);
 
-        this.Recovery = buffer[P_RECOVERY] == 1;
+        this.IsFileDirty = buffer[P_IS_FILE_DIRTY] == 1;
     }
 
     /// <summary>
@@ -96,10 +96,18 @@ internal struct FileHeader
         this.Collation = settings.Collation;
         this.EngineVersion = typeof(LiteEngine).Assembly.GetName().Version;
 
-        this.Recovery = false;
+        this.IsFileDirty = false;
     }
 
-    public byte[] GetBuffer()
+    public void SetFileDirty(bool isDirty)
+    {
+        this.IsFileDirty = isDirty;
+    }
+
+    /// <summary>
+    /// Convert header variables into a new array
+    /// </summary>
+    public byte[] ToArray()
     {
         var array = new byte[FILE_HEADER_SIZE];
 

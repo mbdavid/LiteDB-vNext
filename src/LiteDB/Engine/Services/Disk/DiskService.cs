@@ -12,13 +12,10 @@ internal class DiskService : IDiskService
     private readonly ILogService _logService;
 
     private readonly IDiskStream _writer;
-    private FileHeader _fileHeader = new();
 
     private readonly ConcurrentQueue<IDiskStream> _readers = new ();
 
     public IDiskStream GetDiskWriter() => _writer;
-
-    public FileHeader FileHeader => _fileHeader;
 
     public DiskService(
         IStreamFactory streamFactory,
@@ -44,15 +41,13 @@ internal class DiskService : IDiskService
             var newFile = _factory.CreateNewDatafile();
 
             // create first AM page and $master 
-            _fileHeader = await newFile.CreateAsync(_writer);
+            return await newFile.CreateAsync(_writer);
         }
         else
         {
             // read header page buffer from start of disk
-            _fileHeader = await _writer.OpenAsync(true);
+            return await _writer.OpenAsync(true);
         }
-
-        return _fileHeader;
     }
 
     /// <summary>
@@ -69,7 +64,7 @@ internal class DiskService : IDiskService
         reader = _factory.CreateDiskStream();
 
         // and open to read-only (use saved header)
-        reader.Open(_fileHeader);
+        reader.Open(_factory.FileHeader);
 
         return reader;
     }
@@ -88,12 +83,12 @@ internal class DiskService : IDiskService
     {
         //TODO: disk lock here
 
-        // set recovery flag in header file to true at first use
-        if (!_fileHeader.Recovery)
+        // set IsFileDirty flag in header file to true at first use
+        if (!_factory.FileHeader.IsFileDirty)
         {
-            _fileHeader.Recovery = true;
+            _factory.FileHeader.SetFileDirty(true);
 
-            _writer.WriteFlag(FileHeader.P_RECOVERY, 1);
+            _writer.WriteFlag(FileHeader.P_IS_FILE_DIRTY, 1);
         }
 
         for (var i = 0; i < pages.Length; i++)
@@ -137,20 +132,15 @@ internal class DiskService : IDiskService
 
     public void Dispose()
     {
-        // if file was changed, update file header check byte
-        if (_fileHeader.Recovery)
-        {
-            _writer.WriteFlag(FileHeader.P_RECOVERY, 0);
+        // dispose all open streams
+        _writer.Dispose();
 
-            // update file header
-            _fileHeader.Recovery = false;
-
-            _writer.Dispose();
-        }
-
-        foreach(var reader in _readers)
+        foreach (var reader in _readers)
         {
             reader.Dispose();
         }
+
+        // empty stream pool
+        _readers.Clear();
     }
 }
