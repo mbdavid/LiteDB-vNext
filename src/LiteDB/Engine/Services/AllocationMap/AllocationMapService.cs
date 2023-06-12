@@ -245,8 +245,7 @@ internal class AllocationMapService : IAllocationMapService
             mapPage.UpdateMap(extendIndex, pageIndex, value);
 
             // get (or create) collection free page for this collection
-            var freePages = _collectionFreePages[page.Header.ColID] = 
-                _collectionFreePages[page.Header.ColID] ?? new CollectionFreePages();
+            var freePages = _collectionFreePages[page.Header.ColID] ??= new CollectionFreePages();
 
             switch (value)
             {

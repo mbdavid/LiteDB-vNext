@@ -62,23 +62,24 @@ internal class AutoIdService : IAutoIdService
     /// <summary>
     /// Checks if a sequence already initialized
     /// </summary>
-    public bool IsInitialized(byte colID) => _sequences[colID].LastInt != int.MaxValue;
+    public bool NeedInitialize(byte colID, BsonAutoId autoId) =>
+        (autoId == BsonAutoId.Int32 || autoId == BsonAutoId.Int64) && _sequences[colID].LastInt != int.MaxValue;
 
     /// <summary>
     /// Initialize sequence based on last value on _id key.
     /// </summary>
-    public async Task InitializeAsync(byte colID, PageAddress tail, IIndexService indexService)
+    public async Task InitializeAsync(byte colID, PageAddress tailRowID, IIndexService indexService)
     {
-        var (node, _) = await indexService.GetNodeAsync(tail, false);
-        var (last, _) = await indexService.GetNodeAsync(node.Prev[0], false);
+        var tail = await indexService.GetNodeAsync(tailRowID, false);
+        var last = await indexService.GetNodeAsync(tail.Node.Prev[0], false);
 
-        if (last.Key.IsInt32)
+        if (last.Node.Key.IsInt32)
         {
-            _sequences[colID].LastInt = last.Key.AsInt32;
+            _sequences[colID].LastInt = last.Node.Key.AsInt32;
         }
-        else if (last.Key.IsInt64)
+        else if (last.Node.Key.IsInt64)
         {
-            _sequences[colID].LastLong = last.Key.AsInt64;
+            _sequences[colID].LastLong = last.Node.Key.AsInt64;
         }
         else
         {

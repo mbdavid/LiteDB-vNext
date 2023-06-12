@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using LiteDB.Engine;
+
+namespace LiteDB;
 
 public abstract partial class BsonExpression
 {
@@ -30,5 +32,25 @@ public abstract partial class BsonExpression
         var context = new BsonExpressionContext(root, parameters, collation);
 
         return this.Execute(context);
+    }
+
+    /// <summary>
+    /// Execute expression and return a ienumerable of distinct values (convert array into multiple values)
+    /// </summary>
+    internal IEnumerable<BsonValue> GetIndexKeys(BsonDocument root, Collation collation)
+    {
+        var keys = this.Execute(root, null, collation);
+
+        if (keys.IsArray)
+        {
+            foreach (var key in keys.AsArray)
+            {
+                yield return key;
+            }
+        }
+        else
+        {
+            yield return keys;
+        }
     }
 }

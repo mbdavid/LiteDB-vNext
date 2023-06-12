@@ -6,6 +6,8 @@ internal class CollectionDocument
     public required string Name { get; set; } // can be changed in RenameCollection
     public Dictionary<string, IndexDocument> Indexes { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
+    public IndexDocument PK => this.Indexes["_id"];
+
     public CollectionDocument()
     {
     }

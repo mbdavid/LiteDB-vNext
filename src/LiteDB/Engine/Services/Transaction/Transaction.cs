@@ -184,8 +184,6 @@ internal class Transaction : ITransaction
     /// </summary>
     public async Task CommitAsync()
     {
-        // qualquer erro que der aqui dentro tem q dar fatal exception
-
         // get dirty pages only //TODO: can be re-used array?
         var dirtyPages = _localPages.Values
             .Where(x => x.IsDirty)

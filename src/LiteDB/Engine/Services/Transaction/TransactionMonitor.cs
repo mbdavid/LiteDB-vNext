@@ -51,7 +51,7 @@ internal class MonitorService : IMonitorService
     /// <summary>
     /// Check if transaction size reach limit AND check if is possible extend this limit
     /// </summary>
-    public bool CheckSafepoint(Transaction trans)
+    public bool Safepoint(ITransaction transaction)
     {
         return false; //TODO: implementar o momento de fazer safepoint
 //            trans.Pages.TransactionSize >= trans.MaxTransactionSize &&

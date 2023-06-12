@@ -29,29 +29,14 @@
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Engine\Services\BufferFactory\**" />
-    <EmbeddedResource Remove="Engine\Services\BufferFactory\**" />
-    <None Remove="Engine\Services\BufferFactory\**" />
-  </ItemGroup>
-
  <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\LICENSE" Pack="true" PackagePath="LICENSE" />
-    <None Include="C:\LiteDB\v6\LiteDB-vNext\src\LiteDB\.editorconfig" />
     <None Include="icon_64x64.png" Pack="true" PackagePath="icon_64x64.png" />
   </ItemGroup>
 	
   <ItemGroup>
     <ProjectReference Include="..\LiteDB.Generator\LiteDB.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <Folder Include="Engine\Services\Disk\Streams\" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <EditorConfigFiles Remove="C:\LiteDB\v6\LiteDB-vNext\src\LiteDB\.editorconfig" />
   </ItemGroup>
 		
 </Project>
