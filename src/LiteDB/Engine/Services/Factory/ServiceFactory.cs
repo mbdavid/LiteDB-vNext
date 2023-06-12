@@ -1,9 +1,11 @@
-﻿namespace LiteDB;
+﻿using System.Runtime;
+
+namespace LiteDB;
 
 /// <summary>
 /// * Singleton (thread safe)
 /// </summary>
-[AutoInterface]
+[AutoInterface(typeof(IDisposable))]
 internal partial class ServicesFactory : IServicesFactory
 {
     public IEngineSettings Settings { get; }
@@ -110,6 +112,26 @@ internal partial class ServicesFactory : IServicesFactory
         this.IndexPageService, 
         this.DiskService.FileHeader.Collation, 
         transaction);
+
+    public void Dispose()
+    {
+        // dispose all instances services to keep all clean (disk/memory)
+
+        // variables/list only
+        this.WalIndexService.Dispose();
+        this.LockService.Dispose();
+
+        // pageBuffer dependencies
+        this.CacheService.Dispose();
+        this.LogService.Dispose();
+        this.AllocationMapService.Dispose();
+        this.MasterService.Dispose();
+        this.MonitorService.Dispose();
+        this.DiskService.Dispose();
+        this.BufferFactory.Dispose();
+
+        this.State = EngineState.Close;
+    }
 
     #endregion
 }

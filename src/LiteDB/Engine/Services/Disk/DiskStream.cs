@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.IO;
+
+namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IDisposable))]
 internal class DiskStream : IDiskStream
@@ -120,18 +122,22 @@ internal class DiskStream : IDiskStream
     }
 
     /// <summary>
-    /// Write an empty (full \0) PAGE_SIZE using positionID
+    /// Write an empty (full \0) PAGE_SIZE using from/to (inclusive)
     /// </summary>
-    public async Task WriteEmptyAsync(int positionID)
+    public async Task WriteEmptyAsync(int fromPositionID, int toPositionID)
     {
-        // set real position on stream
-        _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
+        for (var i = fromPositionID; i <= toPositionID; i++)
+        {
+            // set real position on stream
+            _contentStream!.Position = FILE_HEADER_SIZE + (i * PAGE_SIZE);
 
-        await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE);
+            await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE);
+        }
     }
 
     /// <summary>
-    /// Set new file length using lastPageID as end of file
+    /// Set new file length using lastPageID as end of file.
+    /// 0 = 8k, 1 = 16k, ...
     /// </summary>
     public void SetSize(int lastPageID)
     {

@@ -10,15 +10,14 @@ internal class LockService : ILockService
 {
     private readonly TimeSpan _timeout;
 
-    private readonly AsyncReaderWriterLock _database;
+    private AsyncReaderWriterLock? _database;
+    // preciso de disk_writer 
+
     private readonly AsyncReaderWriterLock[] _collections;
 
     public LockService(TimeSpan timeout)
     {
         _timeout = timeout;
-
-        // allocate main database async locker
-        _database = new AsyncReaderWriterLock(timeout);
 
         // create all 0-255 possible collections (initialize only used)
         _collections = new AsyncReaderWriterLock[byte.MaxValue + 1];
@@ -27,7 +26,7 @@ internal class LockService : ILockService
     /// <summary>
     /// Return how many transactions are opened
     /// </summary>
-    public int TransactionsCount => _database.ReaderCount;
+    public int TransactionsCount => _database?.ReaderCount ?? 0;
 
     /// <summary>
     /// All non-exclusive database operations must call this EnterTranscation() just before working. 
@@ -35,6 +34,8 @@ internal class LockService : ILockService
     /// </summary>
     public async Task EnterTransactionAsync()
     {
+        _database ??= new AsyncReaderWriterLock(_timeout);
+
         await _database.AcquireReaderLock();
     }
 
@@ -43,7 +44,7 @@ internal class LockService : ILockService
     /// </summary>
     public void ExitTransaction()
     {
-        _database.ReleaseReaderLock();
+        _database!.ReleaseReaderLock();
     }
 
     /// <summary>
@@ -52,6 +53,8 @@ internal class LockService : ILockService
     /// </summary>
     public async Task EnterExclusiveAsync()
     {
+        _database ??= new AsyncReaderWriterLock(_timeout);
+
         await _database.AcquireWriterLock();
     }
 
@@ -60,7 +63,7 @@ internal class LockService : ILockService
     /// </summary>
     public void ExitExclusive()
     {
-        _database.ReleaseWriterLock();
+        _database!.ReleaseWriterLock();
     }
 
     /// <summary>
@@ -86,11 +89,13 @@ internal class LockService : ILockService
     {
         try
         {
-            _database.Dispose();
+            _database?.Dispose();
+            _database = null;
 
-            foreach (var collection in _collections)
+            for (var i = 0; i < _collections.Length; i++)
             {
-                collection?.Dispose();
+                _collections[i]?.Dispose();
+                _collections[i] = default!;
             }
         }
         catch (SynchronizationLockException)

@@ -9,6 +9,10 @@ internal class LogTempDisk
 
     private Dictionary<int, int> _tempPages = new();
 
+    public int Count => _tempPages.Count;
+
+    public int LastPositionID => _lastPositionID;
+
     public LogTempDisk(int logEndPositionID)
     {
         _lastPositionID = logEndPositionID - 1;

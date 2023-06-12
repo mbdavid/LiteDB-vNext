@@ -18,18 +18,15 @@ public partial class LiteEngine : ILiteEngine
         _factory.State = EngineState.Shutdown;
 
         // do checkpoint
-        await logService.CheckpointAsync(diskService, null);
+        await logService.CheckpointAsync(diskService, null, true);
 
         // persist all dirty amp into disk
         await allocationMapService.WriteAllChangesAsync();
 
-        // call all dispose
-        diskService.Dispose();
-
-        // set state to close
-        _factory.State = EngineState.Close;
-
         // release exclusive
         lockService.ExitExclusive();
+
+        // call sync dispose (release disk/memory)
+        _factory.Dispose();
     }
 }

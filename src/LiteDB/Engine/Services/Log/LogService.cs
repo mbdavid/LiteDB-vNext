@@ -3,7 +3,7 @@
 /// <summary>
 /// * Singleton (thread safe)
 /// </summary>
-[AutoInterface]
+[AutoInterface(typeof(IDisposable))]
 internal class LogService : ILogService
 {
     // dependency injection
@@ -31,7 +31,15 @@ internal class LogService : ILogService
     {
         _lastPageID = lastFilePositionID;
 
-        _logPositionID = lastFilePositionID + 5; //TODO: calcular para proxima extend
+        _logPositionID = this.CalcInitLogPositionID(lastFilePositionID);
+    }
+
+    /// <summary>
+    /// Get initial file log position based on next extent
+    /// </summary>
+    private int CalcInitLogPositionID(int lastPageID)
+    {
+        return lastPageID + 5; // TODO: calcular levando em consideração as AMP
     }
 
     /// <summary>
@@ -68,7 +76,7 @@ internal class LogService : ILogService
         _logPages.Add(header);
     }
 
-    public async Task<int> CheckpointAsync(IDiskService disk, LogTempDisk? tempPages)
+    public async Task<int> CheckpointAsync(IDiskService disk, LogTempDisk? tempPages, bool crop)
     {
         var logLength = _logPages.Count;
 
@@ -107,8 +115,6 @@ internal class LogService : ILogService
 
                 // write page to destination
                 await stream.WritePageAsync(targetPage);
-
-                //TODO: conferir como desalocar a pagina
             }
 
             // get page from file position ID (log or 
@@ -123,16 +129,36 @@ internal class LogService : ILogService
             await stream.WritePageAsync(page);
 
             // and now can re-enter to cache
-            _cacheService.AddPageInCache(page);
+            var added = _cacheService.AddPageInCache(page);
 
-            // if this log 
+            if (!added)
+            {
+                _bufferFactory.DeallocatePage(page);
+            }
+
+            // if this log use a position before lastPageID
             var needEmpty = filePositionID <= _lastPageID;
 
-            if (needEmpty) await stream.WriteEmptyAsync(filePositionID);
+            // should clear this page
+            if (needEmpty) await stream.WriteEmptyAsync(filePositionID, filePositionID);
         }
 
-        // crop file after lastPageID
-        stream.SetSize(_lastPageID);
+        if (crop)
+        {
+            // crop file after _lastPageID
+            stream.SetSize(_lastPageID);
+        }
+        else // fill all log space (with temp space) with \0
+        {
+            // get last page (from log or from temp file)
+            var lastFilePositionID = temp.Count > 0 ?
+                temp.LastPositionID : _logPositionID;
+
+            await stream.WriteEmptyAsync(_lastPageID + 1, lastFilePositionID);
+        }
+
+        // reset initial log position
+        _logPositionID = this.CalcInitLogPositionID(_lastPageID);
 
         // empty all wal index pointer
         _walIndexService.Clear();
@@ -162,5 +188,11 @@ internal class LogService : ILogService
         }
 
         return page;
+    }
+
+    public void Dispose()
+    {
+        _logPages.Clear();
+        _confirmedTransactions.Clear();
     }
 }
