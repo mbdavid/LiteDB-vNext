@@ -41,6 +41,9 @@ internal class MasterService : IMasterService
         // read $master document
         var doc = await dataService.ReadDocumentAsync(MASTER_ROW_ID, null);
 
+        // rollback transaction to release used pages (no changes here)
+        transaction.Rollback();
+
         // convert bson into MasterMapper and set as current master
         _master = _mapper.MapToMaster(doc);
     }

@@ -106,6 +106,8 @@ internal struct IndexNode
     /// </summary>
     public IndexNode(PageBuffer page, PageAddress rowID, byte slot, int levels, BsonValue key, PageAddress dataBlock)
     {
+        page.IsDirty = true;
+
         this.RowID = rowID;
 
         this.Slot = slot;
@@ -168,6 +170,10 @@ internal struct IndexNode
     {
         ENSURE(this.RowID.PageID == page.Header.PageID, $"should be same index page {page}");
 
+        if (this.NextNode == nextNode) return;
+
+        page.IsDirty = true;
+
         this.NextNode = nextNode;
 
         var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
@@ -183,6 +189,10 @@ internal struct IndexNode
     {
         ENSURE(this.RowID.PageID == page.Header.PageID, $"should be same index page {page}");
         ENSURE(level < this.Levels, "out of index in level");
+
+        if (this.Prev[level] == prev) return;
+
+        page.IsDirty = true;
 
         this.Prev[level] = prev;
 
@@ -201,6 +211,10 @@ internal struct IndexNode
     {
         ENSURE(this.RowID.PageID == page.Header.PageID, $"should be same index page {page}");
         ENSURE(level < this.Levels, "out of index in level");
+
+        if (this.Next[level] == next) return;
+
+        page.IsDirty = true;
 
         this.Next[level] = next;
 

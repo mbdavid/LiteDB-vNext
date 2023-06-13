@@ -48,7 +48,10 @@ internal struct DataBlock
     /// </summary>
     public DataBlock(PageBuffer page, PageAddress rowID, PageAddress nextBlock)
     {
+        page.IsDirty = true;
+
         this.RowID = rowID;
+
         this.BlockType = 1; // reserved
         this.NextBlock = nextBlock;
 

@@ -44,6 +44,9 @@ public partial class LiteEngine : ILiteEngine
         {
             var doc = documents[i];
 
+            // get/set _id
+            var id = autoIdService.SetID(collection.ColID, doc, autoId);
+
             // insert document and get position address
             var rowID = await dataService.InsertDocumentAsync(collection.ColID, doc);
 

@@ -13,6 +13,10 @@ internal class PageService : IPageService
         var span = page.AsSpan();
         ref var header = ref page.Header;
 
+        // mark page as dirty
+        page.IsDirty = true;
+
+        //TODO: converter em um ensure
         if (!(header.FreeBytes >= bytesLength + (isNewInsert ? PageHeader.SLOT_SIZE : 0)))
         {
             throw ERR_INVALID_FREE_SPACE_PAGE(header.PageID, header.FreeBytes, bytesLength + (isNewInsert ? PageHeader.SLOT_SIZE : 0));
@@ -70,6 +74,9 @@ internal class PageService : IPageService
         // get span and header instance (dirty)
         var span = page.AsSpan();
         ref var header = ref page.Header;
+
+        // mark page as dirty
+        page.IsDirty = true;
 
         // read block position on index slot
         var segment = PageSegment.GetSegment(page, index, out var segmentAddr);
@@ -131,6 +138,9 @@ internal class PageService : IPageService
         // get span and header instance (dirty)
         var span = page.AsSpan();
         ref var header = ref page.Header;
+
+        // mark page as dirty
+        page.IsDirty = true;
 
         // read page segment
         var segment = PageSegment.GetSegment(page, index, out var segmentAddr);

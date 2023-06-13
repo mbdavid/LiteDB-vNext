@@ -252,14 +252,21 @@ internal class Transaction : ITransaction
             }
             else
             {
-                ENSURE(page.ShareCounter == NO_CACHE, $"{page} must be writable (not in cache)");
-
-                // try add this page in cache
-                var added = _cacheService.AddPageInCache(page);
-
-                if (!added)
+                // test if page is came from the cache
+                if (page.ShareCounter > 0)
                 {
-                    _bufferFactory.DeallocatePage(page);
+                    // return page to cache
+                    _cacheService.ReturnPage(page);
+                }
+                else
+                {
+                    // try add this page in cache
+                    var added = _cacheService.AddPageInCache(page);
+
+                    if (!added)
+                    {
+                        _bufferFactory.DeallocatePage(page);
+                    }
                 }
             }
         }

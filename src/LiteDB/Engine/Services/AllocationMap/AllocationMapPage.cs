@@ -58,7 +58,6 @@ internal class AllocationMapPage
         // if this page contais all empty extends, there is no need to read all buffer
         if (_emptyExtends.Count == AM_EXTEND_COUNT) return;
 
-
         ENSURE(_emptyExtends.Count == 0, "empty extends will be loaded here and can't have any page before here");
 
         for (var extendIndex = 0; extendIndex < AM_EXTEND_COUNT; extendIndex++)
@@ -84,8 +83,7 @@ internal class AllocationMapPage
                 var pagesBytes = span.Slice(position + 1, AM_BYTES_PER_EXTEND - 1);
 
                 // get (or create) free page lists from collection
-                var freePages = collectionFreePages[colID] =
-                    collectionFreePages[colID] ?? new CollectionFreePages();
+                var freePages = collectionFreePages[colID] ??= new CollectionFreePages();
 
                 // read all extend pages and add to collection free pages
                 this.ReadExtend(freePages, extendIndex, pagesBytes);
@@ -175,7 +173,7 @@ internal class AllocationMapPage
         // mark buffer write with this collection ID
         span[colPosition] = colID;
 
-        // mark buffer as dirty
+        // mark page as dirty
         _page.IsDirty = true;
 
         return true;
@@ -193,7 +191,7 @@ internal class AllocationMapPage
         // get 3 pageBytes
         var pageBytes = _page.AsSpan(position + 1, AM_BYTES_PER_EXTEND - 1);
 
-        // mark buffer as dirty (in map page this should be manual)
+        // mark page as dirty (in map page this should be manual)
         _page.IsDirty = true;
 
         // update value (3 bits) according pageIndex (can update 1 or 2 bytes)
