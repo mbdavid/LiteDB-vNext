@@ -56,7 +56,7 @@ internal class CacheService : ICacheService
         // if no one are using, reset page and returns
         if (page.ShareCounter == 0)
         {
-            page.Reset();
+            this.RemovePageFromCache(page);
 
             return page;
         }
@@ -87,10 +87,7 @@ internal class CacheService : ICacheService
     {
         if (_cache.TryRemove(positionID, out PageBuffer page))
         {
-            ENSURE(page.ShareCounter == 0, $"page {page} should not be in use");
-
-            // reset page (not in cache anymore)
-            page.Reset();
+            this.RemovePageFromCache(page);
 
             return page;
         }
@@ -131,6 +128,21 @@ internal class CacheService : ICacheService
         Interlocked.Decrement(ref page.ShareCounter);
 
         ENSURE(page.ShareCounter < 0, $"ShareCounter cached page {page} must be large than 0");
+    }
+
+    /// <summary>
+    /// Set all variables to indicate that page are not in cache anymore 
+    /// At this point, this PageBuffer are only out of _cache
+    /// </summary>
+    private void RemovePageFromCache(PageBuffer page)
+    {
+        ENSURE(page.IsDirty == false);
+        ENSURE(page.Header.TransactionID == 0);
+        ENSURE(page.ShareCounter == 0, $"page {page} should not be in use");
+
+        page.PositionID = int.MaxValue;
+        page.ShareCounter = NO_CACHE;
+        page.Timestamp = 0;
     }
 
     /// <summary>

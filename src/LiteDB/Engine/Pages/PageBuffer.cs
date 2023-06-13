@@ -48,7 +48,7 @@ internal class PageBuffer
     }
 
     /// <summary>
-    /// Reset references (PositionID, ShareCounter, Timestamp, IsDirty)
+    /// Reset references (PositionID, ShareCounter, Timestamp, IsDirty, Header)
     /// </summary>
     public void Reset()
     {
@@ -56,6 +56,7 @@ internal class PageBuffer
         this.ShareCounter = NO_CACHE;
         this.Timestamp = 0;
         this.IsDirty = false;
+        this.Header = new();
     }
 
     /// <summary>

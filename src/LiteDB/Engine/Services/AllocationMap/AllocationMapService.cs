@@ -65,6 +65,7 @@ internal class AllocationMapService : IAllocationMapService
 
             await writer.ReadPageAsync(positionID, page);
 
+            //TODO: verificar se ta certo
             if (page.IsHeaderEmpty())
             {
                 _bufferFactory.DeallocatePage(page);

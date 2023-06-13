@@ -4,7 +4,7 @@ public partial class LiteEngine : ILiteEngine
 {
     public async Task<int> CheckpointAsync()
     {
-        if (_factory.State == EngineState.Open) throw ERR("must be closed");
+        if (_factory.State != EngineState.Open) throw ERR("must be opened");
 
         var lockService = _factory.LockService;
         var diskService = _factory.DiskService;

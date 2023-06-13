@@ -107,6 +107,7 @@ internal class DiskStream : IDiskStream
 
     public async Task WritePageAsync(PageBuffer page)
     {
+        ENSURE(page.IsDirty);
         ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have defined Position before WriteAsync");
 
         // update crc8 page
@@ -119,6 +120,9 @@ internal class DiskStream : IDiskStream
         _contentStream!.Position = FILE_HEADER_SIZE + (page.PositionID * PAGE_SIZE);
 
         await _contentStream.WriteAsync(page.Buffer, 0, PAGE_SIZE);
+
+        // clear isDirty flag
+        page.IsDirty = false;
     }
 
     /// <summary>

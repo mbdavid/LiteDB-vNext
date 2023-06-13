@@ -39,7 +39,15 @@ internal class LogService : ILogService
     /// </summary>
     private int CalcInitLogPositionID(int lastPageID)
     {
-        return lastPageID + 5; // TODO: calcular levando em consideração as AMP
+        // add 2 extend space between lastPageID and new logPositionID
+        var allocationMapID = (int)(lastPageID / AM_PAGE_STEP);
+        var extendIndex = (lastPageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+
+        var nextExtendIndex = (extendIndex + 2) % AM_EXTEND_COUNT;
+        var nextAllocationMapID = allocationMapID + (nextExtendIndex < extendIndex ? 1 : 0);
+        var nextPositionID = (nextAllocationMapID * AM_PAGE_STEP + nextExtendIndex * AM_EXTEND_SIZE + 1);
+
+        return nextPositionID;
     }
 
     /// <summary>
@@ -50,7 +58,7 @@ internal class LogService : ILogService
         var next = Interlocked.Increment(ref _logPositionID);
 
         // test if next log position is not an AMP
-        if (next % AM_EXTEND_COUNT == 0) next = Interlocked.Increment(ref _logPositionID);
+        if (next % AM_PAGE_STEP == 0) next = Interlocked.Increment(ref _logPositionID);
 
         return next;
     }
@@ -95,7 +103,7 @@ internal class LogService : ILogService
             var header = _logPages[i];
 
             // check if page is in a confirmed transaction
-            if (!_confirmedTransactions.Contains(header.TransactionID)) continue;
+            if (!_confirmedTransactions.Contains(header.TransactionID)) continue; /* tem q ver pra onde vai a pagina */
 
             // checks if is temp log
             var tempPositionID = temp.GetTempPositionID(header.PositionID);
@@ -117,7 +125,7 @@ internal class LogService : ILogService
                 await stream.WritePageAsync(targetPage);
             }
 
-            // get page from file position ID (log or 
+            // get page from file position ID (log or data)
             var page = await this.GetLogPageAsync(stream, filePositionID);
 
             // move page from log to data
