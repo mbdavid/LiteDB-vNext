@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiteDB.Generator", "LiteDB.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{0FAF8067-D471-4DA4-8112-78EF9DF34E20}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiteDB.Tests", "..\..\..\v5\LiteDB\LiteDB.Tests\LiteDB.Tests.csproj", "{6CD306BF-CA63-4FE2-AA24-7AD756CEE0B5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiteDB.Tests", "LiteDB.Tests\LiteDB.Tests.csproj", "{6CD306BF-CA63-4FE2-AA24-7AD756CEE0B5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

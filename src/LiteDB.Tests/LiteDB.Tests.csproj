@@ -11,16 +11,6 @@
     <NoWarn>1701;1702;1705;1591;0618</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Release'">
-    <Compile Remove="Internals\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Document\Expressions\**" />
-    <EmbeddedResource Remove="Document\Expressions\**" />
-    <None Remove="Document\Expressions\**" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="6.5.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
@@ -35,10 +25,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LiteDB\LiteDB.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Document\" />
   </ItemGroup>
 
 </Project>

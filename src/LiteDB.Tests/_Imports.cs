@@ -15,8 +15,13 @@ global using System.Security;
 global using System.Diagnostics;
 global using System.Security.Cryptography;
 global using System.Reflection;
+global using System.Buffers;
+global using System.Buffers.Binary;
 
+global using LiteDB;
 global using LiteDB.Engine;
+global using static LiteDB.Constants;
+global using static LiteDB.LiteException;
 
-global using FluentAssertions;
 global using Xunit;
+global using FluentAssertions;
