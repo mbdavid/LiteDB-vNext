@@ -16,7 +16,7 @@ public partial class LiteEngine : ILiteEngine
         // at this point, there is no open transaction
         // all pages in cache are ShareCounter = 0
 
-        var result = await logService.CheckpointAsync(diskService, null, false);
+        var result = await logService.CheckpointAsync(diskService, 100, new List<PageHeader>(), false);
 
         // release exclusive
         lockService.ExitExclusive();

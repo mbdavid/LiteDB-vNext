@@ -97,8 +97,9 @@ internal class DiskService : IDiskService
 
             ENSURE(page.PositionID == int.MaxValue, $"current page {page.PositionID} should be MaxValue");
 
-            // get next page position on log
+            // get next page position on log (update header PositionID too)
             page.PositionID = _logService.GetNextLogPositionID();
+            page.Header.PositionID = page.PositionID;
 
             // write page to writer stream
             await _writer.WritePageAsync(page);

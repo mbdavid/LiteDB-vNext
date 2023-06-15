@@ -39,9 +39,9 @@ internal class PageBuffer
     /// </summary>
     public readonly byte[] Buffer = new byte[PAGE_SIZE];
 
-    public bool IsData => this.PositionID <= this.Header.PageID;
-    public bool IsLog => this.PositionID > this.Header.PageID;
-    public bool IsTempLog => this.IsLog && this.PositionID != this.Header.PositionID;
+    public bool IsDataFile => this.PositionID <= this.Header.PageID;
+    public bool IsLogFile => this.PositionID > this.Header.PageID;
+    public bool IsTempFile => this.IsLogFile && this.PositionID != this.Header.PositionID;
 
     public PageBuffer()
     {

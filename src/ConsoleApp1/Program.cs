@@ -19,7 +19,7 @@ using (var engine = new LiteEngine(settings))
 {
     await engine.OpenAsync();
 
-    //var created = await engine.CreateCollectionAsync("col1");
+    var created = await engine.CreateCollectionAsync("col1");
 
     await engine.InsertAsync("col1", new BsonDocument[] { doc0 }, BsonAutoId.Int32);
 

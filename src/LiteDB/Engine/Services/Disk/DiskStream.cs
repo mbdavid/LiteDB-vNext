@@ -126,6 +126,17 @@ internal class DiskStream : IDiskStream
     }
 
     /// <summary>
+    /// Write an empty (full \0) PAGE_SIZE using positionID
+    /// </summary>
+    public async Task WriteEmptyAsync(int positionID)
+    {
+        // set real position on stream
+        _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
+
+        await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE);
+    }
+
+    /// <summary>
     /// Write an empty (full \0) PAGE_SIZE using from/to (inclusive)
     /// </summary>
     public async Task WriteEmptyAsync(int fromPositionID, int toPositionID)

@@ -137,7 +137,6 @@ internal class CacheService : ICacheService
     private void RemovePageFromCache(PageBuffer page)
     {
         ENSURE(page.IsDirty == false);
-        ENSURE(page.Header.TransactionID == 0);
         ENSURE(page.ShareCounter == 0, $"page {page} should not be in use");
 
         page.PositionID = int.MaxValue;

@@ -195,8 +195,6 @@ internal class Transaction : ITransaction
 
             ENSURE(page.ShareCounter == NO_CACHE, "page should not be on cache when saving");
             ENSURE(page.PositionID == int.MaxValue, "page must be empty position id");
-            ENSURE(page.Header.TransactionID == 0, "page must be empty transaction id before save");
-            ENSURE(page.Header.IsConfirmed == false, "page must be not confirmed");
 
             // update page header
             page.Header.TransactionID = this.TransactionID;

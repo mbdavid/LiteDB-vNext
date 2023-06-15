@@ -1,4 +1,4 @@
-# NBox vNext
+# LiteDB vNext
 
 This is a test-only repo for new LiteDB version and features. When next version are done (a beta version), all this source will be migrated to original repo. Please, this a lab repo only! Do not use this yet.
 
