@@ -85,7 +85,7 @@ internal class CacheService : ICacheService
     /// <summary>
     /// Remove page from cache. Must not be in use
     /// </summary>
-    public bool TryRemove(int positionID, [MaybeNullWhen(false)] out PageBuffer page)
+    public bool TryRemove(int positionID, [MaybeNullWhen(false)] out PageBuffer? page)
     {
         if (_cache.TryRemove(positionID, out PageBuffer cachePage))
         {

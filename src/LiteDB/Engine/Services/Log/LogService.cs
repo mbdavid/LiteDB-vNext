@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.IO;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// * Singleton (thread safe)
@@ -190,7 +192,7 @@ internal partial class LogService : ILogService
                 // if cache contains this position (old data version) must be removed from cache and deallocate
                 if (_cacheService.TryRemove(action.PositionID, out var removedPage))
                 {
-                    _bufferFactory.DeallocatePage(removedPage);
+                    _bufferFactory.DeallocatePage(removedPage!);
                 }
 
                 // add this page to cache
@@ -209,12 +211,33 @@ internal partial class LogService : ILogService
             }
         }
 
+        if (crop)
+        {
+            // crop file after _lastPageID
+            writer.SetSize(_lastPageID);
+        }
+        else // fill all log space (with temp space) with \0
+        {
+            // get last page (from log or from temp file)
+            var lastFilePositionID = tempPages.Count > 0 ?
+                startTempPositionID * tempPages.Count :
+                _logPositionID;
 
+            await writer.WriteEmptyAsync(_lastPageID + 1, lastFilePositionID);
+        }
 
+        // reset initial log position
+        _logPositionID = this.CalcInitLogPositionID(_lastPageID);
+
+        // empty all wal index pointer (there is no wal index after checkpoint)
+        _walIndexService.Clear();
+
+        // clear all log pages/confirm transactions
+        _logPages.Clear();
+        _confirmedTransactions.Clear();
 
         // ao terminar o checkpoint, nenhuma pagina na cache deve ser de log
         return counter;
-
     }
 
     /// <summary>
@@ -225,7 +248,7 @@ internal partial class LogService : ILogService
         // try get page from cache
         if (_cacheService.TryRemove(positionID, out var page))
         {
-            return page;
+            return page!;
         }
 
         // otherwise, allocate new buffer page and read from disk
