@@ -63,8 +63,8 @@ internal partial class ServicesFactory : IServicesFactory
 
         // other services dependencies
         this.CacheService = new CacheService(this.BufferFactory);
-        this.LogService = new LogService(this.CacheService, this.BufferFactory, this.WalIndexService);
-        this.DiskService = new DiskService(this.StreamFactory, this.LogService, this);
+        this.DiskService = new DiskService(this.StreamFactory, this);
+        this.LogService = new LogService(this.DiskService, this.CacheService, this.BufferFactory, this.WalIndexService, this);
         this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
@@ -94,6 +94,7 @@ internal partial class ServicesFactory : IServicesFactory
 
     public ITransaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) => new Transaction(
         this.DiskService,
+        this.LogService,
         this.BufferFactory,
         this.CacheService,
         this.WalIndexService,

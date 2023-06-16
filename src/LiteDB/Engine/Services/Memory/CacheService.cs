@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// Page buffer cache. Keep a concurrent dictionary with buffers (byte[]) based on disk file position.
@@ -83,16 +85,20 @@ internal class CacheService : ICacheService
     /// <summary>
     /// Remove page from cache. Must not be in use
     /// </summary>
-    public PageBuffer? TryRemove(int positionID)
+    public bool TryRemove(int positionID, [MaybeNullWhen(false)] out PageBuffer page)
     {
-        if (_cache.TryRemove(positionID, out PageBuffer page))
+        if (_cache.TryRemove(positionID, out PageBuffer cachePage))
         {
-            this.RemovePageFromCache(page);
+            this.RemovePageFromCache(cachePage);
 
-            return page;
+            page = cachePage;
+
+            return true;
         }
 
-        return null;
+        page = default;
+
+        return false;
     }
 
     /// <summary>

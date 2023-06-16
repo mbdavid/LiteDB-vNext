@@ -7,9 +7,8 @@
 internal class DiskService : IDiskService
 {
     // dependency injection
-    private readonly IServicesFactory _factory;
     private readonly IStreamFactory _streamFactory;
-    private readonly ILogService _logService;
+    private readonly IServicesFactory _factory;
 
     private readonly IDiskStream _writer;
 
@@ -19,11 +18,9 @@ internal class DiskService : IDiskService
 
     public DiskService(
         IStreamFactory streamFactory,
-        ILogService logService,
         IServicesFactory factory)
     {
         _streamFactory = streamFactory;
-        _logService = logService;
         _factory = factory;
 
         _writer = factory.CreateDiskStream();
@@ -75,41 +72,6 @@ internal class DiskService : IDiskService
     public void ReturnDiskReader(IDiskStream reader)
     {
         _readers.Enqueue(reader);
-    }
-
-    /// <summary>
-    /// </summary>
-    public async Task WriteLogPagesAsync(PageBuffer[] pages)
-    {
-        //TODO: disk lock here
-
-        // set IsFileDirty flag in header file to true at first use
-        if (!_factory.FileHeader.IsFileDirty)
-        {
-            _factory.FileHeader.SetFileDirty(true);
-
-            _writer.WriteFlag(FileHeader.P_IS_FILE_DIRTY, 1);
-        }
-
-        for (var i = 0; i < pages.Length; i++)
-        {
-            var page = pages[i];
-
-            ENSURE(page.PositionID == int.MaxValue, $"current page {page.PositionID} should be MaxValue");
-
-            // get next page position on log (update header PositionID too)
-            page.PositionID = _logService.GetNextLogPositionID();
-            page.Header.PositionID = page.PositionID;
-
-            // write page to writer stream
-            await _writer.WritePageAsync(page);
-
-            // add page header only into log memory list
-            _logService.AddLogPage(page.Header);
-        }
-
-        // flush to disk
-        await _writer.FlushAsync();
     }
 
     /// <summary>

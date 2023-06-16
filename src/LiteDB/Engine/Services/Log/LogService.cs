@@ -4,13 +4,14 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class LogService : ILogService
+internal partial class LogService : ILogService
 {
     // dependency injection
-    private readonly IBufferFactory _bufferFactory;
+    private readonly IDiskService _diskService;
     private readonly ICacheService _cacheService;
+    private readonly IBufferFactory _bufferFactory;
     private readonly IWalIndexService _walIndexService;
-
+    private readonly IServicesFactory _factory;
     private int _lastPageID;
     private int _logPositionID;
 
@@ -18,13 +19,17 @@ internal class LogService : ILogService
     private readonly HashSet<int> _confirmedTransactions = new();
 
     public LogService(
+        IDiskService diskService,
         ICacheService cacheService,
         IBufferFactory bufferFactory,
-        IWalIndexService walIndexService)
+        IWalIndexService walIndexService,
+        IServicesFactory factory)
     {
+        _diskService = diskService;
         _cacheService = cacheService;
         _bufferFactory = bufferFactory;
         _walIndexService = walIndexService;
+        _factory = factory;
     }
 
     public void Initialize(int lastFilePositionID)
@@ -51,9 +56,45 @@ internal class LogService : ILogService
     }
 
     /// <summary>
+    /// </summary>
+    public async Task WriteLogPagesAsync(PageBuffer[] pages)
+    {
+        var writer = _diskService.GetDiskWriter();
+
+        // set IsFileDirty flag in header file to true at first use
+        if (!_factory.FileHeader.IsFileDirty)
+        {
+            _factory.FileHeader.SetFileDirty(true);
+
+            writer.WriteFlag(FileHeader.P_IS_FILE_DIRTY, 1);
+        }
+
+        for (var i = 0; i < pages.Length; i++)
+        {
+            var page = pages[i];
+
+            ENSURE(page.PositionID == int.MaxValue, $"current page {page.PositionID} should be MaxValue");
+
+            // get next page position on log (update header PositionID too)
+            page.PositionID = this.GetNextLogPositionID();
+            page.Header.PositionID = page.PositionID;
+
+            // write page to writer stream
+            await writer.WritePageAsync(page);
+
+            // add page header only into log memory list
+            this.AddLogPage(page.Header);
+        }
+
+        // flush to disk
+        await writer.FlushAsync();
+    }
+
+
+    /// <summary>
     /// Get next positionID in log
     /// </summary>
-    public int GetNextLogPositionID()
+    private int GetNextLogPositionID()
     {
         var next = Interlocked.Increment(ref _logPositionID);
 
@@ -67,7 +108,7 @@ internal class LogService : ILogService
     /// Add a page header in log list, to be used in checkpoint operation.
     /// This page should be added here after write on disk
     /// </summary>
-    public void AddLogPage(PageHeader header)
+    private void AddLogPage(PageHeader header)
     {
         // if page is confirmed, set transaction as confirmed and ok to override on data file
         if (header.IsConfirmed)
@@ -84,14 +125,23 @@ internal class LogService : ILogService
         _logPages.Add(header);
     }
 
-    public async Task<int> CheckpointAsync(IDiskService disk, int startTempPositionID, IList<PageHeader> tempPages, bool crop)
+    public Task<int> CheckpointAsync(bool crop)
     {
         var logLength = _logPages.Count;
 
-        if (logLength == 0) return 0;
+        if (logLength == 0) return Task.FromResult(0);
 
         ENSURE(_logPositionID == _logPages[^1].PositionID, $"last log page must positionID = {_logPositionID}");
 
+        // temp file start after lastPageID or last log used page
+        var startTempPositionID = Math.Max(_lastPageID, _logPositionID) + 1;
+        var tempPages = Array.Empty<PageHeader>();
+
+        return this.CheckpointAsync(startTempPositionID, tempPages, crop);
+    }
+
+    private async Task<int> CheckpointAsync(int startTempPositionID, IList<PageHeader> tempPages, bool crop)
+    {
         //** ao iniciar o checkpoint, todas as paginas da cache estão sem uso
         // o total de paginas utilizadas são: total da cache + freeBuffers
 
@@ -99,39 +149,71 @@ internal class LogService : ILogService
         var actions = this.GetCheckpointActions(_logPages, _confirmedTransactions, startTempPositionID, tempPages);
 
         // get writer stream from disk service
-        var stream = disk.GetDiskWriter();
+        var writer = _diskService.GetDiskWriter();
+        var counter = 0;
 
         foreach (var action in actions)
         {
             // get page from file position ID (log or data)
-            var page = await this.GetLogPageAsync(stream, action.PositionID);
+            var page = await this.GetLogPageAsync(writer, action.PositionID);
+
+            // at this point, "page" are NOT in cache anymore (if was in cache)
 
             if (action.Action == CheckpointActionEnum.ClearPage)
             {
-                await stream.WriteEmptyAsync(action.PositionID);
+                await writer.WriteEmptyAsync(action.PositionID);
             }
             else if (action.Action == CheckpointActionEnum.CopyToDataFile)
             {
                 // transform this page into a data file page
-                //page.Header.PositionID = page.Header.PageID = action.PositionID;
-                //page.Header.TransactionID = 0;
-                page.Header.IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
+                page.Header.PositionID = page.Header.PageID = action.PositionID;
+                page.Header.TransactionID = 0;
+                page.Header.IsConfirmed = false;
 
-                await stream.WritePageAsync(page);
+                await writer.WritePageAsync(page);
+
+                // increment checkpoint counter page
+                counter++;
             }
             else if (action.Action == CheckpointActionEnum.CopyToTempFile)
             {
                 // transform this page into a log temp file
                 page.PositionID = action.TargetPositionID;
-                page.Header.TransactionID = 0;
-                page.Header.IsConfirmed = false;
+                page.Header.IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
 
-                await stream.WritePageAsync(page);
+                await writer.WritePageAsync(page);
+            }
+
+            // test if current page should be added in cache or deallocates
+            if (action.AddToCache)
+            {
+                // if cache contains this position (old data version) must be removed from cache and deallocate
+                if (_cacheService.TryRemove(action.PositionID, out var removedPage))
+                {
+                    _bufferFactory.DeallocatePage(removedPage);
+                }
+
+                // add this page to cache
+                var added = _cacheService.AddPageInCache(page);
+
+                // if cache is full, deallocate page
+                if (!added)
+                {
+                    _bufferFactory.DeallocatePage(page);
+                }
+            }
+            else
+            {
+                // page has old/invalid data - just deallocate
+                _bufferFactory.DeallocatePage(page);
             }
         }
 
+
+
+
         // ao terminar o checkpoint, nenhuma pagina na cache deve ser de log
-        return 1;
+        return counter;
 
     }
 
@@ -141,14 +223,15 @@ internal class LogService : ILogService
     private async Task<PageBuffer> GetLogPageAsync(IDiskStream stream, int positionID)
     {
         // try get page from cache
-        var page = _cacheService.TryRemove(positionID);
-
-        if (page is null)
+        if (_cacheService.TryRemove(positionID, out var page))
         {
-            page = _bufferFactory.AllocateNewPage(true);
-
-            await stream.ReadPageAsync(positionID, page);
+            return page;
         }
+
+        // otherwise, allocate new buffer page and read from disk
+        page = _bufferFactory.AllocateNewPage(true);
+
+        await stream.ReadPageAsync(positionID, page);
 
         return page;
     }
@@ -158,20 +241,4 @@ internal class LogService : ILogService
         _logPages.Clear();
         _confirmedTransactions.Clear();
     }
-
-    /* ******************************************************************* */
-
-    public IList<CheckpointAction> GetCheckpointActions(
-        IReadOnlyList<PageHeader> logPages,
-        HashSet<int> confirmedTransactions,
-        int startTempPositionID,
-        IList<PageHeader> tempPages)
-    {
-        //TODO: Lucas
-        //throw new NotImplementedException();
-
-        return new List<CheckpointAction>();
-    }
-
-
 }

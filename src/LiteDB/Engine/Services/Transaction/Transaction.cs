@@ -7,6 +7,7 @@ internal class Transaction : ITransaction
 {
     // dependency injection
     private readonly IDiskService _diskService;
+    private readonly ILogService _logService;
     private readonly IWalIndexService _walIndexService;
     private readonly IAllocationMapService _allocationMapService;
     private readonly IIndexPageService _indexPageService;
@@ -39,6 +40,7 @@ internal class Transaction : ITransaction
 
     public Transaction(
         IDiskService diskService,
+        ILogService logService,
         IBufferFactory bufferFactory,
         ICacheService cacheService,
         IWalIndexService walIndexService,
@@ -49,6 +51,7 @@ internal class Transaction : ITransaction
         int transactionID, byte[] writeCollections, int readVersion)
     {
         _diskService = diskService;
+        _logService = logService;
         _bufferFactory = bufferFactory;
         _cacheService = cacheService;
         _walIndexService = walIndexService;
@@ -202,7 +205,7 @@ internal class Transaction : ITransaction
         }
 
         // write pages on disk and flush data
-        await _diskService.WriteLogPagesAsync(dirtyPages);
+        await _logService.WriteLogPagesAsync(dirtyPages);
 
         // update allocation map with all dirty pages
         _allocationMapService.UpdateMap(dirtyPages);

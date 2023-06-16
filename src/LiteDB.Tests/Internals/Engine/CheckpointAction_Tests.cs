@@ -5,7 +5,7 @@ public class CheckpointAction_Tests
     [Fact]
     public void Checkpoint_CopyToDatafile()
     {
-        var logService = new LogService(null, null, null);
+        var logService = new LogService(null,null,null, null, null);
 
         var logPages = new List<PageHeader>();
         var confirmedTransactions = new HashSet<int>();
