@@ -10,6 +10,15 @@ namespace LiteDB.Tests
     /// </summary>
     public static class AssertEx
     {
+        public static T Private<T>(this object obj, string name)
+        {
+            var type = obj.GetType();
+            var field = type.GetField(name, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.GetField);
+
+            return (T)field.GetValue(obj);
+        }
+
+
         [DebuggerHidden]
         public static void ArrayEqual<T>(T[] first, T[] second, bool sort)
             where T : IEqualityComparer<T>

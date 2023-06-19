@@ -24,4 +24,5 @@ global using static LiteDB.Constants;
 global using static LiteDB.LiteException;
 
 global using Xunit;
+global using NSubstitute;
 global using FluentAssertions;

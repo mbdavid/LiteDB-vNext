@@ -1,6 +1,4 @@
-﻿using System.Runtime;
-
-namespace LiteDB;
+﻿namespace LiteDB;
 
 /// <summary>
 /// * Singleton (thread safe)
@@ -135,7 +133,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.State = EngineState.Close;
         this.FileHeader = new();
 
-        // keeps "Exception" value (will be clean in open)
+        // keeps "Exception" value (will be clean in next open)
 
     }
 

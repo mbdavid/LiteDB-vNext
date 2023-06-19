@@ -1,25 +1,19 @@
-﻿using Moq;
-
-namespace LiteDB.Tests.Internals.Engine;
+﻿namespace LiteDB.Tests.Internals.Engine;
 
 public class CheckpointAction_Tests
 {
+    // dependencies
+    private readonly IDiskService _diskService = Substitute.For<IDiskService>();
+    private readonly ICacheService _cacheService = Substitute.For<ICacheService>();
+    private readonly IBufferFactory _bufferFactory = Substitute.For<IBufferFactory>();
+    private readonly IWalIndexService  _walIndexService = Substitute.For<IWalIndexService>();
+    private readonly IServicesFactory _factory = Substitute.For<IServicesFactory>();
+
     [Fact]
     public void Checkpoint_CopyToDatafile_Theory()
     {
-        // arrange
-        var diskService = new Mock<IDiskService>();
-        var cacheService = new Mock<ICacheService>();
-        var bufferFactory = new Mock<IBufferFactory>();
-        var walIndexService = new Mock<IWalIndexService>();
-        var factory = new Mock<IServicesFactory>();
-
-        var sut = new LogService(
-            diskService.Object,
-            cacheService.Object,
-            bufferFactory.Object,
-            walIndexService.Object, 
-            factory.Object);
+        // Arrange
+        var sut = new LogService(_diskService, _cacheService, _bufferFactory, _walIndexService, _factory);
 
         var logPages = new List<PageHeader>();
         var confirmedTransactions = new HashSet<int>();
