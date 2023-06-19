@@ -24,9 +24,21 @@ internal partial class LogService : ILogService
         int startTempPositionID,
         IList<PageHeader> tempPages)
     {
+        for(var i = 0; i < 10; i++)
+        {
+            yield return new CheckpointAction() {  PositionID = i };
+        }
+
+
+
+        yield return new CheckpointAction();
+
+        yield return new CheckpointAction();
+
+
         //TODO: Lucas
         //throw new NotImplementedException();
 
-        return new List<CheckpointAction>();
+        //return new List<CheckpointAction>();
     }
 }
