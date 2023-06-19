@@ -22,17 +22,24 @@ public class CheckpointAction_Tests
             factory.Object);
 
         var logPages = new List<PageHeader>();
-        var confirmedTransactions = new HashSet<int>();
-        var startTempPositionID = 100;
         var tempPages = new List<PageHeader>();
 
-        logPages.Add(new PageHeader { PageID = 19, PositionID = 17, TransactionID = 1, IsConfirmed = false });
-        logPages.Add(new PageHeader { PageID = 11, PositionID = 18, TransactionID = 1, IsConfirmed = false });
-        logPages.Add(new PageHeader { PageID = 22, PositionID = 19, TransactionID = 1, IsConfirmed = false });
-        logPages.Add(new PageHeader { PageID = 23, PositionID = 20, TransactionID = 1, IsConfirmed = true });
+        // datapages ends here
+        var lastPageID = 10;
+        var pos = lastPageID + 5; // initial log position
+
+        // adding log pages at position 17+
+        logPages.Add(new PageHeader { PositionID = ++pos, PageID = 24, TransactionID = 1, IsConfirmed = true });
+
+
+        // update lastPageID
+        lastPageID = Math.Max(lastPageID, logPages.Max(x => x.PageID));
+
+        var startTempPositionID = Math.Max(lastPageID, logPages[^1].PositionID) + 1;
+        var confirmedTransactions = new HashSet<int>(logPages.Where(x => x.IsConfirmed).Select(x => x.TransactionID));
 
         // act
-        var actions = sut.GetCheckpointActions(logPages, confirmedTransactions, startTempPositionID, tempPages);
+        var actions = sut.GetCheckpointActions(logPages, confirmedTransactions, lastPageID, startTempPositionID, tempPages);
 
         // asserts
         actions.Count.Should().Be(5);
