@@ -37,7 +37,7 @@ internal class PageBuffer
     /// <summary>
     /// Page memory buffer with PAGE_SIZE size
     /// </summary>
-    public readonly byte[] Buffer = new byte[PAGE_SIZE];
+    public readonly Memory<byte> Buffer = new byte[PAGE_SIZE];
 
     public bool IsDataFile => this.PositionID <= this.Header.PageID;
     public bool IsLogFile => this.PositionID > this.Header.PageID;
@@ -62,26 +62,26 @@ internal class PageBuffer
     /// <summary>
     /// Calculate CRC8 for content area (32-8192)
     /// </summary>
-    public byte ComputeCrc8() => Crc8.ComputeChecksum(this.Buffer.AsSpan(PAGE_HEADER_SIZE));
+    public byte ComputeCrc8() => Crc8.ComputeChecksum(this.AsSpan(PAGE_HEADER_SIZE));
 
     public Span<byte> AsSpan()
     {
-        return this.Buffer.AsSpan(0, PAGE_SIZE);
+        return this.Buffer.Span[..PAGE_SIZE];
     }
 
     public Span<byte> AsSpan(int start)
     {
-        return this.Buffer.AsSpan(start);
+        return this.Buffer.Span[start..];
     }
 
     public Span<byte> AsSpan(PageSegment segment)
     {
-        return this.Buffer.AsSpan(segment.Location, segment.Length);
+        return this.Buffer.Span.Slice(segment.Location, segment.Length);
     }
 
     public Span<byte> AsSpan(int start, int length)
     {
-        return this.Buffer.AsSpan(start, length);
+        return this.Buffer.Span.Slice(start, length);
     }
 
     /// <summary>
@@ -89,7 +89,7 @@ internal class PageBuffer
     /// </summary>
     public bool IsHeaderEmpty()
     {
-        return this.Buffer.AsSpan(0, PAGE_HEADER_SIZE).IsFullZero();
+        return this.Buffer.Span[..PAGE_HEADER_SIZE].IsFullZero();
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ internal class PageBuffer
     public void CopyBufferTo(PageBuffer page)
     {
         // copy content
-        this.Buffer.AsSpan().CopyTo(page.Buffer);
+        this.Buffer.CopyTo(page.Buffer);
 
         // update page header
         page.Header.ReadFromPage(page);

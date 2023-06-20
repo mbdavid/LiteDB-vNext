@@ -25,7 +25,7 @@ internal class DiskStream : IDiskStream
     /// Initialize disk opening already exist datafile and return file header structure.
     /// Can open file as read or write
     /// </summary>
-    public async Task<FileHeader> OpenAsync(bool canWrite)
+    public async ValueTask<FileHeader> OpenAsync(bool canWrite, CancellationToken ct = default)
     {
         // get a new FileStream connected to file
         _stream = _streamFactory.GetStream(canWrite,
@@ -36,7 +36,9 @@ internal class DiskStream : IDiskStream
 
         _stream.Position = 0;
 
-        await _stream.ReadAsync(buffer);
+        var read = await _stream.ReadAsync(buffer, ct);
+
+        ENSURE(read != PAGE_HEADER_SIZE, $"file too small");
 
         var header = new FileHeader(buffer);
 
@@ -65,7 +67,7 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Initialize disk creating a new datafile and writing file header
     /// </summary>
-    public async Task CreateAsync(FileHeader fileHeader)
+    public async ValueTask CreateAsync(FileHeader fileHeader, CancellationToken ct = default)
     {
         // create new data file
         _stream = _streamFactory.GetStream(true, FileOptions.SequentialScan);
@@ -73,7 +75,7 @@ internal class DiskStream : IDiskStream
         // writing file header
         _stream.Position = 0;
 
-        await _stream.WriteAsync(fileHeader.ToArray(), 0, FILE_HEADER_SIZE);
+        await _stream.WriteAsync(fileHeader.ToArray(), ct);
 
         // for content stream, use AesStream (for encrypted file) or same _stream
         _contentStream = fileHeader.Encrypted ?
@@ -89,12 +91,12 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Read single page from disk using disk position. This position has FILE_HEADER_SIZE offset
     /// </summary>
-    public async Task<bool> ReadPageAsync(int positionID, PageBuffer page)
+    public async ValueTask<bool> ReadPageAsync(int positionID, PageBuffer page, CancellationToken ct = default)
     {
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
-        var read = await _contentStream.ReadAsync(page.Buffer, 0, PAGE_SIZE);
+        var read = await _contentStream.ReadAsync(page.Buffer, ct);
 
         // after read content from file, update header info in page
         page.Header.ReadFromPage(page);
@@ -105,7 +107,7 @@ internal class DiskStream : IDiskStream
         return read == PAGE_SIZE;
     }
 
-    public async Task WritePageAsync(PageBuffer page)
+    public async ValueTask WritePageAsync(PageBuffer page, CancellationToken ct = default)
     {
         ENSURE(page.IsDirty);
         ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have defined Position before WriteAsync");
@@ -119,7 +121,7 @@ internal class DiskStream : IDiskStream
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (page.PositionID * PAGE_SIZE);
 
-        await _contentStream.WriteAsync(page.Buffer, 0, PAGE_SIZE);
+        await _contentStream.WriteAsync(page.Buffer, ct);
 
         // clear isDirty flag
         page.IsDirty = false;
@@ -128,25 +130,25 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Write an empty (full \0) PAGE_SIZE using positionID
     /// </summary>
-    public async Task WriteEmptyAsync(int positionID)
+    public async ValueTask WriteEmptyAsync(int positionID, CancellationToken ct = default)
     {
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
-        await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE);
+        await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, ct);
     }
 
     /// <summary>
     /// Write an empty (full \0) PAGE_SIZE using from/to (inclusive)
     /// </summary>
-    public async Task WriteEmptyAsync(int fromPositionID, int toPositionID)
+    public async ValueTask WriteEmptyAsync(int fromPositionID, int toPositionID, CancellationToken ct = default)
     {
         for (var i = fromPositionID; i <= toPositionID; i++)
         {
             // set real position on stream
             _contentStream!.Position = FILE_HEADER_SIZE + (i * PAGE_SIZE);
 
-            await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, 0, PAGE_SIZE);
+            await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, ct);
         }
     }
 

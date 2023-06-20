@@ -171,40 +171,51 @@ internal partial class LogService : ILogService
             {
                 await writer.WriteEmptyAsync(action.PositionID);
             }
-            else if (action.Action == CheckpointActionEnum.CopyToDataFile)
+            else
             {
-                // transform this page into a data file page
-                page.Header.PositionID = page.Header.PageID = action.PositionID;
-                page.Header.TransactionID = 0;
-                page.Header.IsConfirmed = false;
+                if (action.Action == CheckpointActionEnum.CopyToDataFile)
+                {
+                    // transform this page into a data file page
+                    page.Header.PositionID = page.Header.PageID = action.TargetPositionID;
+                    page.Header.TransactionID = 0;
+                    page.Header.IsConfirmed = false;
 
-                await writer.WritePageAsync(page);
+                    await writer.WritePageAsync(page);
 
-                // increment checkpoint counter page
-                counter++;
+                    // increment checkpoint counter page
+                    counter++;
+                }
+                else if (action.Action == CheckpointActionEnum.CopyToTempFile)
+                {
+                    // transform this page into a log temp file (keeps Header.PositionID in original value)
+                    page.PositionID = action.TargetPositionID;
+                    page.Header.IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
+
+                    await writer.WritePageAsync(page);
+                }
+
+                // after copy page, checks if page need to be clean on disk
+                if (action.MustClear)
+                {
+                    await writer.WriteEmptyAsync(action.PositionID);
+                }
             }
-            else if (action.Action == CheckpointActionEnum.CopyToTempFile)
-            {
-                // transform this page into a log temp file
-                page.PositionID = action.TargetPositionID;
-                page.Header.IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
 
-                await writer.WritePageAsync(page);
-            }
+            var addToCache = action.Action != CheckpointActionEnum.ClearPage;
 
             // test if current page should be added in cache or deallocates
-            if (action.AddToCache)
+            if (addToCache)
             {
                 // if cache contains this position (old data version) must be removed from cache and deallocate
-                if (_cacheService.TryRemove(action.PositionID, out var removedPage))
+                if (_cacheService.TryRemove(page.PositionID, out var removedPage))
                 {
                     _bufferFactory.DeallocatePage(removedPage!);
                 }
 
-                // add this page to cache
+                // add this page to cache (or try it)
                 var added = _cacheService.AddPageInCache(page);
 
-                // if cache is full, deallocate page
+                // if cache is full, deallocate page (page was
                 if (!added)
                 {
                     _bufferFactory.DeallocatePage(page);
@@ -217,12 +228,13 @@ internal partial class LogService : ILogService
             }
         }
 
+        // crop file or fill with \0 after _lastPageID
         if (crop)
         {
             // crop file after _lastPageID
             writer.SetSize(_lastPageID);
         }
-        else // fill all log space (with temp space) with \0
+        else
         {
             // get last page (from log or from temp file)
             var lastFilePositionID = tempPages.Count > 0 ?

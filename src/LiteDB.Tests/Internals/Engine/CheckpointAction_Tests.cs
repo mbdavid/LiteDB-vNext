@@ -36,11 +36,11 @@ public class CheckpointAction_Tests
             confirmedTransactions, 
             lastPageID, 
             startTempPositionID, 
-            tempPages);
+            tempPages).ToArray();
 
 
         // Asserts
-        actions.Count.Should().Be(5);
+        actions.Length.Should().Be(5);
 
         // action #0
         actions[0].Action.Should().Be(CheckpointActionEnum.CopyToTempFile);
