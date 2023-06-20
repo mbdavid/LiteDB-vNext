@@ -15,30 +15,19 @@ internal enum CheckpointActionEnum : byte
     ClearPage = 2
 }
 
-internal partial class LogService : ILogService
+internal class CheckpointActions
 {
-    public IList<CheckpointAction> GetCheckpointActions(
+    public IList<CheckpointAction> GetActions(
         IReadOnlyList<PageHeader> logPages,
         HashSet<int> confirmedTransactions,
         int lastPageID,
         int startTempPositionID,
         IList<PageHeader> tempPages)
     {
-        for(var i = 0; i < 10; i++)
-        {
-            yield return new CheckpointAction() {  PositionID = i };
-        }
-
-
-
-        yield return new CheckpointAction();
-
-        yield return new CheckpointAction();
-
 
         //TODO: Lucas
         //throw new NotImplementedException();
 
-        //return new List<CheckpointAction>();
+        return new List<CheckpointAction>();
     }
 }

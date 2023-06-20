@@ -149,7 +149,12 @@ internal partial class LogService : ILogService
         // o total de paginas utilizadas são: total da cache + freeBuffers
 
         // get all actions that checkpoint must do with all pages
-        var actions = this.GetCheckpointActions(_logPages, _confirmedTransactions, startTempPositionID, tempPages);
+        var actions = new CheckpointActions().GetActions(
+            _logPages, 
+            _confirmedTransactions,
+            _lastPageID,
+            startTempPositionID, 
+            tempPages);
 
         // get writer stream from disk service
         var writer = _diskService.GetDiskWriter();
