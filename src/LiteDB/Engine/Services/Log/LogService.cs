@@ -14,6 +14,7 @@ internal partial class LogService : ILogService
     private readonly IBufferFactory _bufferFactory;
     private readonly IWalIndexService _walIndexService;
     private readonly IServicesFactory _factory;
+
     private int _lastPageID;
     private int _logPositionID;
 
