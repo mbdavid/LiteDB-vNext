@@ -8,6 +8,15 @@ internal struct CheckpointAction
     public bool MustClear; // clear page PositionID
 }
 
+internal struct LogPosition
+{
+    public int PositionID;
+    public int PageID;
+    public int PhysicalID;
+    public bool IsConfirmed;
+
+}
+
 internal enum CheckpointActionEnum : byte
 {
     CopyToDataFile = 0,
@@ -44,7 +53,26 @@ internal class CheckpointActions
             .Select(x => new { PageID = x.Key, PositionID = x.Max(y => y.PositionID) })
             .ToDictionary(x => x.PageID, x => x);
 
-        var logPositions = new (int PositionID, int PageID, int PhysicalID, bool IsConfirmed)[0]; // tem q ter o tamanho do log considerando o temp
+        var logPositions = new ()[0]; // tem q ter o tamanho do log considerando o temp
+
+        var allPages = logPages
+            .Select(x => new LogPosition
+            {
+                PositionID = x.PositionID,
+                PageID = x.PageID,
+                PhysicalID = x.PositionID,
+                IsConfirmed = confirmedTransactions.Contains(x.TransactionID)
+            })
+            .ToList();
+
+        var logs = new List<LogPosition>();
+
+        foreach(var tempPage in tempPages)
+        {
+
+        }
+
+
 
         //foreach(var logPage in logPages)
         for(var i = 0; i < logPositions.Length; i++)
