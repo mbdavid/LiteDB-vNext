@@ -36,17 +36,33 @@ internal class CheckpointActions
         var lastPositionID = logPages[^1].PositionID;
         var lastTempPositionID = startTempPositionID + (tempPages.Count - 1);
 
-        foreach(var logPage in logPages)
+        // create dict with all duplicates pageID getting last positionID
+        var duplicates = logPages
+            .Where(x => confirmedTransactions.Contains(x.TransactionID))
+            .GroupBy(x => x.PageID)
+            .Where(x => x.Count() > 1)
+            .Select(x => new { PageID = x.Key, PositionID = x.Max(y => y.PositionID) })
+            .ToDictionary(x => x.PageID, x => x);
+
+        var logPositions = new (int PositionID, int PageID, int PhysicalID, bool IsConfirmed)[0]; // tem q ter o tamanho do log considerando o temp
+
+        //foreach(var logPage in logPages)
+        for(var i = 0; i < logPositions.Length; i++)
         {
+            var logPage = logPositions[i];
+
+            var willOverride = false;
+
             // check if this page will be override in future
-            var willOverride = logPages
-                .Where(x => x.PositionID > logPage.PositionID)
-                .Any(x => x.PageID == logPage.PageID);
+            if (duplicates.TryGetValue(logPage.PageID, out var lastDuplicate))
+            {
+                willOverride = logPage.PositionID < lastDuplicate.PositionID;
+            }
 
             // ** verifica se o log nao esta no temp
 
             // if page is not confirmed or will be override
-            if (willOverride || !confirmedTransactions.Contains(logPage.TransactionID))
+            if (willOverride || !logPage.IsConfirmed)
             {
                 // if page is inside datafile must be clear
                 if (logPage.PositionID < lastPageID)
@@ -89,15 +105,23 @@ internal class CheckpointActions
                     };
                 }
                 else
-                { 
+                {
+                    var nextPositionID = lastTempPositionID++;
+
                     // copy target page to temp
                     yield return new CheckpointAction
                     {
                         Action = CheckpointActionEnum.CopyToTempFile,
                         PositionID = target.PositionID,
-                        TargetPositionID = lastTempPositionID++,
+                        TargetPositionID = nextPositionID,
                         MustClear = false
                     };
+
+                    var logIndex = Array.FindIndex(logPositions, x => x.PositionID == target.PositionID);
+
+                    ENSURE(logIndex >= 0);
+
+                    logPositions[logIndex].PhysicalID = nextPositionID;
 
                     // copy page to target
                     yield return new CheckpointAction
