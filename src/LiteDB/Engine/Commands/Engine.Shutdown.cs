@@ -25,9 +25,9 @@ public partial class LiteEngine : ILiteEngine
         await allocationMapService.WriteAllChangesAsync();
 
         // if file was changed, update file header check byte
-        if (_factory.FileHeader.IsFileDirty)
+        if (_factory.FileHeader.IsDirty)
         {
-            writer.WriteFlag(FileHeader.P_IS_FILE_DIRTY, 0);
+            writer.WriteFlag(FileHeader.P_IS_DIRTY, 0);
         }
 
         // release exclusive

@@ -1,28 +1,5 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct CheckpointAction
-{
-    public CheckpointActionEnum Action;
-    public int PositionID;
-    public int TargetPositionID; // used only in CopyToDataFile and CopyToTemp (MaxValue for ClearPage)
-    public bool MustClear; // clear page PositionID
-}
-
-internal struct LogPosition
-{
-    public int PositionID;
-    public int PageID;
-    public int PhysicalID;
-    public bool IsConfirmed;
-}
-
-internal enum CheckpointActionEnum : byte
-{
-    CopyToDataFile = 0,
-    CopyToTempFile = 1,
-    ClearPage = 2
-}
-
 internal class CheckpointActions
 {
     public IEnumerable<CheckpointAction> GetActions(
@@ -61,6 +38,7 @@ internal class CheckpointActions
                 IsConfirmed = true
             }))
             .OrderBy(x => x.PositionID)
+            .Distinct()
             .ToArray();
 
         // create dict with all duplicates pageID getting last positionID
@@ -129,7 +107,7 @@ internal class CheckpointActions
                 else
                 {
                     // get a new position on temp
-                    var nextPositionID = lastTempPositionID++;
+                    var nextPositionID = ++lastTempPositionID;
 
                     // copy target page to temp
                     yield return new CheckpointAction

@@ -2,9 +2,9 @@ namespace LiteDB.Engine;
 
 /// <summary>
 /// First initial data structure at start of disk. 
-/// All information data here are immutable. Only flag controls are changed (IsDirty)
+/// All information data here are immutable. Only flag controls are changed (IsDisposed)
 /// </summary>
-internal struct FileHeader
+internal class FileHeader
 {
     /// <summary>
     /// Header info the validate that datafile is a LiteDB file (27 bytes)
@@ -34,8 +34,7 @@ internal struct FileHeader
 
     // reserved 80-97 (18 bytes)
 
-    //public const int P_CHANGE_ID = 98; // [byte] ????
-    public const int P_IS_FILE_DIRTY = 95; // [byte]
+    public const int P_IS_DIRTY = 95; // [byte]
 
     #endregion
 
@@ -50,7 +49,24 @@ internal struct FileHeader
     public readonly Collation Collation;
     public readonly Version EngineVersion;
 
-    public bool IsFileDirty;
+    public bool IsDirty;
+
+    /// <summary>
+    /// Create empty version of file header
+    /// </summary>
+    public FileHeader()
+    {
+        _headerInfo = "";
+        _fileVersion = 0;
+
+        this.Encrypted = false;
+        this.EncryptionSalt = Array.Empty<byte>();
+        this.InstanceID = Guid.Empty;
+        this.CreationTime = DateTime.MinValue;
+        this.Collation = Collation.Default;
+        this.EngineVersion = new Version();
+        this.IsDirty = false;
+    }
 
     /// <summary>
     /// Read file header from a existing buffer data
@@ -77,7 +93,7 @@ internal struct FileHeader
 
         this.EngineVersion = new Version(major, minor, build);
 
-        this.IsFileDirty = buffer[P_IS_FILE_DIRTY] == 1;
+        this.IsDirty = buffer[P_IS_DIRTY] == 1;
     }
 
     /// <summary>
@@ -96,12 +112,7 @@ internal struct FileHeader
         this.Collation = settings.Collation;
         this.EngineVersion = typeof(LiteEngine).Assembly.GetName().Version;
 
-        this.IsFileDirty = false;
-    }
-
-    public void SetFileDirty(bool isDirty)
-    {
-        this.IsFileDirty = isDirty;
+        this.IsDirty = false;
     }
 
     /// <summary>

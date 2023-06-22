@@ -64,12 +64,12 @@ internal partial class LogService : ILogService
     {
         var writer = _diskService.GetDiskWriter();
 
-        // set IsFileDirty flag in header file to true at first use
-        if (!_factory.FileHeader.IsFileDirty)
+        // set IsDirty flag in header file to true at first use
+        if (!_factory.FileHeader.IsDirty)
         {
-            _factory.FileHeader.SetFileDirty(true);
+            _factory.FileHeader.IsDirty = true;
 
-            writer.WriteFlag(FileHeader.P_IS_FILE_DIRTY, 1);
+            writer.WriteFlag(FileHeader.P_IS_DIRTY, 1);
         }
 
         for (var i = 0; i < pages.Length; i++)
@@ -132,7 +132,7 @@ internal partial class LogService : ILogService
     {
         var logLength = _logPages.Count;
 
-        if (logLength == 0) return Task.FromResult(0);
+        if (logLength == 0 && !crop) return Task.FromResult(0);
 
         ENSURE(_logPositionID == _logPages[^1].PositionID, $"last log page must positionID = {_logPositionID}");
 
@@ -145,16 +145,13 @@ internal partial class LogService : ILogService
 
     private async Task<int> CheckpointAsync(int startTempPositionID, IList<PageHeader> tempPages, bool crop)
     {
-        //** ao iniciar o checkpoint, todas as paginas da cache estão sem uso
-        // o total de paginas utilizadas são: total da cache + freeBuffers
-
         // get all actions that checkpoint must do with all pages
         var actions = new CheckpointActions().GetActions(
             _logPages, 
             _confirmedTransactions,
             _lastPageID,
             startTempPositionID, 
-            tempPages);
+            tempPages).ToArray();
 
         // get writer stream from disk service
         var writer = _diskService.GetDiskWriter();
@@ -165,8 +162,6 @@ internal partial class LogService : ILogService
             // get page from file position ID (log or data)
             var page = await this.GetLogPageAsync(writer, action.PositionID);
 
-            // at this point, "page" are NOT in cache anymore (if was in cache)
-
             if (action.Action == CheckpointActionEnum.ClearPage)
             {
                 await writer.WriteEmptyAsync(action.PositionID);
@@ -176,9 +171,10 @@ internal partial class LogService : ILogService
                 if (action.Action == CheckpointActionEnum.CopyToDataFile)
                 {
                     // transform this page into a data file page
-                    page.Header.PositionID = page.Header.PageID = action.TargetPositionID;
+                    page.PositionID = page.Header.PositionID = page.Header.PageID = action.TargetPositionID;
                     page.Header.TransactionID = 0;
                     page.Header.IsConfirmed = false;
+                    page.IsDirty = true;
 
                     await writer.WritePageAsync(page);
 
@@ -190,6 +186,7 @@ internal partial class LogService : ILogService
                     // transform this page into a log temp file (keeps Header.PositionID in original value)
                     page.PositionID = action.TargetPositionID;
                     page.Header.IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
+                    page.IsDirty = true;
 
                     await writer.WritePageAsync(page);
                 }

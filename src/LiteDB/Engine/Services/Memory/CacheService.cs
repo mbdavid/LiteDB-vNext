@@ -107,6 +107,7 @@ internal class CacheService : ICacheService
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
+        ENSURE(!page.IsDirty, "page must be clean before add into cache");
         ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
         ENSURE(page.ShareCounter == NO_CACHE, "ShareCounter must be zero before add in cache");
 

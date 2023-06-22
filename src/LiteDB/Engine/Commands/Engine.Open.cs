@@ -27,7 +27,7 @@ public partial class LiteEngine : ILiteEngine
             // open/create data file and returns file header
             _factory.FileHeader = await diskService.InitializeAsync();
 
-            if (_factory.FileHeader.IsFileDirty) throw new NotImplementedException();
+            if (_factory.FileHeader.IsDirty) throw new NotImplementedException();
 
             // initialize log service
             logService.Initialize(diskService.GetLastFilePositionID());

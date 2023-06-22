@@ -7,11 +7,11 @@
 internal partial class ServicesFactory : IServicesFactory
 {
     public IEngineSettings Settings { get; }
-
     public EngineState State { get; set; } = EngineState.Close;
     public FileHeader FileHeader { get; set; }
-
     public Exception? Exception { get; set; }
+
+
 
     public ConcurrentDictionary<string, object> Application { get; } = new();
 
@@ -42,6 +42,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.Settings = settings;
 
         // intial state
+        this.FileHeader = new ();
         this.State = EngineState.Close;
         this.Exception = null;
 
@@ -131,9 +132,11 @@ internal partial class ServicesFactory : IServicesFactory
         this.BufferFactory.Dispose();
 
         this.State = EngineState.Close;
-        this.FileHeader = new();
 
         // keeps "Exception" value (will be clean in next open)
+        // keeps "FileHeader"
+        // keeps "State"
+
 
     }
 
