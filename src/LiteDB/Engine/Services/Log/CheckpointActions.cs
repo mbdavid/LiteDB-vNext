@@ -14,7 +14,6 @@ internal struct LogPosition
     public int PageID;
     public int PhysicalID;
     public bool IsConfirmed;
-
 }
 
 internal enum CheckpointActionEnum : byte
@@ -45,37 +44,34 @@ internal class CheckpointActions
         var lastPositionID = logPages[^1].PositionID;
         var lastTempPositionID = startTempPositionID + (tempPages.Count - 1);
 
-        // create dict with all duplicates pageID getting last positionID
-        var duplicates = logPages
-            .Where(x => confirmedTransactions.Contains(x.TransactionID))
-            .GroupBy(x => x.PageID)
-            .Where(x => x.Count() > 1)
-            .Select(x => new { PageID = x.Key, PositionID = x.Max(y => y.PositionID) })
-            .ToDictionary(x => x.PageID, x => x);
-
-        var logPositions = new ()[0]; // tem q ter o tamanho do log considerando o temp
-
-        var allPages = logPages
+        // get all log pages and temp pages order by PositionID
+        var logPositions = logPages
             .Select(x => new LogPosition
             {
                 PositionID = x.PositionID,
                 PageID = x.PageID,
-                PhysicalID = x.PositionID,
+                PhysicalID = x.PositionID, // in log pages, physical positionID == position ID
                 IsConfirmed = confirmedTransactions.Contains(x.TransactionID)
             })
-            .ToList();
+            .Union(tempPages.Select(t => new LogPosition
+            {
+                PageID = t.PageID,
+                PositionID = t.PositionID,
+                PhysicalID = startTempPositionID++, // in temp pages, positionID has diferent physical id
+                IsConfirmed = true
+            }))
+            .OrderBy(x => x.PositionID)
+            .ToArray();
 
-        var logs = new List<LogPosition>();
+        // create dict with all duplicates pageID getting last positionID
+        var duplicates = logPositions
+            .Where(x => x.IsConfirmed)
+            .GroupBy(x => x.PageID)
+            .Where(x => x.Count() > 1)
+            .Select(x => (PageID: x.Key, PositionID: x.Max(y => y.PositionID)))
+            .ToDictionary(x => x.PageID, x => x);
 
-        foreach(var tempPage in tempPages)
-        {
-
-        }
-
-
-
-        //foreach(var logPage in logPages)
-        for(var i = 0; i < logPositions.Length; i++)
+        for (var i = 0; i < logPositions.Length; i++)
         {
             var logPage = logPositions[i];
 
@@ -86,8 +82,6 @@ internal class CheckpointActions
             {
                 willOverride = logPage.PositionID < lastDuplicate.PositionID;
             }
-
-            // ** verifica se o log nao esta no temp
 
             // if page is not confirmed or will be override
             if (willOverride || !logPage.IsConfirmed)
@@ -119,9 +113,9 @@ internal class CheckpointActions
             else if (logPage.PageID > logPage.PositionID)
             {
                 // find target log page
-                var target = logPages.FirstOrDefault(x => x.PositionID == logPage.PageID);
+                var targetIndex = Array.FindIndex(logPositions, x => x.PositionID == logPage.PositionID);
 
-                if (target.Equals(default(PageHeader)))
+                if (targetIndex == -1)
                 {
                     // target not found, can copy directly to datafile
                     yield return new CheckpointAction
@@ -134,22 +128,19 @@ internal class CheckpointActions
                 }
                 else
                 {
+                    // get a new position on temp
                     var nextPositionID = lastTempPositionID++;
 
                     // copy target page to temp
                     yield return new CheckpointAction
                     {
                         Action = CheckpointActionEnum.CopyToTempFile,
-                        PositionID = target.PositionID,
+                        PositionID = logPositions[targetIndex].PositionID,
                         TargetPositionID = nextPositionID,
                         MustClear = false
                     };
 
-                    var logIndex = Array.FindIndex(logPositions, x => x.PositionID == target.PositionID);
-
-                    ENSURE(logIndex >= 0);
-
-                    logPositions[logIndex].PhysicalID = nextPositionID;
+                    logPositions[targetIndex].PhysicalID = nextPositionID;
 
                     // copy page to target
                     yield return new CheckpointAction
@@ -161,9 +152,10 @@ internal class CheckpointActions
                     };
                 }
             }
-
-            throw new NotImplementedException();
-
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
