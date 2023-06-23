@@ -28,6 +28,7 @@ internal partial class ServicesFactory : IServicesFactory
 
     public ILockService LockService { get; }
     public IDiskService DiskService { get; }
+    public IRecoveryService RecoveryService { get; }
     public IAllocationMapService AllocationMapService { get; }
     public IMasterMapper MasterMapper { get; }
     public IMasterService MasterService { get; }
@@ -55,7 +56,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.IndexPageService = new IndexPageService();
         this.MasterMapper = new MasterMapper();
         this.AutoIdService = new AutoIdService();
-
+        this.RecoveryService = new RecoveryService(this.BufferFactory, this.DiskService);
         // settings dependency only
         this.LockService = new LockService(settings.Timeout);
         this.StreamFactory = new FileStreamFactory(settings);
@@ -74,7 +75,7 @@ internal partial class ServicesFactory : IServicesFactory
     public IEngineContext CreateEngineContext() 
         => new EngineContext();
 
-    public IDiskStream CreateDiskStream() 
+    public IDiskStream CreateDiskStream()
         => new DiskStream(this.Settings, this.StreamFactory);
 
     public IStreamFactory CreateStreamFactory(bool readOnly)
@@ -118,9 +119,10 @@ internal partial class ServicesFactory : IServicesFactory
     {
         // dispose all instances services to keep all clean (disk/memory)
 
-        // variables/list only
+        // variables/lists only
         this.WalIndexService.Dispose();
         this.LockService.Dispose();
+        this.RecoveryService.Dispose();
 
         // pageBuffer dependencies
         this.CacheService.Dispose();
@@ -129,6 +131,8 @@ internal partial class ServicesFactory : IServicesFactory
         this.MasterService.Dispose();
         this.MonitorService.Dispose();
         this.DiskService.Dispose();
+
+        // dispose buffer pages
         this.BufferFactory.Dispose();
 
         this.State = EngineState.Close;

@@ -56,8 +56,8 @@ internal class AllocationMapService : IAllocationMapService
     {
         var positionID = AM_FIRST_PAGE_ID;
 
-        var lastPositionID = _diskService.GetLastFilePositionID();
         var writer = _diskService.GetDiskWriter();
+        var lastPositionID = writer.GetLastFilePositionID();
 
         while (positionID <= lastPositionID)
         {
@@ -226,17 +226,7 @@ internal class AllocationMapService : IAllocationMapService
             var allocationMapID = (pageID / AM_PAGE_STEP);
             var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
             var pageIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE);
-            byte value = (page.Header.PageType, page.Header.FreeBytes) switch
-            {
-                (_, PAGE_CONTENT_SIZE) => 0, // empty page, no matter page type
-                (PageType.Data, >= AM_DATA_PAGE_SPACE_LARGE and < PAGE_CONTENT_SIZE) => 1,
-                (PageType.Data, >= AM_DATA_PAGE_SPACE_MEDIUM) => 2,
-                (PageType.Data, >= AM_DATA_PAGE_SPACE_SMALL) => 3,
-                (PageType.Data, < AM_DATA_PAGE_SPACE_SMALL) => 4,
-                (PageType.Index, >= AM_INDEX_PAGE_SPACE) => 5,
-                (PageType.Index, < AM_INDEX_PAGE_SPACE) => 6,
-                _ => throw new NotSupportedException()
-            };
+            var value = AllocationMapPage.GetAllocationPageValue(ref page.Header);
 
             ENSURE(pageIndex != -1, "PageID cannot be an AM page ID");
 
@@ -248,30 +238,23 @@ internal class AllocationMapService : IAllocationMapService
             // get (or create) collection free page for this collection
             var freePages = _collectionFreePages[page.Header.ColID] ??= new CollectionFreePages();
 
-            switch (value)
+            var list = value switch
             {
-                case 0b000: // 0
-                    freePages.EmptyPages.Insert(pageID);
-                    break;
-                case 0b001: // 1
-                    freePages.DataPagesLarge.Insert(pageID);
-                    break;
-                case 0b010: // 2
-                    freePages.DataPagesMedium.Insert(pageID);
-                    break;
-                case 0b011: // 3
-                    freePages.DataPagesSmall.Insert(pageID);
-                    break;
-                case 0b100: // 4 - data page full
-                    break;
-                case 0b101: // 5 - index page with available space
-                    freePages.IndexPages.Insert(pageID);
-                    break;
-                case 0b110: // 6 - index page full
-                case 0b111: // 7 - reserved
-                    break;
+                0b000 => freePages.EmptyPages,      // 0 - page empty (can be used to data or index)
+                0b001 => freePages.DataPagesLarge,  // 1 - data page large
+                0b010 => freePages.DataPagesMedium, // 2 - data page medium
+                0b011 => freePages.DataPagesSmall,  // 3 - data page small
+                0b100 => null,                      // 4 - data page full
+                0b101 => freePages.IndexPages,      // 5 - index page with available space
+                0b110 => null,                      // 6 - index page full
+                0b111 => null,                      // 7 - reserved
+                _ => null
+            };
 
-            }
+            ENSURE(list is not null, list!.Contains(pageID), $"page {pageID} already in this list");
+
+            // insert (if has a list) this pageID in a correct free bucket 
+            list?.Insert(pageID);
         }
     }
 

@@ -19,6 +19,6 @@ internal struct LogPosition : IEqualityComparer<LogPosition>
 
     public override string ToString()
     {
-        return $"PhysicalID: {this.PhysicalID}, PositionID: {this.PositionID}, PageID: {this.PageID} {(this.IsConfirmed ? "confirmed" : "not-confirmed")}";
+        return $"PhysicalID: {PhysicalID}, PositionID: {PositionID}, PageID: {PageID} {(IsConfirmed ? "confirmed" : "not-confirmed")}";
     }
 }

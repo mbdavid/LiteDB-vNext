@@ -9,6 +9,6 @@ internal struct CheckpointAction
 
     public override string ToString()
     {
-        return $"{this.Action}: {this.PositionID} -> {this.TargetPositionID} {(this.MustClear ? "clear" : "no-clear")}";
+        return $"{Action}: {PositionID} -> {TargetPositionID} {(MustClear ? "clear" : "no-clear")}";
     }
 }

@@ -243,9 +243,29 @@ internal class AllocationMapPage
     /// <summary>
     /// Returns a AllocationMapID from a allocation map pageID. Must return 0, 1, 2, 3
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetAllocationMapID(int pageID)
     {
         return (pageID - AM_FIRST_PAGE_ID) % AM_EXTEND_COUNT;
+    }
+
+    /// <summary>
+    /// Get a value (0-7) thats represent diferent page types/avaiable spaces
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static byte GetAllocationPageValue(ref PageHeader header)
+    {
+        return (header.PageType, header.FreeBytes) switch
+        {
+            (_, PAGE_CONTENT_SIZE) => 0, // empty page, no matter page type
+            (PageType.Data, >= AM_DATA_PAGE_SPACE_LARGE and < PAGE_CONTENT_SIZE) => 1,
+            (PageType.Data, >= AM_DATA_PAGE_SPACE_MEDIUM) => 2,
+            (PageType.Data, >= AM_DATA_PAGE_SPACE_SMALL) => 3,
+            (PageType.Data, < AM_DATA_PAGE_SPACE_SMALL) => 4,
+            (PageType.Index, >= AM_INDEX_PAGE_SPACE) => 5,
+            (PageType.Index, < AM_INDEX_PAGE_SPACE) => 6,
+            _ => throw new NotSupportedException()
+        };
     }
 
     #endregion

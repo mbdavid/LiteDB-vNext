@@ -47,4 +47,9 @@ internal class FreePageList
 
         return _right.Dequeue();
     }
+
+    public bool Contains(int pageID)
+    {
+        return _left.Contains(pageID) || _right.Contains(pageID);
+    }
 }

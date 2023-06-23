@@ -89,6 +89,25 @@ internal class DiskStream : IDiskStream
     }
 
     /// <summary>
+    /// Calculate, using disk file length, last PositionID. Should considering FILE_HEADER_SIZE and celling pages.
+    /// </summary>
+    public int GetLastFilePositionID()
+    {
+        var fileLength = _streamFactory.GetLength();
+
+        // fileLength must be, at least, FILE_HEADER
+        if (fileLength <= FILE_HEADER_SIZE) throw ERR($"Invalid datafile. Data file is too small (length = {fileLength}).");
+
+        var content = fileLength - FILE_HEADER_SIZE;
+        var celling = content % PAGE_SIZE > 0 ? 1 : 0;
+        var result = content / PAGE_SIZE;
+
+        // if last page was not completed written, add missing bytes to complete
+
+        return (int)(result + celling - 1);
+    }
+
+    /// <summary>
     /// Read single page from disk using disk position. This position has FILE_HEADER_SIZE offset
     /// </summary>
     public async ValueTask<bool> ReadPageAsync(int positionID, PageBuffer page, CancellationToken ct = default)

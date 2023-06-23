@@ -11,6 +11,7 @@ public partial class LiteEngine : ILiteEngine
         var logService = _factory.LogService;
         var allocationMapService = _factory.AllocationMapService;
         var masterService = _factory.MasterService;
+        var recoveryService = _factory.RecoveryService;
 
         if (_factory.State != EngineState.Close) throw ERR("must be closed");
 
@@ -27,10 +28,17 @@ public partial class LiteEngine : ILiteEngine
             // open/create data file and returns file header
             _factory.FileHeader = await diskService.InitializeAsync();
 
-            if (_factory.FileHeader.IsDirty) throw new NotImplementedException();
+            // checks if datafile was finish correctly
+            if (_factory.FileHeader.IsDirty)
+            {
+                _factory.State = EngineState.Recovery;
 
-            // initialize log service
-            logService.Initialize(diskService.GetLastFilePositionID());
+                // do a database recovery
+                await recoveryService.DoRecoveryAsync();
+            }
+
+            // initialize log service based on disk
+            logService.Initialize();
 
             // initialize AM service
             await allocationMapService.InitializeAsync();

@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// * Singleton (thread safe)
@@ -35,11 +33,13 @@ internal partial class LogService : ILogService
         _factory = factory;
     }
 
-    public void Initialize(int lastFilePositionID)
+    public void Initialize()
     {
-        _lastPageID = lastFilePositionID;
+        var writer = _diskService.GetDiskWriter();
 
-        _logPositionID = this.CalcInitLogPositionID(lastFilePositionID);
+        _lastPageID = writer.GetLastFilePositionID();
+
+        _logPositionID = this.CalcInitLogPositionID(_lastPageID);
     }
 
     /// <summary>
@@ -159,15 +159,22 @@ internal partial class LogService : ILogService
 
         foreach (var action in actions)
         {
-            // get page from file position ID (log or data)
-            var page = await this.GetLogPageAsync(writer, action.PositionID);
-
             if (action.Action == CheckpointActionEnum.ClearPage)
             {
+                // if this page are in cache, remove and deallocate
+                if (_cacheService.TryRemove(action.PositionID, out var page))
+                {
+                    _bufferFactory.DeallocatePage(page!);
+                }
+
+                // write an empty page at position
                 await writer.WriteEmptyAsync(action.PositionID);
             }
             else
             {
+                // get page from file position ID (log or data)
+                var page = await this.GetLogPageAsync(writer, action.PositionID);
+
                 if (action.Action == CheckpointActionEnum.CopyToDataFile)
                 {
                     // transform this page into a data file page
@@ -196,13 +203,7 @@ internal partial class LogService : ILogService
                 {
                     await writer.WriteEmptyAsync(action.PositionID);
                 }
-            }
 
-            var addToCache = action.Action != CheckpointActionEnum.ClearPage;
-
-            // test if current page should be added in cache or deallocates
-            if (addToCache)
-            {
                 // if cache contains this position (old data version) must be removed from cache and deallocate
                 if (_cacheService.TryRemove(page.PositionID, out var removedPage))
                 {
@@ -217,11 +218,6 @@ internal partial class LogService : ILogService
                 {
                     _bufferFactory.DeallocatePage(page);
                 }
-            }
-            else
-            {
-                // page has old/invalid data - just deallocate
-                _bufferFactory.DeallocatePage(page);
             }
         }
 
