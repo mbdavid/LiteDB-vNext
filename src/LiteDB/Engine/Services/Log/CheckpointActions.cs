@@ -65,7 +65,7 @@ internal class CheckpointActions
             if (willOverride || !logPage.IsConfirmed)
             {
                 // if page is inside datafile must be clear
-                if (logPage.PositionID < lastPageID)
+                if (logPage.PositionID <= lastPageID)
                 {
                     yield return new CheckpointAction
                     {
@@ -81,9 +81,9 @@ internal class CheckpointActions
                 yield return new CheckpointAction
                 {
                     Action = CheckpointActionEnum.CopyToDataFile,
-                    PositionID = logPage.PositionID,
+                    PositionID = logPage.PhysicalID,
                     TargetPositionID = logPage.PageID,
-                    MustClear = (logPage.PageID <= lastPageID)
+                    MustClear = (logPage.PhysicalID <= lastPageID)
                 };
             }
 
@@ -91,7 +91,7 @@ internal class CheckpointActions
             else if (logPage.PageID > logPage.PositionID)
             {
                 // find target log page
-                var targetIndex = Array.FindIndex(logPositions, x => x.PositionID == logPage.PositionID);
+                var targetIndex = Array.FindIndex(logPositions, x => x.PositionID == logPage.PageID);
 
                 if (targetIndex == -1)
                 {
@@ -99,9 +99,9 @@ internal class CheckpointActions
                     yield return new CheckpointAction
                     {
                         Action = CheckpointActionEnum.CopyToDataFile,
-                        PositionID = logPage.PositionID,
+                        PositionID = logPage.PhysicalID,
                         TargetPositionID = logPage.PageID,
-                        MustClear = (logPage.PageID <= lastPageID)
+                        MustClear = (logPage.PhysicalID <= lastPageID)
                     };
                 }
                 else
@@ -124,9 +124,9 @@ internal class CheckpointActions
                     yield return new CheckpointAction
                     {
                         Action = CheckpointActionEnum.CopyToDataFile,
-                        PositionID = logPage.PositionID,
+                        PositionID = logPage.PhysicalID,
                         TargetPositionID = logPage.PageID,
-                        MustClear = (logPage.PageID <= lastPageID)
+                        MustClear = (logPage.PhysicalID <= lastPageID)
                     };
                 }
             }
