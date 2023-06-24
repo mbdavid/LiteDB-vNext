@@ -37,8 +37,9 @@ internal class CheckpointActions
                 PhysicalID = startTempPositionID++, // in temp pages, positionID has diferent physical id
                 IsConfirmed = true
             }))
+            .OrderByDescending(x => x.PhysicalID)
             .OrderBy(x => x.PositionID)
-            .Distinct()
+            .DistinctBy(x => x.PositionID, EqualityComparer<int>.Default)
             .ToArray();
 
         // create dict with all duplicates pageID getting last positionID

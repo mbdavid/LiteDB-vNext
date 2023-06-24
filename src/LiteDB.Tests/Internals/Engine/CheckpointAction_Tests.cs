@@ -5,7 +5,7 @@ public class CheckpointAction_Tests
     [Fact]
     public void Checkpoint_OverrideDatafilePage_ClearLogPages()
     {
-        // Arrange
+        #region Arrange
         var sut = new CheckpointActions();
 
         // datapages ends here
@@ -29,17 +29,18 @@ public class CheckpointAction_Tests
 
         // define temp pages
         var tempPages = new List<PageHeader>();
+        #endregion
 
-        // Act
+        #region Act
         var actions = sut.GetActions(
             logPages,
             confirmedTransactions,
             lastPageID,
             startTempPositionID,
             tempPages).ToArray();
+        #endregion
 
-
-        // Asserts
+        #region Asserts
         actions.Length.Should().Be(4);
 
         // action #0
@@ -65,13 +66,13 @@ public class CheckpointAction_Tests
         actions[3].PositionID.Should().Be(20);
         actions[3].TargetPositionID.Should().Be(10);
         actions[3].MustClear.Should().BeTrue();
-
+        #endregion
     }
 
     [Fact]
     public void Checkpoint_AfterLastPageID_MustClearFalse()
     {
-        // Arrange
+        #region Arrange
         var sut = new CheckpointActions();
 
         // datapages ends here
@@ -92,17 +93,18 @@ public class CheckpointAction_Tests
 
         // define temp pages
         var tempPages = new List<PageHeader>();
+        #endregion
 
-        // Act
+        #region Act
         var actions = sut.GetActions(
             logPages, 
             confirmedTransactions, 
             lastPageID, 
             startTempPositionID, 
             tempPages).ToArray();
+        #endregion
 
-
-        // Asserts
+        #region Asserts
         actions.Length.Should().Be(1);
 
         // action #0
@@ -110,13 +112,13 @@ public class CheckpointAction_Tests
         actions[0].PositionID.Should().Be(17);
         actions[0].TargetPositionID.Should().Be(10);
         actions[0].MustClear.Should().BeFalse();
-
+        #endregion
     }
 
     [Fact]
     public void Checkpoint_BeforeLastPageID_MustClearTrue()
     {
-        // Arrange
+        #region Arrange
         var sut = new CheckpointActions();
 
         // datapages ends here
@@ -137,17 +139,18 @@ public class CheckpointAction_Tests
 
         // define temp pages
         var tempPages = new List<PageHeader>();
+        #endregion
 
-        // Act
+        #region Act
         var actions = sut.GetActions(
             logPages,
             confirmedTransactions,
             lastPageID,
             startTempPositionID,
             tempPages).ToArray();
+        #endregion
 
-
-        // Asserts
+        #region Asserts
         actions.Length.Should().Be(1);
 
         // action #0
@@ -155,25 +158,26 @@ public class CheckpointAction_Tests
         actions[0].PositionID.Should().Be(17);
         actions[0].TargetPositionID.Should().Be(10);
         actions[0].MustClear.Should().BeTrue();
-
+        #endregion
     }
 
-    [Fact]
-    public void Checkpoint_TransactionNotConfirmed_ClearPages()
+    [Theory]
+    [InlineData(true, 0, 0)]
+    [InlineData(true, 19, 20)]
+    [InlineData(true, 20, 20)]
+    [InlineData(false, 21, 20)]
+    public void Checkpoint_TransactionNotConfirmed_ClearPages(bool shouldClear, int positionID, int lastPageId)
     {
-        // Arrange
+        #region Arrange
         var sut = new CheckpointActions();
 
         // datapages ends here
-        var lastPageID = 20;
+        var lastPageID = lastPageId;
 
         // adding log pages at position
         var logPages = new List<PageHeader>
         {
-            new PageHeader { PositionID = 17, PageID = 10, TransactionID = 1, IsConfirmed = false },
-            new PageHeader { PositionID = 18, PageID = 11, TransactionID = 1, IsConfirmed = false },
-            new PageHeader { PositionID = 19, PageID = 12, TransactionID = 1, IsConfirmed = false },
-            new PageHeader { PositionID = 20, PageID = 13, TransactionID = 1, IsConfirmed = false }
+            new PageHeader { PositionID = positionID, PageID = 13, TransactionID = 1, IsConfirmed = false }
         };
 
         // update lastPageID
@@ -185,49 +189,38 @@ public class CheckpointAction_Tests
 
         // define temp pages
         var tempPages = new List<PageHeader>();
+        #endregion
 
-        // Act
+        #region Act
         var actions = sut.GetActions(
             logPages,
             confirmedTransactions,
             lastPageID,
             startTempPositionID,
             tempPages).ToArray();
+        #endregion
 
-
-        // Asserts
-        actions.Length.Should().Be(4);
-
-        // action #0
-        actions[0].Action.Should().Be(CheckpointActionEnum.ClearPage);
-        actions[0].PositionID.Should().Be(17);
-        actions[0].TargetPositionID.Should().Be(0);
-        actions[0].MustClear.Should().BeFalse();
-
-        // action #1
-        actions[1].Action.Should().Be(CheckpointActionEnum.ClearPage);
-        actions[1].PositionID.Should().Be(18);
-        actions[1].TargetPositionID.Should().Be(0);
-        actions[1].MustClear.Should().BeFalse();
-
-        // action #2
-        actions[2].Action.Should().Be(CheckpointActionEnum.ClearPage);
-        actions[2].PositionID.Should().Be(19);
-        actions[2].TargetPositionID.Should().Be(0);
-        actions[2].MustClear.Should().BeFalse();
-
-        // action #3
-        actions[3].Action.Should().Be(CheckpointActionEnum.ClearPage);
-        actions[3].PositionID.Should().Be(20);
-        actions[3].TargetPositionID.Should().Be(0);
-        actions[3].MustClear.Should().BeFalse();
-
+        #region Asserts
+        if(shouldClear)
+        {
+            actions.Length.Should().Be(1);
+            // action #0
+            actions[0].Action.Should().Be(CheckpointActionEnum.ClearPage);
+            actions[0].PositionID.Should().Be(positionID);
+            actions[0].TargetPositionID.Should().Be(0);
+            actions[0].MustClear.Should().BeFalse();
+        }
+        else
+        {
+            actions.Length.Should().Be(0);
+        }
+        #endregion
     }
 
     [Fact]
-    public void Checkpoint_OverrideLogPage_CopyToTempfile()
+    public void Checkpoint_OverrideLogPage_ShouldCopyToTempfile()
     {
-        // Arrange
+        #region Arrange
         var sut = new CheckpointActions();
 
         // datapages ends here
@@ -249,17 +242,18 @@ public class CheckpointAction_Tests
 
         // define temp pages
         var tempPages = new List<PageHeader>();
+        #endregion
 
-        // Act
+        #region Act
         var actions = sut.GetActions(
             logPages,
             confirmedTransactions,
             lastPageID,
             startTempPositionID,
             tempPages).ToArray();
+        #endregion
 
-
-        // Asserts
+        #region Asserts
         actions.Length.Should().Be(3);
 
         // action #0
@@ -279,13 +273,14 @@ public class CheckpointAction_Tests
         actions[2].PositionID.Should().Be(21);
         actions[2].TargetPositionID.Should().Be(11);
         actions[2].MustClear.Should().BeFalse();
+        #endregion
 
     }
 
     [Fact]
     public void Checkpoint_PreexistingTempInMiddleLog_ShouldDirectlyCopyToDatafile()
     {
-        // Arrange
+        #region Arrange
         var sut = new CheckpointActions();
 
         // datapages ends here
@@ -310,17 +305,18 @@ public class CheckpointAction_Tests
         {
             new PageHeader { PositionID = 18, PageID = 11, TransactionID = 1, IsConfirmed = false }
         };
+        #endregion
 
-        // Act
+        #region Act
         var actions = sut.GetActions(
             logPages,
             confirmedTransactions,
             lastPageID,
             startTempPositionID,
             tempPages).ToArray();
+        #endregion
 
-
-        // Asserts
+        #region Asserts
         actions.Length.Should().Be(3);
 
         // action #0
@@ -340,13 +336,13 @@ public class CheckpointAction_Tests
         actions[2].PositionID.Should().Be(19);
         actions[2].TargetPositionID.Should().Be(12);
         actions[2].MustClear.Should().BeTrue();
-
+        #endregion
     }
 
     [Fact]
-    public void Checkpoint__PreexistingTempBeforeTheLog_ShouldDirectlyCopyToDatafile()
+    public void Checkpoint_PreexistingTempBeforeLog_ShouldDirectlyCopyToDatafile()
     {
-        // Arrange
+        #region Arrange
         var sut = new CheckpointActions();
 
         // datapages ends here
@@ -371,17 +367,18 @@ public class CheckpointAction_Tests
         {
             new PageHeader { PositionID = 17, PageID = 10, TransactionID = 1, IsConfirmed = false }
         };
+        #endregion
 
-        // Act
+        #region Act
         var actions = sut.GetActions(
             logPages,
             confirmedTransactions,
             lastPageID,
             startTempPositionID,
             tempPages).ToArray();
+        #endregion
 
-
-        // Asserts
+        #region Asserts
         actions.Length.Should().Be(3);
 
         // action #0
@@ -401,13 +398,13 @@ public class CheckpointAction_Tests
         actions[2].PositionID.Should().Be(19);
         actions[2].TargetPositionID.Should().Be(12);
         actions[2].MustClear.Should().BeTrue();
-
+        #endregion
     }
 
     [Fact]
-    public void Checkpoint__PreexistingTempAfterTheLog_ShouldDirectlyCopyToDatafile()
+    public void Checkpoint_PreexistingTempAfterLog_ShouldDirectlyCopyToDatafile()
     {
-        // Arrange
+        #region Arrange
         var sut = new CheckpointActions();
 
         // datapages ends here
@@ -432,17 +429,18 @@ public class CheckpointAction_Tests
         {
             new PageHeader { PositionID = 19, PageID = 12, TransactionID = 1, IsConfirmed = false }
         };
+        #endregion
 
-        // Act
+        #region Act
         var actions = sut.GetActions(
             logPages,
             confirmedTransactions,
             lastPageID,
             startTempPositionID,
             tempPages).ToArray();
+        #endregion
 
-
-        // Asserts
+        #region Asserts
         actions.Length.Should().Be(3);
 
         // action #0
@@ -462,6 +460,69 @@ public class CheckpointAction_Tests
         actions[2].PositionID.Should().Be(21);
         actions[2].TargetPositionID.Should().Be(12);
         actions[2].MustClear.Should().BeFalse();
+        #endregion
+    }
 
+    [Fact]
+    public void Checkpoint_DuplicatePage_ShouldUseTempPage()
+    {
+        #region Arrange
+        var sut = new CheckpointActions();
+
+        // datapages ends here
+        var lastPageID = 20;
+
+        // adding log pages at position
+        var logPages = new List<PageHeader>
+        {
+            new PageHeader { PositionID = 18, PageID = 11, TransactionID = 1, IsConfirmed = false },
+            new PageHeader { PositionID = 19, PageID = 12, TransactionID = 1, IsConfirmed = false },
+            new PageHeader { PositionID = 20, PageID = 13, TransactionID = 1, IsConfirmed = true }
+        };
+
+        // update lastPageID
+        lastPageID = Math.Max(lastPageID, logPages.Max(x => x.PageID));
+
+        // get start temp positionID and confirm transactions
+        var startTempPositionID = Math.Max(lastPageID, logPages[^1].PositionID) + 1;
+        var confirmedTransactions = new HashSet<int>(logPages.Where(x => x.IsConfirmed).Select(x => x.TransactionID));
+
+        // define temp pages
+        var tempPages = new List<PageHeader>
+        {
+            new PageHeader { PositionID = 19, PageID = 12, TransactionID = 1, IsConfirmed = false }
+        };
+        #endregion
+
+        #region Act
+        var actions = sut.GetActions(
+            logPages,
+            confirmedTransactions,
+            lastPageID,
+            startTempPositionID,
+            tempPages).ToArray();
+        #endregion
+
+        #region Asserts
+        actions.Length.Should().Be(3);
+
+        // action #0
+        actions[0].Action.Should().Be(CheckpointActionEnum.CopyToDataFile);
+        actions[0].PositionID.Should().Be(18);
+        actions[0].TargetPositionID.Should().Be(11);
+        actions[0].MustClear.Should().BeTrue();
+
+        // action #1
+        actions[1].Action.Should().Be(CheckpointActionEnum.CopyToDataFile);
+        actions[1].PositionID.Should().Be(21);
+        actions[1].TargetPositionID.Should().Be(12);
+        actions[1].MustClear.Should().BeFalse();
+
+        // action #2
+        actions[2].Action.Should().Be(CheckpointActionEnum.CopyToDataFile);
+        actions[2].PositionID.Should().Be(20);
+        actions[2].TargetPositionID.Should().Be(13);
+        actions[2].MustClear.Should().BeTrue();
+        #endregion
     }
 }
