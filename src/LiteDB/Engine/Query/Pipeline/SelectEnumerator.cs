@@ -1,19 +1,19 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface]
+[AutoInterface(typeof(IPipelineEnumerator))]
 internal class SelectEnumerator : ISelectEnumerator
 {
     private readonly Collation _collation;
-    private readonly ILimitEnumerator _limitEnumerator;
+    private readonly IPipelineEnumerator _enumerator;
 
     private readonly BsonExpression? _selectExpression;
 
     private bool _eof = false;
 
-    public SelectEnumerator(BsonExpression? selectExpression, ILimitEnumerator limitEnumerator, Collation collation)
+    public SelectEnumerator(BsonExpression? selectExpression, IPipelineEnumerator enumerator, Collation collation)
     {
         _selectExpression = selectExpression;
-        _limitEnumerator = limitEnumerator;
+        _enumerator = enumerator;
         _collation = collation;
     }
 
@@ -21,7 +21,7 @@ internal class SelectEnumerator : ISelectEnumerator
     {
         if (_eof) return null;
 
-        var doc = await _limitEnumerator.MoveNextAsync(transacion, factory);
+        var doc = await _enumerator.MoveNextAsync(transacion, factory);
 
         if (doc is null)
         {

@@ -4,7 +4,7 @@ internal struct FetchResult
 {
     public int From;
     public int To;
-    public int TotalFetch;
+    public int FetchCount;
     public bool Eof;
-    public BsonDocument[] Results;
+    public IList<BsonDocument> Results;
 }

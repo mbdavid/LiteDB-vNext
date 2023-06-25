@@ -1,4 +1,4 @@
-﻿namespace LiteDB.Engine; // the "Engine" sufix name was not used to maintain compatibility with previous versions
+﻿namespace LiteDB; // the "Engine" sufix name was not used to maintain compatibility with previous versions
 
 /// <summary>
 /// Class is a result from optimized QueryBuild. Indicate how engine must run query - there is no more decisions to engine made, must only execute as query was defined

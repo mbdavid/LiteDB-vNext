@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface]
+[AutoInterface(typeof(IPipelineEnumerator))]
 internal class LimitEnumerator : ILimitEnumerator
 {
     private readonly IPipelineEnumerator _enumerator;
@@ -18,7 +18,7 @@ internal class LimitEnumerator : ILimitEnumerator
 
     public async ValueTask<BsonDocument?> MoveNextAsync(ITransaction transacion, IServicesFactory factory)
     {
-        if (_eof) return null;
+        if (_eof || _limit == int.MaxValue) return null; // by-pass when limit is not used
 
         var doc = await _enumerator.MoveNextAsync(transacion, factory);
 
