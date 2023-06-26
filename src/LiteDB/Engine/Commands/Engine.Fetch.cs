@@ -18,15 +18,21 @@ public partial class LiteEngine : ILiteEngine
             throw ERR($"Cursor {cursorID} do not exists or already full fetched");
         }
 
-        // create a new transaction with no lock
+        // create a new transaction but use an "old" readVersion
         var transaction = await monitorService.CreateTransactionAsync(cursor.ReadVersion);
 
+        // read lock transaction
         await transaction.InitializeAsync();
 
+        // initialize data/index services for this transaction
         var dataService = _factory.CreateDataService(transaction);
         var indexService = _factory.CreateIndexService(transaction);
 
-        var result = await queryService.FetchAsync(cursor, dataService, indexService, fetchSize);
+        // create a new context pipe
+        var pipeContext = new PipeContext(dataService, indexService);
+
+        // fetch next results (closes cursor when eof)
+        var result = await queryService.FetchAsync(cursor, fetchSize, pipeContext);
 
         monitorService.ReleaseTransaction(transaction);
 

@@ -4,13 +4,16 @@ public abstract partial class BsonExpression
 {
     private static readonly ConcurrentDictionary<string, BsonExpression> _cache = new(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly BsonExpression _root = new ScopeBsonExpression(true);
+    private static readonly BsonExpression _current = new ScopeBsonExpression(false);
+
     public static BsonExpression Constant(BsonValue value) => new ConstantBsonExpression(value);
 
     public static BsonExpression Parameter(string name) => new ParameterBsonExpression(name);
 
-    public static BsonExpression Root() => new ScopeBsonExpression(true);
+    public static BsonExpression Root() => _root;
 
-    public static BsonExpression Current() => new ScopeBsonExpression(false);
+    public static BsonExpression Current() => _current;
 
     public static BsonExpression Path(BsonExpression source, string field) => new PathBsonExpression(source, field);
 

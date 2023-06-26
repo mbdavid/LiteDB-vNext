@@ -13,8 +13,6 @@ internal partial class ServicesFactory : IServicesFactory
     public FileHeader FileHeader { get; set; }
     public Exception? Exception { get; set; }
 
-
-
     public ConcurrentDictionary<string, object> Application { get; } = new();
 
     public IBsonReader BsonReader { get; }
@@ -60,7 +58,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.IndexPageService = new IndexPageService();
         this.MasterMapper = new MasterMapper();
         this.AutoIdService = new AutoIdService();
-        this.RecoveryService = new RecoveryService(this.BufferFactory, this.DiskService);
+
         // settings dependency only
         this.LockService = new LockService(settings.Timeout);
         this.StreamFactory = new FileStreamFactory(settings);
@@ -72,7 +70,8 @@ internal partial class ServicesFactory : IServicesFactory
         this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
-        this.QueryService = new QueryService(this.MasterService, this);
+        this.RecoveryService = new RecoveryService(this.BufferFactory, this.DiskService);
+        this.QueryService = new QueryService(this.WalIndexService, this.MasterService, this);
 
     }
 

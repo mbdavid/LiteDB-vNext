@@ -20,7 +20,7 @@ internal class QueryOptimizer : IQueryOptimizer
         _collation = collation;
     }
 
-    public IPipeEnumerator<BsonDocument> ProcessQuery()
+    public IPipeEnumerator ProcessQuery()
     {
         var lookup = new DataServiceLookup(new HashSet<string>());
         var indexEnumerator = new IndexEqualsEnumerator(_indexKey, _indexDocument, _collation);
@@ -28,8 +28,8 @@ internal class QueryOptimizer : IQueryOptimizer
         // create query pipeline based on enumerators order
         var lookupEnumerator = new LookupEnumerator(lookup, indexEnumerator);
         var filterEnumerator = new FilterEnumerator(_terms, lookupEnumerator, _collation);
-        var offsetEnumerator = new OffsetEnumerator<BsonDocument>(_query.Offset, filterEnumerator);
-        var limitEnumerator = new LimitEnumerator<BsonDocument>(_query.Limit, offsetEnumerator);
+        var offsetEnumerator = new OffsetEnumerator(_query.Offset, filterEnumerator);
+        var limitEnumerator = new LimitEnumerator(_query.Limit, offsetEnumerator);
         var selectEnumerator = new TransformEnumerator(_query.Select, limitEnumerator, _collation);
 
         return selectEnumerator;

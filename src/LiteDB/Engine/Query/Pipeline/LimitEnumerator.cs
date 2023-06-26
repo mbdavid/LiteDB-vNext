@@ -1,31 +1,30 @@
 ﻿namespace LiteDB.Engine;
 
-internal class LimitEnumerator<T> : IPipeEnumerator<T>
+internal class LimitEnumerator : IPipeEnumerator
 {
-    private readonly IPipeEnumerator<T> _enumerator;
+    private readonly IPipeEnumerator _enumerator;
 
     private readonly int _limit;
 
     private int _count = 0;
     private bool _eof = false;
 
-    public LimitEnumerator(int limit, IPipeEnumerator<T> enumerator)
+    public LimitEnumerator(int limit, IPipeEnumerator enumerator)
     {
         _limit = limit;
         _enumerator = enumerator;
     }
 
-    public async ValueTask<T?> MoveNextAsync(IDataService dataService, IIndexService indexService)
+    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
-        if (_eof || _limit == int.MaxValue) return default; // by-pass when limit is not used
+        if (_eof) return PipeValue.Empty;
 
-        var next = await _enumerator.MoveNextAsync(dataService, indexService);
+        var item = await _enumerator.MoveNextAsync(context);
 
-        if (this.IsEmpty(next))
+        if (item.Eof)
         {
             _eof = true;
-
-            return this.ReturnEmpty();
+            return PipeValue.Empty;
         }
 
         _count++;
@@ -35,10 +34,6 @@ internal class LimitEnumerator<T> : IPipeEnumerator<T>
             _eof = true;
         }
 
-        return next;
+        return item;
     }
-
-    public bool IsEmpty(T? item) => item is PageAddress addr ? addr.IsEmpty : item is null;
-
-    public T? ReturnEmpty() => typeof(T) == typeof(PageAddress) ? (T)(object)PageAddress.Empty : default;
 }

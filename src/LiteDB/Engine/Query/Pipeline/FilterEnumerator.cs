@@ -1,49 +1,45 @@
 ﻿namespace LiteDB.Engine;
 
-internal class FilterEnumerator : IPipeEnumerator<BsonDocument>
+internal class FilterEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
     private readonly IList<BsonExpression> _filters;
 
-    private readonly IPipeEnumerator<BsonDocument> _enumerator;
+    private readonly IPipeEnumerator _enumerator;
 
     private bool _eof = false;
 
-    public FilterEnumerator(IList<BsonExpression> filters, IPipeEnumerator<BsonDocument> enumerator, Collation collation)
+    public FilterEnumerator(IList<BsonExpression> filters, IPipeEnumerator enumerator, Collation collation)
     {
         _filters = filters;
         _enumerator = enumerator;
         _collation = collation;
     }
 
-    public async ValueTask<BsonDocument?> MoveNextAsync(IDataService dataService, IIndexService indexService)
+    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
         while (!_eof)
         {
-            var next = await _enumerator.MoveNextAsync(dataService, indexService);
+            var item = await _enumerator.MoveNextAsync(context);
 
-            if (next is null)
+            if (item.Eof)
             {
                 _eof = true;
-            }
-            else if (_filters.Count == 0) // by-pass
-            {
-                return next;
             }
             else
             {
                 foreach(var filter in _filters)
                 {
-                    var result = filter.Execute(next, null, _collation);
+                    var result = filter.Execute(item.Value, null, _collation);
 
                     if (result.IsBoolean && result.AsBoolean)
                     {
-                        return next;
+                        return item;
                     }
                 }
             }
         }
 
-        return null;
+        return PipeValue.Empty;
     }
 }

@@ -9,14 +9,9 @@ internal class DataServiceLookup : IDocumentLookup
         _fields = fields;
     }
 
-    public ValueTask<BsonDocument> LoadAsync(IndexNode indexNode, IDataService dataService)
+    public async ValueTask<BsonDocument> LoadAsync(PipeValue key, PipeContext context)
     {
-        throw new NotSupportedException();
-    }
-
-    public async ValueTask<BsonDocument> LoadAsync(PageAddress dataBlock, IDataService dataService)
-    {
-        var doc = await dataService.ReadDocumentAsync(dataBlock, _fields);
+        var doc = await context.DataService.ReadDocumentAsync(key.RowID, _fields);
 
         return doc;
     }

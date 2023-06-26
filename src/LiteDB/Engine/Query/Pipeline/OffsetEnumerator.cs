@@ -1,51 +1,47 @@
 ﻿namespace LiteDB.Engine;
 
-internal class OffsetEnumerator<T> : IPipeEnumerator<T>
+internal class OffsetEnumerator : IPipeEnumerator
 {
-    private readonly IPipeEnumerator<T> _enumerator;
+    private readonly IPipeEnumerator _enumerator;
 
     private readonly int _offset;
 
     private int _count = 0;
     private bool _eof = false;
 
-    public OffsetEnumerator(int offset, IPipeEnumerator<T> enumerator)
+    public OffsetEnumerator(int offset, IPipeEnumerator enumerator)
     {
         _offset = offset;
         _enumerator = enumerator;
     }
 
-    public async ValueTask<T?> MoveNextAsync(IDataService dataService, IIndexService indexService)
+    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
-        if (_eof || _offset == 0) return default; // by-pass when offset is not used
+        if (_eof) return PipeValue.Empty;
 
         while (_count <= _offset)
         {
-            var skiped = await _enumerator.MoveNextAsync(dataService, indexService);
+            var skiped = await _enumerator.MoveNextAsync(context);
 
-            if (this.IsEmpty(skiped))
+            if (skiped.Eof)
             {
                 _eof = true;
 
-                return this.ReturnEmpty();
+                return PipeValue.Empty;
             }
 
             _count++;
         }
 
-        var next = await _enumerator.MoveNextAsync(dataService, indexService);
+        var item = await _enumerator.MoveNextAsync(context);
 
-        if (this.IsEmpty(next))
+        if (item.Eof)
         {
             _eof = true;
 
-            return this.ReturnEmpty();
+            return PipeValue.Empty;
         }
 
-        return next;
+        return item;
     }
-
-    public bool IsEmpty(T? item) => item is PageAddress addr ? addr.IsEmpty : item is null;
-
-    public T? ReturnEmpty() => typeof(T) == typeof(PageAddress) ? (T)(object)PageAddress.Empty : default;
 }

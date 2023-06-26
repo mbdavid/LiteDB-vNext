@@ -37,7 +37,7 @@ internal class QueryService : IQueryService
 
     public bool TryGetCursor(Guid cursorID, out Cursor cursor) => _openCursors.TryGetValue(cursorID, out cursor);
 
-    public async ValueTask<FetchResult> FetchAsync(Cursor cursor, IDataService dataService, IIndexService indexService, int fetchSize)
+    public async ValueTask<FetchResult> FetchAsync(Cursor cursor, int fetchSize, PipeContext context)
     {
         var count = 0;
         var eof = false;
@@ -50,23 +50,23 @@ internal class QueryService : IQueryService
         {
             _openCursors.TryRemove(cursor.CursorID, out _);
 
-            throw ERR($"Cursor expired");
+            throw ERR($"Cursor {cursor} expired");
         }
 
         cursor.IsRunning = true;
 
         while (count < fetchSize)
         {
-            var doc = await enumerator.MoveNextAsync(dataService, indexService);
+            var item = await enumerator.MoveNextAsync(context);
 
-            if (doc is null)
+            if (item.Eof)
             {
                 eof = true;
                 break;
             }
             else
             {
-                list.Add(doc);
+                list.Add(item.Value!);
                 count++;
             }
         }

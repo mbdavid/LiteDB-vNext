@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal class IndexEqualsEnumerator : IPipeEnumerator<PageAddress>
+internal class IndexEqualsEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
@@ -23,10 +23,11 @@ internal class IndexEqualsEnumerator : IPipeEnumerator<PageAddress>
         _collation = collation;
     }
 
-    public async ValueTask<PageAddress> MoveNextAsync(IDataService dataService, IIndexService indexService)
+    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
-        if (_eof) return PageAddress.Empty;
+        if (_eof) return PipeValue.Empty;
 
+        var indexService = context.IndexService;
         var dataBlock = PageAddress.Empty;
 
         // in first run, look for index node
@@ -38,7 +39,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator<PageAddress>
             if (nodeRef is null)
             {
                 _init = _eof = true;
-                return PageAddress.Empty;
+                return PipeValue.Empty;
             }
 
             var node = nodeRef.Value.Node;
@@ -99,6 +100,6 @@ internal class IndexEqualsEnumerator : IPipeEnumerator<PageAddress>
         }
 
         // return current dataBlock rowID
-        return dataBlock;
+        return new PipeValue(dataBlock);
     }
 }

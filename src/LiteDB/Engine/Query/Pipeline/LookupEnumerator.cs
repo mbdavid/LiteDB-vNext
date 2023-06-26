@@ -1,32 +1,32 @@
 ﻿namespace LiteDB.Engine;
 
-internal class LookupEnumerator : IPipeEnumerator<BsonDocument>
+internal class LookupEnumerator : IPipeEnumerator
 {
     private readonly IDocumentLookup _lookup;
-    private readonly IPipeEnumerator<PageAddress> _enumerator;
+    private readonly IPipeEnumerator _enumerator;
 
     private bool _eof = false;
 
-    public LookupEnumerator(IDocumentLookup lookup, IPipeEnumerator<PageAddress> enumerator)
+    public LookupEnumerator(IDocumentLookup lookup, IPipeEnumerator enumerator)
     {
         _lookup = lookup;
         _enumerator = enumerator;
     }
 
-    public async ValueTask<BsonDocument?> MoveNextAsync(IDataService dataService, IIndexService indexService)
+    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
-        if (_eof) return null;
+        if (_eof) return PipeValue.Empty;
 
-        var dataBlock = await _enumerator.MoveNextAsync(dataService, indexService);
+        var item = await _enumerator.MoveNextAsync(context);
 
-        if (dataBlock.IsEmpty)
+        if (item.Eof)
         {
             _eof = true;
-            return null;
+            return PipeValue.Empty;
         }
 
-        var doc = await _lookup.LoadAsync(dataBlock, dataService);
+        var doc = await _lookup.LoadAsync(item, context);
 
-        return doc;
+        return new PipeValue(item.RowID, doc);
     }
 }
