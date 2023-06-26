@@ -1,17 +1,13 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface(typeof(IPipeEnumerator))]
-internal class LookupEnumerator : ILookupEnumerator
+internal class LookupEnumerator : IPipeEnumerator<BsonDocument>
 {
     private readonly IDocumentLookup _lookup;
-    private readonly IIndexEnumerator _enumerator;
+    private readonly IPipeEnumerator<PageAddress> _enumerator;
 
-    private readonly int _limit;
-
-    private int _count = 0;
     private bool _eof = false;
 
-    public LookupEnumerator(IDocumentLookup lookup, IIndexEnumerator enumerator)
+    public LookupEnumerator(IDocumentLookup lookup, IPipeEnumerator<PageAddress> enumerator)
     {
         _lookup = lookup;
         _enumerator = enumerator;
@@ -19,21 +15,14 @@ internal class LookupEnumerator : ILookupEnumerator
 
     public async ValueTask<BsonDocument?> MoveNextAsync(IDataService dataService, IIndexService indexService)
     {
-        if (_eof || _limit == int.MaxValue) return null; // by-pass when limit is not used
+        if (_eof) return null;
 
-        var dataBlock = await _enumerator.MoveNextAsync(indexService);
+        var dataBlock = await _enumerator.MoveNextAsync(dataService, indexService);
 
         if (dataBlock.IsEmpty)
         {
             _eof = true;
             return null;
-        }
-
-        _count++;
-
-        if (_count >= _limit)
-        {
-            _eof = true;
         }
 
         var doc = await _lookup.LoadAsync(dataBlock, dataService);

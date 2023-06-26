@@ -11,7 +11,7 @@ internal class DataServiceLookup : IDocumentLookup
 
     public ValueTask<BsonDocument> LoadAsync(IndexNode indexNode, IDataService dataService)
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
     }
 
     public async ValueTask<BsonDocument> LoadAsync(PageAddress dataBlock, IDataService dataService)

@@ -4,15 +4,18 @@
 internal class QueryService : IQueryService
 {
     // dependency injections
+    private readonly IWalIndexService _walIndexService;
     private readonly IMasterService _masterService;
     private readonly IServicesFactory _factory;
 
     private readonly ConcurrentDictionary<Guid, Cursor> _openCursors = new();
 
     public QueryService(
-        IMasterService masterService, 
+        IWalIndexService walIndexService,
+        IMasterService masterService,
         IServicesFactory factory)
     {
+        _walIndexService = walIndexService;
         _masterService = masterService;
         _factory = factory;
     }
@@ -25,7 +28,7 @@ internal class QueryService : IQueryService
 
         var enumerator = queryOptimizer.ProcessQuery();
 
-        var cursor = new Cursor(query, enumerator, readVersion);
+        var cursor = new Cursor(query, readVersion, enumerator);
 
         _openCursors.TryAdd(cursor.CursorID, cursor);
 
@@ -41,6 +44,14 @@ internal class QueryService : IQueryService
         var list = new List<BsonDocument>();
         var start = Stopwatch.GetTimestamp();
         var enumerator = cursor.Enumerator;
+
+        // checks if readVersion still avaiable to execute (changes after checkpoint)
+        if (cursor.ReadVersion < _walIndexService.MinReadVersion)
+        {
+            _openCursors.TryRemove(cursor.CursorID, out _);
+
+            throw ERR($"Cursor expired");
+        }
 
         cursor.IsRunning = true;
 
@@ -87,5 +98,6 @@ internal class QueryService : IQueryService
 
     public void Dispose()
     {
+        _openCursors.Clear();
     }
 }

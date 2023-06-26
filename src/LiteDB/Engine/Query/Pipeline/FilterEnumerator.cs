@@ -1,16 +1,15 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface(typeof(IPipeEnumerator))]
-internal class FilterEnumerator : IFilterEnumerator
+internal class FilterEnumerator : IPipeEnumerator<BsonDocument>
 {
     private readonly Collation _collation;
     private readonly IList<BsonExpression> _filters;
 
-    private readonly IPipeEnumerator _enumerator;
+    private readonly IPipeEnumerator<BsonDocument> _enumerator;
 
     private bool _eof = false;
 
-    public FilterEnumerator(IList<BsonExpression> filters, IPipeEnumerator enumerator, Collation collation)
+    public FilterEnumerator(IList<BsonExpression> filters, IPipeEnumerator<BsonDocument> enumerator, Collation collation)
     {
         _filters = filters;
         _enumerator = enumerator;
@@ -21,25 +20,25 @@ internal class FilterEnumerator : IFilterEnumerator
     {
         while (!_eof)
         {
-            var doc = await _enumerator.MoveNextAsync(dataService, indexService);
+            var next = await _enumerator.MoveNextAsync(dataService, indexService);
 
-            if (doc is null)
+            if (next is null)
             {
                 _eof = true;
             }
             else if (_filters.Count == 0) // by-pass
             {
-                return doc;
+                return next;
             }
             else
             {
                 foreach(var filter in _filters)
                 {
-                    var result = filter.Execute(doc, null, _collation);
+                    var result = filter.Execute(next, null, _collation);
 
                     if (result.IsBoolean && result.AsBoolean)
                     {
-                        return doc;
+                        return next;
                     }
                 }
             }

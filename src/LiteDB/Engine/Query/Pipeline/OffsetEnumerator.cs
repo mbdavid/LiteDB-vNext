@@ -1,46 +1,51 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface(typeof(IPipeEnumerator))]
-internal class OffsetEnumerator : IOffsetEnumerator
+internal class OffsetEnumerator<T> : IPipeEnumerator<T>
 {
-    private readonly IPipeEnumerator _enumerator;
+    private readonly IPipeEnumerator<T> _enumerator;
 
     private readonly int _offset;
 
     private int _count = 0;
     private bool _eof = false;
 
-    public OffsetEnumerator(int offset, IPipeEnumerator enumerator)
+    public OffsetEnumerator(int offset, IPipeEnumerator<T> enumerator)
     {
         _offset = offset;
         _enumerator = enumerator;
     }
 
-    public async ValueTask<BsonDocument?> MoveNextAsync(IDataService dataService, IIndexService indexService)
+    public async ValueTask<T?> MoveNextAsync(IDataService dataService, IIndexService indexService)
     {
-        if (_eof || _offset == 0) return null; // by-pass when offset is not used
+        if (_eof || _offset == 0) return default; // by-pass when offset is not used
 
-        while(_count <= _offset)
+        while (_count <= _offset)
         {
             var skiped = await _enumerator.MoveNextAsync(dataService, indexService);
 
-            if (skiped is null)
+            if (this.IsEmpty(skiped))
             {
                 _eof = true;
-                return null;
+
+                return this.ReturnEmpty();
             }
 
             _count++;
         }
 
-        var doc = await _enumerator.MoveNextAsync(dataService, indexService);
+        var next = await _enumerator.MoveNextAsync(dataService, indexService);
 
-        if (doc is null)
+        if (this.IsEmpty(next))
         {
             _eof = true;
-            return null;
+
+            return this.ReturnEmpty();
         }
 
-        return doc;
+        return next;
     }
+
+    public bool IsEmpty(T? item) => item is PageAddress addr ? addr.IsEmpty : item is null;
+
+    public T? ReturnEmpty() => typeof(T) == typeof(PageAddress) ? (T)(object)PageAddress.Empty : default;
 }

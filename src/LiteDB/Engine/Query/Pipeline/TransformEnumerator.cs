@@ -1,16 +1,15 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface(typeof(IPipeEnumerator))]
-internal class TransformEnumerator : ITransformEnumerator
+internal class TransformEnumerator : IPipeEnumerator<BsonDocument>
 {
     private readonly Collation _collation;
-    private readonly IPipeEnumerator _enumerator;
+    private readonly IPipeEnumerator<BsonDocument> _enumerator;
 
     private readonly BsonExpression _expr;
 
     private bool _eof = false;
 
-    public TransformEnumerator(BsonExpression expr, IPipeEnumerator enumerator, Collation collation)
+    public TransformEnumerator(BsonExpression expr, IPipeEnumerator<BsonDocument> enumerator, Collation collation)
     {
         _expr = expr;
         _enumerator = enumerator;
@@ -21,15 +20,15 @@ internal class TransformEnumerator : ITransformEnumerator
     {
         if (_eof) return null;
 
-        var doc = await _enumerator.MoveNextAsync(dataService, indexService);
+        var next = await _enumerator.MoveNextAsync(dataService, indexService);
 
-        if (doc is null)
+        if (next is null)
         {
             _eof = true;
             return null;
         }
 
-        var result = _expr.Execute(doc, null, _collation);
+        var result = _expr.Execute(next, null, _collation);
 
         return result.AsDocument;
     }

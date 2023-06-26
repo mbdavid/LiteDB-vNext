@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal class IndexEqualsEnumerator : IIndexEnumerator
+internal class IndexEqualsEnumerator : IPipeEnumerator<PageAddress>
 {
     private readonly Collation _collation;
 
@@ -23,7 +23,7 @@ internal class IndexEqualsEnumerator : IIndexEnumerator
         _collation = collation;
     }
 
-    public async ValueTask<PageAddress> MoveNextAsync(IIndexService indexService)
+    public async ValueTask<PageAddress> MoveNextAsync(IDataService dataService, IIndexService indexService)
     {
         if (_eof) return PageAddress.Empty;
 

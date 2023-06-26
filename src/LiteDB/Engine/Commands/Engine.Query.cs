@@ -16,6 +16,7 @@ public partial class LiteEngine : ILiteEngine
         // if collection do not exists, return empty
         if (!master.Collections.TryGetValue(collectionName, out var collection)) return Guid.Empty;
 
+        // get next read version without open a new transaction
         var readVersion = walIndexService.GetNextReadVersion();
 
         var cursor = queryService.CreateCursor(collection, query, readVersion);

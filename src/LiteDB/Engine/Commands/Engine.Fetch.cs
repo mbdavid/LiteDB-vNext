@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks.Sources;
 
 namespace LiteDB.Engine;
 
@@ -19,6 +20,8 @@ public partial class LiteEngine : ILiteEngine
 
         // create a new transaction with no lock
         var transaction = await monitorService.CreateTransactionAsync(cursor.ReadVersion);
+
+        await transaction.InitializeAsync();
 
         var dataService = _factory.CreateDataService(transaction);
         var indexService = _factory.CreateIndexService(transaction);

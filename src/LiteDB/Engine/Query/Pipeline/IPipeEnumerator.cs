@@ -1,6 +1,10 @@
 ﻿namespace LiteDB.Engine;
 
-internal interface IPipeEnumerator
+/// <summary>
+/// Interface for a custom query pipe. Return null (for BsonDocument) or PageAddress.Empty when EOF
+/// </summary>
+/// <typeparam name="T">BsonDocument or PageAddress</typeparam>
+internal interface IPipeEnumerator<T>
 {
-    ValueTask<BsonDocument?> MoveNextAsync(IDataService dataService, IIndexService indexService);
+    ValueTask<T?> MoveNextAsync(IDataService dataService, IIndexService indexService);
 }
