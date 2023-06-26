@@ -8,7 +8,6 @@ var path = @"C:\Temp\litedb-v6-002.db";
 
 File.Delete(path);
 
-Stopwatch.GetElapsedTime
 
 var settings = new EngineSettings
 {

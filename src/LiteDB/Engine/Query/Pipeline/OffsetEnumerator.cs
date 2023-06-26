@@ -33,7 +33,7 @@ internal class OffsetEnumerator : IOffsetEnumerator
             _count++;
         }
 
-        var doc = await _enumerator.MoveNextAsync(transaction, dataService, indexService);
+        var doc = await _enumerator.MoveNextAsync(dataService, indexService);
 
         if (doc is null)
         {
