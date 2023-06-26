@@ -1,18 +1,19 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IPipeEnumerator))]
-internal class LimitEnumerator : ILimitEnumerator
+internal class LookupEnumerator : ILookupEnumerator
 {
-    private readonly IPipeEnumerator _enumerator;
+    private readonly IDocumentLookup _lookup;
+    private readonly IIndexEnumerator _enumerator;
 
     private readonly int _limit;
 
     private int _count = 0;
     private bool _eof = false;
 
-    public LimitEnumerator(int limit, IPipeEnumerator enumerator)
+    public LookupEnumerator(IDocumentLookup lookup, IIndexEnumerator enumerator)
     {
-        _limit = limit;
+        _lookup = lookup;
         _enumerator = enumerator;
     }
 
@@ -20,9 +21,9 @@ internal class LimitEnumerator : ILimitEnumerator
     {
         if (_eof || _limit == int.MaxValue) return null; // by-pass when limit is not used
 
-        var doc = await _enumerator.MoveNextAsync(dataService, indexService);
+        var dataBlock = await _enumerator.MoveNextAsync(indexService);
 
-        if (doc is null)
+        if (dataBlock.IsEmpty)
         {
             _eof = true;
             return null;
@@ -34,6 +35,8 @@ internal class LimitEnumerator : ILimitEnumerator
         {
             _eof = true;
         }
+
+        var doc = await _lookup.LoadAsync(dataBlock, dataService);
 
         return doc;
     }

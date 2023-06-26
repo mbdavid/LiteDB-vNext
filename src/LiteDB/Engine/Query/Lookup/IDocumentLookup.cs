@@ -2,5 +2,6 @@
 
 internal interface IDocumentLookup
 {
-    ValueTask<BsonDocument> LoadAsync(PageAddress rawId);
+    ValueTask<BsonDocument> LoadAsync(IndexNode indexNode, IDataService dataService);
+    ValueTask<BsonDocument> LoadAsync(PageAddress dataBlock, IDataService dataService);
 }

@@ -1,27 +1,27 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface(typeof(IPipelineEnumerator))]
+[AutoInterface(typeof(IPipeEnumerator))]
 internal class FilterEnumerator : IFilterEnumerator
 {
     private readonly Collation _collation;
-    private readonly IReadOnlyCollection<BsonExpression> _filters;
+    private readonly IList<BsonExpression> _filters;
 
-    private readonly IIndexEnumerator _indexEnumerator;
+    private readonly IPipeEnumerator _enumerator;
 
     private bool _eof = false;
 
-    public FilterEnumerator(IReadOnlyCollection<BsonExpression> filters, IIndexEnumerator indexEnumerator, Collation collation)
+    public FilterEnumerator(IList<BsonExpression> filters, IPipeEnumerator enumerator, Collation collation)
     {
         _filters = filters;
-        _indexEnumerator = indexEnumerator;
+        _enumerator = enumerator;
         _collation = collation;
     }
 
-    public async ValueTask<BsonDocument?> MoveNextAsync(ITransaction transacion, IServicesFactory factory)
+    public async ValueTask<BsonDocument?> MoveNextAsync(IDataService dataService, IIndexService indexService)
     {
         while (!_eof)
         {
-            var doc = await _indexEnumerator.MoveNextAsync(transacion, factory);
+            var doc = await _enumerator.MoveNextAsync(dataService, indexService);
 
             if (doc is null)
             {
@@ -47,6 +47,4 @@ internal class FilterEnumerator : IFilterEnumerator
 
         return null;
     }
-
-
 }

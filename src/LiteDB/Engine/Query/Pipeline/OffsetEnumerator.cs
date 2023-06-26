@@ -1,28 +1,28 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface(typeof(IPipelineEnumerator))]
+[AutoInterface(typeof(IPipeEnumerator))]
 internal class OffsetEnumerator : IOffsetEnumerator
 {
-    private readonly IPipelineEnumerator _enumerator;
+    private readonly IPipeEnumerator _enumerator;
 
     private readonly int _offset;
 
     private int _count = 0;
     private bool _eof = false;
 
-    public OffsetEnumerator(int offset, IPipelineEnumerator enumerator)
+    public OffsetEnumerator(int offset, IPipeEnumerator enumerator)
     {
         _offset = offset;
         _enumerator = enumerator;
     }
 
-    public async ValueTask<BsonDocument?> MoveNextAsync(ITransaction transacion, IServicesFactory factory)
+    public async ValueTask<BsonDocument?> MoveNextAsync(IDataService dataService, IIndexService indexService)
     {
         if (_eof || _offset == 0) return null; // by-pass when offset is not used
 
         while(_count <= _offset)
         {
-            var skiped = await _enumerator.MoveNextAsync(transacion, factory);
+            var skiped = await _enumerator.MoveNextAsync(dataService, indexService);
 
             if (skiped is null)
             {
@@ -33,7 +33,7 @@ internal class OffsetEnumerator : IOffsetEnumerator
             _count++;
         }
 
-        var doc = await _enumerator.MoveNextAsync(transacion, factory);
+        var doc = await _enumerator.MoveNextAsync(transaction, dataService, indexService);
 
         if (doc is null)
         {

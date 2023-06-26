@@ -17,6 +17,10 @@ internal static class DateExtensions
             dt.Kind);
     }
 
+    // https://github.com/dotnet/runtime/issues/65858#issuecomment-1050836263
+    public static TimeSpan GetElapsedTime(long start)
+        => new TimeSpan((long)((double)(Stopwatch.GetTimestamp() - start) * TICK_FREQUENCY));
+
     public static int MonthDifference(this DateTime startDate, DateTime endDate)
     {
         // https://stackoverflow.com/a/1526116/3286260

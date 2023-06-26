@@ -2,5 +2,5 @@
 
 internal interface IIndexEnumerator
 {
-    ValueTask<BsonDocument?> MoveNextAsync(ITransaction transacion, IServicesFactory factory);
+    ValueTask<PageAddress> MoveNextAsync(IIndexService indexService);
 }

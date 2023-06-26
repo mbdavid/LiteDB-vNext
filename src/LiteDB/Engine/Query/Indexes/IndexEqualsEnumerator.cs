@@ -2,7 +2,6 @@
 
 internal class IndexEqualsEnumerator : IIndexEnumerator
 {
-    private readonly IDocumentLookup _lookup;
     private readonly Collation _collation;
 
     private readonly IndexDocument _indexDocument;
@@ -14,26 +13,21 @@ internal class IndexEqualsEnumerator : IIndexEnumerator
     private PageAddress _prev = PageAddress.Empty; // all nodes from left of first node found
     private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
 
-
     public IndexEqualsEnumerator(
         BsonValue value, 
         IndexDocument indexDocument, 
-        IDocumentLookup lookup, 
         Collation collation)
     {
         _value = value;
         _indexDocument = indexDocument;
-        _lookup = lookup;
         _collation = collation;
     }
 
-    public async ValueTask<BsonDocument?> MoveNextAsync(ITransaction transacion, IServicesFactory factory)
+    public async ValueTask<PageAddress> MoveNextAsync(IIndexService indexService)
     {
-        if (_eof) return null;
+        if (_eof) return PageAddress.Empty;
 
-        var indexService = factory.CreateIndexService(transacion);
-
-        var current = PageAddress.Empty;
+        var dataBlock = PageAddress.Empty;
 
         // in first run, look for index node
         if (!_init)
@@ -44,13 +38,13 @@ internal class IndexEqualsEnumerator : IIndexEnumerator
             if (nodeRef is null)
             {
                 _init = _eof = true;
-                return null;
+                return PageAddress.Empty;
             }
 
             var node = nodeRef.Value.Node;
 
             // current node to return
-            current = node.RowID;
+            dataBlock = node.DataBlock;
 
             if (_indexDocument.Unique)
             {
@@ -75,7 +69,7 @@ internal class IndexEqualsEnumerator : IIndexEnumerator
 
             if (isEqual)
             {
-                current = node.RowID;
+                dataBlock = node.DataBlock;
 
                 _next = nodeRef.Node.Next[0];
             }
@@ -94,7 +88,7 @@ internal class IndexEqualsEnumerator : IIndexEnumerator
 
             if (isEqual)
             {
-                current = node.RowID;
+                dataBlock = node.DataBlock;
 
                 _next = nodeRef.Node.Prev[0];
             }
@@ -104,17 +98,7 @@ internal class IndexEqualsEnumerator : IIndexEnumerator
             }
         }
 
-        // if there is any document to return, current must has a RowID
-        if (current.IsEmpty)
-        {
-            return null;
-        }
-        else
-        {
-            // load document using RowID and returns full loaded document
-            var doc = await _lookup.LoadAsync(current);
-
-            return doc;
-        }
+        // return current dataBlock rowID
+        return dataBlock;
     }
 }

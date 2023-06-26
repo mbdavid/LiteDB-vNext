@@ -1,26 +1,32 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 
 namespace LiteDB.Engine;
 
 public partial class LiteEngine : ILiteEngine
 {
-    public async Task<FetchResult> FetchAsync(Guid cursorId)
+    public async Task<FetchResult> FetchAsync(Guid cursorID, int fetchSize)
     {
-        var masterService = _factory.MasterService;
+        var monitorService = _factory.MonitorService;
+        var queryService = _factory.QueryService;
 
         if (_factory.State != EngineState.Open) throw ERR("must be opened");
 
-        // get current $master
-        var master = masterService.GetMaster(false);
+        if (!queryService.TryGetCursor(cursorID, out var cursor))
+        {
+            throw ERR($"Cursor {cursorID} do not exists or already full fetched");
+        }
 
-        // if collection do not exists, return null
-        if (!master.Collections.TryGetValue(collectionName, out var collection)) return null;
+        // create a new transaction with no lock
+        var transaction = await monitorService.CreateTransactionAsync(cursor.ReadVersion);
 
-        // var queryDef = queryOpmitization.Optimize(collection, query) // só usa a $master, é sincrona
+        var dataService = _factory.CreateDataService(transaction);
+        var indexService = _factory.CreateIndexService(transaction);
 
-        // var cursorId = _factory.CreateCursor(queryDef, fetchCount);
+        var result = await queryService.FetchAsync(cursor, dataService, indexService, fetchSize);
 
+        monitorService.ReleaseTransaction(transaction);
 
-        return Guid.NewGuid();
+        return result;
     }
 }

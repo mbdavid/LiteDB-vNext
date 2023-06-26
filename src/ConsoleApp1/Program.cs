@@ -2,10 +2,13 @@
 global using LiteDB;
 global using LiteDB.Engine;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 
 var path = @"C:\Temp\litedb-v6-002.db";
 
 File.Delete(path);
+
+Stopwatch.GetElapsedTime
 
 var settings = new EngineSettings
 {

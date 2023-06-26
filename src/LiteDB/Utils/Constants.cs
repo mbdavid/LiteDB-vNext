@@ -145,4 +145,7 @@ internal class Constants
     /// </summary>
     public const int CONTAINER_SORT_SIZE = 100 * PAGE_SIZE;
 
+
+    public static long TICK_FREQUENCY = (TimeSpan.TicksPerSecond / Stopwatch.Frequency);
+
 }

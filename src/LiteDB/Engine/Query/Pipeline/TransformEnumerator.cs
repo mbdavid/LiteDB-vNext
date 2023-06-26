@@ -1,24 +1,25 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IPipeEnumerator))]
-internal class LimitEnumerator : ILimitEnumerator
+internal class TransformEnumerator : ITransformEnumerator
 {
+    private readonly Collation _collation;
     private readonly IPipeEnumerator _enumerator;
 
-    private readonly int _limit;
+    private readonly BsonExpression _expr;
 
-    private int _count = 0;
     private bool _eof = false;
 
-    public LimitEnumerator(int limit, IPipeEnumerator enumerator)
+    public TransformEnumerator(BsonExpression expr, IPipeEnumerator enumerator, Collation collation)
     {
-        _limit = limit;
+        _expr = expr;
         _enumerator = enumerator;
+        _collation = collation;
     }
 
     public async ValueTask<BsonDocument?> MoveNextAsync(IDataService dataService, IIndexService indexService)
     {
-        if (_eof || _limit == int.MaxValue) return null; // by-pass when limit is not used
+        if (_eof) return null;
 
         var doc = await _enumerator.MoveNextAsync(dataService, indexService);
 
@@ -28,13 +29,8 @@ internal class LimitEnumerator : ILimitEnumerator
             return null;
         }
 
-        _count++;
+        var result = _expr.Execute(doc, null, _collation);
 
-        if (_count >= _limit)
-        {
-            _eof = true;
-        }
-
-        return doc;
+        return result.AsDocument;
     }
 }

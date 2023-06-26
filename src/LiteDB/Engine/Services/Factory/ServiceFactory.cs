@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using LiteDB.Engine;
+
+namespace LiteDB;
 
 /// <summary>
 /// * Singleton (thread safe)
@@ -25,6 +27,8 @@ internal partial class ServicesFactory : IServicesFactory
 
     public ILogService LogService { get; }
     public IWalIndexService WalIndexService { get; }
+
+    public IQueryService QueryService { get; }
 
     public ILockService LockService { get; }
     public IDiskService DiskService { get; }
@@ -68,6 +72,8 @@ internal partial class ServicesFactory : IServicesFactory
         this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
+        this.QueryService = new QueryService(this.MasterService, this);
+
     }
 
     #region Transient instances (Create prefix)
@@ -114,6 +120,12 @@ internal partial class ServicesFactory : IServicesFactory
         this.IndexPageService, 
         this.FileHeader.Collation, 
         transaction);
+
+    public IQueryOptimizer CreateQueryOptimizer(MasterDocument master, CollectionDocument collection, Query query, int readVersion) => new QueryOptimizer(
+        master,
+        collection,
+        query,
+        this.FileHeader.Collation);
 
     public void Dispose()
     {

@@ -25,10 +25,22 @@ internal class MonitorService : IMonitorService
         _factory = factory;
     }
 
-    public async Task<ITransaction> CreateTransactionAsync(byte[] writeCollections, int readVersion = -1)
+    public async Task<ITransaction> CreateTransactionAsync(int readVersion)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
-        var transaction = _factory.CreateTransaction(transactionID, writeCollections, readVersion);
+        var transaction = _factory.CreateTransaction(transactionID, Array.Empty<byte>(), readVersion);
+
+        _transactions.TryAdd(transactionID, transaction);
+
+        await transaction.InitializeAsync();
+
+        return transaction;
+    }
+
+    public async Task<ITransaction> CreateTransactionAsync(byte[] writeCollections)
+    {
+        var transactionID = Interlocked.Increment(ref _lastTransactionID);
+        var transaction = _factory.CreateTransaction(transactionID, writeCollections, -1);
 
         _transactions.TryAdd(transactionID, transaction);
 

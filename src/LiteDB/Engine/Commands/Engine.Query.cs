@@ -2,8 +2,10 @@
 
 public partial class LiteEngine : ILiteEngine
 {
-    public Guid? Query(string collectionName, Query query, int fetchCount)
+    public Guid Query(string collectionName, Query query)
     {
+        var queryService = _factory.QueryService;
+        var walIndexService = _factory.WalIndexService;
         var masterService = _factory.MasterService;
 
         if (_factory.State != EngineState.Open) throw ERR("must be opened");
@@ -11,14 +13,13 @@ public partial class LiteEngine : ILiteEngine
         // get current $master
         var master = masterService.GetMaster(false);
 
-        // if collection do not exists, return null
-        if (!master.Collections.TryGetValue(collectionName, out var collection)) return null;
+        // if collection do not exists, return empty
+        if (!master.Collections.TryGetValue(collectionName, out var collection)) return Guid.Empty;
 
-        // var queryDef = queryOpmitization.Optimize(collection, query) // só usa a $master, é sincrona
+        var readVersion = walIndexService.GetNextReadVersion();
 
-        // var cursorId = _factory.CreateCursor(queryDef, fetchCount);
+        var cursor = queryService.CreateCursor(collection, query, readVersion);
 
-
-        return Guid.NewGuid();
+        return cursor.CursorID;
     }
 }
