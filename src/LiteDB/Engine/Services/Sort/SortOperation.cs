@@ -25,7 +25,7 @@ internal class SortOperation : ISortOperation
         return _containers.Select(x => x.ContainerID).ToArray();
     }
 
-    public void InsertKey(BsonValue key, PageAddress rowID)
+    public async ValueTask InsertData(IPipeEnumerator enumerator)
     {
 
     }
