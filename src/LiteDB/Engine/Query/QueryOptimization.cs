@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class QueryOptimizer : IQueryOptimizer
+internal class QueryOptimization : IQueryOptimization
 {
     // dependency injections
     private readonly MasterDocument _master;
@@ -12,7 +12,7 @@ internal class QueryOptimizer : IQueryOptimizer
     private IndexDocument _indexDocument;
     private BsonValue _indexKey;
 
-    public QueryOptimizer(MasterDocument master, CollectionDocument collection, Query query, Collation collation)
+    public QueryOptimization(MasterDocument master, CollectionDocument collection, Query query, Collation collation)
     {
         _master = master;
         _collection = collection;

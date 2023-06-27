@@ -23,7 +23,7 @@ internal class OffsetEnumerator : IPipeEnumerator
         {
             var skiped = await _enumerator.MoveNextAsync(context);
 
-            if (skiped.Eof)
+            if (skiped.IsEmpty)
             {
                 _eof = true;
 
@@ -35,7 +35,7 @@ internal class OffsetEnumerator : IPipeEnumerator
 
         var item = await _enumerator.MoveNextAsync(context);
 
-        if (item.Eof)
+        if (item.IsEmpty)
         {
             _eof = true;
 
@@ -43,5 +43,9 @@ internal class OffsetEnumerator : IPipeEnumerator
         }
 
         return item;
+    }
+
+    public void Dispose()
+    {
     }
 }

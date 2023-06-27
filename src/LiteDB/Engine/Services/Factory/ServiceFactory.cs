@@ -26,6 +26,7 @@ internal partial class ServicesFactory : IServicesFactory
     public ILogService LogService { get; }
     public IWalIndexService WalIndexService { get; }
 
+    public ISortService SortService { get; }
     public IQueryService QueryService { get; }
 
     public ILockService LockService { get; }
@@ -73,6 +74,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
         this.RecoveryService = new RecoveryService(this.BufferFactory, this.DiskService);
+        this.SortService = new SortService();
         this.QueryService = new QueryService(this.WalIndexService, this.MasterService, this);
 
     }
@@ -115,11 +117,16 @@ internal partial class ServicesFactory : IServicesFactory
         this.FileHeader.Collation, 
         transaction);
 
-    public IQueryOptimizer CreateQueryOptimizer(MasterDocument master, CollectionDocument collection, Query query, int readVersion) => new QueryOptimizer(
+    public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, Query query, int readVersion) => new QueryOptimization(
         master,
         collection,
         query,
         this.FileHeader.Collation);
+
+    public ISortOperation CreateSortOperation(BsonExpression expression, int order) => new SortOperation(
+        this.SortService,
+        expression, 
+        order);
 
     public void Dispose()
     {

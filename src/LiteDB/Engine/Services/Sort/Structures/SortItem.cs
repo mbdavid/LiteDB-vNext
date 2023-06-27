@@ -10,4 +10,9 @@ internal struct SortItem
         this.RowID = rowID;
         this.Key = key;
     }
+
+    public int GetBytesCount()
+    {
+        return IndexNode.GetKeyLength(this.Key) + PageAddress.SIZE;
+    }
 }

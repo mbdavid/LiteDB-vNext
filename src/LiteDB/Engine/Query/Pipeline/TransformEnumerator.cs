@@ -21,7 +21,7 @@ internal class TransformEnumerator : IPipeEnumerator
 
         var item = await _enumerator.MoveNextAsync(context);
 
-        if (item.Eof)
+        if (item.IsEmpty)
         {
             _eof = true;
             return PipeValue.Empty;
@@ -30,5 +30,9 @@ internal class TransformEnumerator : IPipeEnumerator
         var result = _expr.Execute(item.Value, null, _collation);
 
         return new PipeValue(item.RowID, result.AsDocument);
+    }
+
+    public void Dispose()
+    {
     }
 }

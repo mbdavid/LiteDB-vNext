@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal class Cursor
+internal class Cursor : IDisposable
 {
     public Guid CursorID { get; } = Guid.NewGuid();
 
@@ -21,5 +21,10 @@ internal class Cursor
         this.Query = query;
         this.ReadVersion = readVersion;
         this.Enumerator = enumerator;
+    }
+
+    public void Dispose()
+    {
+        this.Enumerator.Dispose();
     }
 }

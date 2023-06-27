@@ -29,7 +29,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
             {
                 var item = await _enumerator.MoveNextAsync(context);
 
-                if (item.Eof) break;
+                if (item.IsEmpty) break;
 
                 // get sort key 
                 var key = _expr.Execute(item.Value, null, _collation);
@@ -58,6 +58,9 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
         }
 
         return PipeValue.Empty;
+    }
 
+    public void Dispose()
+    {
     }
 }

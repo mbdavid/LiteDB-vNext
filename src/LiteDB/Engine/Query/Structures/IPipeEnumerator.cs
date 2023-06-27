@@ -3,7 +3,7 @@
 /// <summary>
 /// Interface for a custom query pipe
 /// </summary>
-internal interface IPipeEnumerator
+internal interface IPipeEnumerator : IDisposable
 {
     ValueTask<PipeValue> MoveNextAsync(PipeContext context);
 }

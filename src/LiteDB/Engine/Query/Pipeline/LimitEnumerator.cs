@@ -21,7 +21,7 @@ internal class LimitEnumerator : IPipeEnumerator
 
         var item = await _enumerator.MoveNextAsync(context);
 
-        if (item.Eof)
+        if (item.IsEmpty)
         {
             _eof = true;
             return PipeValue.Empty;
@@ -35,5 +35,9 @@ internal class LimitEnumerator : IPipeEnumerator
         }
 
         return item;
+    }
+
+    public void Dispose()
+    {
     }
 }

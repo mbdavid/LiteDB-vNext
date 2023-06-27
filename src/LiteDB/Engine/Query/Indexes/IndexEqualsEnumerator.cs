@@ -102,4 +102,8 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         // return current dataBlock rowID
         return new PipeValue(dataBlock);
     }
+
+    public void Dispose()
+    {
+    }
 }
