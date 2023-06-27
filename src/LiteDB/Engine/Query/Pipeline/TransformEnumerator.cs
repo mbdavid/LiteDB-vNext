@@ -2,14 +2,13 @@
 
 internal class TransformEnumerator : IPipeEnumerator
 {
+    private readonly BsonExpression _expr;
     private readonly Collation _collation;
     private readonly IPipeEnumerator _enumerator;
 
-    private readonly BsonExpression _expr;
-
     private bool _eof = false;
 
-    public TransformEnumerator(BsonExpression expr, IPipeEnumerator enumerator, Collation collation)
+    public TransformEnumerator(BsonExpression expr, Collation collation, IPipeEnumerator enumerator)
     {
         _expr = expr;
         _enumerator = enumerator;

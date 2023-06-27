@@ -27,10 +27,10 @@ internal class QueryOptimizer : IQueryOptimizer
 
         // create query pipeline based on enumerators order
         var lookupEnumerator = new LookupEnumerator(lookup, indexEnumerator);
-        var filterEnumerator = new FilterEnumerator(_terms, lookupEnumerator, _collation);
+        var filterEnumerator = new FilterEnumerator(_terms.First(), _collation, lookupEnumerator);
         var offsetEnumerator = new OffsetEnumerator(_query.Offset, filterEnumerator);
         var limitEnumerator = new LimitEnumerator(_query.Limit, offsetEnumerator);
-        var selectEnumerator = new TransformEnumerator(_query.Select, limitEnumerator, _collation);
+        var selectEnumerator = new TransformEnumerator(_query.Select, _collation, limitEnumerator);
 
         return selectEnumerator;
     }

@@ -2,16 +2,15 @@
 
 internal class FilterEnumerator : IPipeEnumerator
 {
+    private readonly BsonExpression _filter;
     private readonly Collation _collation;
-    private readonly IList<BsonExpression> _filters;
-
     private readonly IPipeEnumerator _enumerator;
 
     private bool _eof = false;
 
-    public FilterEnumerator(IList<BsonExpression> filters, IPipeEnumerator enumerator, Collation collation)
+    public FilterEnumerator(BsonExpression filter, Collation collation, IPipeEnumerator enumerator)
     {
-        _filters = filters;
+        _filter = filter;
         _enumerator = enumerator;
         _collation = collation;
     }
@@ -28,14 +27,11 @@ internal class FilterEnumerator : IPipeEnumerator
             }
             else
             {
-                foreach(var filter in _filters)
-                {
-                    var result = filter.Execute(item.Value, null, _collation);
+                var result = _filter.Execute(item.Value, null, _collation);
 
-                    if (result.IsBoolean && result.AsBoolean)
-                    {
-                        return item;
-                    }
+                if (result.IsBoolean && result.AsBoolean)
+                {
+                    return item;
                 }
             }
         }
