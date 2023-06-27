@@ -30,7 +30,7 @@ internal class MasterService : IMasterService
     /// Initialize (when database open) reading first extend pages. Database should have no log data to read this
     /// Initialize _master document instance
     /// </summary>
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         // create a a local transaction (not from monitor)
         using var transaction = _factory.CreateTransaction(0, new byte[0], 0);
@@ -69,7 +69,7 @@ internal class MasterService : IMasterService
     /// Write all master document into page buffer and write on this. Must use a real transaction
     /// to store all pages into log
     /// </summary>
-    public async Task WriteCollectionAsync(MasterDocument master, ITransaction transaction)
+    public async ValueTask WriteCollectionAsync(MasterDocument master, ITransaction transaction)
     {
         var dataService = _factory.CreateDataService(transaction);
 

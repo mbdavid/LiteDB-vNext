@@ -171,27 +171,6 @@ internal class IndexService : IIndexService
     #region Find
 
     /// <summary>
-    /// Return all index nodes from an index
-    /// </summary>
-    public async IAsyncEnumerable<IndexNode> FindAllAsync(IndexDocument index, int order)
-    {
-        var cur = order == Query.Ascending ? 
-            await this.GetNodeAsync(index.Tail, false) : await this.GetNodeAsync(index.Head, false);
-
-        var next = cur.Node.GetNextPrev(0, order);
-
-        while (!next.IsEmpty)
-        {
-            cur = await this.GetNodeAsync(next, false);
-
-            // stop if node is head/tail
-            if (cur.Node.Key.IsMinValue || cur.Node.Key.IsMaxValue) yield break;
-
-            yield return cur.Node;
-        }
-    }
-
-    /// <summary>
     /// Find first node that index match with value . 
     /// If index are unique, return unique value - if index are not unique, return first found (can start, middle or end)
     /// If not found but sibling = true, returns near node (only non-unique index)

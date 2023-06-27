@@ -25,7 +25,7 @@ internal class MonitorService : IMonitorService
         _factory = factory;
     }
 
-    public async Task<ITransaction> CreateTransactionAsync(int readVersion)
+    public async ValueTask<ITransaction> CreateTransactionAsync(int readVersion)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
         var transaction = _factory.CreateTransaction(transactionID, Array.Empty<byte>(), readVersion);
@@ -37,7 +37,7 @@ internal class MonitorService : IMonitorService
         return transaction;
     }
 
-    public async Task<ITransaction> CreateTransactionAsync(byte[] writeCollections)
+    public async ValueTask<ITransaction> CreateTransactionAsync(byte[] writeCollections)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
         var transaction = _factory.CreateTransaction(transactionID, writeCollections, -1);
