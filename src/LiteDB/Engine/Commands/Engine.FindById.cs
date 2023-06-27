@@ -2,7 +2,7 @@
 
 public partial class LiteEngine : ILiteEngine
 {
-    public async Task<BsonDocument?> FindById(string collectionName, BsonValue id, HashSet<string>? fields = null)
+    public async Task<BsonDocument?> FindById(string collectionName, BsonValue id, string[] fields)
     {
         var monitorService = _factory.MonitorService;
         var masterService = _factory.MasterService;
@@ -17,6 +17,8 @@ public partial class LiteEngine : ILiteEngine
 
         // create a new transaction with no collection lock
         var transaction = await monitorService.CreateTransactionAsync(Array.Empty<byte>());
+
+        await transaction.InitializeAsync();
 
         // create both data/index services for this transaction
         var dataService = _factory.CreateDataService(transaction);

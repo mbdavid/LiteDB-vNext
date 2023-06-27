@@ -69,7 +69,7 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Initialize transaction enter in database read lock
     /// </summary>
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         // enter transaction lock
         await _lockService.EnterTransactionAsync();
@@ -98,7 +98,7 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Try get page from local cache. If page not found, use ReadPage from disk
     /// </summary>
-    public async Task<PageBuffer> GetPageAsync(int pageID, bool writable)
+    public async ValueTask<PageBuffer> GetPageAsync(int pageID, bool writable)
     {
         if (_localPages.TryGetValue(pageID, out var page))
         {
@@ -117,7 +117,7 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Read a data/index page from disk (data or log). Can return page from global cache
     /// </summary>
-    private async Task<PageBuffer> ReadPageAsync(int pageID, int readVersion, bool writable)
+    private async ValueTask<PageBuffer> ReadPageAsync(int pageID, int readVersion, bool writable)
     {
         _reader ??= _diskService.RentDiskReader();
 
@@ -143,7 +143,7 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Get a page with free space avaiable to store, at least, bytesLength
     /// </summary>
-    public async Task<PageBuffer> GetFreePageAsync(byte colID, PageType pageType, int bytesLength)
+    public async ValueTask<PageBuffer> GetFreePageAsync(byte colID, PageType pageType, int bytesLength)
     {
         // first check if exists in localPages (TODO: como indexar isso??)
         var localPage = _localPages.Values
@@ -185,7 +185,7 @@ internal class Transaction : ITransaction
 
     /// <summary>
     /// </summary>
-    public async Task CommitAsync()
+    public async ValueTask CommitAsync()
     {
         // get dirty pages only //TODO: can be re-used array?
         var dirtyPages = _localPages.Values

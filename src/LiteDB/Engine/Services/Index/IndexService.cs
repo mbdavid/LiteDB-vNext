@@ -28,7 +28,7 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Create head and tail nodes for a new index
     /// </summary>
-    public async Task<(IndexNode head, IndexNode tail)> CreateHeadTailNodesAsync(byte colID)
+    public async ValueTask<(IndexNode head, IndexNode tail)> CreateHeadTailNodesAsync(byte colID)
     {
         // get how many bytes needed for each head/tail (both has same size)
         var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, BsonValue.MinValue, out _);
@@ -50,7 +50,7 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public async Task<IndexNodeRef> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeRef? last)
+    public async ValueTask<IndexNodeRef> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeRef? last)
     {
         // do not accept Min/Max value as index key (only head/tail can have this value)
         if (key.IsMaxValue || key.IsMinValue) throw ERR($"BsonValue MaxValue/MinValue are not supported as index key");
@@ -65,7 +65,7 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private async Task<IndexNodeRef> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeRef? last)
+    private async ValueTask<IndexNodeRef> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeRef? last)
     {
         // get a free index page for head note
         var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, key, out var keyLength);
@@ -161,9 +161,8 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Get a node/pageBuffer inside a page using PageAddress. RowID must be a valid position
     /// </summary>
-    public async Task<IndexNodeRef> GetNodeAsync(PageAddress rowID, bool writable)
+    public async ValueTask<IndexNodeRef> GetNodeAsync(PageAddress rowID, bool writable)
     {
-        /* BUSCA DA CACHE ?? PODE SER ALTERAVEL! */
         var page = await _transaction.GetPageAsync(rowID.PageID, writable);
 
         return new(new IndexNode(page, rowID), page);

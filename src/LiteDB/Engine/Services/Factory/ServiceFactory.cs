@@ -61,7 +61,9 @@ internal partial class ServicesFactory : IServicesFactory
 
         // settings dependency only
         this.LockService = new LockService(settings.Timeout);
-        this.StreamFactory = new FileStreamFactory(settings);
+        this.StreamFactory = settings.Filename is not null ?
+            new FileStreamFactory(settings.Filename, settings.ReadOnly) :
+            new FileStreamFactory("implementar MemoryStream", false);
 
         // other services dependencies
         this.CacheService = new CacheService(this.BufferFactory);
@@ -82,13 +84,6 @@ internal partial class ServicesFactory : IServicesFactory
 
     public IDiskStream CreateDiskStream()
         => new DiskStream(this.Settings, this.StreamFactory);
-
-    public IStreamFactory CreateStreamFactory(bool readOnly)
-    {
-        if (this.Settings.Filename is null) throw new NotImplementedException();
-
-        return new FileStreamFactory(this.Settings);
-    }
 
     public INewDatafile CreateNewDatafile() => new NewDatafile(
         this.BufferFactory, 

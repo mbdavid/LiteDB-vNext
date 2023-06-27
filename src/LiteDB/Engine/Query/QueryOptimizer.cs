@@ -22,7 +22,7 @@ internal class QueryOptimizer : IQueryOptimizer
 
     public IPipeEnumerator ProcessQuery()
     {
-        var lookup = new DataServiceLookup(new HashSet<string>());
+        var lookup = new DataServiceLookup(Array.Empty<string>());
         var indexEnumerator = new IndexEqualsEnumerator(_indexKey, _indexDocument, _collation);
 
         // create query pipeline based on enumerators order

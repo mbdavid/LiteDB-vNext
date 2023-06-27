@@ -31,7 +31,7 @@ internal class DataService : IDataService
     /// <summary>
     /// Insert BsonDocument into new data pages
     /// </summary>
-    public async Task<PageAddress> InsertDocumentAsync(byte colID, BsonDocument doc)
+    public async ValueTask<PageAddress> InsertDocumentAsync(byte colID, BsonDocument doc)
     {
         var docLength = doc.GetBytesCount();
 
@@ -106,7 +106,7 @@ internal class DataService : IDataService
     /// <summary>
     /// Update existing document in a single or multiple pages
     /// </summary>
-    public async Task UpdateDocumentAsync(PageAddress rowID, BsonDocument doc)
+    public async ValueTask UpdateDocumentAsync(PageAddress rowID, BsonDocument doc)
     {
         var docLength = doc.GetBytesCount();
 
@@ -132,7 +132,7 @@ internal class DataService : IDataService
     /// <summary>
     /// Read a single document in a single/multiple pages
     /// </summary>
-    public async Task<BsonDocument> ReadDocumentAsync(PageAddress rowID, HashSet<string>? fields)
+    public async ValueTask<BsonDocument> ReadDocumentAsync(PageAddress rowID, string[] fields)
     {
         var page = await _transaction.GetPageAsync(rowID.PageID, false);
 
@@ -157,7 +157,7 @@ internal class DataService : IDataService
     /// <summary>
     /// Delete a full document from a single or multiple pages
     /// </summary>
-    public async Task DeleteDocumentAsync(PageAddress rowID)
+    public async ValueTask DeleteDocumentAsync(PageAddress rowID)
     {
         var page = await _transaction.GetPageAsync(rowID.PageID, false);
 

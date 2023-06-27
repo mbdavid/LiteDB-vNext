@@ -4,7 +4,7 @@ internal class BsonExpressionInfo
 {
     public bool HasRoot { get; }
 
-    public IEnumerable<string> RootFields { get; }
+    public string[] RootFields { get; }
 
     public bool IsImmutable { get; }
 
@@ -20,7 +20,7 @@ internal class BsonExpressionInfo
 
         this.GetInfo(expr, rootFields, ref isImmutable, ref hasRoot);
 
-        this.RootFields = rootFields;
+        this.RootFields = rootFields.ToArray();
         this.IsImmutable = isImmutable;
         this.HasRoot = hasRoot;
     }
