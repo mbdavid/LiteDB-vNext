@@ -7,7 +7,7 @@ public class JsonReader
 {
     private readonly static IFormatProvider _numberFormat = CultureInfo.InvariantCulture.NumberFormat;
 
-    private readonly Tokenizer _tokenizer;
+    private readonly JsonTokenizer _tokenizer;
 
     public long Position => _tokenizer.Position;
 
@@ -15,10 +15,10 @@ public class JsonReader
     {
         if (reader == null) throw new ArgumentNullException(nameof(reader));
 
-        _tokenizer = new Tokenizer(reader);
+        _tokenizer = new JsonTokenizer(reader);
     }
 
-    internal JsonReader(Tokenizer tokenizer)
+    internal JsonReader(JsonTokenizer tokenizer)
     {
         _tokenizer = tokenizer ?? throw new ArgumentNullException(nameof(tokenizer));
     }
@@ -27,7 +27,7 @@ public class JsonReader
     {
         var token = _tokenizer.ReadToken();
 
-        if (token.Type == TokenType.EOF) return BsonValue.Null;
+        if (token.Type == JsonTokenType.EOF) return BsonValue.Null;
 
         var value = this.ReadValue(token);
 
@@ -38,65 +38,65 @@ public class JsonReader
     {
         var token = _tokenizer.ReadToken();
 
-        if (token.Type == TokenType.EOF) yield break;
+        if (token.Type == JsonTokenType.EOF) yield break;
 
-        token.Expect(TokenType.OpenBracket);
+        token.Expect(JsonTokenType.OpenBracket);
 
         token = _tokenizer.ReadToken();
 
-        while (token.Type != TokenType.CloseBracket)
+        while (token.Type != JsonTokenType.CloseBracket)
         {
             yield return this.ReadValue(token);
 
             token = _tokenizer.ReadToken();
 
-            if (token.Type == TokenType.Comma)
+            if (token.Type == JsonTokenType.Comma)
             {
                 token = _tokenizer.ReadToken();
             }
         }
 
-        token.Expect(TokenType.CloseBracket);
+        token.Expect(JsonTokenType.CloseBracket);
 
         yield break;
     }
 
-    internal BsonValue ReadValue(Token token)
+    internal BsonValue ReadValue(JsonToken token)
     {
         var value = token.Value;
 
         switch (token.Type)
         {
-            case TokenType.String: return value;
-            case TokenType.OpenBrace: return this.ReadObject();
-            case TokenType.OpenBracket: return this.ReadArray();
-            case TokenType.Minus:
+            case JsonTokenType.String: return value;
+            case JsonTokenType.OpenBrace: return this.ReadObject();
+            case JsonTokenType.OpenBracket: return this.ReadArray();
+            case JsonTokenType.Minus:
                 // read next token (must be a number)
-                var number = _tokenizer.ReadToken(false).Expect(TokenType.Int, TokenType.Double);
+                var number = _tokenizer.ReadToken(false).Expect(JsonTokenType.Int, JsonTokenType.Double);
                 value = '-' + number.Value;
-                if (number.Type == TokenType.Int)
-                    goto case TokenType.Int;
-                else if (number.Type == TokenType.Double)
-                    goto case TokenType.Double;
+                if (number.Type == JsonTokenType.Int)
+                    goto case JsonTokenType.Int;
+                else if (number.Type == JsonTokenType.Double)
+                    goto case JsonTokenType.Double;
                 else
                     break;
-            case TokenType.Int:
+            case JsonTokenType.Int:
                 if (Int32.TryParse(value, NumberStyles.Any, _numberFormat, out int result))
                     return result;
                 else
                     return Int64.Parse(value, NumberStyles.Any, _numberFormat);
-            case TokenType.Double: return Convert.ToDouble(value, _numberFormat);
-            case TokenType.Word:
+            case JsonTokenType.Double: return Convert.ToDouble(value, _numberFormat);
+            case JsonTokenType.Word:
                 switch (value.ToLower())
                 {
                     case "null": return BsonValue.Null;
                     case "true": return BsonBoolean.True;
                     case "false": return BsonBoolean.False;
-                    default: throw ERR_UNEXPECTED_TOKEN(token);
+                    default: throw new Exception();
                 }
         }
 
-        throw LiteException.ERR_UNEXPECTED_TOKEN(token);
+        throw new Exception();
     }
 
     private BsonValue ReadObject()
@@ -105,15 +105,15 @@ public class JsonReader
 
         var token = _tokenizer.ReadToken(); // read "<key>"
 
-        while (token.Type != TokenType.CloseBrace)
+        while (token.Type != JsonTokenType.CloseBrace)
         {
-            token.Expect(TokenType.String, TokenType.Word);
+            token.Expect(JsonTokenType.String, JsonTokenType.Word);
 
             var key = token.Value;
 
             token = _tokenizer.ReadToken(); // read ":"
 
-            token.Expect(TokenType.Colon);
+            token.Expect(JsonTokenType.Colon);
 
             token = _tokenizer.ReadToken(); // read "<value>"
 
@@ -130,7 +130,7 @@ public class JsonReader
 
             token = _tokenizer.ReadToken();
 
-            if (token.Type == TokenType.Comma)
+            if (token.Type == JsonTokenType.Comma)
             {
                 token = _tokenizer.ReadToken(); // read "<key>"
             }
@@ -145,7 +145,7 @@ public class JsonReader
 
         var token = _tokenizer.ReadToken();
 
-        while (token.Type != TokenType.CloseBracket)
+        while (token.Type != JsonTokenType.CloseBracket)
         {
             var value = this.ReadValue(token);
 
@@ -153,7 +153,7 @@ public class JsonReader
 
             token = _tokenizer.ReadToken();
 
-            if (token.Type == TokenType.Comma)
+            if (token.Type == JsonTokenType.Comma)
             {
                 token = _tokenizer.ReadToken();
             }
@@ -180,7 +180,7 @@ public class JsonReader
             default: return BsonValue.Null; // is not a special data type
         }
 
-        _tokenizer.ReadToken().Expect(TokenType.CloseBrace);
+        _tokenizer.ReadToken().Expect(JsonTokenType.CloseBrace);
 
         return val;
     }
