@@ -125,7 +125,13 @@ internal partial class ServicesFactory : IServicesFactory
 
     public ISortOperation CreateSortOperation(BsonExpression expression, int order) => new SortOperation(
         this.SortService,
-        expression, 
+        expression,
+        order);
+
+    public ISortOperation CreateSortContainer(BsonExpression expression, int order) => new SortContainer(
+        this.BufferFactory,
+        this.FileHeader.Collation,
+        expression,
         order);
 
     public void Dispose()

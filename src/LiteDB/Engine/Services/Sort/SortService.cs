@@ -4,9 +4,17 @@
 internal class SortService : ISortService
 {
     private readonly IServicesFactory _factory;
+    private readonly IStreamFactory _streamFactory;
 
-    private ConcurrentQueue<int> _avaiableContainersID = new ();
+    private ConcurrentQueue<int> _availableContainersID = new ();
+    private ConcurrentQueue<Stream> _streamPool = new();
     private int _nextContainerID = -1;
+
+    public SortService(IServicesFactory factory, IStreamFactory streamFactory)
+    {
+        _factory = factory;
+        _streamFactory = streamFactory;
+    }
 
     public ISortOperation CreateSort(BsonExpression expression, int order)
     {
@@ -15,9 +23,9 @@ internal class SortService : ISortService
         return sorter;
     }
 
-    public int GetAvaiableContainerID()
+    public int GetAvailableContainerID()
     {
-        if (_avaiableContainersID.TryDequeue(out var containerID))
+        if (_availableContainersID.TryDequeue(out var containerID))
         {
             return containerID;
         }
@@ -25,17 +33,26 @@ internal class SortService : ISortService
         return Interlocked.Increment(ref _nextContainerID);
     }
 
-    public void ReleaseSort(ISortOperation sorter)
+    public Stream RentSortStream()
     {
-        foreach (var containerID in sorter.GetContainersID())
+        if (!_streamPool.TryDequeue(out var stream))
         {
-            _avaiableContainersID.Enqueue(containerID);
+            stream = _streamFactory.GetSortStream();
         }
 
-        sorter.Dispose();
+        return stream;
+    }
+
+    public void ReleaseSortStream(Stream stream)
+    {
+        _streamPool.Enqueue(stream);
     }
 
     public void Dispose()
     {
+        foreach(var stream  in _streamPool)
+        {
+            stream.Dispose();
+        }
     }
 }

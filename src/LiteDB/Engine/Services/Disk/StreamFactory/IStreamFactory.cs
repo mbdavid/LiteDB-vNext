@@ -7,4 +7,6 @@ internal interface IStreamFactory
     long GetLength();
     void Delete();
     Stream GetStream(bool canWrite, FileOptions options);
+
+    Stream GetSortStream();
 }
