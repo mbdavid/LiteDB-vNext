@@ -6,10 +6,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
     private readonly int _order;
     private readonly Collation _collation;
     private readonly IPipeEnumerator _enumerator;
-    private readonly Queue<SortItemDocument> _sorted = new();
-
-    private bool _init = false;
-    private bool _eof = false;
+    private Queue<SortItemDocument>? _sortedItems;
 
     public InMemoryOrderByEnumerator(BsonExpression expr, int order, Collation collation, IPipeEnumerator enumerator)
     {
@@ -21,7 +18,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
-        if (!_init)
+        if (_sortedItems is null)
         {
             var list = new List<SortItemDocument>();
 
@@ -41,18 +38,12 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
             var query = _order == Query.Ascending ?
                 list.OrderBy(x => x.Key, _collation) : list.OrderByDescending(x => x.Key, _collation);
 
-            // add items in a sorted queue
-            foreach (var item in query)
-            {
-                _sorted.Enqueue(item);
-            }
+            _sortedItems = new Queue<SortItemDocument>(query);
         }
 
-        if (_sorted.Count > 0)
+        if (_sortedItems.Count > 0)
         {
-            var item = _sorted.Dequeue();
-
-            _eof = _sorted.Count > 0;
+            var item = _sortedItems.Dequeue();
 
             return new PipeValue(item.RowID, item.Document);
         }

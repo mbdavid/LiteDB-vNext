@@ -20,6 +20,8 @@ internal partial class ServicesFactory : IServicesFactory
 
     public IBufferFactory BufferFactory { get; }
     public IStreamFactory StreamFactory { get; }
+    public IStreamFactory SortStreamFactory { get; }
+
 
     public ICacheService CacheService { get; }
 
@@ -66,6 +68,10 @@ internal partial class ServicesFactory : IServicesFactory
             new FileStreamFactory(settings.Filename, settings.ReadOnly) :
             new FileStreamFactory("implementar MemoryStream", false);
 
+        this.SortStreamFactory = settings.Filename is not null ?
+            new FileSortStreamFactory(settings.Filename) :
+            new FileStreamFactory("implementar MemoryStream", false);
+
         // other services dependencies
         this.CacheService = new CacheService(this.BufferFactory);
         this.DiskService = new DiskService(this.StreamFactory, this);
@@ -74,12 +80,12 @@ internal partial class ServicesFactory : IServicesFactory
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
         this.RecoveryService = new RecoveryService(this.BufferFactory, this.DiskService);
-        this.SortService = new SortService();
+        this.SortService = new SortService(this.SortStreamFactory, this);
         this.QueryService = new QueryService(this.WalIndexService, this.MasterService, this);
 
     }
 
-    #region Transient instances (Create prefix)
+    #region Transient instances ("Create" prefix)
 
     public IEngineContext CreateEngineContext() 
         => new EngineContext();
@@ -125,14 +131,17 @@ internal partial class ServicesFactory : IServicesFactory
 
     public ISortOperation CreateSortOperation(BsonExpression expression, int order) => new SortOperation(
         this.SortService,
+        this.FileHeader.Collation,
+        this,
         expression,
         order);
 
-    public ISortOperation CreateSortContainer(BsonExpression expression, int order) => new SortContainer(
+    public ISortContainer CreateSortContainer(int containerID, int order, Stream stream) => new SortContainer(
         this.BufferFactory,
         this.FileHeader.Collation,
-        expression,
-        order);
+        containerID,
+        order,
+        stream);
 
     public void Dispose()
     {

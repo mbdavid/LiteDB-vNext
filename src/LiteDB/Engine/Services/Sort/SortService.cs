@@ -4,16 +4,18 @@
 internal class SortService : ISortService
 {
     private readonly IServicesFactory _factory;
-    private readonly IStreamFactory _streamFactory;
+    private readonly IStreamFactory _sortStreamFactory;
 
-    private ConcurrentQueue<int> _availableContainersID = new ();
-    private ConcurrentQueue<Stream> _streamPool = new();
+    private readonly ConcurrentQueue<int> _availableContainersID = new();
+    private readonly ConcurrentQueue<Stream> _streamPool = new();
     private int _nextContainerID = -1;
 
-    public SortService(IServicesFactory factory, IStreamFactory streamFactory)
+    public SortService(
+        IStreamFactory sortStreamFactory,
+        IServicesFactory factory)
     {
+        _sortStreamFactory = sortStreamFactory;
         _factory = factory;
-        _streamFactory = streamFactory;
     }
 
     public ISortOperation CreateSort(BsonExpression expression, int order)
@@ -37,7 +39,7 @@ internal class SortService : ISortService
     {
         if (!_streamPool.TryDequeue(out var stream))
         {
-            stream = _streamFactory.GetSortStream();
+            stream = _sortStreamFactory.GetStream(true, FileOptions.None); // parameters are not used for sort stream factory
         }
 
         return stream;
@@ -54,5 +56,15 @@ internal class SortService : ISortService
         {
             stream.Dispose();
         }
+
+        if (_streamPool.Count > 0)
+        {
+            _sortStreamFactory.Delete();
+        }
+
+        // clear service states
+        _availableContainersID.Clear();
+        _streamPool.Clear();
+        _nextContainerID = -1;
     }
 }

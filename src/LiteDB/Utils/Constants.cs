@@ -141,9 +141,9 @@ internal class Constants
     public const int VIRTUAL_INDEX_MAX_CACHE = 2000;
 
     /// <summary>
-    /// Define how many bytes each merge sort container will be created
+    /// Define how many pages each sort container should have
     /// </summary>
-    public const int CONTAINER_SORT_SIZE = 100 * PAGE_SIZE;
+    public const int CONTAINER_SORT_SIZE_IN_PAGES = 100;
 
 
     public static long TICK_FREQUENCY = (TimeSpan.TicksPerSecond / Stopwatch.Frequency);

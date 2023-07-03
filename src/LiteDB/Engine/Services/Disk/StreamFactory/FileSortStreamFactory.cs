@@ -1,18 +1,17 @@
-﻿using System.ComponentModel;
+﻿namespace LiteDB.Engine;
 
-namespace LiteDB.Engine;
-
-internal class FileStreamFactory : IStreamFactory
+/// <summary>
+/// File implementation for sort stream
+/// </summary>
+internal class FileSortStreamFactory : IStreamFactory
 {
     private readonly string _filename;
-    private readonly bool _readOnly;
 
     public string Name => Path.GetFileName(_filename);
 
-    public FileStreamFactory(string filename, bool readOnly)
+    public FileSortStreamFactory(string dataFilename)
     {
-        _filename = filename;
-        _readOnly = readOnly;
+        _filename = FileHelper.GetSufixFile(dataFilename, "-sort", true);
     }
 
     public void Delete()
@@ -37,19 +36,17 @@ internal class FileStreamFactory : IStreamFactory
     }
 
     /// <summary>
-    /// Open an existing data file and return FileStream implementation
+    /// Get a new stream (open/create) from sort temp
     /// </summary>
     public Stream GetStream(bool canWrite, FileOptions options)
     {
-        var write = canWrite && (_readOnly == false);
-
         var stream = new FileStream(
             _filename,
-            _readOnly ? FileMode.Open : FileMode.OpenOrCreate,
-            write ? FileAccess.ReadWrite : FileAccess.Read,
-            write ? FileShare.Read : FileShare.ReadWrite,
+            FileMode.OpenOrCreate,
+            FileAccess.ReadWrite,
+            FileShare.ReadWrite,
             PAGE_SIZE,
-            options);
+            FileOptions.Asynchronous);
 
         return stream;
     }

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IDisposable))]
 internal class SortContainer : ISortContainer
@@ -8,10 +6,11 @@ internal class SortContainer : ISortContainer
     // dependency injections
     private readonly IBufferFactory _bufferFactory;
     private readonly Collation _collation;
-    private readonly Stream _stream;
 
     private readonly int _containerID;
-    private readonly int _containerSizeInPages;
+    private readonly int _order;
+    private readonly Stream _stream;
+
     private PageBuffer _buffer;
 
     private SortItem _current; // current sorted item
@@ -24,15 +23,15 @@ internal class SortContainer : ISortContainer
     public SortContainer(
         IBufferFactory bufferFactory,
         Collation collation,
-        Stream stream,
-        int containerID, 
-        int containerSizeInPages)
+        int containerID,
+        int order,
+        Stream stream)
     {
         _bufferFactory = bufferFactory;
-        _stream = stream;
         _collation = collation;
         _containerID = containerID;
-        _containerSizeInPages = containerSizeInPages;
+        _order = order;
+        _stream = stream;
 
         _buffer = bufferFactory.AllocateNewPage(false);
     }
@@ -57,10 +56,10 @@ internal class SortContainer : ISortContainer
     /// Organized all items in 8k pages, with first 2 bytes to contains how many items this page contains
     /// Remaining items are not inserted in this container e must be returned to be added into a new container
     /// </summary>
-    public void Sort(IEnumerable<SortItem> unsortedItems, int order, byte[] containerBuffer, List<SortItem> remaining)
+    public void Sort(IEnumerable<SortItem> unsortedItems, byte[] containerBuffer, List<SortItem> remaining)
     {
         // order items
-        var query = order == Query.Ascending ?
+        var query = _order == Query.Ascending ?
             unsortedItems.OrderBy(x => x.Key, _collation) : unsortedItems.OrderByDescending(x => x.Key, _collation);
 
         var pagePosition = 2; // first 2 bytes per page was used to store how many item will contain this page
@@ -88,7 +87,7 @@ internal class SortContainer : ISortContainer
             }
 
             // if need more pages than _containerSizeInPages, add to "remaining" list to be added in another container
-            if (pageCount >= _containerSizeInPages)
+            if (pageCount >= CONTAINER_SORT_SIZE_IN_PAGES)
             {
                 remaining.Add(orderedItem);
             }
@@ -102,9 +101,6 @@ internal class SortContainer : ISortContainer
                 span[pagePosition..].WriteBsonValue(orderedItem.Key, out var keyLength);
 
                 pagePosition += keyLength;
-
-                // move to next item
-                pagePosition += itemSize;
 
                 // increment total container items
                 _containerRemaining++;
@@ -122,7 +118,7 @@ internal class SortContainer : ISortContainer
         if (_pageRemaining == 0)
         {
             // set stream position to page position (increment pageIndex before)
-            _stream.Position = (_containerID * (_containerSizeInPages * PAGE_SIZE)) + (++_pageIndex * PAGE_SIZE);
+            _stream.Position = (_containerID * (CONTAINER_SORT_SIZE_IN_PAGES * PAGE_SIZE)) + (++_pageIndex * PAGE_SIZE);
 
             await _stream.ReadAsync(_buffer.Buffer);
 
