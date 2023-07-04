@@ -27,3 +27,5 @@ global using static LiteDB.EnsureCheck;
 [assembly: InternalsVisibleTo("ConsoleApp1")]
 [assembly: InternalsVisibleTo("LiteDB.Tests")]
 [assembly: InternalsVisibleTo("LiteDB.Benchmark")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+

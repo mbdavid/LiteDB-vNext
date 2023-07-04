@@ -56,7 +56,7 @@ internal class SortContainer : ISortContainer
     /// Organized all items in 8k pages, with first 2 bytes to contains how many items this page contains
     /// Remaining items are not inserted in this container e must be returned to be added into a new container
     /// </summary>
-    public void Sort(IEnumerable<SortItem> unsortedItems, byte[] containerBuffer, List<SortItem> remaining)
+    public int Sort(IEnumerable<SortItem> unsortedItems, byte[] containerBuffer, List<SortItem> remaining)
     {
         // order items
         var query = _order == Query.Ascending ?
@@ -65,6 +65,7 @@ internal class SortContainer : ISortContainer
         var pagePosition = 2; // first 2 bytes per page was used to store how many item will contain this page
         short pageItems = 0;
         var pageCount = 0;
+        var remainingBytes = 0;
 
         var span = containerBuffer.AsSpan(0, PAGE_SIZE);
 
@@ -89,6 +90,8 @@ internal class SortContainer : ISortContainer
             // if need more pages than _containerSizeInPages, add to "remaining" list to be added in another container
             if (pageCount >= CONTAINER_SORT_SIZE_IN_PAGES)
             {
+                remainingBytes += itemSize;
+
                 remaining.Add(orderedItem);
             }
             else
@@ -103,9 +106,12 @@ internal class SortContainer : ISortContainer
                 pagePosition += keyLength;
 
                 // increment total container items
+                pageItems++;
                 _containerRemaining++;
             }
         }
+
+        return remainingBytes;
     }
 
     /// <summary>
@@ -123,7 +129,7 @@ internal class SortContainer : ISortContainer
             await _stream.ReadAsync(_buffer.Buffer);
 
             // set position and read remaining page items
-            _position = _pageIndex * PAGE_SIZE;
+            _position = 2; // for int16
             _pageRemaining = _buffer.AsSpan(0, 2).ReadInt16();
         }
 

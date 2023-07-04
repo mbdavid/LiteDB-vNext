@@ -15,4 +15,9 @@ internal struct SortItem
     {
         return IndexNode.GetKeyLength(this.Key) + PageAddress.SIZE;
     }
+
+    public override string ToString()
+    {
+        return $"[{this.RowID}] = {this.Key}";
+    }
 }

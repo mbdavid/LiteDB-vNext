@@ -26,4 +26,9 @@ internal struct PipeValue
         this.RowID = PageAddress.Empty;
         this.Value = null;
     }
+
+    public override string ToString()
+    {
+        return this.IsEmpty ? "<EMPTY>" : $"[{this.RowID}] = {this.Value}";
+    }
 }

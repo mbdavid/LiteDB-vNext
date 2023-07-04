@@ -50,4 +50,6 @@ internal class FileSortStreamFactory : IStreamFactory
 
         return stream;
     }
+
+    public bool DisposeOnClose => true;
 }

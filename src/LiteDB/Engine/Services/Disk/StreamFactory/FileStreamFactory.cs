@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class FileStreamFactory : IStreamFactory
 {
@@ -53,4 +51,6 @@ internal class FileStreamFactory : IStreamFactory
 
         return stream;
     }
+
+    public bool DisposeOnClose => true;
 }

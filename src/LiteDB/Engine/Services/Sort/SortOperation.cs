@@ -17,7 +17,6 @@ internal class SortOperation : ISortOperation
     private Queue<SortItem>? _sortedItems; // when use less than 1 container
 
     private byte[]? _containerBuffer = null;
-    private BsonValue _current;
 
     private readonly List<ISortContainer> _containers = new();
 
@@ -31,7 +30,6 @@ internal class SortOperation : ISortOperation
         _sortService = sortService;
         _collation = collation;
         _factory = factory;
-        _current = order == 1 ? BsonValue.MinValue : BsonValue.MaxValue;
         _expression = expression;
         _order = order;
 
@@ -64,9 +62,7 @@ internal class SortOperation : ISortOperation
 
             if (containerBytes + itemSize > _containerSizeLimit)
             {
-                await this.CreateNewContainerAsync(unsortedItems, remaining);
-
-                containerBytes = 0;
+                containerBytes = await this.CreateNewContainerAsync(unsortedItems, remaining);
             }
 
             containerBytes += itemSize;
@@ -96,7 +92,7 @@ internal class SortOperation : ISortOperation
         }
     }
 
-    private async ValueTask CreateNewContainerAsync(List<SortItem> unsortedItems, List<SortItem> remaining)
+    private async ValueTask<int> CreateNewContainerAsync(List<SortItem> unsortedItems, List<SortItem> remaining)
     {
         // rent container byffer array
         _containerBuffer ??= ArrayPool<byte>.Shared.Rent(_containerSize);
@@ -111,7 +107,7 @@ internal class SortOperation : ISortOperation
         var container = _factory.CreateSortContainer(containerID, _order, _stream);
 
         // sort all items into 8k pages and returns "remaining" items if not fit on container size
-        container.Sort(unsortedItems, _containerBuffer, remaining);
+        var remainingBytes = container.Sort(unsortedItems, _containerBuffer, remaining);
 
         // clear container items and add any remaining item
         unsortedItems.Clear();
@@ -124,6 +120,8 @@ internal class SortOperation : ISortOperation
         await _stream.WriteAsync(_containerBuffer);
 
         _containers.Add(container);
+
+        return remainingBytes;
     }
 
     public async ValueTask<PageAddress> MoveNextAsync()
@@ -140,12 +138,15 @@ internal class SortOperation : ISortOperation
         // when use multiple containers
         else
         {
-            ISortContainer? next = null;
+            if (_containers.Count == 0) return PageAddress.Empty;
+
+            var next = _containers[0];
 
             // get lower/hightest value from all containers
-            foreach (var container in _containers)
+            for(var i = 1; i < _containers.Count; i++)
             {
-                var diff = container.Current.Key.CompareTo(_current, _collation);
+                var container = _containers[i];
+                var diff = container.Current.Key.CompareTo(next.Current.Key, _collation);
 
                 if (diff == (_order * -1))
                 {
@@ -153,12 +154,10 @@ internal class SortOperation : ISortOperation
                 }
             }
 
-            _current = next!.Current.Key;
-
-            await next.MoveNextAsync();
+            var read = await next.MoveNextAsync();
 
             // if there is no more items on container, remove from container list (dispose before)
-            if (next.Remaining == 0)
+            if (!read)
             {
                 _containers.Remove(next);
 
