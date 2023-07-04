@@ -42,7 +42,7 @@ public class SortService_Tests
                 new PageAddress(i, 0), 
                 new BsonDocument
                 {
-                    ["name"] = Guid.NewGuid().ToString()
+                    ["name"] = faker.Name.FullName()
                 }))
             .ToArray();
 
