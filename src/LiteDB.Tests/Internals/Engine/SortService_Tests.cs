@@ -9,12 +9,15 @@ public class SortService_Tests
     public async Task Sort_ShouldReturnSortedByName_WhenInputUnSortedData()
     {
         // Arrange
+        Randomizer.Seed = new Random(420);
+
         var stream = new MemoryStream();
         var collation = Collation.Default;
         var factory = Substitute.For<IServicesFactory>();
         var streamFactory = new MemoryStreamFactory(stream);
         var bufferFactory = new BufferFactory();
-
+        var context = new PipeContext();
+        var faker = new Faker();
         var sut = new SortService(streamFactory, factory);
 
         factory.CreateSortOperation(Arg.Any<BsonExpression>(), Arg.Any<int>())
@@ -28,13 +31,6 @@ public class SortService_Tests
             {
                 return new SortContainer(bufferFactory, collation, c.ArgAt<int>(0), c.ArgAt<int>(1), c.Arg<Stream>());
             });
-
-
-        var context = new PipeContext();
-
-        Randomizer.Seed = new Random(420);
-
-        var faker = new Faker();
 
         // create unsorted fake data
         var source = Enumerable.Range(1, 50000)
@@ -53,7 +49,7 @@ public class SortService_Tests
 
         await sorter.InsertDataAsync(enumerator, context);
 
-        var result = new List<PageAddress>();
+        var result = new List<SortItem>();
 
         while(true)
         {
@@ -67,7 +63,6 @@ public class SortService_Tests
         // Assert
         var sorted = source
             .OrderBy(x => x.Value.AsDocument["name"].AsString)
-            .Select(x => x.RowID)
             .ToArray();
 
         result.Should().BeEquivalentTo(sorted);

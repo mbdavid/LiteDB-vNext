@@ -30,7 +30,7 @@ internal class OrderByEnumerator : IPipeEnumerator
         // get next sorted item (returns Empty when EOF)
         var item = await _sorter.MoveNextAsync();
 
-        return new PipeValue(item);
+        return new PipeValue(item.RowID);
     }
 
     public void Dispose()

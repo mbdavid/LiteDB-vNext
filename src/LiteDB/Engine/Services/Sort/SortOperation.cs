@@ -124,21 +124,21 @@ internal class SortOperation : ISortOperation
         return remainingBytes;
     }
 
-    public async ValueTask<PageAddress> MoveNextAsync()
+    public async ValueTask<SortItem> MoveNextAsync()
     {
         // when use in-memory sort
         if (_sortedItems is not null)
         {
-            if (_sortedItems.Count == 0) return PageAddress.Empty;
+            if (_sortedItems.Count == 0) return SortItem.Empty;
 
             var item = _sortedItems.Dequeue();
 
-            return item.RowID;
+            return item;
         }
         // when use multiple containers
         else
         {
-            if (_containers.Count == 0) return PageAddress.Empty;
+            if (_containers.Count == 0) return SortItem.Empty;
 
             var next = _containers[0];
 
@@ -154,6 +154,8 @@ internal class SortOperation : ISortOperation
                 }
             }
 
+            var current = next.Current;
+
             var read = await next.MoveNextAsync();
 
             // if there is no more items on container, remove from container list (dispose before)
@@ -164,7 +166,7 @@ internal class SortOperation : ISortOperation
                 next.Dispose();
             }
 
-            return next.Current.RowID;
+            return current;
         }
     }
 
