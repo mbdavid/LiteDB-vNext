@@ -11,14 +11,17 @@ public class SortService_Tests
         // Arrange
         Randomizer.Seed = new Random(420);
 
-        var stream = new MemoryStream();
         var collation = Collation.Default;
-        var factory = Substitute.For<IServicesFactory>();
+
+        using var stream = new MemoryStream();
+        using var factory = Substitute.For<IServicesFactory>();
+        using var bufferFactory = new BufferFactory();
+
         var streamFactory = new MemoryStreamFactory(stream);
-        var bufferFactory = new BufferFactory();
         var context = new PipeContext();
         var faker = new Faker();
-        var sut = new SortService(streamFactory, factory);
+
+        using var sut = new SortService(streamFactory, factory);
 
         factory.CreateSortOperation(Arg.Any<BsonExpression>(), Arg.Any<int>())
             .Returns(c =>
@@ -42,15 +45,17 @@ public class SortService_Tests
                 }))
             .ToArray();
 
-        var enumerator = new MockEnumerator(source);
+        using var enumerator = new MockEnumerator(source);
 
         // Act
-        var sorter = sut.CreateSort("name", Query.Ascending);
+        using var sorter = sut.CreateSort("name", Query.Ascending);
 
+        // insert all data
         await sorter.InsertDataAsync(enumerator, context);
 
         var result = new List<SortItem>();
 
+        // loop over result to get sorted order
         while(true)
         {
             var item = await sorter.MoveNextAsync();
@@ -63,11 +68,10 @@ public class SortService_Tests
         // Assert
         var sorted = source
             .OrderBy(x => x.Value.AsDocument["name"].AsString)
+            .Select(x => new SortItem(x.RowID, x.Value.AsDocument["name"]))
             .ToArray();
 
         result.Should().BeEquivalentTo(sorted);
-
-        //sut.Private<Queue<int>>("_left").Count.Should().Be(1);
     }
 }
 

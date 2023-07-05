@@ -66,5 +66,6 @@ internal class SortService : ISortService
         _availableContainersID.Clear();
         _streamPool.Clear();
         _nextContainerID = -1;
+
     }
 }
