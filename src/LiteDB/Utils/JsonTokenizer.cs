@@ -1,11 +1,5 @@
 ﻿namespace LiteDB;
 
-#region JsonToken definition
-
-
-
-#endregion
-
 /// <summary>
 /// Class to tokenize TextReader input used in JsonRead/BsonExpressions
 /// This class are not thread safe
@@ -20,7 +14,7 @@ internal class JsonTokenizer
 
     public bool EOF => _eof;
     public long Position => _position;
-    public JsonToken Current => _current!;
+    public JsonToken Current => _current.GetValueOrDefault();
 
     public JsonTokenizer(TextReader reader)
     {
@@ -209,7 +203,7 @@ internal class JsonTokenizer
         }
         _current = token ?? new JsonToken(JsonTokenType.Unknown, _char.ToString(), _position);
 
-        return _current;
+        return _current.GetValueOrDefault();
     }
 
     /// <summary>

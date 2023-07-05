@@ -2,7 +2,7 @@
 /// <summary>
 /// Represent a single string token
 /// </summary>
-internal class JsonToken
+internal struct JsonToken
 {
     public JsonToken(JsonTokenType tokenType, string value, long position)
     {
@@ -16,41 +16,15 @@ internal class JsonToken
     public long Position { get; private set; }
 
     /// <summary>
-    /// Expect if token is type (if not, throw UnexpectedToken)
+    /// Expect for one of the types (if not, throw UnexpectedToken)
     /// </summary>
-    public JsonToken Expect(JsonTokenType type)
+    public JsonToken Expect(params JsonTokenType[] types)
     {
-        if (this.Type != type)
-        {
-            throw new Exception();
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Expect for type1 OR type2 (if not, throw UnexpectedToken)
-    /// </summary>
-    public JsonToken Expect(JsonTokenType type1, JsonTokenType type2)
-    {
-        if (this.Type != type1 && this.Type != type2)
-        {
-            throw new Exception();
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Expect for type1 OR type2 OR type3 (if not, throw UnexpectedToken)
-    /// </summary>
-    public JsonToken Expect(JsonTokenType type1, JsonTokenType type2, JsonTokenType type3)
-    {
-        if (this.Type != type1 && this.Type != type2 && this.Type != type3)
-        {
-            throw new Exception();
-        }
-
+        foreach(var type in types)
+            if (this.Type != type)
+            {
+                throw new Exception();
+            }
         return this;
     }
 
@@ -73,6 +47,6 @@ internal class JsonToken
 
     public override string ToString()
     {
-        return this.Value + " (" + this.Type + ")";
+        return $"{Value} ({Type})";
     }
 }
