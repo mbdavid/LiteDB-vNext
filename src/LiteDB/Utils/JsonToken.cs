@@ -28,16 +28,6 @@ internal struct JsonToken
         return this;
     }
 
-    public JsonToken Expect(string value, bool ignoreCase = true)
-    {
-        if (!this.Is(value, ignoreCase))
-        {
-            throw new Exception();
-        }
-
-        return this;
-    }
-
     public bool Is(string value, bool ignoreCase = true)
     {
         return

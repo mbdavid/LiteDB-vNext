@@ -37,7 +37,7 @@ public class JsonTokenizer_Tests
     }
 
     [Fact]
-    public void ReadToken_DoubletObject_()
+    public void ReadToken_DoubleObject_()
     {
         // Arrange
         var textReader = new StringReader("{ texto : 20.6}");

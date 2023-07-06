@@ -1,7 +1,7 @@
 ﻿namespace LiteDB;
 
 /// <summary>
-/// Class to tokenize TextReader input used in JsonRead/BsonExpressions
+/// Class to tokenize TextReader input used in JsonRead
 /// This class are not thread safe
 /// </summary>
 internal class JsonTokenizer
