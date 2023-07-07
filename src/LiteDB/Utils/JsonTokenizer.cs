@@ -234,7 +234,7 @@ internal class JsonTokenizer
         var sb = new StringBuilder();
         sb.Append(_char);
 
-        var canDot = true;
+        var canDot = false;
         var canE = true;
         var canSign = false;
 
@@ -245,7 +245,7 @@ internal class JsonTokenizer
         {
             if (_char == '.')
             {
-                if (canDot == false) break;
+                if (canDot == true) break;
                 dbl = true;
                 canDot = false;
             }
