@@ -1,143 +1,136 @@
-﻿//namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
-//internal class IndexRangeEnumerator : IPipeEnumerator
-//{
-//    private readonly Collation _collation;
+internal class IndexRangeEnumerator : IPipeEnumerator
+{
+    private readonly Collation _collation;
 
-//    private readonly IndexDocument _indexDocument;
-//    private readonly BsonValue _start;
-//    private readonly BsonValue _end;
+    private readonly IndexDocument _indexDocument;
+    private readonly BsonValue _start;
+    private readonly BsonValue _end;
 
-//    private readonly bool _startEquals;
-//    private readonly bool _endEquals;
-//    private readonly int _order;
-//    private bool _init = false;
-//    private bool _eof = false;
+    private readonly bool _startEquals;
+    private readonly bool _endEquals;
+    private readonly int _order;
+    private bool _init = false;
+    private bool _eof = false;
 
-//    private PageAddress _prev = PageAddress.Empty; // all nodes from left of first node found
-//    private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
+    private PageAddress _prev = PageAddress.Empty; // all nodes from left of first node found
+    private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
 
-//    public IndexRangeEnumerator(
-//        BsonValue start, 
-//        BsonValue end, 
-//        bool startEquals, 
-//        bool endEquals,
-//        int order,
-//        IndexDocument indexDocument, 
-//        Collation collation)
-//    {
-//        _start = start;
-//        _end = end;
-//        _startEquals = startEquals;
-//        _endEquals = endEquals;
-//        _order = order;
-//        _indexDocument = indexDocument;
-//        _collation = collation;
-//    }
+    public IndexRangeEnumerator(
+        BsonValue start,
+        BsonValue end,
+        bool startEquals,
+        bool endEquals,
+        int order,
+        IndexDocument indexDocument,
+        Collation collation)
+    {
+        // if order are desc, swap start/end values
+        _start = order == Query.Ascending ? start : end;
+        _end = order == Query.Ascending ? end : start;
+        _startEquals = order == Query.Ascending ? startEquals : endEquals;
+        _endEquals = order == Query.Ascending ? endEquals : startEquals;
+        _order = order;
+        _indexDocument = indexDocument;
+        _collation = collation;
+    }
 
-//    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
-//    {
-//        if (_eof) return PipeValue.Empty;
+    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    {
+        if (_eof) return PipeValue.Empty;
 
-//        var indexService = context.IndexService;
-//        var dataBlock = PageAddress.Empty;
+        var indexService = context.IndexService;
 
-//        // in first run, look for index node
-//        if (!_init)
-//        {
-//            // if order are desc, swap start/end values
-//            var start = _order == Query.Ascending ? _start : _end;
-//            var end = _order == Query.Ascending ? _end : _start;
+        // in first run, look for index node
+        if (!_init)
+        {
+            _init = true;
 
-//            var startEquals = _order == Query.Ascending ? _startEquals : _endEquals;
-//            var endEquals = _order == Query.Ascending ? _endEquals : _startEquals;
+            // find first indexNode (or get from head/tail if Min/Max value)
+            var firstRef =
+                _start.IsMinValue ? await indexService.GetNodeAsync(_indexDocument.Head, false) :
+                _start.IsMaxValue ? await indexService.GetNodeAsync(_indexDocument.Tail, false) :
+                await indexService.FindAsync(_indexDocument, _start, true, _order);
 
-//            // find first indexNode (or get from head/tail if Min/Max value)
-//            var firstRef =
-//                start.Type == BsonType.MinValue ? await indexService.GetNodeAsync(_indexDocument.Head, false) :
-//                start.Type == BsonType.MaxValue ? await indexService.GetNodeAsync(_indexDocument.Tail, false) :
-//                await indexService.FindAsync(_indexDocument, start, true, _order);
+            // get pointer to next/prev at level 0
+            _prev = firstRef.Value.Node.Prev[0];
+            _next = firstRef.Value.Node.Next[0];
 
-//            // get pointer to next/prev at level 0
-//            _prev = node.Prev[0];
-//            _next = node.Next[0];
+            if (_startEquals && firstRef is not null)
+            {
+                var node = firstRef.Value.Node;
+
+                if (!node.Key.IsMinValue && !node.Key.IsMaxValue)
+                { 
+                    return new PipeValue(firstRef.Value.Node.RowID);
+                }
+            }
+        }
+
+        // first go forward
+        if (!_prev.IsEmpty)
+        {
+            var nodeRef = await indexService.GetNodeAsync(_prev, false);
+            var node = nodeRef.Node;
+
+            // check for Min/Max bson values index node key
+            if (node.Key.IsMaxValue || node.Key.IsMinValue)
+            {
+                _prev = PageAddress.Empty;
+            }
+            else
+            {
+                var diff = _collation.Compare(_start, node.Key);
+
+                if (diff == (_order /* 1 */) || (diff == 0 && _startEquals))
+                {
+                    _prev = nodeRef.Node.Prev[0];
+
+                    return new PipeValue(node.DataBlock);
+                }
+                else
+                {
+                    _prev = PageAddress.Empty;
+                }
+            }
+        }
+
+        // and than, go backward
+        if (!_next.IsEmpty)
+        {
+            var nodeRef = await indexService.GetNodeAsync(_next, false);
+            var node = nodeRef.Node;
+
+            // check for Min/Max bson values index node key
+            if (node.Key.IsMaxValue || node.Key.IsMinValue)
+            {
+                _eof = true;
+
+                return PipeValue.Empty;
+            }
+
+            var diff = _collation.Compare(_end, node.Key);
+
+            if (diff == (_order * -1 /* -1 */) || (diff == 0 && _endEquals))
+            {
+                _next = nodeRef.Node.Next[0];
+
+                return new PipeValue(node.DataBlock);
+            }
+            else
+            {
+                _eof = true;
+                _next = PageAddress.Empty;
+            }
+        }
+
+        return PipeValue.Empty;
 
 
-//            var node = first;
+    }
 
-
-
-//            var nodeRef = await indexService.FindAsync(_indexDocument, _value, false, Query.Ascending);
-
-//            // if node was not found, end enumerator
-//            if (nodeRef is null)
-//            {
-//                _init = _eof = true;
-//                return PipeValue.Empty;
-//            }
-
-//            var node = nodeRef.Value.Node;
-
-//            // current node to return
-//            dataBlock = node.DataBlock;
-
-//            if (_indexDocument.Unique)
-//            {
-//                _eof = true;
-//            }
-//            else
-//            {
-//                // get pointer to next/prev at level 0
-//                _prev = node.Prev[0];
-//                _next = node.Next[0];
-//            }
-
-//            _init = true;
-//        }
-//        // first go forward
-//        else if (!_next.IsEmpty)
-//        {
-//            var nodeRef = await indexService.GetNodeAsync(_next, false);
-//            var node = nodeRef.Node;
-
-//            var isEqual = _collation.Equals(_value, node.Key);
-
-//            if (isEqual)
-//            {
-//                dataBlock = node.DataBlock;
-
-//                _next = nodeRef.Node.Next[0];
-//            }
-//            else
-//            {
-//                _eof = true;
-//            }
-//        }
-//        // and than, go backward
-//        else if (!_prev.IsEmpty)
-//        {
-//            var nodeRef = await indexService.GetNodeAsync(_prev, false);
-//            var node = nodeRef.Node;
-
-//            var isEqual = _collation.Equals(_value, node.Key);
-
-//            if (isEqual)
-//            {
-//                dataBlock = node.DataBlock;
-
-//                _next = nodeRef.Node.Prev[0];
-//            }
-//            else
-//            {
-//                _eof = true;
-//            }
-//        }
-
-//        // return current dataBlock rowID
-//        return new PipeValue(dataBlock);
-//    }
-
-//    public void Dispose()
-//    {
-//    }
-//}
+    public void Dispose()
+    {
+    }
+}

@@ -173,7 +173,7 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Find first node that index match with value . 
     /// If index are unique, return unique value - if index are not unique, return first found (can start, middle or end)
-    /// If not found but sibling = true, returns near node (only non-unique index)
+    /// If not found but sibling = true and key are not found, returns next value index node (if order = Asc) or prev node (if order = Desc)
     /// </summary>
     public async Task<IndexNodeRef?> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
     {
