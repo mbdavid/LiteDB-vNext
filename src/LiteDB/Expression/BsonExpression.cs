@@ -34,6 +34,8 @@ public abstract partial class BsonExpression
         return this.Execute(context);
     }
 
+    #region Internal Uses
+
     /// <summary>
     /// Execute expression and return a ienumerable of distinct values (convert array into multiple values)
     /// </summary>
@@ -53,4 +55,22 @@ public abstract partial class BsonExpression
             yield return keys;
         }
     }
+
+    /// <summary>
+    /// Indicate that expression evaluate to TRUE or FALSE (=, >, ...). OR and AND are not considered Predicate expressions
+    /// Predicate expressions must have Left/Right expressions
+    /// </summary>
+    internal bool IsPredicate =>
+        this.Type == BsonExpressionType.Equal ||
+        this.Type == BsonExpressionType.Like ||
+        this.Type == BsonExpressionType.Between ||
+        this.Type == BsonExpressionType.GreaterThan ||
+        this.Type == BsonExpressionType.GreaterThanOrEqual ||
+        this.Type == BsonExpressionType.LessThan ||
+        this.Type == BsonExpressionType.LessThanOrEqual ||
+        this.Type == BsonExpressionType.NotEqual ||
+        this.Type == BsonExpressionType.In;
+
+
+    #endregion
 }
