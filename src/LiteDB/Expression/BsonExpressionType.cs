@@ -42,8 +42,10 @@ public enum BsonExpressionType : byte
 
     Map = 40,
     Filter = 41,
-    Sort = 42
+    Sort = 42,
     // Source = 30
+
+    Empty = 255
 }
 
 public static class BsonExpressionExtensions
