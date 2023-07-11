@@ -4,7 +4,7 @@ internal class IndexDocument
 {
     public byte Slot { get; init; }
     public required string Name { get; init; }
-    public required BsonExpression Expr { get; init; }
+    public required BsonExpression Expression { get; init; }
     public bool Unique { get; init; }
     public PageAddress Head { get; init; }
     public PageAddress Tail { get; init; }
@@ -20,7 +20,7 @@ internal class IndexDocument
     {
         this.Slot = other.Slot;
         this.Name = other.Name;
-        this.Expr = other.Expr;
+        this.Expression = other.Expression;
         this.Unique = other.Unique;
         this.Head = other.Head;
         this.Tail = other.Tail;

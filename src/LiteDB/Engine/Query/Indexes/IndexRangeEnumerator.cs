@@ -126,8 +126,6 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         }
 
         return PipeValue.Empty;
-
-
     }
 
     public void Dispose()

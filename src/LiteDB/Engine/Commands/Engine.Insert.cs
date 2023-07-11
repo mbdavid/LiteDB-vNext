@@ -53,7 +53,7 @@ public partial class LiteEngine : ILiteEngine
             foreach(var index in collection.Indexes.Values)
             {
                 // get a single or multiple (distinct) values
-                var keys = index.Expr.GetIndexKeys(doc, collation);
+                var keys = index.Expression.GetIndexKeys(doc, collation);
 
                 IndexNodeRef? last = null;
 

@@ -3,17 +3,29 @@
 [AutoInterface]
 internal class QueryOptimization : IQueryOptimization
 {
+    private readonly ISortService _sortService;
+
     // dependency injections
     private readonly MasterDocument _master;
     private readonly CollectionDocument _collection;
     private readonly Query _query;
     private readonly Collation _collation;
-    private List<BinaryBsonExpression> _terms = new();
-    private IndexDocument _indexDocument;
-    private BsonValue _indexKey;
 
-    public QueryOptimization(MasterDocument master, CollectionDocument collection, Query query, Collation collation)
+    // fields filled by all query optimization proccess
+    private List<BinaryBsonExpression> _terms = new();
+    private IndexCost? _selectedIndex;
+    private IDocumentLookup? _documentLookup;
+    private BsonExpression? _filter;
+    private (BsonExpression expr, int order, IDocumentLookup lookup)? _orderBy;
+
+    public QueryOptimization(
+        ISortService sortService,
+        MasterDocument master, 
+        CollectionDocument collection, 
+        Query query, 
+        Collation collation)
     {
+        _sortService = sortService;
         _master = master;
         _collection = collection;
         _query = query;
@@ -28,20 +40,8 @@ internal class QueryOptimization : IQueryOptimization
         // do terms optimizations
         this.OptimizeTerms();
 
-
-        //-------------------------------------------------------
-
-        var lookup = new DataServiceLookup(Array.Empty<string>());
-        var indexEnumerator = new IndexEqualsEnumerator(_indexKey, _indexDocument, _collation);
-
-        // create query pipeline based on enumerators order
-        var lookupEnumerator = new LookupEnumerator(lookup, indexEnumerator);
-        var filterEnumerator = new FilterEnumerator(_terms.First(), _collation, lookupEnumerator);
-        var offsetEnumerator = new OffsetEnumerator(_query.Offset, filterEnumerator);
-        var limitEnumerator = new LimitEnumerator(_query.Limit, offsetEnumerator);
-        var selectEnumerator = new TransformEnumerator(_query.Select, _collation, limitEnumerator);
-
-        return selectEnumerator;
+        // create pipe enumerator based on query optimization
+        return this.CreatePipeEnumerator();
     }
 
     #region Split Where
@@ -129,5 +129,53 @@ internal class QueryOptimization : IQueryOptimization
 
     #endregion
 
+    private IPipeEnumerator CreatePipeEnumerator()
+    {
+        // create index enumerator
+        var indexEnumerator = _selectedIndex!.Value.CreateIndex();
 
+        // create query pipeline based on enumerators order
+        var pipeEnumerator = new LookupEnumerator(_documentLookup!, indexEnumerator) as IPipeEnumerator;
+
+        if (_filter is not null)
+        {
+            pipeEnumerator = new FilterEnumerator(_filter, _collation, pipeEnumerator);
+        }
+
+        if (_orderBy is not null)
+        {
+            pipeEnumerator = new OrderByEnumerator(_sortService, _orderBy.Value.expr, _orderBy.Value.order, pipeEnumerator);
+
+            if (_query.Offset > 0)
+            {
+                pipeEnumerator = new OffsetEnumerator(_query.Offset, pipeEnumerator);
+            }
+
+            if (_query.Limit != int.MaxValue)
+            {
+                pipeEnumerator = new LimitEnumerator(_query.Limit, pipeEnumerator);
+            }
+
+            pipeEnumerator = new LookupEnumerator(_orderBy.Value.lookup, pipeEnumerator);
+        }
+        else
+        {
+            if (_query.Offset > 0)
+            {
+                pipeEnumerator = new OffsetEnumerator(_query.Offset, pipeEnumerator);
+            }
+
+            if (_query.Limit != int.MaxValue)
+            {
+                pipeEnumerator = new LimitEnumerator(_query.Limit, pipeEnumerator);
+            }
+        }
+
+        if (_query.Select.Type != BsonExpressionType.Empty)
+        {
+            pipeEnumerator = new TransformEnumerator(_query.Select, _collation, pipeEnumerator);
+        }
+
+        return pipeEnumerator;
+    }
 }

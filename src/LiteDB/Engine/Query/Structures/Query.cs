@@ -4,10 +4,10 @@
 /// </summary>
 public partial class Query
 {
-    public BsonExpression Select { get; set; } = BsonExpression.Empty;
-    public BsonExpression Where { get; set; } = BsonExpression.Empty;
-    public BsonExpression OrderBy { get; set; } = BsonExpression.Empty;
-    public int Order { get; set; } = Query.Ascending;
-    public int Offset { get; set; } = 0;
-    public int Limit { get; set; } = int.MaxValue;
+    public BsonExpression Select { get; init; } = BsonExpression.Empty;
+    public BsonExpression Where { get; init; } = BsonExpression.Empty;
+    public BsonExpression OrderBy { get; init; } = BsonExpression.Empty;
+    public int Order { get; init; } = Query.Ascending;
+    public int Offset { get; init; } = 0;
+    public int Limit { get; init; } = int.MaxValue;
 }
