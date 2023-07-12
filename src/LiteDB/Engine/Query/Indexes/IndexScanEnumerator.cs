@@ -5,7 +5,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
     private readonly Collation _collation;
 
     private readonly IndexDocument _indexDocument;
-    private readonly BsonValue _value;
+    private readonly Func<BsonValue, bool> _func;
 
     private bool _init = false;
     private bool _eof = false;
@@ -14,13 +14,13 @@ internal class IndexScanEnumerator : IPipeEnumerator
     private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
 
     public IndexScanEnumerator(
-        BsonValue value, 
         IndexDocument indexDocument, 
-        Collation collation)
+        Collation collation,
+        Func<BsonValue, bool> func)
     {
-        _value = value;
         _indexDocument = indexDocument;
         _collation = collation;
+        _func = func;
     }
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
@@ -28,79 +28,37 @@ internal class IndexScanEnumerator : IPipeEnumerator
         if (_eof) return PipeValue.Empty;
 
         var indexService = context.IndexService;
-        var dataBlock = PageAddress.Empty;
 
-        // in first run, look for index node
+        // in first run, gets head node
         if (!_init)
         {
-            var nodeRef = await indexService.FindAsync(_indexDocument, _value, false, Query.Ascending);
-
-            // if node was not found, end enumerator
-            if (nodeRef is null)
-            {
-                _init = _eof = true;
-                return PipeValue.Empty;
-            }
-
-            var node = nodeRef.Value.Node;
-
-            // current node to return
-            dataBlock = node.DataBlock;
-
-            if (_indexDocument.Unique)
-            {
-                _eof = true;
-            }
-            else
-            {
-                // get pointer to next/prev at level 0
-                _prev = node.Prev[0];
-                _next = node.Next[0];
-            }
-
             _init = true;
-        }
-        // first go forward
-        else if (!_next.IsEmpty)
-        {
-            var nodeRef = await indexService.GetNodeAsync(_next, false);
-            var node = nodeRef.Node;
+            var nodeRef = await indexService.GetNodeAsync(_indexDocument.Head, false);
 
-            var isEqual = _collation.Equals(_value, node.Key);
+            // get pointer to next at level 0
+            _next = nodeRef.Node.Next[0];
 
-            if (isEqual)
+            if(_func.Invoke(nodeRef.Node.Key))
             {
-                dataBlock = node.DataBlock;
-
+                return new PipeValue(nodeRef.Node.RowID);
+            }
+        }
+        // go forward
+        if (!_next.IsEmpty)
+        {
+            do
+            {
+                var nodeRef = await indexService.GetNodeAsync(_next, false);
+                var node = nodeRef.Node;
+                if (_func.Invoke(nodeRef.Node.Key))
+                {
+                    return new PipeValue(nodeRef.Node.RowID);
+                }
                 _next = nodeRef.Node.Next[0];
-            }
-            else
-            {
-                _eof = true;
-            }
+            } while (!_next.IsEmpty);
         }
-        // and than, go backward
-        else if (!_prev.IsEmpty)
-        {
-            var nodeRef = await indexService.GetNodeAsync(_prev, false);
-            var node = nodeRef.Node;
-
-            var isEqual = _collation.Equals(_value, node.Key);
-
-            if (isEqual)
-            {
-                dataBlock = node.DataBlock;
-
-                _next = nodeRef.Node.Prev[0];
-            }
-            else
-            {
-                _eof = true;
-            }
-        }
-
-        // return current dataBlock rowID
-        return new PipeValue(dataBlock);
+        _eof = true;
+        return PipeValue.Empty;
     }
 
     public void Dispose()

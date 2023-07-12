@@ -10,7 +10,7 @@ public class IndexEqualsEnumerator_Tests
         {
             Slot = 1,
             Name = "IndexName",
-            Expr = null,
+            Expression = null,
             Unique = true,
             Head = new PageAddress(0, 1),
             Tail = new PageAddress(10, 1)
@@ -30,7 +30,7 @@ public class IndexEqualsEnumerator_Tests
 
 
         #region Asserts
-        value.Should().Be(1);
+        value.Should().Be(PipeValue.Empty);
         #endregion
     }
 }

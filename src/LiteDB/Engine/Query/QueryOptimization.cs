@@ -75,11 +75,11 @@ internal class QueryOptimization : IQueryOptimization
             }
         }
 
-        // check all where predicate for AND operators
+        /*// check all where predicate for AND operators //=================================================================================
         foreach (var predicate in _query.Where)
         {
             add(predicate);
-        }
+        }*/
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ internal class QueryOptimization : IQueryOptimization
         // load only query fields (null return all document)
         var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        if (_query.Select.Type == BsonExpressionType.em)
+        /*if (_query.Select.Type == BsonExpressionType.Empty) //==================================================================
 
         // include all fields detected in all used expressions
         fields.AddRange(_query.Select.Fields);
@@ -124,7 +124,7 @@ internal class QueryOptimization : IQueryOptimization
             fields.Clear();
         }
 
-        _queryPlan.Fields = fields;
+        _queryPlan.Fields = fields;*/
     }
 
     #endregion

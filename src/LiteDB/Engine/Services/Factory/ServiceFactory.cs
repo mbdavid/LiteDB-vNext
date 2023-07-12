@@ -124,6 +124,7 @@ internal partial class ServicesFactory : IServicesFactory
         transaction);
 
     public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, Query query, int readVersion) => new QueryOptimization(
+        this.SortService,
         master,
         collection,
         query,

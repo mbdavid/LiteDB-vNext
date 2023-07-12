@@ -28,6 +28,7 @@ internal struct IndexCost
 
     public IPipeEnumerator CreateIndex()
     {
+        throw new NotImplementedException();
     }
 
 }
