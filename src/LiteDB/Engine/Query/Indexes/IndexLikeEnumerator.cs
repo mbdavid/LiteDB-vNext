@@ -12,6 +12,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
     private readonly BsonValue _value;
     private readonly string _startsWith;
     private readonly bool _hasMore;
+    private readonly int _order;
 
     private bool _init = false;
     private bool _eof = false;
@@ -22,12 +23,14 @@ internal class IndexLikeEnumerator : IPipeEnumerator
     public IndexLikeEnumerator(
         BsonValue value, 
         IndexDocument indexDocument, 
-        Collation collation)
+        Collation collation,
+        int order)
     {
         _startsWith = value.AsString.SqlLikeStartsWith(out _hasMore);
         _value = value;
         _indexDocument = indexDocument;
         _collation = collation;
+        _order = order;
     }
 
     public ValueTask<PipeValue> MoveNextAsync(PipeContext context)
@@ -44,7 +47,9 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         if(!_init)
         {
             _init = true;
+
             var node = await indexService.FindAsync(_indexDocument, _startsWith, true, Query.Ascending);
+
             if (node == null)
             {
                 _eof = true;
@@ -63,6 +68,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
                 var nodeRef = await indexService.GetNodeAsync(_next, false);
                 node = nodeRef.Node;
             }
+
             else
             {
                 var nodeRef = await indexService.GetNodeAsync(_prev, false);
@@ -83,17 +89,21 @@ internal class IndexLikeEnumerator : IPipeEnumerator
     private async ValueTask<PipeValue> ExecuteFullScan(PipeContext context)
     {
         var indexService = context.IndexService;
+
         if (_eof) return PipeValue.Empty;
 
         // in first run, gets head node
         if (!_init)
         {
             _init = true;
-            var nodeRef = await indexService.GetNodeAsync(_indexDocument.Head, false);
+
+            var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
+
+            var nodeRef = await indexService.GetNodeAsync(start, false);
             var node = nodeRef.Node;
 
-            // get pointer to next
-            _next = nodeRef.Node.Next[0];
+            // get pointer to next at level 0
+            _next = nodeRef.Node.GetNextPrev(0, _order);
 
             if (node.Key.AsString.SqlLike(_value, _collation))
             {
@@ -107,11 +117,14 @@ internal class IndexLikeEnumerator : IPipeEnumerator
             {
                 var nodeRef = await indexService.GetNodeAsync(_next, false);
                 var node = nodeRef.Node;
+
                 if (node.Key.AsString.SqlLike(_value, _collation))
                 {
                     return new PipeValue(node.DataBlock);
                 }
-                _next = nodeRef.Node.Next[0];
+
+                _next = nodeRef.Node.GetNextPrev(0, _order);
+
             } while (!_next.IsEmpty);
         }
 

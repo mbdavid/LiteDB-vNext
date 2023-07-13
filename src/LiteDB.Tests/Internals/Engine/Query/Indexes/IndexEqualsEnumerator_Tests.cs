@@ -6,7 +6,7 @@ namespace LiteDB.Tests.Internals.Engine;
 public class IndexEqualsEnumerator_Tests
 {
     private readonly IndexDocument _doc = Substitute.For<IndexDocument>();
-    private readonly IIndexService _indexService = Substitute.For<IIndexService>();
+    private readonly IIndexService _indexService = new MockIndexService();
 
     [Fact]
     public void MoveNextAsync()

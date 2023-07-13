@@ -45,7 +45,7 @@ internal class MockIndexService : IIndexService
 
         var result = new IndexNodeRef(node, _page);
 
-        return new ValueTask<IndexNodeRef>(result);
+        return new ValueTask<IndexNodeRef?>(result);
     }
 
     public int Flip()

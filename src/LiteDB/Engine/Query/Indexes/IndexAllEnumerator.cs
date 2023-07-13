@@ -8,18 +8,23 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
     private readonly IndexDocument _indexDocument;
 
+    private readonly int _order;
+
     private bool _init = false;
     private bool _eof = false;
+
 
     private PageAddress _prev = PageAddress.Empty; // all nodes from left of first node found
     private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
 
     public IndexAllEnumerator(
         IndexDocument indexDocument, 
-        Collation collation)
+        Collation collation,
+        int order)
     {
         _indexDocument = indexDocument;
         _collation = collation;
+        _order = order;
     }
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
@@ -32,10 +37,13 @@ internal class IndexAllEnumerator : IPipeEnumerator
         if (!_init)
         {
             _init = true;
-            var nodeRef = await indexService.GetNodeAsync(_indexDocument.Head, false);
 
-            // get pointer to next at level 0
-            _next = nodeRef.Node.Next[0];
+            var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
+
+            var nodeRef = await indexService.GetNodeAsync(start, false);
+
+            // get pointer to next
+            _next = nodeRef.Node.GetNextPrev(0, _order);
 
             return new PipeValue(nodeRef.Node.RowID);
         }
@@ -43,7 +51,9 @@ internal class IndexAllEnumerator : IPipeEnumerator
         if (!_next.IsEmpty)
         {
             var nodeRef = await indexService.GetNodeAsync(_next, false);
-            _next = nodeRef.Node.Next[0];
+
+            _next = nodeRef.Node.GetNextPrev(0, _order);
+
             return new PipeValue(nodeRef.Node.RowID);
 
         }

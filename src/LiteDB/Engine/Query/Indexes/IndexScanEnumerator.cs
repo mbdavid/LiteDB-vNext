@@ -4,7 +4,10 @@ internal class IndexScanEnumerator : IPipeEnumerator
 {
 
     private readonly IndexDocument _indexDocument;
+
     private readonly Func<BsonValue, bool> _func;
+
+    private readonly int _order;
 
     private bool _init = false;
     private bool _eof = false;
@@ -13,10 +16,12 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
     public IndexScanEnumerator(
         IndexDocument indexDocument,
-        Func<BsonValue, bool> func)
+        Func<BsonValue, bool> func,
+        int order)
     {
         _indexDocument = indexDocument;
         _func = func;
+        _order = order;
     }
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
@@ -30,11 +35,12 @@ internal class IndexScanEnumerator : IPipeEnumerator
         {
             _init = true;
 
-            var nodeRef = await indexService.GetNodeAsync(_indexDocument.Head, false);
+            var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
+
+            var nodeRef = await indexService.GetNodeAsync(start, false);
 
             // get pointer to next at level 0
-            //nodeRef.Node.GetNextPrev(0, Query.Ascending);
-            _next = nodeRef.Node.Next[0];
+            _next = nodeRef.Node.GetNextPrev(0, _order);
 
             if(_func(nodeRef.Node.Key))
             {
@@ -50,7 +56,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
                 var nodeRef = await indexService.GetNodeAsync(_next, false);
                 var node = nodeRef.Node;
 
-                _next = nodeRef.Node.Next[0];
+                _next = nodeRef.Node.GetNextPrev(0, _order);
 
                 if (_func(nodeRef.Node.Key))
                 {
