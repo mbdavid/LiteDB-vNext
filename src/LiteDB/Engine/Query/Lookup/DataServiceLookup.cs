@@ -2,9 +2,9 @@
 
 internal class DataServiceLookup : IDocumentLookup
 {
-    private readonly HashSet<string> _fields;
+    private readonly string[] _fields;
 
-    public DataServiceLookup(HashSet<string> fields)
+    public DataServiceLookup(string[] fields)
     {
         _fields = fields;
     }

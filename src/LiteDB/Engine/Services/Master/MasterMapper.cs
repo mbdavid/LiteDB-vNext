@@ -51,7 +51,7 @@ internal class MasterMapper : IMasterMapper
                 {
                     ["slot"] = (int)i.Value.Slot,
                     ["name"] = i.Value.Name,
-                    ["expr"] = i.Value.Expr.ToString(),
+                    ["expr"] = i.Value.Expression.ToString(),
                     ["unique"] = i.Value.Unique,
                     ["head"] = new BsonArray(new BsonValue[] { i.Value.Head.PageID, i.Value.Head.Index }),
                     ["tail"] = new BsonArray(new BsonValue[] { i.Value.Tail.PageID, i.Value.Tail.Index }),
@@ -80,7 +80,7 @@ internal class MasterMapper : IMasterMapper
                 {
                     Slot = (byte)i.Value["slot"],
                     Name = i.Key,
-                    Expr = BsonExpression.Create(i.Value["expr"]),
+                    Expression = BsonExpression.Create(i.Value["expr"]),
                     Unique = i.Value["unique"],
                     Head = new(i.Value["head"][0], (byte)i.Value["head"][1]),
                     Tail = new(i.Value["tail"][0], (byte)i.Value["tail"][1])

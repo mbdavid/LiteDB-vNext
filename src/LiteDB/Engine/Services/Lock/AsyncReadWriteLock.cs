@@ -18,7 +18,7 @@ internal class AsyncReaderWriterLock : IDisposable
         _timeout = timeout;
     }
 
-    public async Task AcquireWriterLock(CancellationToken token = default)
+    public async ValueTask AcquireWriterLock(CancellationToken token = default)
     {
         await _writeSemaphore.WaitAsync(_timeout, token).ConfigureAwait(false);
 
@@ -39,7 +39,7 @@ internal class AsyncReaderWriterLock : IDisposable
         _writeSemaphore.Release();
     }
 
-    public async Task AcquireReaderLock(CancellationToken token = default)
+    public async ValueTask AcquireReaderLock(CancellationToken token = default)
     {
         await _writeSemaphore.WaitAsync(_timeout, token).ConfigureAwait(false);
 

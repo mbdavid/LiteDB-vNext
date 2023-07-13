@@ -28,24 +28,22 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         if (_eof) return PipeValue.Empty;
 
         var indexService = context.IndexService;
-        var dataBlock = PageAddress.Empty;
 
         // in first run, look for index node
         if (!_init)
         {
+            _init = true;
+
             var nodeRef = await indexService.FindAsync(_indexDocument, _value, false, Query.Ascending);
 
             // if node was not found, end enumerator
             if (nodeRef is null)
             {
-                _init = _eof = true;
+                _eof = true;
                 return PipeValue.Empty;
             }
 
             var node = nodeRef.Value.Node;
-
-            // current node to return
-            dataBlock = node.DataBlock;
 
             if (_indexDocument.Unique)
             {
@@ -58,29 +56,12 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
                 _next = node.Next[0];
             }
 
-            _init = true;
+            // current node to return
+            return new PipeValue(node.DataBlock);
         }
+
         // first go forward
-        else if (!_next.IsEmpty)
-        {
-            var nodeRef = await indexService.GetNodeAsync(_next, false);
-            var node = nodeRef.Node;
-
-            var isEqual = _collation.Equals(_value, node.Key);
-
-            if (isEqual)
-            {
-                dataBlock = node.DataBlock;
-
-                _next = nodeRef.Node.Next[0];
-            }
-            else
-            {
-                _eof = true;
-            }
-        }
-        // and than, go backward
-        else if (!_prev.IsEmpty)
+        if (!_prev.IsEmpty)
         {
             var nodeRef = await indexService.GetNodeAsync(_prev, false);
             var node = nodeRef.Node;
@@ -89,17 +70,41 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
 
             if (isEqual)
             {
-                dataBlock = node.DataBlock;
+                _prev = nodeRef.Node.Prev[0];
 
+                return new PipeValue(node.DataBlock);
+            }
+            else
+            {
+                _prev = PageAddress.Empty;
+            }
+        }
+
+        // and than, go backward
+        if (!_next.IsEmpty)
+        {
+            var nodeRef = await indexService.GetNodeAsync(_next, false);
+            var node = nodeRef.Node;
+
+            var isEqual = _collation.Equals(_value, node.Key);
+
+            if (isEqual)
+            {
                 _next = nodeRef.Node.Prev[0];
+
+                return new PipeValue(node.DataBlock);
             }
             else
             {
                 _eof = true;
+                _next = PageAddress.Empty;
             }
         }
 
-        // return current dataBlock rowID
-        return new PipeValue(dataBlock);
+        return PipeValue.Empty;
+    }
+
+    public void Dispose()
+    {
     }
 }

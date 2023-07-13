@@ -20,13 +20,13 @@ internal class QueryService : IQueryService
         _factory = factory;
     }
 
-    public Cursor CreateCursor(CollectionDocument collection, Query query, int readVersion)
+    public Cursor CreateCursor(CollectionDocument collection, IQuery query, int readVersion)
     {
         var master = _masterService.GetMaster(false);
 
-        var queryOptimizer = _factory.CreateQueryOptimizer(master, collection, query, readVersion);
+        var queryOptimization = _factory.CreateQueryOptimization(master, collection, query, readVersion);
 
-        var enumerator = queryOptimizer.ProcessQuery();
+        var enumerator = queryOptimization.ProcessQuery();
 
         var cursor = new Cursor(query, readVersion, enumerator);
 
@@ -48,6 +48,8 @@ internal class QueryService : IQueryService
         // checks if readVersion still avaiable to execute (changes after checkpoint)
         if (cursor.ReadVersion < _walIndexService.MinReadVersion)
         {
+            cursor.Dispose();
+
             _openCursors.TryRemove(cursor.CursorID, out _);
 
             throw ERR($"Cursor {cursor} expired");
@@ -59,7 +61,7 @@ internal class QueryService : IQueryService
         {
             var item = await enumerator.MoveNextAsync(context);
 
-            if (item.Eof)
+            if (item.IsEmpty)
             {
                 eof = true;
                 break;
@@ -77,6 +79,8 @@ internal class QueryService : IQueryService
         // if fetch finish, remove cursor
         if (eof)
         {
+            cursor.Dispose();
+
             _openCursors.TryRemove(cursor.CursorID, out _);
         }
 

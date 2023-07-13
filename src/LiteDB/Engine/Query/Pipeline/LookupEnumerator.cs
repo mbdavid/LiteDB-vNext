@@ -19,7 +19,7 @@ internal class LookupEnumerator : IPipeEnumerator
 
         var item = await _enumerator.MoveNextAsync(context);
 
-        if (item.Eof)
+        if (item.IsEmpty)
         {
             _eof = true;
             return PipeValue.Empty;
@@ -28,5 +28,9 @@ internal class LookupEnumerator : IPipeEnumerator
         var doc = await _lookup.LoadAsync(item, context);
 
         return new PipeValue(item.RowID, doc);
+    }
+
+    public void Dispose()
+    {
     }
 }

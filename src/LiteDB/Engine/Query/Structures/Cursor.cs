@@ -1,10 +1,10 @@
 ﻿namespace LiteDB.Engine;
 
-internal class Cursor
+internal class Cursor : IDisposable
 {
     public Guid CursorID { get; } = Guid.NewGuid();
 
-    public Query Query { get; }
+    public IQuery Query { get; }
     public int ReadVersion { get; }
     public IPipeEnumerator Enumerator { get; }
 
@@ -16,10 +16,15 @@ internal class Cursor
     public DateTime Start { get; } = DateTime.UtcNow;
     public TimeSpan ElapsedTime { get; set; } = TimeSpan.Zero;
 
-    public Cursor(Query query, int readVersion, IPipeEnumerator enumerator)
+    public Cursor(IQuery query, int readVersion, IPipeEnumerator enumerator)
     {
         this.Query = query;
         this.ReadVersion = readVersion;
         this.Enumerator = enumerator;
+    }
+
+    public void Dispose()
+    {
+        this.Enumerator.Dispose();
     }
 }

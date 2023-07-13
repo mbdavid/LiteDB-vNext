@@ -40,7 +40,7 @@ public partial class LiteEngine : ILiteEngine
                 {
                     Slot = 0,
                     Name = "_id",
-                    Expr = "$._id",
+                    Expression = "$._id",
                     Unique = true,
                     Head = pkNodes.head.RowID,
                     Tail = pkNodes.tail.RowID

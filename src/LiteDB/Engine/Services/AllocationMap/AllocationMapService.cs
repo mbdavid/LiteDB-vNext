@@ -32,7 +32,7 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Initialize allocation map service loading all AM pages into memory and getting
     /// </summary>
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         // read all allocation maps pages on disk
         await foreach (var pageBuffer in this.ReadAllocationMapPages())
@@ -81,7 +81,7 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Write all dirty pages direct into disk (there is no log file to amp)
     /// </summary>
-    public async Task WriteAllChangesAsync()
+    public async ValueTask WriteAllChangesAsync()
     {
         var writer = _diskService.GetDiskWriter();
 

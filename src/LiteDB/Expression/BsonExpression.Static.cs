@@ -7,6 +7,8 @@ public abstract partial class BsonExpression
     private static readonly BsonExpression _root = new ScopeBsonExpression(true);
     private static readonly BsonExpression _current = new ScopeBsonExpression(false);
 
+    public static BsonExpression Empty = new EmptyBsonExpression();
+
     public static BsonExpression Constant(BsonValue value) => new ConstantBsonExpression(value);
 
     public static BsonExpression Parameter(string name) => new ParameterBsonExpression(name);

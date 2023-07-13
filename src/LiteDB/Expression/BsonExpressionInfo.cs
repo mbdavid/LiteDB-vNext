@@ -2,30 +2,38 @@
 
 internal class BsonExpressionInfo
 {
+    /// <summary>
+    /// Indicate that expression contains a single $ root (should load full document)
+    /// </summary>
     public bool HasRoot { get; }
 
-    public IEnumerable<string> RootFields { get; }
+    /// <summary>
+    /// Get root fields keys used in document
+    /// </summary>
+    public string[] RootFields { get; }
 
-    public bool IsImmutable { get; }
+    /// <summary>
+    /// Indicate that this expression can result a diferent result for a same input arguments
+    /// </summary>
+    public bool IsVolatile { get; }
 
-    public string Expression { get; }
-
+    /// <summary>
+    /// Get some expression infos reading full expression tree
+    /// </summary>
     public BsonExpressionInfo(BsonExpression expr)
     {
-        this.Expression = expr.ToString();
-
         var rootFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var isImmutable = true;
+        var isVolatile = false;
         var hasRoot = false;
 
-        this.GetInfo(expr, rootFields, ref isImmutable, ref hasRoot);
+        this.GetInfo(expr, rootFields, ref isVolatile, ref hasRoot);
 
-        this.RootFields = rootFields;
-        this.IsImmutable = isImmutable;
+        this.RootFields = rootFields.ToArray();
+        this.IsVolatile = isVolatile;
         this.HasRoot = hasRoot;
     }
 
-    private void GetInfo(BsonExpression expr, HashSet<string> rootFields, ref bool isImmutable, ref bool hasRoot)
+    private void GetInfo(BsonExpression expr, HashSet<string> rootFields, ref bool isVolatile, ref bool hasRoot)
     {
         // if expression are path from root document, get root field
         if (expr.Type == BsonExpressionType.Path)
@@ -47,20 +55,20 @@ internal class BsonExpressionInfo
         {
             var call = (CallBsonExpression)expr;
 
-            if (call.IsImmutable == false)
+            if (call.IsVolatile == true)
             {
-                isImmutable = false;
+                isVolatile = true;
             }
         }
 
         if (expr.Type == BsonExpressionType.Parameter)
         {
-            isImmutable = false;
+            isVolatile = true;
         }
 
         foreach(var child in expr.Children)
         {
-            this.GetInfo(child, rootFields, ref isImmutable, ref hasRoot);
+            this.GetInfo(child, rootFields, ref isVolatile, ref hasRoot);
         }
     }
 }

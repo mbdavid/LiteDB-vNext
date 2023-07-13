@@ -60,7 +60,7 @@ internal partial class LogService : ILogService
 
     /// <summary>
     /// </summary>
-    public async Task WriteLogPagesAsync(PageBuffer[] pages)
+    public async ValueTask WriteLogPagesAsync(PageBuffer[] pages)
     {
         var writer = _diskService.GetDiskWriter();
 
@@ -128,11 +128,11 @@ internal partial class LogService : ILogService
         _logPages.Add(header);
     }
 
-    public Task<int> CheckpointAsync(bool crop)
+    public ValueTask<int> CheckpointAsync(bool crop)
     {
         var logLength = _logPages.Count;
 
-        if (logLength == 0 && !crop) return Task.FromResult(0);
+        if (logLength == 0 && !crop) return new ValueTask<int>(0);
 
         ENSURE(_logPositionID == _logPages[^1].PositionID, $"last log page must positionID = {_logPositionID}");
 
@@ -143,7 +143,7 @@ internal partial class LogService : ILogService
         return this.CheckpointAsync(startTempPositionID, tempPages, crop);
     }
 
-    private async Task<int> CheckpointAsync(int startTempPositionID, IList<PageHeader> tempPages, bool crop)
+    private async ValueTask<int> CheckpointAsync(int startTempPositionID, IList<PageHeader> tempPages, bool crop)
     {
         // get all actions that checkpoint must do with all pages
         var actions = new CheckpointActions().GetActions(
@@ -254,7 +254,7 @@ internal partial class LogService : ILogService
     /// <summary>
     /// Get page from cache (remove if found) or create a new from page factory
     /// </summary>
-    private async Task<PageBuffer> GetLogPageAsync(IDiskStream stream, int positionID)
+    private async ValueTask<PageBuffer> GetLogPageAsync(IDiskStream stream, int positionID)
     {
         // try get page from cache
         if (_cacheService.TryRemove(positionID, out var page))

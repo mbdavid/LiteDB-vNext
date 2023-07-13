@@ -11,10 +11,10 @@ public class BsonReader : IBsonReader
     /// Skip will skip document read (just update length output) - returns null
     /// Returns length document size
     /// </summary>
-    public BsonDocument? ReadDocument(Span<byte> span, HashSet<string>? fields, bool skip, out int length)
+    public BsonDocument? ReadDocument(Span<byte> span, string[] fields, bool skip, out int length)
     {
         var doc = new BsonDocument();
-        var remaining = fields == null || fields.Count == 0 ? null : fields;
+        var remaining = fields.Length == 0 ? null : new HashSet<string>(fields);
 
         length = span.ReadVariantLength(out var varLen);
 

@@ -23,7 +23,7 @@ internal class RecoveryService : IRecoveryService
         _diskService = diskService;
     }
 
-    public async Task DoRecoveryAsync()
+    public async ValueTask DoRecoveryAsync()
     {
         // read all data information on disk on a first-pass (log/temp pages/crc)
         await this.ReadDatafileAsync();
@@ -43,7 +43,7 @@ internal class RecoveryService : IRecoveryService
     /// <summary>
     /// Read all pages from database to find log pages and temp pages
     /// </summary>
-    private async Task ReadDatafileAsync()
+    private async ValueTask ReadDatafileAsync()
     {
         var page = _bufferFactory.AllocateNewPage(true);
         var writer = _diskService.GetDiskWriter();
@@ -117,7 +117,7 @@ internal class RecoveryService : IRecoveryService
     /// <summary>
     /// Do a in-disk checkpoint, with no cache and single page allocation
     /// </summary>
-    private async Task CheckpointAsync()
+    private async ValueTask CheckpointAsync()
     {
         // get all checkpoint actions based on log/temp pages
         var actions = new CheckpointActions()
@@ -183,7 +183,7 @@ internal class RecoveryService : IRecoveryService
     /// <summary>
     /// Create all new AllocationMap pages based on a all datafile pages read. Writes direct on disk
     /// </summary>
-    private async Task CreateAllocationMap()
+    private async ValueTask CreateAllocationMap()
     {
         var page = _bufferFactory.AllocateNewPage(true);
         var amPage = _bufferFactory.AllocateNewPage(true);

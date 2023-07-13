@@ -6,26 +6,29 @@ internal struct PipeValue
 
     public readonly PageAddress RowID;
     public readonly BsonDocument? Value;
-    public readonly bool Eof;
+
+    public readonly bool IsEmpty => this.RowID.IsEmpty && this.Value is null;
 
     public PipeValue(PageAddress rowID)
     {
         this.RowID = rowID;
         this.Value = null;
-        this.Eof = false;
     }
 
     public PipeValue(PageAddress rowID, BsonDocument value)
     {
         this.RowID = rowID;
         this.Value = value;
-        this.Eof = false;
     }
 
     public PipeValue()
     {
         this.RowID = PageAddress.Empty;
         this.Value = null;
-        this.Eof = true;
+    }
+
+    public override string ToString()
+    {
+        return this.IsEmpty ? "<EMPTY>" : $"[{this.RowID}] = {this.Value}";
     }
 }

@@ -17,24 +17,6 @@ internal static class StringExtensions
         return true;
     }
 
-    public static string Sha1(this string value)
-    {
-        //TODO: improve with shared array
-        var data = Encoding.UTF8.GetBytes(value);
-
-        using var sha = SHA1.Create();
-
-        var hashData = sha.ComputeHash(data);
-        var hash = new StringBuilder();
-
-        foreach (var b in hashData)
-        {
-            hash.Append(b.ToString("X2"));
-        }
-
-        return hash.ToString();
-    }
-
     /// <summary>
     /// Implement SqlLike in C# string - based on
     /// https://stackoverflow.com/a/8583383/3286260
@@ -185,6 +167,6 @@ internal static class StringExtensions
 
         hasMore = !(i == len || i == len - 1);
 
-        return str.Substring(0, i);
+        return str[..i];
     }
 }

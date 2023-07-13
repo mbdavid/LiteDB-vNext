@@ -20,12 +20,15 @@ internal partial class ServicesFactory : IServicesFactory
 
     public IBufferFactory BufferFactory { get; }
     public IStreamFactory StreamFactory { get; }
+    public IStreamFactory SortStreamFactory { get; }
+
 
     public ICacheService CacheService { get; }
 
     public ILogService LogService { get; }
     public IWalIndexService WalIndexService { get; }
 
+    public ISortService SortService { get; }
     public IQueryService QueryService { get; }
 
     public ILockService LockService { get; }
@@ -61,7 +64,13 @@ internal partial class ServicesFactory : IServicesFactory
 
         // settings dependency only
         this.LockService = new LockService(settings.Timeout);
-        this.StreamFactory = new FileStreamFactory(settings);
+        this.StreamFactory = settings.Filename is not null ?
+            new FileStreamFactory(settings.Filename, settings.ReadOnly) :
+            new FileStreamFactory("implementar MemoryStream", false);
+
+        this.SortStreamFactory = settings.Filename is not null ?
+            new FileSortStreamFactory(settings.Filename) :
+            new FileStreamFactory("implementar MemoryStream", false);
 
         // other services dependencies
         this.CacheService = new CacheService(this.BufferFactory);
@@ -71,24 +80,18 @@ internal partial class ServicesFactory : IServicesFactory
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
         this.RecoveryService = new RecoveryService(this.BufferFactory, this.DiskService);
+        this.SortService = new SortService(this.SortStreamFactory, this);
         this.QueryService = new QueryService(this.WalIndexService, this.MasterService, this);
 
     }
 
-    #region Transient instances (Create prefix)
+    #region Transient instances ("Create" prefix)
 
     public IEngineContext CreateEngineContext() 
         => new EngineContext();
 
     public IDiskStream CreateDiskStream()
         => new DiskStream(this.Settings, this.StreamFactory);
-
-    public IStreamFactory CreateStreamFactory(bool readOnly)
-    {
-        if (this.Settings.Filename is null) throw new NotImplementedException();
-
-        return new FileStreamFactory(this.Settings);
-    }
 
     public INewDatafile CreateNewDatafile() => new NewDatafile(
         this.BufferFactory, 
@@ -120,11 +123,36 @@ internal partial class ServicesFactory : IServicesFactory
         this.FileHeader.Collation, 
         transaction);
 
-    public IQueryOptimizer CreateQueryOptimizer(MasterDocument master, CollectionDocument collection, Query query, int readVersion) => new QueryOptimizer(
-        master,
-        collection,
-        query,
-        this.FileHeader.Collation);
+    public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, IQuery query, int readVersion) =>
+        query is Query simpleQuery ?
+            new QueryOptimization(
+                this.SortService,
+                master,
+                collection,
+                simpleQuery,
+                this.FileHeader.Collation) :
+        query is AggregateQuery aggregateQuery ?
+            new AggregateQueryOptimization(
+                this.SortService,
+                master,
+                collection,
+                aggregateQuery,
+                this.FileHeader.Collation) :
+        throw new NotSupportedException();
+
+    public ISortOperation CreateSortOperation(BsonExpression expression, int order) => new SortOperation(
+        this.SortService,
+        this.FileHeader.Collation,
+        this,
+        expression,
+        order);
+
+    public ISortContainer CreateSortContainer(int containerID, int order, Stream stream) => new SortContainer(
+        this.BufferFactory,
+        this.FileHeader.Collation,
+        containerID,
+        order,
+        stream);
 
     public void Dispose()
     {
