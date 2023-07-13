@@ -123,12 +123,22 @@ internal partial class ServicesFactory : IServicesFactory
         this.FileHeader.Collation, 
         transaction);
 
-    public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, Query query, int readVersion) => new QueryOptimization(
-        this.SortService,
-        master,
-        collection,
-        query,
-        this.FileHeader.Collation);
+    public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, IQuery query, int readVersion) =>
+        query is Query simpleQuery ?
+            new QueryOptimization(
+                this.SortService,
+                master,
+                collection,
+                simpleQuery,
+                this.FileHeader.Collation) :
+        query is AggregateQuery aggregateQuery ?
+            new AggregateQueryOptimization(
+                this.SortService,
+                master,
+                collection,
+                aggregateQuery,
+                this.FileHeader.Collation) :
+        throw new NotSupportedException();
 
     public ISortOperation CreateSortOperation(BsonExpression expression, int order) => new SortOperation(
         this.SortService,

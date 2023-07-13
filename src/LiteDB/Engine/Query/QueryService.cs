@@ -20,7 +20,7 @@ internal class QueryService : IQueryService
         _factory = factory;
     }
 
-    public Cursor CreateCursor(CollectionDocument collection, Query query, int readVersion)
+    public Cursor CreateCursor(CollectionDocument collection, IQuery query, int readVersion)
     {
         var master = _masterService.GetMaster(false);
 

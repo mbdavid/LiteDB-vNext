@@ -7,7 +7,7 @@ internal struct PipeValue
     public readonly PageAddress RowID;
     public readonly BsonDocument? Value;
 
-    public bool IsEmpty => this.RowID.IsEmpty;
+    public readonly bool IsEmpty => this.RowID.IsEmpty && this.Value is null;
 
     public PipeValue(PageAddress rowID)
     {

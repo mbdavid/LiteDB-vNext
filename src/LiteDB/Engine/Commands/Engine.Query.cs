@@ -2,7 +2,7 @@
 
 public partial class LiteEngine : ILiteEngine
 {
-    public Guid Query(string collectionName, Query query)
+    public Guid Query(string collectionName, IQuery query)
     {
         var queryService = _factory.QueryService;
         var walIndexService = _factory.WalIndexService;
