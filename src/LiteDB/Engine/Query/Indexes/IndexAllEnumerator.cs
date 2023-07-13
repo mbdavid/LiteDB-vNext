@@ -5,9 +5,7 @@ namespace LiteDB.Engine;
 internal class IndexAllEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
-
     private readonly IndexDocument _indexDocument;
-
     private readonly int _order;
 
     private bool _init = false;

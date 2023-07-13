@@ -3,9 +3,9 @@
 internal class IndexInEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
-
     private readonly IndexDocument _indexDocument;
-    private readonly BsonArray _values;
+    private readonly IOrderedEnumerable<BsonValue> _values;
+    private readonly int _order;
 
     private bool _init = false;
     private bool _eof = false;
@@ -17,11 +17,13 @@ internal class IndexInEnumerator : IPipeEnumerator
     public IndexInEnumerator(
         BsonArray values,
         IndexDocument indexDocument,
-        Collation collation)
+        Collation collation,
+        int order)
     {
-        _values = values;
+        _values = order == Query.Ascending ? values.OrderBy(x => x) : values.OrderByDescending(x => x);
         _indexDocument = indexDocument;
         _collation = collation;
+        _order = order;
     }
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
@@ -36,7 +38,7 @@ internal class IndexInEnumerator : IPipeEnumerator
 
             var value = _values.Distinct().ElementAtOrDefault(_index);
 
-            if(value.IsNull)
+            if(value is null)
             {
                 _eof = true;
 

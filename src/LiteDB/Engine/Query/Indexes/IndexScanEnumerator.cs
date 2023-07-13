@@ -4,9 +4,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 {
 
     private readonly IndexDocument _indexDocument;
-
     private readonly Func<BsonValue, bool> _func;
-
     private readonly int _order;
 
     private bool _init = false;
