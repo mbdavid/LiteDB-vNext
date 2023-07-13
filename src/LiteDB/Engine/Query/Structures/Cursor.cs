@@ -5,6 +5,7 @@ internal class Cursor : IDisposable
     public Guid CursorID { get; } = Guid.NewGuid();
 
     public IQuery Query { get; }
+    public BsonDocument Parameters { get; }
     public int ReadVersion { get; }
     public IPipeEnumerator Enumerator { get; }
 
@@ -16,9 +17,10 @@ internal class Cursor : IDisposable
     public DateTime Start { get; } = DateTime.UtcNow;
     public TimeSpan ElapsedTime { get; set; } = TimeSpan.Zero;
 
-    public Cursor(IQuery query, int readVersion, IPipeEnumerator enumerator)
+    public Cursor(IQuery query, BsonDocument parameters, int readVersion, IPipeEnumerator enumerator)
     {
         this.Query = query;
+        this.Parameters = parameters;
         this.ReadVersion = readVersion;
         this.Enumerator = enumerator;
     }

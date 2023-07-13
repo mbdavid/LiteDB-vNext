@@ -20,15 +20,15 @@ internal class QueryService : IQueryService
         _factory = factory;
     }
 
-    public Cursor CreateCursor(CollectionDocument collection, IQuery query, int readVersion)
+    public Cursor CreateCursor(CollectionDocument collection, int readVersion, IQuery query, BsonDocument parameters)
     {
         var master = _masterService.GetMaster(false);
 
-        var queryOptimization = _factory.CreateQueryOptimization(master, collection, query, readVersion);
+        var queryOptimization = _factory.CreateQueryOptimization(master, collection, readVersion, query, parameters);
 
         var enumerator = queryOptimization.ProcessQuery();
 
-        var cursor = new Cursor(query, readVersion, enumerator);
+        var cursor = new Cursor(query, parameters, readVersion, enumerator);
 
         _openCursors.TryAdd(cursor.CursorID, cursor);
 

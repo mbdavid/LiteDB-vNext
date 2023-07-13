@@ -7,11 +7,11 @@ internal class BsonExpressionContext
     public BsonDocument Parameters { get; }
     public Collation Collation { get; }
 
-    public BsonExpressionContext(BsonValue? root, BsonDocument? parameters, Collation? collation)
+    public BsonExpressionContext(BsonValue root, BsonDocument parameters, Collation collation)
     {
-        this.Root = root ?? new BsonDocument();
+        this.Root = root;
         this.Current = this.Root;
-        this.Parameters = parameters ?? new BsonDocument();
-        this.Collation = collation ?? Collation.Binary;
+        this.Parameters = parameters;
+        this.Collation = collation;
     }
 }

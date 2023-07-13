@@ -5,6 +5,11 @@
 /// </summary>
 public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 {
+    /// <summary>
+    /// Singleton Empty document (must be readonly!)
+    /// </summary>
+    internal static BsonDocument Empty => new();
+
     private readonly Dictionary<string, BsonValue> _value;
 
     private int _length = -1;

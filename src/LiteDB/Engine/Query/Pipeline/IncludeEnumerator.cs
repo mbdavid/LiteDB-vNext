@@ -63,6 +63,7 @@ internal class IncludeEnumerator : IPipeEnumerator
         // if has no reference, just go out
         if (refId.IsNull || !refCol.IsString) return;
 
+        // get master to get collection PK index
         var master = _masterService.GetMaster(false);
 
         if (master.Collections.TryGetValue(refCol.AsString, out var collection))

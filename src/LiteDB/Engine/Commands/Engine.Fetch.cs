@@ -29,7 +29,7 @@ public partial class LiteEngine : ILiteEngine
         var indexService = _factory.CreateIndexService(transaction);
 
         // create a new context pipe
-        var pipeContext = new PipeContext(dataService, indexService);
+        var pipeContext = new PipeContext(dataService, indexService, cursor.Parameters);
 
         // fetch next results (closes cursor when eof)
         var result = await queryService.FetchAsync(cursor, fetchSize, pipeContext);

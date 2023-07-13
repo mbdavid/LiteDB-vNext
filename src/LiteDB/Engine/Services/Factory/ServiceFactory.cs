@@ -123,13 +123,14 @@ internal partial class ServicesFactory : IServicesFactory
         this.FileHeader.Collation, 
         transaction);
 
-    public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, IQuery query, int readVersion) =>
+    public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, int readVersion, IQuery query, BsonDocument queryParameters) =>
         query is Query simpleQuery ?
             new QueryOptimization(
                 this.SortService,
                 master,
                 collection,
                 simpleQuery,
+                queryParameters,
                 this.FileHeader.Collation) :
         query is AggregateQuery aggregateQuery ?
             new AggregateQueryOptimization(
@@ -137,6 +138,7 @@ internal partial class ServicesFactory : IServicesFactory
                 master,
                 collection,
                 aggregateQuery,
+                queryParameters,
                 this.FileHeader.Collation) :
         throw new NotSupportedException();
 

@@ -8,6 +8,7 @@ internal class AggregateQueryOptimization : IQueryOptimization
     private readonly MasterDocument _master;
     private readonly CollectionDocument _collection;
     private readonly AggregateQuery _query;
+    private readonly BsonDocument _queryParameters;
     private readonly Collation _collation;
 
     // fields filled by all query optimization proccess
@@ -22,12 +23,14 @@ internal class AggregateQueryOptimization : IQueryOptimization
         MasterDocument master, 
         CollectionDocument collection, 
         AggregateQuery query, 
+        BsonDocument queryParameters,
         Collation collation)
     {
         _sortService = sortService;
         _master = master;
         _collection = collection;
         _query = query;
+        _queryParameters = queryParameters;
         _collation = collation;
     }
 

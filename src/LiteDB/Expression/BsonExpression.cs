@@ -2,7 +2,7 @@
 
 namespace LiteDB;
 
-public abstract partial class BsonExpression
+public abstract partial class BsonExpression : IEquatable<BsonExpression>
 {
     public abstract BsonExpressionType Type { get; }
 
@@ -29,10 +29,31 @@ public abstract partial class BsonExpression
 
     public BsonValue Execute(BsonValue? root = null, BsonDocument? parameters = null, Collation? collation = null)
     {
-        var context = new BsonExpressionContext(root, parameters, collation);
+        var context = new BsonExpressionContext(
+            root ?? BsonDocument.Empty, 
+            parameters ?? BsonDocument.Empty, 
+            collation ?? Collation.Default);
 
         return this.Execute(context);
     }
+
+    #region IEquatable
+
+    public bool Equals(BsonExpression other) => base.Equals(other);
+
+    public override bool Equals(object other) => this.Equals((BsonExpression)other);
+
+    public override int GetHashCode() => base.GetHashCode();
+
+    #endregion
+
+    #region Explicit Operators
+
+    public static bool operator ==(BsonExpression left, BsonExpression right) => left.Equals(right);
+
+    public static bool operator !=(BsonExpression left, BsonExpression right) => !left.Equals(right);
+
+    #endregion
 
     #region Internal Uses
 
