@@ -175,7 +175,7 @@ internal class IndexService : IIndexService
     /// If index are unique, return unique value - if index are not unique, return first found (can start, middle or end)
     /// If not found but sibling = true and key are not found, returns next value index node (if order = Asc) or prev node (if order = Desc)
     /// </summary>
-    public async Task<IndexNodeRef?> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
+    public async ValueTask<IndexNodeRef?> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
     {
         var left = order == Query.Ascending ? index.Head : index.Tail;
         var leftNode = await this.GetNodeAsync(left, false);

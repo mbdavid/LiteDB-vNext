@@ -1,16 +1,22 @@
-﻿namespace LiteDB.Tests.Internals.Engine;
+﻿using NSubstitute;
+using System.Threading.Tasks;
+
+namespace LiteDB.Tests.Internals.Engine;
 
 public class IndexEqualsEnumerator_Tests
 {
+    private readonly IndexDocument _doc = Substitute.For<IndexDocument>();
+    private readonly IIndexService _indexService = Substitute.For<IIndexService>();
+
     [Fact]
     public void MoveNextAsync()
     {
         #region Arrange
         var indexDocument = new IndexDocument()
         {
-            Slot = 1,
-            Name = "IndexName",
-            Expression = null,
+            Slot = 0,
+            Name = "_id",
+            Expression = "$._id",
             Unique = true,
             Head = new PageAddress(0, 1),
             Tail = new PageAddress(10, 1)
@@ -18,19 +24,18 @@ public class IndexEqualsEnumerator_Tests
         };
         var _sut = new IndexEqualsEnumerator(1, indexDocument, Collation.Default);
 
-        PipeContext pipeContext = new PipeContext();
-        var value = new ValueTask<PipeValue>();
+        var pipeContext = new PipeContext(null, _indexService);
 
         #endregion
 
 
         #region Act
-        value = _sut.MoveNextAsync(pipeContext);
+        var value = _sut.MoveNextAsync(pipeContext);
         #endregion
 
 
         #region Asserts
-        value.Should().Be(PipeValue.Empty);
+        value.Should().Be(new PageAddress(0, 0));
         #endregion
     }
 }

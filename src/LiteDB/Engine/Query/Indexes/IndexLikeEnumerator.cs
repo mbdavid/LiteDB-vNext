@@ -30,14 +30,14 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         _collation = collation;
     }
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
-        if (_eof) return PipeValue.Empty;
+        if (_eof) return new ValueTask<PipeValue>(PipeValue.Empty);
 
-        return _startsWith.Length > 0 ? await executeLike(context) : await executeFullScan(context);
+        return _startsWith.Length > 0 ?  this.ExecuteLike(context) : this.ExecuteFullScan(context);
     }
 
-    private async ValueTask<PipeValue> executeLike(PipeContext context)
+    private async ValueTask<PipeValue> ExecuteLike(PipeContext context)
     {
         var indexService = context.IndexService;
 
@@ -45,7 +45,11 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         {
             _init = true;
             var node = await indexService.FindAsync(_indexDocument, _startsWith, true, Query.Ascending);
-            if (node == null) return PipeValue.Empty;
+            if (node == null)
+            {
+                _eof = true;
+                return PipeValue.Empty;
+            };
 
             // get pointer to next/prev
             _prev = node.Value.Node.Prev[0];
@@ -65,7 +69,6 @@ internal class IndexLikeEnumerator : IPipeEnumerator
                 node = nodeRef.Node;
             }
             
-
             if(node.Key.AsString.StartsWith(_startsWith, StringComparison.OrdinalIgnoreCase))
             {
                 if(!_hasMore || (_hasMore && node.Key.AsString.SqlLike(_value, _collation)))
@@ -77,7 +80,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         return PipeValue.Empty;
     }
 
-    private async ValueTask<PipeValue> executeFullScan(PipeContext context)
+    private async ValueTask<PipeValue> ExecuteFullScan(PipeContext context)
     {
         var indexService = context.IndexService;
         if (_eof) return PipeValue.Empty;
@@ -111,7 +114,9 @@ internal class IndexLikeEnumerator : IPipeEnumerator
                 _next = nodeRef.Node.Next[0];
             } while (!_next.IsEmpty);
         }
+
         _eof = true;
+
         return PipeValue.Empty;
     }
 

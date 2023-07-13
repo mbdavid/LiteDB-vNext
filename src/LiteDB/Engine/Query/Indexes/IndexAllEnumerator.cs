@@ -27,7 +27,6 @@ internal class IndexAllEnumerator : IPipeEnumerator
         if (_eof) return PipeValue.Empty;
 
         var indexService = context.IndexService;
-        var dataBlock = PageAddress.Empty;
 
         // in first run, gets head node
         if (!_init)
@@ -48,6 +47,9 @@ internal class IndexAllEnumerator : IPipeEnumerator
             return new PipeValue(nodeRef.Node.RowID);
 
         }
+
+        _eof = true;
+
         return PipeValue.Empty;
     }
 
