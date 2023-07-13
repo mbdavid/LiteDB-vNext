@@ -39,6 +39,13 @@ internal class PathBsonExpression : BsonExpression
         }
     }
 
+    public override bool Equals(BsonExpression item) =>
+        item is PathBsonExpression other &&
+        other.Source.Equals(this.Source) &&
+        other.Field == this.Field;
+
+    public override int GetHashCode() => this.Source.GetHashCode() * this.Field.GetHashCode();
+
     public override string ToString()
     {
         var field = this.Field.IsWord() ?

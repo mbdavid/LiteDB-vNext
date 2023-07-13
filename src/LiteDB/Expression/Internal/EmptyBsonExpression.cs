@@ -13,6 +13,10 @@ internal class EmptyBsonExpression : BsonExpression
         throw new NotSupportedException();
     }
 
+    public override bool Equals(BsonExpression item) => item is EmptyBsonExpression;
+
+    public override int GetHashCode() => this.Type.GetHashCode();
+
     public override string ToString()
     {
         return "<EMPTY>";

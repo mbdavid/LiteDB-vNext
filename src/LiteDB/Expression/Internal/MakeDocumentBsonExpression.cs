@@ -18,6 +18,12 @@ internal class MakeDocumentBsonExpression : BsonExpression
         return new BsonDocument(this.Values.ToDictionary(x => x.Key, x => x.Value.Execute(context)));
     }
 
+    public override bool Equals(BsonExpression item) =>
+        item is MakeDocumentBsonExpression other &&
+        other.Values.Equals(this.Values);
+
+    public override int GetHashCode() => this.Values.GetHashCode();
+
     public override string ToString()
     {
         return "{" + String.Join(",", this.Values.Select(x => 

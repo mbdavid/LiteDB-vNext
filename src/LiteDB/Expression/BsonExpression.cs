@@ -39,11 +39,12 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
 
     #region IEquatable
 
-    public bool Equals(BsonExpression other) => base.Equals(other);
-
     public override bool Equals(object other) => this.Equals((BsonExpression)other);
 
-    public override int GetHashCode() => base.GetHashCode();
+    public abstract bool Equals(BsonExpression other);
+
+    // https://stackoverflow.com/questions/263400/what-is-the-best-algorithm-for-overriding-gethashcode
+    public abstract override int GetHashCode();
 
     #endregion
 

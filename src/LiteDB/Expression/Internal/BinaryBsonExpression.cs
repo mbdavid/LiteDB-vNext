@@ -75,6 +75,14 @@ internal class BinaryBsonExpression : BsonExpression
         throw new InvalidOperationException("BsonExpressionType type are not valid as a BinaryBsonExpression");
     }
 
+    public override bool Equals(BsonExpression item) =>
+        item is BinaryBsonExpression other &&
+        other.Left.Equals(this.Left) &&
+        other.Right.Equals(this.Right) &&
+        other.Type == this.Type;
+
+    public override int GetHashCode() => this.Left.GetHashCode() * this.Right.GetHashCode() * (int)this.Type;
+
     public override string ToString()
     {
         switch (this.Type)

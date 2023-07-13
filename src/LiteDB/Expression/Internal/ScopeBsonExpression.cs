@@ -16,6 +16,13 @@ internal class ScopeBsonExpression : BsonExpression
         return this.IsRoot ? context.Root : context.Current;
     }
 
+
+    public override bool Equals(BsonExpression item) =>
+        item is ScopeBsonExpression other &&
+        other.IsRoot == this.IsRoot;
+
+    public override int GetHashCode() => this.IsRoot.GetHashCode();
+
     public override string ToString()
     {
         return this.IsRoot ? "$" : "@";

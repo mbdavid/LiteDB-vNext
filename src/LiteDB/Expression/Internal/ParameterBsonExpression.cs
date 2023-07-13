@@ -16,6 +16,12 @@ internal class ParameterBsonExpression : BsonExpression
         return context.Parameters[this.Name];
     }
 
+    public override bool Equals(BsonExpression item) =>
+        item is ParameterBsonExpression other &&
+        other.Name == this.Name;
+
+    public override int GetHashCode() => this.Name.GetHashCode();
+
     public override string ToString()
     {
         return "@" + this.Name;

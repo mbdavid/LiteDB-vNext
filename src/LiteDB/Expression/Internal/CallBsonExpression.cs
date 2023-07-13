@@ -33,6 +33,14 @@ internal class CallBsonExpression : BsonExpression
         return (BsonValue)this.Method.Invoke(null, values.ToArray());
     }
 
+    public override bool Equals(BsonExpression item) =>
+        item is CallBsonExpression other &&
+        other.Method.Equals(this.Method) &&
+        other.Parameters.SequenceEqual(this.Parameters) &&
+        other.IsVolatile == this.IsVolatile;
+
+    public override int GetHashCode() => this.Method.GetHashCode() * this.Parameters.GetHashCode();
+
     public override string ToString()
     {
         return this.Method.Name + "(" + string.Join(",", this.Parameters.Select(x => x.ToString())) + ")";

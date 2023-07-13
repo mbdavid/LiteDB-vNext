@@ -18,6 +18,12 @@ internal class MakeArrayBsonExpression : BsonExpression
         return new BsonArray(this.Items.Select(x => x.Execute(context)));
     }
 
+    public override bool Equals(BsonExpression item) =>
+        item is MakeArrayBsonExpression other &&
+        other.Items.SequenceEqual(this.Items);
+
+    public override int GetHashCode() => this.Items.GetHashCode();
+
     public override string ToString()
     {
         return "[" + String.Join(",", this.Items.Select(x => x.ToString())) + "]";  
