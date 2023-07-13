@@ -25,7 +25,7 @@ public partial class LiteEngine : ILiteEngine
         var indexService = _factory.CreateIndexService(transaction);
 
         // find indexNode based on PK index
-        var node = await indexService.FindAsync(collection.PK, id, false, LiteDB.Query.Ascending);
+        var node = await indexService.FindAsync(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
 
         if (node is null) return null;
 

@@ -1,6 +1,5 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface]
 internal class QueryOptimization : IQueryOptimization
 {
     private readonly ISortService _sortService;
@@ -76,10 +75,7 @@ internal class QueryOptimization : IQueryOptimization
         }
 
         // check all where predicate for AND operators
-        foreach (var predicate in _query.Where)
-        {
-            add(predicate);
-        }
+        add(_query.Where);
     }
 
     /// <summary>
@@ -108,23 +104,6 @@ internal class QueryOptimization : IQueryOptimization
         // load only query fields (null return all document)
         var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        if (_query.Select.Type == BsonExpressionType.em)
-
-        // include all fields detected in all used expressions
-        fields.AddRange(_query.Select.Fields);
-        fields.AddRange(_terms.SelectMany(x => x.Fields));
-        fields.AddRange(_query.Includes.SelectMany(x => x.Fields));
-        fields.AddRange(_query.GroupBy?.Fields);
-        fields.AddRange(_query.Having?.Fields);
-        fields.AddRange(_query.OrderBy?.Fields);
-
-        // if contains $, all fields must be deserialized
-        if (fields.Contains("$"))
-        {
-            fields.Clear();
-        }
-
-        _queryPlan.Fields = fields;
     }
 
     #endregion

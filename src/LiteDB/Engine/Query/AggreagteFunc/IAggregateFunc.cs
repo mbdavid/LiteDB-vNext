@@ -4,7 +4,7 @@
 /// </summary>
 public interface IAggregateFunc
 {
-    void Iterate(BsonValue key, BsonDocument document);
+    void Iterate(BsonValue key, BsonDocument document, Collation collation);
     BsonValue GetResult();
     void Reset();
 }
