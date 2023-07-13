@@ -4,8 +4,8 @@
 /// </summary>
 public interface IQuery
 {
-    BsonExpression Select { get; init; }
-    BsonExpression Where { get; init; }
-    int Offset { get; init; }
-    int Limit { get; init; }
+    BsonExpression Select { get; }
+    BsonExpression Where { get; }
+    int Offset { get; }
+    int Limit { get; }
 }

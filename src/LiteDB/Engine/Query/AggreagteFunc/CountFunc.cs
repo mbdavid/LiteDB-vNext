@@ -8,10 +8,14 @@ public class CountFunc : IAggregateFunc
 
     private int _count;
 
-    public CountFunc(BsonExpression expr)
+    public CountFunc(string name, BsonExpression expr)
     {
+        this.Name = name;
         _expr = expr;
+
     }
+
+    public string Name { get; }
 
     public void Iterate(BsonValue key, BsonDocument document, Collation collation)
     {
