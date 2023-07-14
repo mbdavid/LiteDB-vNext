@@ -7,4 +7,13 @@ public struct FetchResult
     public int FetchCount;
     public bool HasMore;
     public IReadOnlyCollection<BsonDocument> Results;
+
+    public FetchResult(int from, int to, int fetchCount, bool hasMore, IReadOnlyCollection<BsonDocument> results)
+    {
+        this.From = from;
+        this.To = to;
+        this.FetchCount = fetchCount;
+        this.HasMore = hasMore;
+        this.Results = results;
+    }
 }
