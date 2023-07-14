@@ -30,7 +30,7 @@ internal class IncludeEnumerator : IPipeEnumerator
             return PipeValue.Empty;
         }
 
-        var value = _pathExpr.Execute(item.Value, null, _collation);
+        var value = _pathExpr.Execute(item.Value, context.QueryParameters, _collation);
 
         if (value.IsDocument)
         {

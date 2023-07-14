@@ -57,7 +57,17 @@ internal class QueryService : IQueryService
 
         cursor.IsRunning = true;
 
-        while (count < fetchSize)
+        var fetchSizeNext = fetchSize + 
+            (cursor.Excedded is null ? 1 : 0);
+
+        if (cursor.Excedded is not null)
+        {
+            list.Add(cursor.Excedded);
+            cursor.Excedded = null;
+            count++;
+        }
+
+        while (count < fetchSizeNext)
         {
             var item = await enumerator.MoveNextAsync(context);
 
@@ -66,10 +76,14 @@ internal class QueryService : IQueryService
                 eof = true;
                 break;
             }
-            else
+            else if (count < fetchSize)
             {
                 list.Add(item.Value!);
-                count++;
+            }
+            else
+            {
+                cursor.Excedded = item.Value;
+                break;
             }
         }
 
@@ -95,7 +109,7 @@ internal class QueryService : IQueryService
             From = from,
             To = to,
             FetchCount = count,
-            Eof = eof,
+            HasMore = !eof,
             Results = list
         };
     }

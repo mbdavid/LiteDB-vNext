@@ -29,7 +29,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
                 if (item.IsEmpty) break;
 
                 // get sort key 
-                var key = _expr.Execute(item.Value, null, _collation);
+                var key = _expr.Execute(item.Value, context.QueryParameters, _collation);
 
                 list.Add(new (item.RowID, key, item.Value!));
             }

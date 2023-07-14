@@ -3,7 +3,7 @@
 /// <summary>
 /// Static methods for test (in Debug mode) some parameters - ideal to debug database
 /// </summary>
-internal class EnsureCheck
+internal class CodeContract
 {
     /// <summary>
     /// Ensure condition is true, otherwise throw exception (check contract)
@@ -60,6 +60,25 @@ internal class EnsureCheck
             {
                 throw ERR_ENSURE(message);
             }
+        }
+    }
+
+    /// <summary>
+    /// Create a hashcode for a list of field in a class
+    /// https://stackoverflow.com/questions/263400/what-is-the-best-algorithm-for-overriding-gethashcode
+    /// </summary>
+    public static int HASH(params object[] args)
+    {
+        unchecked
+        {
+            int hash = (int)2166136261;
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                hash = (hash * 16777619) ^ args[i].GetHashCode();
+            }
+
+            return hash;
         }
     }
 }

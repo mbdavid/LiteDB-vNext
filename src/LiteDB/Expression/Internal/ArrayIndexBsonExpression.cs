@@ -39,7 +39,7 @@ internal class ArrayIndexBsonExpression : BsonExpression
         other.Array.Equals(this.Array) &&
         other.Index.Equals(this.Index);
 
-    public override int GetHashCode() => this.Array.GetHashCode() * this.Index.GetHashCode();
+    public override int GetHashCode() => HASH(this.Array, this.Index);
 
     public override string ToString()
     {

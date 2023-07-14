@@ -27,7 +27,7 @@ internal class TransformEnumerator : IPipeEnumerator
             return PipeValue.Empty;
         }
 
-        var result = _expr.Execute(item.Value, null, _collation);
+        var result = _expr.Execute(item.Value, context.QueryParameters, _collation);
 
         return new PipeValue(item.RowID, result.AsDocument);
     }

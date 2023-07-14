@@ -27,7 +27,7 @@ internal class FilterEnumerator : IPipeEnumerator
             }
             else
             {
-                var result = _filter.Execute(item.Value, null, _collation);
+                var result = _filter.Execute(item.Value, context.QueryParameters, _collation);
 
                 if (result.IsBoolean && result.AsBoolean)
                 {

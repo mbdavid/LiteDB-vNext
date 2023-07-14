@@ -43,7 +43,6 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
 
     public abstract bool Equals(BsonExpression other);
 
-    // https://stackoverflow.com/questions/263400/what-is-the-best-algorithm-for-overriding-gethashcode
     public abstract override int GetHashCode();
 
     #endregion

@@ -22,7 +22,7 @@ global using System.Buffers.Binary;
 global using LiteDB.Engine;
 global using static LiteDB.Constants;
 global using static LiteDB.LiteException;
-global using static LiteDB.EnsureCheck;
+global using static LiteDB.CodeContract;
 
 [assembly: InternalsVisibleTo("ConsoleApp1")]
 [assembly: InternalsVisibleTo("LiteDB.Tests")]

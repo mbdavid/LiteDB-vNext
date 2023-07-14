@@ -12,10 +12,11 @@ internal class Cursor : IDisposable
     public int FetchCount { get; set; } = 0;
     public int Offset { get; set; } = 0;
     public bool IsRunning { get; set; } = false;
-    public bool Eof { get; set; } = false;
 
     public DateTime Start { get; } = DateTime.UtcNow;
     public TimeSpan ElapsedTime { get; set; } = TimeSpan.Zero;
+
+    public BsonDocument? Excedded { get; set; }
 
     public Cursor(IQuery query, BsonDocument parameters, int readVersion, IPipeEnumerator enumerator)
     {

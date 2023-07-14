@@ -44,7 +44,7 @@ internal class PathBsonExpression : BsonExpression
         other.Source.Equals(this.Source) &&
         other.Field == this.Field;
 
-    public override int GetHashCode() => this.Source.GetHashCode() * this.Field.GetHashCode();
+    public override int GetHashCode() => HASH(this.Source, this.Field);
 
     public override string ToString()
     {
