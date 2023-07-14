@@ -11,8 +11,6 @@ internal class IndexAllEnumerator : IPipeEnumerator
     private bool _init = false;
     private bool _eof = false;
 
-
-    private PageAddress _prev = PageAddress.Empty; // all nodes from left of first node found
     private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
 
     public IndexAllEnumerator(
