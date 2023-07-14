@@ -33,9 +33,9 @@ internal class CallBsonExpression : BsonExpression
         return (BsonValue)this.Method.Invoke(null, values.ToArray());
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is CallBsonExpression other &&
-        other.Method.Equals(this.Method) &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is CallBsonExpression other &&
+        other.Method.Name == this.Method.Name &&
         other.Parameters.SequenceEqual(this.Parameters) &&
         other.IsVolatile == this.IsVolatile;
 

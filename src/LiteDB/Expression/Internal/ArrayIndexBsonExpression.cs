@@ -34,8 +34,8 @@ internal class ArrayIndexBsonExpression : BsonExpression
         return array[i];
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is ArrayIndexBsonExpression other &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is ArrayIndexBsonExpression other &&
         other.Array.Equals(this.Array) &&
         other.Index.Equals(this.Index);
 

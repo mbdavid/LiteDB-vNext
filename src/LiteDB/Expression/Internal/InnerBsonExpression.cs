@@ -18,8 +18,8 @@ internal class InnerBsonExpression : BsonExpression
         return this.InnerExpression.Execute(context);
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is InnerBsonExpression other &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is InnerBsonExpression other &&
         other.InnerExpression.Equals(this.InnerExpression);
 
     public override int GetHashCode() => this.InnerExpression.GetHashCode();

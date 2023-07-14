@@ -42,8 +42,8 @@ internal class FilterBsonExpression : BsonExpression
         return new BsonArray(source());
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is FilterBsonExpression other &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is FilterBsonExpression other &&
         other.Source.Equals(this.Source) &&
         other.Selector.Equals(this.Selector);
 

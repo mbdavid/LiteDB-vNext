@@ -18,9 +18,10 @@ internal class MakeDocumentBsonExpression : BsonExpression
         return new BsonDocument(this.Values.ToDictionary(x => x.Key, x => x.Value.Execute(context)));
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is MakeDocumentBsonExpression other &&
-        other.Values.Equals(this.Values);
+    public override bool Equals(BsonExpression expr) =>
+        expr is MakeDocumentBsonExpression other &&
+        other.Values.Keys.SequenceEqual(this.Values.Keys) &&
+        other.Values.Values.SequenceEqual(this.Values.Values);
 
     public override int GetHashCode() => this.Values.GetHashCode();
 

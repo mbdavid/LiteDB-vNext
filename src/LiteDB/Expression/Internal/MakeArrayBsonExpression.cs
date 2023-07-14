@@ -18,8 +18,8 @@ internal class MakeArrayBsonExpression : BsonExpression
         return new BsonArray(this.Items.Select(x => x.Execute(context)));
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is MakeArrayBsonExpression other &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is MakeArrayBsonExpression other &&
         other.Items.SequenceEqual(this.Items);
 
     public override int GetHashCode() => this.Items.GetHashCode();

@@ -17,8 +17,8 @@ internal class ScopeBsonExpression : BsonExpression
     }
 
 
-    public override bool Equals(BsonExpression item) =>
-        item is ScopeBsonExpression other &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is ScopeBsonExpression other &&
         other.IsRoot == this.IsRoot;
 
     public override int GetHashCode() => this.IsRoot.GetHashCode();

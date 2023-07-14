@@ -16,8 +16,8 @@ internal class ConstantBsonExpression : BsonExpression
         return this.Value;
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is ConstantBsonExpression other &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is ConstantBsonExpression other &&
         other.Value.Equals(this.Value);
 
     public override int GetHashCode() => this.Value.GetHashCode();

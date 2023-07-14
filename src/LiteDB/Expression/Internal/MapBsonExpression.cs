@@ -39,8 +39,8 @@ internal class MapBsonExpression : BsonExpression
         return new BsonArray(source());
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is MapBsonExpression other &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is MapBsonExpression other &&
         other.Source.Equals(this.Source) &&
         other.Selector.Equals(this.Selector);
 

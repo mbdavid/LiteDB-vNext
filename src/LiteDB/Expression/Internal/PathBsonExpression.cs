@@ -39,8 +39,8 @@ internal class PathBsonExpression : BsonExpression
         }
     }
 
-    public override bool Equals(BsonExpression item) =>
-        item is PathBsonExpression other &&
+    public override bool Equals(BsonExpression expr) =>
+        expr is PathBsonExpression other &&
         other.Source.Equals(this.Source) &&
         other.Field == this.Field;
 
