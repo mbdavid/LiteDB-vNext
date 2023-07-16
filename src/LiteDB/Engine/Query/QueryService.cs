@@ -78,11 +78,11 @@ internal class QueryService : IQueryService
             }
             else if (count < fetchSize)
             {
-                list.Add(item.Value!);
+                list.Add(item.Document!);
             }
             else
             {
-                cursor.Excedded = item.Value;
+                cursor.Excedded = item.Document;
                 break;
             }
         }

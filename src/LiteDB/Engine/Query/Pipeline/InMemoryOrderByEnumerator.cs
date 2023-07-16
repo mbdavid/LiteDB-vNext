@@ -29,9 +29,9 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
                 if (item.IsEmpty) break;
 
                 // get sort key 
-                var key = _expr.Execute(item.Value, context.QueryParameters, _collation);
+                var key = _expr.Execute(item.Document, context.QueryParameters, _collation);
 
-                list.Add(new (item.RowID, key, item.Value!));
+                list.Add(new (item.RowID, key, item.Document!));
             }
 
             // sort list in a new enumerable

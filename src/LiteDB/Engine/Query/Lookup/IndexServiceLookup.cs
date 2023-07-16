@@ -2,16 +2,16 @@
 
 internal class IndexServiceLookup : IDocumentLookup
 {
-    private readonly string _name;
+    private readonly string _field;
 
-    public IndexServiceLookup(string name)
+    public IndexServiceLookup(string field)
     {
-        _name = name;
+        _field = field;
     }
 
     public ValueTask<BsonDocument> LoadAsync(PipeValue key, PipeContext context)
     {
-        var doc = new BsonDocument { [_name] = key.Value! };
+        var doc = new BsonDocument { [_field] = key.Document! };
 
         return new ValueTask<BsonDocument>(doc);
     }

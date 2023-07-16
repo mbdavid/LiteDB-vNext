@@ -36,21 +36,21 @@ internal class AggregateEnumerator : IPipeEnumerator
                 if (!_init)
                 {
                     _init = true;
-                    _currentKey = item.Value!;
+                    _currentKey = item.Document!;
                 }
 
                 // keep running with same value
-                if (_currentKey == item.Value!)
+                if (_currentKey == item.Document!)
                 {
                     foreach (var func in _funcs)
                     {
-                        func.Iterate(_currentKey, item.Value!, _collation);
+                        func.Iterate(_currentKey, item.Document!, _collation);
                     }
                 }
                 // if key changes, return results in a new document
                 else
                 {
-                    _currentKey = item.Value!;
+                    _currentKey = item.Document!;
 
                     return this.GetResults();
                 }

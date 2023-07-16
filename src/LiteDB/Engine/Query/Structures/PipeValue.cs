@@ -5,30 +5,30 @@ internal struct PipeValue
     public static readonly PipeValue Empty = new();
 
     public readonly PageAddress RowID;
-    public readonly BsonDocument? Value;
+    public readonly BsonDocument? Document;
 
-    public readonly bool IsEmpty => this.RowID.IsEmpty && this.Value is null;
+    public readonly bool IsEmpty => this.RowID.IsEmpty && this.Document is null;
 
     public PipeValue(PageAddress rowID)
     {
         this.RowID = rowID;
-        this.Value = null;
+        this.Document = null;
     }
 
     public PipeValue(PageAddress rowID, BsonDocument value)
     {
         this.RowID = rowID;
-        this.Value = value;
+        this.Document = value;
     }
 
     public PipeValue()
     {
         this.RowID = PageAddress.Empty;
-        this.Value = null;
+        this.Document = null;
     }
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : $"[{this.RowID}] = {this.Value}";
+        return this.IsEmpty ? "<EMPTY>" : $"[{this.RowID}] = {this.Document}";
     }
 }

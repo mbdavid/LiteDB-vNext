@@ -54,7 +54,7 @@ internal class SortOperation : ISortOperation
                 break;
             }
 
-            var key = _expression.Execute(current.Value, null, _collation);
+            var key = _expression.Execute(current.Document, null, _collation);
 
             var item = new SortItem(current.RowID, key);
 
