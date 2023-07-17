@@ -70,7 +70,27 @@ public abstract partial class BsonExpression
 
     public static BsonExpression Or(BsonExpression left, BsonExpression right) => new BinaryBsonExpression(BsonExpressionType.Or, left, right);
 
+    public static BsonExpression Or(IEnumerable<BsonExpression> items) => CreateBinaryExpressionFromList(BsonExpressionType.Or, items);
+
     public static BsonExpression And(BsonExpression left, BsonExpression right) => new BinaryBsonExpression(BsonExpressionType.And, left, right);
+
+    public static BsonExpression And(IEnumerable<BsonExpression> items) => CreateBinaryExpressionFromList(BsonExpressionType.And, items);
+
+    private static BsonExpression CreateBinaryExpressionFromList(BsonExpressionType type, IEnumerable<BsonExpression> items)
+    {
+        using var enumerator = items.GetEnumerator();
+
+        if (enumerator.MoveNext() == false) throw new ArgumentException("IEnumerable has no items");
+
+        var result = enumerator.Current;
+
+        while(enumerator.MoveNext())
+        {
+            result = new BinaryBsonExpression(type, result, enumerator.Current);
+        }
+
+        return result;
+    }
 
     #endregion
 

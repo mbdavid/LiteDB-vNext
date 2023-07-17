@@ -1,6 +1,4 @@
-﻿using LiteDB.Engine;
-
-namespace LiteDB;
+﻿namespace LiteDB;
 
 /// <summary>
 /// * Singleton (thread safe)
@@ -119,13 +117,21 @@ internal partial class ServicesFactory : IServicesFactory
         transaction);
 
     public IIndexService CreateIndexService(ITransaction transaction) => new IndexService(
-        this.IndexPageService, 
-        this.FileHeader.Collation, 
+        this.IndexPageService,
+        this.FileHeader.Collation,
         transaction);
+
+    public PipelineBuilder CreatePipelineBuilder(string collectionName, BsonDocument queryParameters) => new PipelineBuilder(
+        this.MasterService,
+        this.SortService,
+        this.FileHeader.Collation,
+        collectionName,
+        queryParameters);
 
     public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, int readVersion, IQuery query, BsonDocument queryParameters) =>
         query is Query simpleQuery ?
             new QueryOptimization(
+                this.MasterService,
                 this.SortService,
                 master,
                 collection,

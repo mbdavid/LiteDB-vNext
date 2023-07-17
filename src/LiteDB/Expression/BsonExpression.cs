@@ -92,6 +92,7 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
         this.Type == BsonExpressionType.NotEqual ||
         this.Type == BsonExpressionType.In;
 
+    internal bool IsEmpty => this.Type == BsonExpressionType.Empty;
 
     #endregion
 }

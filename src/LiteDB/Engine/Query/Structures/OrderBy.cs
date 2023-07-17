@@ -11,6 +11,8 @@ public struct OrderBy
 
     public int Order { get; set; }
 
+    public bool IsEmpty => this.Expression.IsEmpty && this.Order == 0;
+
     public OrderBy(BsonExpression expression, int order)
     {
         this.Expression = expression;

@@ -35,6 +35,8 @@ internal class PipelineBuilder
         }
     }
 
+    public IPipeEnumerator GetPipeEnumerator() => _enumerator ?? throw ERR("No pipe to be executed");
+
     /// <summary>
     /// Create document lookup using DataService to get values
     /// </summary>

@@ -2,7 +2,9 @@
 
 internal class QueryOptimization : IQueryOptimization
 {
+    private readonly IMasterService _masterService;
     private readonly ISortService _sortService;
+    private readonly IServicesFactory _factory;
 
     // dependency injections
     private readonly MasterDocument _master;
@@ -13,12 +15,16 @@ internal class QueryOptimization : IQueryOptimization
 
     // fields filled by all query optimization proccess
     private List<BinaryBsonExpression> _terms = new();
-    private IndexCost? _selectedIndex;
     private IDocumentLookup? _documentLookup;
+
+    private BsonExpression? _indexExpression;
+    private int _indexOrder = Query.Ascending;
+    
     private BsonExpression? _filter;
     private OrderBy? _orderBy;
 
     public QueryOptimization(
+        IMasterService masterService,
         ISortService sortService,
         MasterDocument master, 
         CollectionDocument collection, 
@@ -26,6 +32,7 @@ internal class QueryOptimization : IQueryOptimization
         BsonDocument queryParameters,
         Collation collation)
     {
+        _masterService = masterService;
         _sortService = sortService;
         _master = master;
         _collection = collection;
@@ -37,10 +44,10 @@ internal class QueryOptimization : IQueryOptimization
     public IPipeEnumerator ProcessQuery()
     {
         // split where expressions into TERMs (splited by AND operator)
-        this.SplitWherePredicateInTerms();
+        this.SplitWhereInTerms();
 
-        // do terms optimizations
-        this.OptimizeTerms();
+        this.DefineIndex();
+
 
         // create pipe enumerator based on query optimization
         return this.CreatePipeEnumerator();
@@ -51,20 +58,23 @@ internal class QueryOptimization : IQueryOptimization
     /// <summary>
     /// Fill terms from where predicate list
     /// </summary>
-    private void SplitWherePredicateInTerms()
+    private void SplitWhereInTerms()
     {
-        void add(BsonExpression predicate)
+        // check all where predicate for AND operators
+        split(_query.Where, _terms);
+
+        static void split(BsonExpression predicate, List<BinaryBsonExpression> terms)
         {
             if (predicate is BinaryBsonExpression bin)
             {
                 if (bin.IsPredicate || bin.Type == BsonExpressionType.Or)
                 {
-                    _terms.Add(bin);
+                    terms.Add(bin);
                 }
                 else if (bin.Type == BsonExpressionType.And)
                 {
-                    add(bin.Left);
-                    add(bin.Right);
+                    split(bin.Left, terms);
+                    split(bin.Right, terms);
                 }
                 else
                 {
@@ -75,23 +85,6 @@ internal class QueryOptimization : IQueryOptimization
             {
                 throw ERR($"Invalid WHERE expression: {predicate}");
             }
-        }
-
-        // check all where predicate for AND operators
-        add(_query.Where);
-    }
-
-    /// <summary>
-    /// Do some pre-defined optimization on terms to convert expensive filter in indexable filter
-    /// </summary>
-    private void OptimizeTerms()
-    {
-        // simple optimization
-        for (var i = 0; i < _terms.Count; i++)
-        {
-            var term = _terms[i];
-
-            // TODO???
         }
     }
 
@@ -111,8 +104,92 @@ internal class QueryOptimization : IQueryOptimization
 
     #endregion
 
+    #region Index Selector
+
+    private void DefineIndex()
+    {
+        // from term predicate list, get lower index cost
+        var lower = this.GetLowerCostIndex();
+
+        if (lower is null)
+        {
+            // if there is no index, let's from order by (if exists) or get PK
+            var allIndexes = _collection.Indexes.Values;
+
+            var selectedIndex = 
+                (_query.OrderBy.IsEmpty ? null : allIndexes.FirstOrDefault(x => x.Expression == _query.OrderBy.Expression)) ??
+                _collection.PK;
+
+            _indexExpression = selectedIndex.Expression;
+        }
+        else
+        {
+            // create filter removing lower cost index predicate
+            _filter = _terms.Count > 1 ? 
+                BsonExpression.And(_terms.Where(x => x != lower)) : 
+                null;
+
+            _indexExpression = lower;
+        }
+    }
+
+    private BinaryBsonExpression? GetLowerCostIndex()
+    {
+        var lowerCost = int.MaxValue;
+        BinaryBsonExpression? lowerExpr = null;
+
+        foreach (var term in _terms) 
+        {
+            var indexDocument =
+                _collection.Indexes.Values.FirstOrDefault(x => x.Expression == term.Left) ??
+                _collection.Indexes.Values.FirstOrDefault(x => x.Expression == term.Right);
+
+            if (indexDocument is not null)
+            {
+                var cost = (term.Type, indexDocument.Unique) switch
+                {
+                    (BsonExpressionType.Equal, true) => 1,
+                    (BsonExpressionType.Equal, false) => 10,
+                    (BsonExpressionType.In, _) => 20,
+                    (BsonExpressionType.Like, _) => 40,
+                    (BsonExpressionType.GreaterThan, _) => 50,
+                    (BsonExpressionType.GreaterThanOrEqual, _) => 50,
+                    (BsonExpressionType.LessThan, _) => 50,
+                    (BsonExpressionType.LessThanOrEqual, _) => 50,
+                    (BsonExpressionType.Between, _) => 50,
+                    (BsonExpressionType.NotEqual, _) => 80,
+                    (_, _) => 100
+                };
+
+                if (cost < lowerCost)
+                {
+                    lowerCost = cost;
+                    lowerExpr = term;
+                }
+            }
+        }
+
+        return lowerExpr;
+    }
+
+    #endregion
+
     private IPipeEnumerator CreatePipeEnumerator()
     {
-        throw new NotImplementedException();
+        var pipe = _factory.CreatePipelineBuilder(_collection.Name, _queryParameters);
+
+        pipe.AddIndex(_indexExpression!, _indexOrder);
+
+        if (_filter is not null)
+        {
+            pipe.AddFilter(_filter);
+        }
+
+        if (!_query.Select.IsEmpty)
+        {
+            pipe.AddTransform(_query.Select);
+        }
+
+        return pipe.GetPipeEnumerator();
     }
 }
