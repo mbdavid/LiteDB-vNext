@@ -142,12 +142,11 @@ internal partial class ServicesFactory : IServicesFactory
                 this.FileHeader.Collation) :
         throw new NotSupportedException();
 
-    public ISortOperation CreateSortOperation(BsonExpression expression, int order) => new SortOperation(
+    public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(
         this.SortService,
         this.FileHeader.Collation,
         this,
-        expression,
-        order);
+        orderBy);
 
     public ISortContainer CreateSortContainer(int containerID, int order, Stream stream) => new SortContainer(
         this.BufferFactory,

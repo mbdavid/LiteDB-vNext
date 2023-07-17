@@ -11,7 +11,11 @@ internal class LookupEnumerator : IPipeEnumerator
     {
         _lookup = lookup;
         _enumerator = enumerator;
+
+        if (_enumerator.Emit.RowID == false) throw ERR($"Lookup pipe enumerator requires rowID from last pipe");
     }
+
+    public PipeEmit Emit => new(true, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {

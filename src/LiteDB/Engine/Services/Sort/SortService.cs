@@ -18,9 +18,9 @@ internal class SortService : ISortService
         _factory = factory;
     }
 
-    public ISortOperation CreateSort(BsonExpression expression, int order)
+    public ISortOperation CreateSort(OrderBy orderBy)
     {
-        var sorter = _factory.CreateSortOperation(expression, order);
+        var sorter = _factory.CreateSortOperation(orderBy);
 
         return sorter;
     }

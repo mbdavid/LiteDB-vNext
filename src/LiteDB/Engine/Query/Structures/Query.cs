@@ -21,8 +21,7 @@ public class Query : IQuery
     public BsonExpression Select { get; init; } = BsonExpression.Empty;
     public BsonExpression[] Includes { get; init; } = Array.Empty<BsonExpression>();
     public BsonExpression Where { get; init; } = BsonExpression.Empty;
-    public BsonExpression OrderBy { get; init; } = BsonExpression.Empty;
-    public int Order { get; init; } = Query.Ascending;
+    public OrderBy OrderBy { get; init; } = OrderBy.Empty;
     public int Offset { get; init; } = 0;
     public int Limit { get; init; } = int.MaxValue;
 }

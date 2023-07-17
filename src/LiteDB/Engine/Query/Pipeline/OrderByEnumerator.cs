@@ -2,20 +2,26 @@
 
 internal class OrderByEnumerator : IPipeEnumerator
 {
-    private readonly IPipeEnumerator _enumerator;
+    // dependency injections
     private readonly ISortOperation _sorter;
+
+    private readonly IPipeEnumerator _enumerator;
     private bool _init;
 
     public OrderByEnumerator(
-        ISortService sortService,
-        BsonExpression expr, 
-        int order, 
-        IPipeEnumerator enumerator)
+        OrderBy orderBy,
+        IPipeEnumerator enumerator,
+        ISortService sortService)
     {
         _enumerator = enumerator;
 
-        _sorter = sortService.CreateSort(expr, order);
+        if (_enumerator.Emit.RowID == false) throw ERR($"OrderBy pipe enumerator requires rowID from last pipe");
+        if (_enumerator.Emit.Document == false) throw ERR($"OrderBy pipe enumerator requires document from last pipe");
+
+        _sorter = sortService.CreateSort(orderBy);
     }
+
+    public PipeEmit Emit => new(true, false);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {

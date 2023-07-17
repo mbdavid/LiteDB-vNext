@@ -2,19 +2,27 @@
 
 internal class InMemoryOrderByEnumerator : IPipeEnumerator
 {
-    private readonly BsonExpression _expr;
-    private readonly int _order;
+    // dependency injections
     private readonly Collation _collation;
+
+    private readonly OrderBy _orderBy;
     private readonly IPipeEnumerator _enumerator;
+
     private Queue<SortItemDocument>? _sortedItems;
 
-    public InMemoryOrderByEnumerator(BsonExpression expr, int order, Collation collation, IPipeEnumerator enumerator)
+    public InMemoryOrderByEnumerator(
+        OrderBy orderBy,
+        IPipeEnumerator enumerator,
+        Collation collation)
     {
-        _expr = expr;
-        _order = order;
-        _collation = collation;
+        _orderBy = orderBy;
         _enumerator = enumerator;
+        _collation = collation;
+
+        if (_enumerator.Emit.Document == false) throw ERR($"InMemoryOrderBy pipe enumerator requires document from last pipe");
     }
+
+    public PipeEmit Emit => new(_enumerator.Emit.RowID, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -29,13 +37,13 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
                 if (item.IsEmpty) break;
 
                 // get sort key 
-                var key = _expr.Execute(item.Document, context.QueryParameters, _collation);
+                var key = _orderBy.Expression.Execute(item.Document, context.QueryParameters, _collation);
 
                 list.Add(new (item.RowID, key, item.Document!));
             }
 
             // sort list in a new enumerable
-            var query = _order == Query.Ascending ?
+            var query = _orderBy.Order == Query.Ascending ?
                 list.OrderBy(x => x.Key, _collation) : list.OrderByDescending(x => x.Key, _collation);
 
             _sortedItems = new Queue<SortItemDocument>(query);

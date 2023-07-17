@@ -23,10 +23,10 @@ public class SortService_Tests
 
         using var sut = new SortService(streamFactory, factory);
 
-        factory.CreateSortOperation(Arg.Any<BsonExpression>(), Arg.Any<int>())
+        factory.CreateSortOperation(Arg.Any<OrderBy>())
             .Returns(c =>
             {
-                return new SortOperation(sut, collation, factory, c.Arg<BsonExpression>(), c.Arg<int>());
+                return new SortOperation(sut, collation, factory, c.Arg<OrderBy>());
             });
 
         factory.CreateSortContainer(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<Stream>())
@@ -48,7 +48,7 @@ public class SortService_Tests
         using var enumerator = new MockEnumerator(source);
 
         // Act
-        using var sorter = sut.CreateSort("name", Query.Ascending);
+        using var sorter = sut.CreateSort(new OrderBy("name", Query.Ascending));
 
         // insert all data
         await sorter.InsertDataAsync(enumerator, context);

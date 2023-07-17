@@ -16,7 +16,7 @@ internal class QueryOptimization : IQueryOptimization
     private IndexCost? _selectedIndex;
     private IDocumentLookup? _documentLookup;
     private BsonExpression? _filter;
-    private (BsonExpression expr, int order, IDocumentLookup lookup)? _orderBy;
+    private OrderBy? _orderBy;
 
     public QueryOptimization(
         ISortService sortService,
@@ -113,51 +113,6 @@ internal class QueryOptimization : IQueryOptimization
 
     private IPipeEnumerator CreatePipeEnumerator()
     {
-        // create index enumerator
-        var indexEnumerator = _selectedIndex!.Value.CreateIndex();
-
-        // create query pipeline based on enumerators order
-        var pipeEnumerator = new LookupEnumerator(_documentLookup!, indexEnumerator) as IPipeEnumerator;
-
-        if (_filter is not null)
-        {
-            pipeEnumerator = new FilterEnumerator(_filter, _collation, pipeEnumerator);
-        }
-
-        if (_orderBy is not null)
-        {
-            pipeEnumerator = new OrderByEnumerator(_sortService, _orderBy.Value.expr, _orderBy.Value.order, pipeEnumerator);
-
-            if (_query.Offset > 0)
-            {
-                pipeEnumerator = new OffsetEnumerator(_query.Offset, pipeEnumerator);
-            }
-
-            if (_query.Limit != int.MaxValue)
-            {
-                pipeEnumerator = new LimitEnumerator(_query.Limit, pipeEnumerator);
-            }
-
-            pipeEnumerator = new LookupEnumerator(_orderBy.Value.lookup, pipeEnumerator);
-        }
-        else
-        {
-            if (_query.Offset > 0)
-            {
-                pipeEnumerator = new OffsetEnumerator(_query.Offset, pipeEnumerator);
-            }
-
-            if (_query.Limit != int.MaxValue)
-            {
-                pipeEnumerator = new LimitEnumerator(_query.Limit, pipeEnumerator);
-            }
-        }
-
-        if (_query.Select.Type != BsonExpressionType.Empty)
-        {
-            pipeEnumerator = new TransformEnumerator(_query.Select, _collation, pipeEnumerator);
-        }
-
-        return pipeEnumerator;
+        throw new NotImplementedException();
     }
 }

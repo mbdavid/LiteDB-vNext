@@ -15,6 +15,8 @@ internal class OffsetEnumerator : IPipeEnumerator
         _enumerator = enumerator;
     }
 
+    public PipeEmit Emit => _enumerator.Emit;
+
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;

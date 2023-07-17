@@ -2,20 +2,30 @@
 
 internal class IncludeEnumerator : IPipeEnumerator
 {
+    // dependency injections
     private readonly IMasterService _masterService;
-    private readonly BsonExpression _pathExpr;
     private readonly Collation _collation;
+
+    private readonly BsonExpression _pathExpr;
     private readonly IPipeEnumerator _enumerator;
 
     private bool _eof = false;
 
-    public IncludeEnumerator(IMasterService masterService, BsonExpression pathExpr, Collation collation, IPipeEnumerator enumerator)
+    public IncludeEnumerator(
+        BsonExpression pathExpr, 
+        IPipeEnumerator enumerator, 
+        IMasterService masterService, 
+        Collation collation)
     {
-        _masterService = masterService;
         _pathExpr = pathExpr;
-        _collation = collation;
         _enumerator = enumerator;
+        _masterService = masterService;
+        _collation = collation;
+
+        if (_enumerator.Emit.RowID == false) throw ERR($"Include pipe enumerator requires document from last pipe");
     }
+
+    public PipeEmit Emit => new(_enumerator.Emit.RowID, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {

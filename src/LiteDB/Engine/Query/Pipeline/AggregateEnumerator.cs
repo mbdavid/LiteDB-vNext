@@ -2,8 +2,11 @@
 
 internal class AggregateEnumerator : IPipeEnumerator
 {
-    private readonly IAggregateFunc[] _funcs;
+    // depenrency injection
     private readonly Collation _collation;
+
+    // fields
+    private readonly IAggregateFunc[] _funcs;
     private readonly IPipeEnumerator _enumerator;
 
     private BsonValue _currentKey = BsonValue.MinValue;
@@ -11,12 +14,19 @@ internal class AggregateEnumerator : IPipeEnumerator
     private bool _init = false;
     private bool _eof = false;
 
-    public AggregateEnumerator(IAggregateFunc[] funcs, Collation collation, IPipeEnumerator enumerator)
+    /// <summary>
+    /// Aggregate values according aggregate functions (reduce functions). Require "ProvideDocument" from IPipeEnumerator
+    /// </summary>
+    public AggregateEnumerator(IAggregateFunc[] funcs, IPipeEnumerator enumerator, Collation collation)
     {
         _funcs = funcs;
-        _collation = collation;
         _enumerator = enumerator;
+        _collation = collation;
+
+        if (_enumerator.Emit.Document == false) throw ERR($"Aggregate pipe enumerator requires document from last pipe");
     }
+
+    public PipeEmit Emit => new(false, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {

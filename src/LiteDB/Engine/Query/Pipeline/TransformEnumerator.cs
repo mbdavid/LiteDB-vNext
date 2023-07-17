@@ -13,7 +13,11 @@ internal class TransformEnumerator : IPipeEnumerator
         _expr = expr;
         _enumerator = enumerator;
         _collation = collation;
+
+        if (_enumerator.Emit.Document == false) throw ERR($"Transform pipe enumerator requires document from last pipe");
     }
+
+    public PipeEmit Emit => new (_enumerator.Emit.RowID, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {

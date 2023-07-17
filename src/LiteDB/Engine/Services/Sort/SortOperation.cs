@@ -7,11 +7,9 @@ internal class SortOperation : ISortOperation
     private readonly ISortService _sortService;
     private readonly Collation _collation;
     private readonly IServicesFactory _factory;
-
+    private readonly OrderBy _orderBy;
     private Stream? _stream;
 
-    private readonly BsonExpression _expression;
-    private readonly int _order;
     private readonly int _containerSize;
     private readonly int _containerSizeLimit;
     private Queue<SortItem>? _sortedItems; // when use less than 1 container
@@ -24,14 +22,12 @@ internal class SortOperation : ISortOperation
         ISortService sortService,
         Collation collation,
         IServicesFactory factory,
-        BsonExpression expression,
-        int order)
+        OrderBy orderBy)
     {
         _sortService = sortService;
         _collation = collation;
         _factory = factory;
-        _expression = expression;
-        _order = order;
+        _orderBy = orderBy;
 
         _containerSize = CONTAINER_SORT_SIZE_IN_PAGES * PAGE_SIZE;
         _containerSizeLimit = _containerSize -
@@ -54,7 +50,7 @@ internal class SortOperation : ISortOperation
                 break;
             }
 
-            var key = _expression.Execute(current.Document, null, _collation);
+            var key = _orderBy.Expression.Execute(current.Document, context.QueryParameters, _collation);
 
             var item = new SortItem(current.RowID, key);
 
@@ -74,7 +70,7 @@ internal class SortOperation : ISortOperation
         if (_containers.Count == 0)
         {
             // order items
-            var query = _order == Query.Ascending ?
+            var query = _orderBy.Order == Query.Ascending ?
                 unsortedItems.OrderBy(x => x.Key, _collation) : unsortedItems.OrderByDescending(x => x.Key, _collation);
 
             _sortedItems = new Queue<SortItem>(query);
@@ -104,7 +100,7 @@ internal class SortOperation : ISortOperation
         var containerID = _sortService.GetAvailableContainerID();
 
         // create new sort container
-        var container = _factory.CreateSortContainer(containerID, _order, _stream);
+        var container = _factory.CreateSortContainer(containerID, _orderBy.Order, _stream);
 
         // sort all items into 8k pages and returns "remaining" items if not fit on container size
         var remainingBytes = container.Sort(unsortedItems, _containerBuffer, remaining);
@@ -148,7 +144,7 @@ internal class SortOperation : ISortOperation
                 var container = _containers[i];
                 var diff = container.Current.Key.CompareTo(next.Current.Key, _collation);
 
-                if (diff == (_order * -1))
+                if (diff == (_orderBy.Order * -1))
                 {
                     next = container;
                 }

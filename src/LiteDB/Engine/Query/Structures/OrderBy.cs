@@ -3,8 +3,10 @@
 /// <summary>
 /// Represent an OrderBy definition
 /// </summary>
-internal struct OrderBy
+public struct OrderBy
 {
+    public static OrderBy Empty = new(BsonExpression.Empty, 0);
+
     public BsonExpression Expression { get; }
 
     public int Order { get; set; }
