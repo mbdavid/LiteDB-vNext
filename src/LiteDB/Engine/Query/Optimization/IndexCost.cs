@@ -66,18 +66,5 @@ internal struct IndexCost
         };
     }
 
-    public IPipeEnumerator CreateIndex()
-    {
-        return _exprType switch
-        {
-            BsonExpressionType.Equal => new IndexEqualsEnumerator(_value, _indexDocument, _collation),
-            BsonExpressionType.Between => new IndexRangeEnumerator(_value.AsArray[0], _value.AsArray[1], true, true, _order, _indexDocument, _collation),
-            BsonExpressionType.GreaterThan => new IndexRangeEnumerator(_value, BsonValue.MaxValue, false, true, _order, _indexDocument, _collation),
-            BsonExpressionType.GreaterThanOrEqual => new IndexRangeEnumerator(_value, BsonValue.MaxValue, true, true, _order, _indexDocument, _collation),
-            BsonExpressionType.LessThan => new IndexRangeEnumerator(BsonValue.MinValue, _value, false, true, _order, _indexDocument, _collation),
-            BsonExpressionType.LessThanOrEqual => new IndexRangeEnumerator(BsonValue.MinValue, _value, true, true, _order, _indexDocument, _collation),
-            _ => throw new NotSupportedException()
-        };
-    }
 
 }

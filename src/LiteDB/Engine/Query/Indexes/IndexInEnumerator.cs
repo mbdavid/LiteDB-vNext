@@ -23,6 +23,8 @@ internal class IndexInEnumerator : IPipeEnumerator
         _collation = collation;
     }
 
+    public PipeEmit Emit => new(true, false);
+
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;

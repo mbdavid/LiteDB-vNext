@@ -24,7 +24,7 @@ public class IndexEqualsEnumerator_Tests
         };
         var _sut = new IndexEqualsEnumerator(1, indexDocument, Collation.Default);
 
-        var pipeContext = new PipeContext(null, _indexService);
+        var pipeContext = new PipeContext(null, _indexService, new BsonDocument());
 
         #endregion
 

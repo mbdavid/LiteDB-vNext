@@ -33,6 +33,8 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         _order = order;
     }
 
+    public PipeEmit Emit => new(true, false);
+
     public ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
         if (_eof) return new ValueTask<PipeValue>(PipeValue.Empty);

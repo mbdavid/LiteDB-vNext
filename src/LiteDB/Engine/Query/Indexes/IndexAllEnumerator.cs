@@ -23,6 +23,8 @@ internal class IndexAllEnumerator : IPipeEnumerator
         _order = order;
     }
 
+    public PipeEmit Emit => new(true, false);
+
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;

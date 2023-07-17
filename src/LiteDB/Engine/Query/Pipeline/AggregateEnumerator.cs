@@ -4,6 +4,7 @@ internal class AggregateEnumerator : IPipeEnumerator
 {
     // depenrency injection
     private readonly Collation _collation;
+    private readonly BsonExpression _keyExpr;
 
     // fields
     private readonly IAggregateFunc[] _funcs;
@@ -17,8 +18,9 @@ internal class AggregateEnumerator : IPipeEnumerator
     /// <summary>
     /// Aggregate values according aggregate functions (reduce functions). Require "ProvideDocument" from IPipeEnumerator
     /// </summary>
-    public AggregateEnumerator(IAggregateFunc[] funcs, IPipeEnumerator enumerator, Collation collation)
+    public AggregateEnumerator(BsonExpression keyExpr, IAggregateFunc[] funcs, IPipeEnumerator enumerator, Collation collation)
     {
+        _keyExpr = keyExpr;
         _funcs = funcs;
         _enumerator = enumerator;
         _collation = collation;
@@ -42,15 +44,17 @@ internal class AggregateEnumerator : IPipeEnumerator
             }
             else
             {
+                var key = _keyExpr.Execute(item.Document, context.QueryParameters, _collation);
+
                 // initialize current key with first key
                 if (!_init)
                 {
                     _init = true;
-                    _currentKey = item.Document!;
+                    _currentKey = key;
                 }
 
                 // keep running with same value
-                if (_currentKey == item.Document!)
+                if (_currentKey == key)
                 {
                     foreach (var func in _funcs)
                     {
@@ -60,7 +64,7 @@ internal class AggregateEnumerator : IPipeEnumerator
                 // if key changes, return results in a new document
                 else
                 {
-                    _currentKey = item.Document!;
+                    _currentKey = key;
 
                     return this.GetResults();
                 }
