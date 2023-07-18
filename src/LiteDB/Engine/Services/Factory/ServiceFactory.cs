@@ -79,8 +79,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.MonitorService = new MonitorService(this);
         this.RecoveryService = new RecoveryService(this.BufferFactory, this.DiskService);
         this.SortService = new SortService(this.SortStreamFactory, this);
-        this.QueryService = new QueryService(this.WalIndexService, this.MasterService, this);
-
+        this.QueryService = new QueryService(this.WalIndexService, this);
     }
 
     #region Transient instances ("Create" prefix)
@@ -128,19 +127,9 @@ internal partial class ServicesFactory : IServicesFactory
         collectionName,
         queryParameters);
 
-    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, int readVersion, IQuery query, BsonDocument queryParameters) =>
-        query is Query simpleQuery ?
-            new QueryOptimization(
-                this,
-                collection,
-                simpleQuery,
-                queryParameters) :
-        query is AggregateQuery aggregateQuery ?
-            new AggregateQueryOptimization(
-                this,
-                collection,
-                aggregateQuery,
-                queryParameters) :
+    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, IQuery query) =>
+        query is Query ? new QueryOptimization(this, collection) :
+        query is AggregateQuery ? new AggregateQueryOptimization(this, collection) :
         throw new NotSupportedException();
 
     public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(

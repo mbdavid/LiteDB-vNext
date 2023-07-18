@@ -2,5 +2,5 @@
 
 internal interface IQueryOptimization
 {
-    IPipeEnumerator ProcessQuery();
+    IPipeEnumerator ProcessQuery(IQuery query, BsonDocument queryParameters);
 }

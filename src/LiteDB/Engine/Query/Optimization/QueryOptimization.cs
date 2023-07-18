@@ -7,63 +7,65 @@ internal class QueryOptimization : IQueryOptimization
 
     // ctor 
     private readonly CollectionDocument _collection;
-    private readonly Query _query;
-    private readonly BsonDocument _queryParameters;
 
     // fields filled by all query optimization proccess
-    private readonly BsonExpressionInfo _infoWhere;
-    private readonly BsonExpressionInfo _infoOrderBy;
-    private readonly BsonExpressionInfo _infoSelect;
+    private BsonExpressionInfo? _infoWhere;
+    private BsonExpressionInfo? _infoOrderBy;
+    private BsonExpressionInfo? _infoSelect;
 
+    // SlitWhere
     private List<BinaryBsonExpression> _terms = new();
 
+    // Define Index
+    private int _indexCost = 0;
     private BsonExpression _indexExpression = BsonExpression.Empty;
     private int _indexOrder = Query.Ascending;
-
     private BsonExpression _filter = BsonExpression.Empty;
-    private List<BsonExpression> _includesBefore = new();
-    private List<BsonExpression> _includesAfter = new();
+
+    // Define OrderBy
     private OrderBy _orderBy = OrderBy.Empty;
 
+    // Define Includes (Before/After)
+    private List<BsonExpression> _includesBefore = new();
+    private List<BsonExpression> _includesAfter = new();
+
+    // Define lookups
     private IDocumentLookup? _documentLookup;
     private IDocumentLookup? _orderByLookup;
 
     public QueryOptimization(
         IServicesFactory factory,
-        CollectionDocument collection, 
-        Query query, 
-        BsonDocument queryParameters)
+        CollectionDocument collection)
     {
         _factory = factory;
-
         _collection = collection;
-        _query = query;
-        _queryParameters = queryParameters;
-
-        _infoSelect = new BsonExpressionInfo(_query.Select);
-        _infoWhere = new BsonExpressionInfo(_query.Where);
-        _infoOrderBy = new BsonExpressionInfo(_query.OrderBy.Expression);
     }
 
-    public IPipeEnumerator ProcessQuery()
+    public IPipeEnumerator ProcessQuery(IQuery query, BsonDocument queryParameters)
     {
+        var plainQuery = (Query)query;
+
+        _infoWhere = new BsonExpressionInfo(plainQuery.Where);
+        _infoSelect = new BsonExpressionInfo(plainQuery.Select);
+        _infoOrderBy = new BsonExpressionInfo(plainQuery.OrderBy.Expression);
+
         // split where expressions into TERMs (splited by AND operator)
-        this.SplitWhereInTerms();
+        this.SplitWhereInTerms(plainQuery.Where);
 
         // get lower cost index or pk index
-        this.DefineIndex();
+        this.DefineIndex(plainQuery.OrderBy);
 
         // define _orderBy field (or use index order)
-        this.DefineOrderBy();
+        this.DefineOrderBy(plainQuery.OrderBy);
 
         // define where includes must be called (before/after) orderby/filter
-        this.DefineIncludes();
+        this.DefineIncludes(plainQuery.Includes);
 
         // define lookup for index/order by
         this.DefineLookups();
 
         // create pipe enumerator based on query optimization
-        return this.CreatePipeEnumerator();
+        return this.CreatePipeEnumerator(plainQuery, queryParameters);
     }
 
     #region Split Where
@@ -71,33 +73,27 @@ internal class QueryOptimization : IQueryOptimization
     /// <summary>
     /// Fill terms from where predicate list
     /// </summary>
-    private void SplitWhereInTerms()
+    private void SplitWhereInTerms(BsonExpression predicate)
     {
-        // check all where predicate for AND operators
-        split(_query.Where, _terms);
-
-        static void split(BsonExpression predicate, List<BinaryBsonExpression> terms)
+        if (predicate is BinaryBsonExpression bin)
         {
-            if (predicate is BinaryBsonExpression bin)
+            if (bin.IsPredicate || bin.Type == BsonExpressionType.Or)
             {
-                if (bin.IsPredicate || bin.Type == BsonExpressionType.Or)
-                {
-                    terms.Add(bin);
-                }
-                else if (bin.Type == BsonExpressionType.And)
-                {
-                    split(bin.Left, terms);
-                    split(bin.Right, terms);
-                }
-                else
-                {
-                    throw ERR($"Invalid WHERE expression: {predicate}");
-                }
+                _terms.Add(bin);
+            }
+            else if (bin.Type == BsonExpressionType.And)
+            {
+                this.SplitWhereInTerms(bin.Left);
+                this.SplitWhereInTerms(bin.Right);
             }
             else
             {
                 throw ERR($"Invalid WHERE expression: {predicate}");
             }
+        }
+        else
+        {
+            throw ERR($"Invalid WHERE expression: {predicate}");
         }
     }
 
@@ -105,10 +101,12 @@ internal class QueryOptimization : IQueryOptimization
 
     #region Index Selector
 
-    private void DefineIndex()
+    private void DefineIndex(OrderBy orderBy)
     {
         // from term predicate list, get lower index cost
-        var lower = this.GetLowerCostIndex();
+        var (cost, lower) = this.GetLowerCostIndex();
+
+        _indexCost = cost;
 
         if (lower is null)
         {
@@ -116,7 +114,7 @@ internal class QueryOptimization : IQueryOptimization
             var allIndexes = _collection.Indexes.Values;
 
             var selectedIndex = 
-                (_query.OrderBy.IsEmpty ? null : allIndexes.FirstOrDefault(x => x.Expression == _query.OrderBy.Expression)) ??
+                (orderBy.IsEmpty ? null : allIndexes.FirstOrDefault(x => x.Expression == orderBy.Expression)) ??
                 _collection.PK;
 
             _indexExpression = selectedIndex.Expression;
@@ -133,7 +131,7 @@ internal class QueryOptimization : IQueryOptimization
         }
     }
 
-    private BinaryBsonExpression? GetLowerCostIndex()
+    private (int, BinaryBsonExpression?) GetLowerCostIndex()
     {
         var lowerCost = int.MaxValue;
         BinaryBsonExpression? lowerExpr = null;
@@ -169,26 +167,26 @@ internal class QueryOptimization : IQueryOptimization
             }
         }
 
-        return lowerExpr;
+        return (lowerCost, lowerExpr);
     }
 
     #endregion
 
     #region OrderBy
 
-    private void DefineOrderBy()
+    private void DefineOrderBy(OrderBy orderBy)
     {
-        if (_query.OrderBy.IsEmpty) return;
+        if (orderBy.IsEmpty) return;
         if (_indexExpression is null) return;
 
         // if query expression are same used in index, has no need use orderBy
-        if (_query.OrderBy.Expression == _indexExpression)
+        if (orderBy.Expression == _indexExpression)
         {
-            _indexOrder = _query.OrderBy.Order;
+            _indexOrder = orderBy.Order;
         }
         else
         {
-            _orderBy = _query.OrderBy;
+            _orderBy = orderBy;
         }
     }
 
@@ -199,9 +197,9 @@ internal class QueryOptimization : IQueryOptimization
     /// <summary>
     /// Will define each include to be run BEFORE where (worst) OR AFTER where (best)
     /// </summary>
-    private void DefineIncludes()
+    private void DefineIncludes(BsonExpression[] includes)
     {
-        foreach (var include in _query.Includes)
+        foreach (var include in includes)
         {
             var info = new BsonExpressionInfo(include);
 
@@ -220,7 +218,7 @@ internal class QueryOptimization : IQueryOptimization
             }
             
             // in case of using OrderBy this can eliminate IncludeBefre - this need be added in After
-            if (!used || !_query.OrderBy.IsEmpty)
+            if (!used || !_orderBy.IsEmpty)
             {
                 _includesAfter.Add(include);
             }
@@ -326,32 +324,37 @@ internal class QueryOptimization : IQueryOptimization
 
     #endregion
 
-    private IPipeEnumerator CreatePipeEnumerator()
+    private IPipeEnumerator CreatePipeEnumerator(Query query, BsonDocument queryParameters)
     {
-        var pipe = _factory.CreatePipelineBuilder(_collection.Name, _queryParameters);
+        var pipe = _factory.CreatePipelineBuilder(_collection.Name, queryParameters);
 
         pipe.AddIndex(_indexExpression!, _indexOrder);
 
         pipe.AddLookup(_documentLookup!);
 
-        _includesBefore.ForEach(i => pipe.AddInclude(i));
+        foreach(var include in _includesBefore)
+            pipe.AddInclude(include);
 
-        pipe.AddFilter(_filter);
+        if (!_filter.IsEmpty)
+            pipe.AddFilter(_filter);
 
-        pipe.AddOrderBy(_orderBy);
+        if (!_orderBy.IsEmpty)
+            pipe.AddOrderBy(_orderBy);
 
-        pipe.AddOffset(_query.Offset);
+        if (query.Offset > 0)
+            pipe.AddOffset(query.Offset);
 
-        pipe.AddLimit(_query.Limit);
+        if (query.Limit != int.MaxValue)
+            pipe.AddLimit(query.Limit);
 
         if (_orderByLookup is not null)
-        {
             pipe.AddLookup(_orderByLookup);
-        }
 
-        _includesAfter.ForEach(i => pipe.AddInclude(i));
+        foreach (var include in _includesAfter)
+            pipe.AddInclude(include);
 
-        pipe.AddTransform(_query.Select);
+        if (!query.Select.IsEmpty)
+            pipe.AddTransform(query.Select);
 
         return pipe.GetPipeEnumerator();
     }

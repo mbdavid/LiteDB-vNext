@@ -5,26 +5,23 @@ internal class QueryService : IQueryService
 {
     // dependency injections
     private readonly IWalIndexService _walIndexService;
-    private readonly IMasterService _masterService;
     private readonly IServicesFactory _factory;
 
     private readonly ConcurrentDictionary<Guid, Cursor> _openCursors = new();
 
     public QueryService(
         IWalIndexService walIndexService,
-        IMasterService masterService,
         IServicesFactory factory)
     {
         _walIndexService = walIndexService;
-        _masterService = masterService;
         _factory = factory;
     }
 
     public Cursor CreateCursor(CollectionDocument collection, int readVersion, IQuery query, BsonDocument parameters)
     {
-        var queryOptimization = _factory.CreateQueryOptimization(collection, readVersion, query, parameters);
+        var queryOptimization = _factory.CreateQueryOptimization(collection, query);
 
-        var enumerator = queryOptimization.ProcessQuery();
+        var enumerator = queryOptimization.ProcessQuery(query, parameters);
 
         var cursor = new Cursor(query, parameters, readVersion, enumerator);
 
