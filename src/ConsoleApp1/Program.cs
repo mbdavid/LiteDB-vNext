@@ -15,27 +15,48 @@ var doc = new BsonDocument
     {
         ["street"] = "av pernambuco",
         ["number"] = 123
+    },
+    ["primary"] = 51,
+    ["phones"] = new BsonArray
+    {
+        new BsonDocument { ["ddd"] = 51, ["number"] = "123" },
+        new BsonDocument { ["ddd"] = 11, ["number"] = "456" },
+        new BsonDocument { ["ddd"] = 21, ["number"] = "789" },
     }
 };
 
 var parameters = new BsonDocument
 {
     ["qrcode"] = "237467846234263",
+    ["usuario"] = new BsonDocument
+    {
+        ["_id"] = 15,
+        ["nome"] = "jose",
+    }
 };
 
 
-BsonExpression expr = "_id = @qrcode";
-//BsonExpression expr = BsonExpression.Add(BsonExpression.Constant(50), BsonExpression.Path(BsonExpression.Root(), "age"));
-//var expr = Between(Path(Root(), "_id"), MakeArray(new BsonExpression[] { Constant(2), Constant(20) }));
-var expr2 = And(Path(Root(), "_id"), Parameter("qrcode"));
+//BsonExpression expr = "$"
+
+// _id, age
 
 
-var result = expr.Execute(doc, parameters);
+var exprA = Between(Path(Root(), "age"), MakeArray(new BsonExpression[] { Constant(30), Constant(50) }));
+var exprB = Create("age between 30 and 50");
+
+Console.WriteLine(exprA == exprB);
+
+Console.WriteLine("Expr A: " + exprA.ToString());
+Console.WriteLine("Expr B: " + exprB.ToString());
 
 
-Console.WriteLine(result.ToString());
-Console.WriteLine(result.Type);
+var result = exprA.Execute(doc, parameters);
 
+//Console.WriteLine(exprB.ToString());
+//Console.WriteLine("-----------------------------");
+Console.WriteLine("Result: " + result.ToString());
+//Console.WriteLine(result.Type);
+//
 
 
 Console.WriteLine("\n\nEnd");

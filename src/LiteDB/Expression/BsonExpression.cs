@@ -6,7 +6,7 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
 {
     public abstract BsonExpressionType Type { get; }
 
-    internal virtual IEnumerable<BsonExpression> Children => new BsonExpression[0];
+    internal virtual IEnumerable<BsonExpression> Children => Array.Empty<BsonExpression>();
 
     private BsonExpressionInfo? _info;
 
