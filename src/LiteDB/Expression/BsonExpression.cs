@@ -8,6 +8,8 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
 
     internal virtual IEnumerable<BsonExpression> Children => new BsonExpression[0];
 
+    private BsonExpressionInfo? _info;
+
     /// <summary>
     /// Only internal ctor (from BsonParserExpression)
     /// </summary>
@@ -93,6 +95,11 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
         this.Type == BsonExpressionType.In;
 
     internal bool IsEmpty => this.Type == BsonExpressionType.Empty;
+
+    internal BsonExpressionInfo GetInfo()
+    {
+        return _info ??= new BsonExpressionInfo(this);
+    }
 
     #endregion
 }

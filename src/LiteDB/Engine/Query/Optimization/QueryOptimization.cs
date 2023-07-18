@@ -9,9 +9,6 @@ internal class QueryOptimization : IQueryOptimization
     private readonly CollectionDocument _collection;
 
     // fields filled by all query optimization proccess
-    private BsonExpressionInfo? _infoWhere;
-    private BsonExpressionInfo? _infoOrderBy;
-    private BsonExpressionInfo? _infoSelect;
 
     // SlitWhere
     private List<BinaryBsonExpression> _terms = new();
@@ -45,10 +42,6 @@ internal class QueryOptimization : IQueryOptimization
     {
         var plainQuery = (Query)query;
 
-        _infoWhere = new BsonExpressionInfo(plainQuery.Where);
-        _infoSelect = new BsonExpressionInfo(plainQuery.Select);
-        _infoOrderBy = new BsonExpressionInfo(plainQuery.OrderBy.Expression);
-
         // split where expressions into TERMs (splited by AND operator)
         this.SplitWhereInTerms(plainQuery.Where);
 
@@ -59,10 +52,10 @@ internal class QueryOptimization : IQueryOptimization
         this.DefineOrderBy(plainQuery.OrderBy);
 
         // define where includes must be called (before/after) orderby/filter
-        this.DefineIncludes(plainQuery.Includes);
+        this.DefineIncludes(plainQuery);
 
         // define lookup for index/order by
-        this.DefineLookups();
+        this.DefineLookups(plainQuery);
 
         // create pipe enumerator based on query optimization
         return this.CreatePipeEnumerator(plainQuery, queryParameters);
@@ -197,19 +190,24 @@ internal class QueryOptimization : IQueryOptimization
     /// <summary>
     /// Will define each include to be run BEFORE where (worst) OR AFTER where (best)
     /// </summary>
-    private void DefineIncludes(BsonExpression[] includes)
+    private void DefineIncludes(Query query)
     {
-        foreach (var include in includes)
+        if (query.Includes is null || query.Includes.Length == 0) return;
+
+        var infoWhere = query.Where.GetInfo();
+        var infoOrderBy = query.OrderBy.Expression.GetInfo();
+
+        foreach (var include in query.Includes)
         {
-            var info = new BsonExpressionInfo(include);
+            var info = include.GetInfo();
 
             // includes always has one single field
             var field = info.RootFields.Single();
 
             // test if field are using in any filter or orderBy
             var used =
-                _infoWhere.RootFields.Contains(field, StringComparer.OrdinalIgnoreCase) ||
-                _infoOrderBy.RootFields.Contains(field, StringComparer.OrdinalIgnoreCase) ||
+                infoWhere.RootFields.Contains(field, StringComparer.OrdinalIgnoreCase) ||
+                infoOrderBy.RootFields.Contains(field, StringComparer.OrdinalIgnoreCase) ||
                 false;
 
             if (used)
@@ -232,21 +230,13 @@ internal class QueryOptimization : IQueryOptimization
     /// <summary>
     /// Define both lookups, for index and order by pipe enumerator
     /// </summary>
-    private void DefineLookups()
+    private void DefineLookups(Query query)
     {
         // without OrderBy
         if (_orderBy.IsEmpty)
         {
             // get all root fiels using in this query (empty means need load full document)
-            var fields = this.GetFields(
-                new BsonExpressionInfo[]
-                {
-                    _infoWhere,
-                    _infoOrderBy,
-                    _infoSelect
-                }
-                .Union(_includesBefore.Select(i => new BsonExpressionInfo(i)))
-                .Union(_includesAfter.Select(i => new BsonExpressionInfo(i))));
+            var fields = this.GetFields(query, where: true, select: true, orderBy: true, before: true, after: true);
 
             // if contains a single field and are index expression
             if (fields.Length == 1 && fields[0] == _indexExpression.ToString()[2..])
@@ -264,14 +254,7 @@ internal class QueryOptimization : IQueryOptimization
         else
         {
             // get all fields used before order by
-            //TODO: implementar melhor... simplificar
-            var docFields = this.GetFields(
-                new BsonExpressionInfo[]
-                {
-                    _infoWhere,
-                    _infoOrderBy,
-                }
-                .Union(_includesBefore.Select(i => new BsonExpressionInfo(i))));
+            var docFields = this.GetFields(query, where: true, orderBy: true, before: true);
 
             // if contains a single field and are index expression
             if (docFields.Length == 1 && docFields[0] == _indexExpression.ToString()[2..])
@@ -285,12 +268,7 @@ internal class QueryOptimization : IQueryOptimization
             }
 
             // get all fields used after order by
-            var orderFields = this.GetFields(
-                new BsonExpressionInfo[]
-                {
-                    _infoSelect,
-                }
-                .Union(_includesBefore.Select(i => new BsonExpressionInfo(i))));
+            var orderFields = this.GetFields(query, select: true, before: true);
 
             // if contains a single field and are index expression
             if (orderFields.Length == 1 && orderFields[0] == _indexExpression.ToString()[2..])
@@ -306,20 +284,52 @@ internal class QueryOptimization : IQueryOptimization
     }
 
     /// <summary>
-    /// Get all fields used in many expressions
+    /// Get all fields used in many expressions (used bool to avoid new array)
     /// </summary>
-    private string[] GetFields(IEnumerable<BsonExpressionInfo> infos)
+    private string[] GetFields(
+        Query query,
+        bool where = false, 
+        bool select = false, 
+        bool orderBy = false, 
+        bool before = false, 
+        bool after = false)
     {
         var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var info in infos)
-        {
-            if (info.FullRoot) return Array.Empty<string>();
+        if (add(where, query.Where, fields)) return Array.Empty<string>();
+        if (add(select, query.Select, fields)) return Array.Empty<string>();
+        if (add(orderBy, query.OrderBy.Expression, fields)) return Array.Empty<string>();
 
-            fields.AddRange(info.RootFields);
+        if (before)
+        {
+            foreach (var expr in _includesBefore)
+            {
+                if (add(true, expr, fields)) return Array.Empty<string>();
+            }
+        }
+
+        if (after)
+        {
+            foreach (var expr in _includesAfter)
+            {
+                if (add(true, expr, fields)) return Array.Empty<string>();
+            }
         }
 
         return fields.ToArray();
+
+        static bool add(bool conditional, BsonExpression expr, HashSet<string> fields)
+        {
+            if (!conditional) return false;
+
+            var info = expr.GetInfo();
+
+            if (info.FullRoot) return true;
+
+            fields.AddRange(info.RootFields);
+
+            return false;
+        }
     }
 
     #endregion
@@ -335,10 +345,10 @@ internal class QueryOptimization : IQueryOptimization
         foreach(var include in _includesBefore)
             pipe.AddInclude(include);
 
-        if (!_filter.IsEmpty)
+        if (_filter.IsEmpty == false)
             pipe.AddFilter(_filter);
 
-        if (!_orderBy.IsEmpty)
+        if (_orderBy.IsEmpty == false)
             pipe.AddOrderBy(_orderBy);
 
         if (query.Offset > 0)
@@ -353,7 +363,7 @@ internal class QueryOptimization : IQueryOptimization
         foreach (var include in _includesAfter)
             pipe.AddInclude(include);
 
-        if (!query.Select.IsEmpty)
+        if (query.Select.IsEmpty == false)
             pipe.AddTransform(query.Select);
 
         return pipe.GetPipeEnumerator();
