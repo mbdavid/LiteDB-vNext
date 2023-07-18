@@ -162,6 +162,7 @@ internal class PipelineBuilder
     public PipelineBuilder AddFilter(BsonExpression filter)
     {
         if (_enumerator is null) throw ERR("Start pipeline using AddIndex");
+        if (filter.IsEmpty) return this;
 
         _enumerator = new FilterEnumerator(filter, _enumerator, _collation);
 
@@ -174,6 +175,7 @@ internal class PipelineBuilder
     public PipelineBuilder AddOffset(int offset)
     {
         if (_enumerator is null) throw ERR("Start pipeline using AddIndex");
+        if (offset == 0) return this;
 
         _enumerator = new OffsetEnumerator(offset, _enumerator);
 
@@ -186,6 +188,7 @@ internal class PipelineBuilder
     public PipelineBuilder AddLimit(int limit)
     {
         if (_enumerator is null) throw ERR("Start pipeline using AddIndex");
+        if (limit == int.MaxValue) return this;
 
         _enumerator = new LimitEnumerator(limit, _enumerator);
 
@@ -198,6 +201,7 @@ internal class PipelineBuilder
     public PipelineBuilder AddOrderBy(OrderBy orderBy)
     {
         if (_enumerator is null) throw ERR("Start pipeline using AddIndex");
+        if (orderBy.IsEmpty) return this;
 
         _enumerator = new OrderByEnumerator(orderBy, _enumerator, _sortService);
 
@@ -210,6 +214,7 @@ internal class PipelineBuilder
     public PipelineBuilder AddInclude(BsonExpression pathExpr)
     {
         if (_enumerator is null) throw ERR("Start pipeline using AddIndex");
+        if (pathExpr.IsEmpty) return this;
 
         _enumerator = new IncludeEnumerator(pathExpr, _enumerator, _masterService, _collation);
 
@@ -234,6 +239,7 @@ internal class PipelineBuilder
     public PipelineBuilder AddTransform(BsonExpression select)
     {
         if (_enumerator is null) throw ERR("Start pipeline using AddIndex");
+        if (select.IsEmpty) return this;
 
         _enumerator = new TransformEnumerator(select, _collation, _enumerator);
 

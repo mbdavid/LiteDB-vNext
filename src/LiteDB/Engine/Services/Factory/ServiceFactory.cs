@@ -128,24 +128,19 @@ internal partial class ServicesFactory : IServicesFactory
         collectionName,
         queryParameters);
 
-    public IQueryOptimization CreateQueryOptimization(MasterDocument master, CollectionDocument collection, int readVersion, IQuery query, BsonDocument queryParameters) =>
+    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, int readVersion, IQuery query, BsonDocument queryParameters) =>
         query is Query simpleQuery ?
             new QueryOptimization(
-                this.MasterService,
-                this.SortService,
-                master,
+                this,
                 collection,
                 simpleQuery,
-                queryParameters,
-                this.FileHeader.Collation) :
+                queryParameters) :
         query is AggregateQuery aggregateQuery ?
             new AggregateQueryOptimization(
-                this.SortService,
-                master,
+                this,
                 collection,
                 aggregateQuery,
-                queryParameters,
-                this.FileHeader.Collation) :
+                queryParameters) :
         throw new NotSupportedException();
 
     public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(

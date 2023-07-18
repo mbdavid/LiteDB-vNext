@@ -22,9 +22,7 @@ internal class QueryService : IQueryService
 
     public Cursor CreateCursor(CollectionDocument collection, int readVersion, IQuery query, BsonDocument parameters)
     {
-        var master = _masterService.GetMaster(false);
-
-        var queryOptimization = _factory.CreateQueryOptimization(master, collection, readVersion, query, parameters);
+        var queryOptimization = _factory.CreateQueryOptimization(collection, readVersion, query, parameters);
 
         var enumerator = queryOptimization.ProcessQuery();
 
