@@ -58,12 +58,12 @@ internal class QueryService : IQueryService
         cursor.IsRunning = true;
 
         var fetchSizeNext = fetchSize + 
-            (cursor.Excedded is null ? 1 : 0);
+            (cursor.NextDocument is null ? 1 : 0);
 
-        if (cursor.Excedded is not null)
+        if (cursor.NextDocument is not null)
         {
-            list.Add(cursor.Excedded);
-            cursor.Excedded = null;
+            list.Add(cursor.NextDocument);
+            cursor.NextDocument = null;
             count++;
         }
 
@@ -82,7 +82,7 @@ internal class QueryService : IQueryService
             }
             else
             {
-                cursor.Excedded = item.Document;
+                cursor.NextDocument = item.Document;
                 break;
             }
         }

@@ -16,7 +16,7 @@ internal class Cursor : IDisposable
     public DateTime Start { get; } = DateTime.UtcNow;
     public TimeSpan ElapsedTime { get; set; } = TimeSpan.Zero;
 
-    public BsonDocument? Excedded { get; set; }
+    public BsonDocument? NextDocument { get; set; }
 
     public Cursor(IQuery query, BsonDocument parameters, int readVersion, IPipeEnumerator enumerator)
     {

@@ -46,8 +46,11 @@ internal class QueryOptimization : IQueryOptimization
         // split where expressions into TERMs (splited by AND operator)
         this.SplitWhereInTerms();
 
+        // get lower cost index or pk index
         this.DefineIndex();
 
+        // define _orderBy field (or use index order)
+        this.DefineOrderBy();
 
         // create pipe enumerator based on query optimization
         return this.CreatePipeEnumerator();
@@ -171,6 +174,62 @@ internal class QueryOptimization : IQueryOptimization
 
         return lowerExpr;
     }
+
+    #endregion
+
+    #region OrderBy
+
+    private void DefineOrderBy()
+    {
+        if (_query.OrderBy.IsEmpty) return;
+        if (_indexExpression is null) return;
+
+        // if query expression are same used in index, has no need use orderBy
+        if (_query.OrderBy.Expression == _indexExpression)
+        {
+            _indexOrder = _query.OrderBy.Order;
+        }
+        else
+        {
+            _orderBy = _query.OrderBy;
+        }
+    }
+
+    #endregion
+
+    #region Includes
+
+    /// <summary>
+    /// Will define each include to be run BEFORE where (worst) OR AFTER where (best)
+    /// </summary>
+    private void DefineIncludes()
+    {
+        foreach (var include in _query.Includes)
+        {
+            var info = new BsonExpressionInfo(include);
+
+            //info.RootFields
+            //
+            //// includes always has one single field
+            //var field = include.Fields.Single();
+            //
+            //// test if field are using in any filter or orderBy
+            //var used = _queryPlan.Filters.Any(x => x.Fields.Contains(field)) ||
+            //    (_queryPlan.OrderBy?.Expression.Fields.Contains(field) ?? false);
+            //
+            //if (used)
+            //{
+            //    _queryPlan.IncludeBefore.Add(include);
+            //}
+            //
+            //// in case of using OrderBy this can eliminate IncludeBefre - this need be added in After
+            //if (!used || _queryPlan.OrderBy != null)
+            //{
+            //    _queryPlan.IncludeAfter.Add(include);
+            //}
+        }
+    }
+
 
     #endregion
 

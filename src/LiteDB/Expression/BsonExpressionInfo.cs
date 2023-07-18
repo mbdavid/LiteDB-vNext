@@ -8,7 +8,7 @@ internal class BsonExpressionInfo
     public bool HasRoot { get; }
 
     /// <summary>
-    /// Get root fields keys used in document
+    /// Get root fields keys used in document (empty array if no fields found)
     /// </summary>
     public string[] RootFields { get; }
 

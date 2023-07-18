@@ -1,36 +1,41 @@
 ﻿global using static LiteDB.Constants;
+global using static LiteDB.BsonExpression;
 global using LiteDB;
 global using LiteDB.Engine;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 
-var path = @"C:\Temp\litedb-v6-002.db";
-
-File.Delete(path);
-
-
-var settings = new EngineSettings
+var doc = new BsonDocument
 {
-    Filename = path
+    ["_id"] = 1,
+    ["first"] = "Mauricio",
+    ["last"] = "david",
+    ["age"] = 45,
+    ["address"] = new BsonDocument
+    {
+        ["street"] = "av pernambuco",
+        ["number"] = 123
+    }
 };
 
-var doc0 = new BsonDocument { ["name"] = "John Doe", ["age"] = 42 };
-var doc1 = new BsonDocument { ["name"] = "Matheus Doe", ["age"] = 33 };
-
-using (var engine = new LiteEngine(settings))
+var parameters = new BsonDocument
 {
-    await engine.OpenAsync();
-
-    var created = await engine.CreateCollectionAsync("col1");
-
-    await engine.InsertAsync("col1", new BsonDocument[] { doc0 }, BsonAutoId.Int32);
-
-    await engine.CheckpointAsync();
-
-    await engine.ShutdownAsync();
-}
+    ["qrcode"] = "237467846234263",
+};
 
 
+BsonExpression expr = "_id = @qrcode";
+//BsonExpression expr = BsonExpression.Add(BsonExpression.Constant(50), BsonExpression.Path(BsonExpression.Root(), "age"));
+//var expr = Between(Path(Root(), "_id"), MakeArray(new BsonExpression[] { Constant(2), Constant(20) }));
+var expr2 = And(Path(Root(), "_id"), Parameter("qrcode"));
 
 
-Console.WriteLine("End");
+var result = expr.Execute(doc, parameters);
+
+
+Console.WriteLine(result.ToString());
+Console.WriteLine(result.Type);
+
+
+
+Console.WriteLine("\n\nEnd");
