@@ -30,10 +30,4 @@ internal class BsonObjectId : BsonValue
     }
 
     #endregion
-
-    #region Convert Types
-
-    public override string ToString() => this.Value.ToString();
-
-    #endregion
 }

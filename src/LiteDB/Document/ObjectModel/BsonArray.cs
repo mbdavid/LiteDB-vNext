@@ -1,6 +1,4 @@
-﻿using System.Collections.ObjectModel;
-
-namespace LiteDB;
+﻿namespace LiteDB;
 
 /// <summary>
 /// Represent a array of BsonValue in Bson object model
@@ -10,7 +8,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
     /// <summary>
     /// Singleton Empty BsonArray (readonly)
     /// </summary>
-    public static BsonArray Empty = new(new(), true);
+    public static BsonArray Empty = new(true);
 
     private readonly List<BsonValue> _value;
     private int _length = -1;
@@ -20,6 +18,11 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
     public BsonArray() : this(0)
     {
+    }
+
+    private BsonArray(bool readOnly) : this(0)
+    {
+        _readonly = readOnly;
     }
 
     public BsonArray(int capacity)
@@ -195,12 +198,6 @@ public class BsonArray : BsonValue, IList<BsonValue>
     public IEnumerator<BsonValue> GetEnumerator() => _value.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => _value.GetEnumerator();
-
-    #endregion
-
-    #region Convert Types
-
-    public override string ToString() => "[" + String.Join(",", _value.Select(x => x.ToString())) + "]";
 
     #endregion
 

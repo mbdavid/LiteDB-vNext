@@ -475,6 +475,8 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
 
     public virtual decimal ToDecimal() => throw new NotSupportedException($"{this.Type} does not support ToDecimal.");
 
+    public override string ToString() => JsonWriterStatic.Serialize(this);
+
     #endregion
 
     #region Static Helpers

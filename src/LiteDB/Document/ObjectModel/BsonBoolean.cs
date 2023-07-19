@@ -44,7 +44,5 @@ internal class BsonBoolean : BsonValue
 
     public override decimal ToDecimal() => this.Value ? 1 : 0;
 
-    public override string ToString() => this.Value.ToString(CultureInfo.InvariantCulture.NumberFormat);
-
     #endregion
 }

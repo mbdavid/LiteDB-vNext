@@ -8,7 +8,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     /// <summary>
     /// Singleton Empty document (readonly)
     /// </summary>
-    public static BsonDocument Empty = new(new(), true);
+    public static BsonDocument Empty = new(true);
 
     private readonly Dictionary<string, BsonValue> _value;
     private int _length = -1;
@@ -18,6 +18,11 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 
     public BsonDocument() : this(0)
     {
+    }
+
+    private BsonDocument(bool readOnly) : this(0)
+    {
+        _readonly = readOnly;
     }
 
     public BsonDocument(int capacity)
@@ -202,12 +207,6 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     public IEnumerator<KeyValuePair<string, BsonValue>> GetEnumerator() => _value.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => _value.GetEnumerator();
-
-    #endregion
-
-    #region Convert Types
-
-    public override string ToString() => "{" + String.Join(",", this.GetElements().Select(x => x.Key + ":" + x.Value.ToString())) + "}";
 
     #endregion
 

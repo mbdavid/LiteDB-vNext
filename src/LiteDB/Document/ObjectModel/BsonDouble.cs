@@ -48,8 +48,6 @@ internal class BsonDouble : BsonValue
 
     public override decimal ToDecimal() => Convert.ToDecimal(this.Value);
 
-    public override string ToString() => this.Value.ToString(CultureInfo.InvariantCulture.NumberFormat);
-
     #endregion
 
 }
