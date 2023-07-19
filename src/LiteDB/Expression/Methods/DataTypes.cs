@@ -311,9 +311,9 @@ internal partial class BsonExpressionMethods
 
         if (value is BsonString str && culture is BsonString cult)
         {
-            var cultureIndo = new CultureInfo(cult.Value); // en-US
+            var cultureInfo = new CultureInfo(cult.Value); // en-US
 
-            if (DateTime.TryParse(str, cultureIndo.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var date))
+            if (DateTime.TryParse(str, cultureInfo.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var date))
             {
                 return date;
             }

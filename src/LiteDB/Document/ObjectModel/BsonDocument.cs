@@ -6,13 +6,13 @@
 public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 {
     /// <summary>
-    /// Singleton Empty document (must be readonly!)
+    /// Singleton Empty document (readonly)
     /// </summary>
-    public static BsonDocument Empty = new();
+    public static BsonDocument Empty = new(new(), true);
 
     private readonly Dictionary<string, BsonValue> _value;
-
     private int _length = -1;
+    private bool _readonly = false;
 
     public IReadOnlyDictionary<string, BsonValue> Value => _value;
 
@@ -33,18 +33,18 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     /// <summary>
     /// Create a new BsonDocument using a deep clone from another document
     /// </summary>
-    public BsonDocument(BsonDocument clone)
+    public BsonDocument(BsonDocument clone, bool readOnly)
         : this(clone.Count)
     {
         foreach(var entity in clone._value)
         {
             if (entity.Value is BsonDocument doc)
             {
-                _value.Add(entity.Key, new BsonDocument(doc));
+                _value.Add(entity.Key, new BsonDocument(doc, readOnly));
             }
             else if (entity.Value is BsonArray arr)
             {
-                _value.Add(entity.Key, new BsonArray(arr));
+                _value.Add(entity.Key, new BsonArray(arr, readOnly));
             }
             else
             {
@@ -53,6 +53,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
         }
 
         _length = clone._length;
+        _readonly = readOnly;
     }
 
     public override BsonType Type => BsonType.Document;
@@ -140,25 +141,56 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 
     public int Count => _value.Count;
 
-    public bool IsReadOnly => false;
+    public bool IsReadOnly => _readonly;
 
     public override BsonValue this[string key]
     {
-        get => _value.GetOrDefault(key, BsonValue.Null); 
-        set => _value[key] = value ?? BsonValue.Null;
+        get => _value.GetOrDefault(key, BsonValue.Null);
+        set
+        {
+            if (_readonly) throw ERR_READONLY_OBJECT();
+
+            _value[key] = value ?? BsonValue.Null;
+        }
     }
 
-    public void Add(string key, BsonValue value) => _value.Add(key, value ?? BsonValue.Null);
+    public void Add(string key, BsonValue value)
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
 
+        _value.Add(key, value ?? BsonValue.Null);
+    }
+
+    public void Add(KeyValuePair<string, BsonValue> item)
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        _value.Add(item.Key, item.Value ?? BsonValue.Null);
+    }
+
+    public void Clear()
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        _value.Clear();
+    }
+
+    public bool Remove(string key)
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        return _value.Remove(key);
+    }
+
+    public bool Remove(KeyValuePair<string, BsonValue> item)
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        return _value.Remove(item.Key);
+    }
     public bool ContainsKey(string key) => _value.ContainsKey(key);
 
-    public bool Remove(string key) => _value.Remove(key); 
-
     public bool TryGetValue(string key, out BsonValue value) => _value.TryGetValue(key, out value);
-
-    public void Add(KeyValuePair<string, BsonValue> item) => _value.Add(item.Key, item.Value ?? BsonValue.Null);
-
-    public void Clear() => _value.Clear();
 
     public bool Contains(KeyValuePair<string, BsonValue> item) => _value.Contains(item);
 
@@ -166,8 +198,6 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     {
         ((ICollection<KeyValuePair<string, BsonValue>>)_value).CopyTo(array, arrayIndex);
     }
-
-    public bool Remove(KeyValuePair<string, BsonValue> item) => _value.Remove(item.Key);
 
     public IEnumerator<KeyValuePair<string, BsonValue>> GetEnumerator() => _value.GetEnumerator();
 

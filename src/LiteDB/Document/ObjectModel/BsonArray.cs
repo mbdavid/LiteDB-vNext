@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using System.Collections.ObjectModel;
+
+namespace LiteDB;
 
 /// <summary>
 /// Represent a array of BsonValue in Bson object model
@@ -6,12 +8,13 @@
 public class BsonArray : BsonValue, IList<BsonValue>
 {
     /// <summary>
-    /// Singleton Empty BsonArray (must be readonly!)
+    /// Singleton Empty BsonArray (readonly)
     /// </summary>
-    public static BsonArray Empty = new();
+    public static BsonArray Empty = new(new(), true);
 
     private readonly List<BsonValue> _value;
     private int _length = -1;
+    private bool _readonly = false;
 
     public IReadOnlyList<BsonValue> Value => _value;
 
@@ -33,18 +36,18 @@ public class BsonArray : BsonValue, IList<BsonValue>
     /// <summary>
     /// Create a new BsonArray using a deep clone from another array
     /// </summary>
-    public BsonArray(BsonArray clone)
+    public BsonArray(BsonArray clone, bool readOnly)
         : this(clone.Count)
     {
         foreach (var value in clone._value)
         {
             if (value is BsonDocument doc)
             {
-                _value.Add(new BsonDocument(doc));
+                _value.Add(new BsonDocument(doc, readOnly));
             }
             else if (value is BsonArray arr)
             {
-                _value.Add(new BsonArray(arr));
+                _value.Add(new BsonArray(arr, readOnly));
             }
             else
             {
@@ -53,6 +56,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
         }
 
         _length = clone._length;
+        _readonly = readOnly;
     }
 
     public override BsonType Type => BsonType.Array;
@@ -86,6 +90,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
     public void AddRange(IEnumerable<BsonValue> items)
     {
         if (items == null) throw new ArgumentNullException(nameof(items));
+        if (_readonly) throw ERR_READONLY_OBJECT();
 
         foreach (var item in items)
         {
@@ -129,29 +134,63 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
     #region IList implementation
 
+    public override BsonValue this[int index]
+    {
+        get => _value[index];
+        set
+        {
+            if (_readonly) throw ERR_READONLY_OBJECT();
+
+            _value[index] = value;
+        }
+    }
+
+    public void Add(BsonValue item)
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        _value.Add(item ?? BsonValue.Null);
+    }
+
+    public void Clear()
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        _value.Clear();
+    }
+
+    public bool Remove(BsonValue item)
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        return _value.Remove(item ?? BsonValue.Null);
+    }
+
+    public void RemoveAt(int index)
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        _value.RemoveAt(index);
+    }
+
+    public void Insert(int index, BsonValue item)
+    {
+        if (_readonly) throw ERR_READONLY_OBJECT();
+
+        _value.Insert(index, item ?? BsonValue.Null);
+    }
+
     public int Count => _value.Count;
 
-    public bool IsReadOnly => false;
-
-    public override BsonValue this[int index] { get => _value[index]; set => _value[index] = value; }
+    public bool IsReadOnly => _readonly;
 
     public int IndexOf(BsonValue item) => _value.IndexOf(item);
-
-    public void Insert(int index, BsonValue item) => _value.Insert(index, item ?? BsonValue.Null);
-
-    public void RemoveAt(int index) => _value.RemoveAt(index);
-
-    public void Add(BsonValue item) => _value.Add(item ?? BsonValue.Null);
-
-    public void Clear() => _value.Clear();
 
     public bool Contains(BsonValue item) => _value.Contains(item ?? BsonValue.Null);
 
     public bool Contains(BsonValue item, Collation collection) => _value.Any(x => collection.Compare(x, item ?? BsonValue.Null) == 0);
 
     public void CopyTo(BsonValue[] array, int arrayIndex) => _value.CopyTo(array, arrayIndex);
-
-    public bool Remove(BsonValue item) => _value.Remove(item ?? BsonValue.Null);
 
     public IEnumerator<BsonValue> GetEnumerator() => _value.GetEnumerator();
 
