@@ -40,16 +40,18 @@ var parameters = new BsonDocument
 
 // _id, age
 
-
-var exprA = Between(Path(Root(), "age"), MakeArray(new BsonExpression[] { Constant(30), Constant(50) }));
-var exprB = Create("age between 30 and 50");
-
-Console.WriteLine(exprA == exprB);
-
-Console.WriteLine("Expr A: " + exprA.ToString());
-Console.WriteLine("Expr B: " + exprB.ToString());
+var exprA = Create("SUM(INT(MAP(f => INT(phones.number)))");
 
 
+//var exprA = Between(Path(Root(), "age"), MakeArray(new BsonExpression[] { Constant(30), Constant(50) }));
+//var exprB = Create("age between 30 and 50");
+//
+//Console.WriteLine(exprA == exprB);
+//
+//Console.WriteLine("Expr A: " + exprA.ToString());
+//Console.WriteLine("Expr B: " + exprB.ToString());
+//
+//
 var result = exprA.Execute(doc, parameters);
 
 //Console.WriteLine(exprB.ToString());

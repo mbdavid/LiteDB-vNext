@@ -5,6 +5,11 @@
 /// </summary>
 public class BsonArray : BsonValue, IList<BsonValue>
 {
+    /// <summary>
+    /// Singleton Empty BsonArray (must be readonly!)
+    /// </summary>
+    public static BsonArray Empty = new();
+
     private readonly List<BsonValue> _value;
     private int _length = -1;
 
@@ -25,17 +30,26 @@ public class BsonArray : BsonValue, IList<BsonValue>
         this.AddRange(values);
     }
 
+    /// <summary>
+    /// Create a new BsonArray using a deep clone from another array
+    /// </summary>
     public BsonArray(BsonArray clone)
         : this(clone.Count)
     {
-        for(var i = 0; i < _value.Count; i++)
+        foreach (var value in clone._value)
         {
-            var value = _value[i];
-
-            _value.Add(
-                value.IsDocument ? new BsonDocument(value.AsDocument) :
-                value.IsArray ? new BsonArray(value.AsArray) :
-                value);
+            if (value is BsonDocument doc)
+            {
+                _value.Add(new BsonDocument(doc));
+            }
+            else if (value is BsonArray arr)
+            {
+                _value.Add(new BsonArray(arr));
+            }
+            else
+            {
+                _value.Add(value);
+            }
         }
 
         _length = clone._length;

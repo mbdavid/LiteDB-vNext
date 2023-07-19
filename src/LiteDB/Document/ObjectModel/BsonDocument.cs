@@ -8,7 +8,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     /// <summary>
     /// Singleton Empty document (must be readonly!)
     /// </summary>
-    internal static BsonDocument Empty => new();
+    public static BsonDocument Empty = new();
 
     private readonly Dictionary<string, BsonValue> _value;
 
@@ -30,15 +30,26 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
         _value = value ?? throw new ArgumentNullException(nameof(value));
     }
 
+    /// <summary>
+    /// Create a new BsonDocument using a deep clone from another document
+    /// </summary>
     public BsonDocument(BsonDocument clone)
         : this(clone.Count)
     {
         foreach(var entity in clone._value)
         {
-            _value.Add(entity.Key,
-                entity.Value.IsDocument ? new BsonDocument(entity.Value.AsDocument) :
-                entity.Value.IsArray ? new BsonArray(entity.Value.AsArray) :
-                entity.Value);
+            if (entity.Value is BsonDocument doc)
+            {
+                _value.Add(entity.Key, new BsonDocument(doc));
+            }
+            else if (entity.Value is BsonArray arr)
+            {
+                _value.Add(entity.Key, new BsonArray(arr));
+            }
+            else
+            {
+                _value.Add(entity.Key, entity.Value);
+            }
         }
 
         _length = clone._length;
