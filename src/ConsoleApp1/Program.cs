@@ -40,7 +40,7 @@ var parameters = new BsonDocument
 
 // _id, age
 
-var exprA = Create("SUM(INT(MAP(f => INT(phones.number)))");
+var exprA = Create("10 between 5 and 20");
 
 
 //var exprA = Between(Path(Root(), "age"), MakeArray(new BsonExpression[] { Constant(30), Constant(50) }));

@@ -10,7 +10,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Operation definition by methods with defined expression type (operators are in precedence order)
     /// </summary>
-    private static readonly Dictionary<string, Func<BsonExpression, BsonExpression, BsonExpression>> _operators = new ()
+    private static readonly Dictionary<string, Func<BsonExpression, BsonExpression, BsonExpression>> _operators = new (StringComparer.OrdinalIgnoreCase)
     {
         // map function
         ["=>"] = BsonExpression.Map,
