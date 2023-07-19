@@ -411,9 +411,9 @@ internal class BsonExpressionParser
 
         var method = BsonExpression.GetMethod(token.Value, parameters.Count);
 
-        if (method is null) throw ERR_UNEXPECTED_TOKEN($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token);
-
-        return BsonExpression.Call(method, parameters.ToArray());
+        return method is null
+            ? throw ERR_UNEXPECTED_TOKEN($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token)
+            : BsonExpression.Call(method, parameters.ToArray());
     }
 
     /// <summary>
