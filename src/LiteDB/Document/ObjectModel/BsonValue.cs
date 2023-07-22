@@ -131,10 +131,15 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
         {
             return left.AsString + right.AsString;
         }
-        // if any sides are string, concat casting both to string
-        else if (left.IsString || right.IsString)
+        // if only left side is string, convert right side to string too
+        else if (left.IsString)
         {
-            return left.ToString() + right.ToString();
+            return left.AsString + right.ToString();
+        }
+        // if only right side is string, convert left side to string too
+        else if (right.IsString)
+        {
+            return left.ToString() + right.AsString;
         }
         // if any side are DateTime and another is number, add days in date
         else if (left.IsDateTime && right.IsNumber)

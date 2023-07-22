@@ -246,15 +246,31 @@ internal static class SpanExtensions
         return span.Slice(segment.Location, segment.Length);
     }
 
-    public static bool IsFullZero(this Span<byte> span)
+    public static unsafe bool IsFullZero(this Span<byte> span)
     {
-        //TODO: pode ser otimizado?
-        for(var i = 0; i < span.Length; i++)
+        fixed (byte* bytes = span)
         {
-            if (span[i] != 0) return false;
-        }
+            int len = span.Length;
+            int rem = len % (sizeof(long) * 16);
+            long* b = (long*)bytes;
+            long* e = (long*)(bytes + len - rem);
 
-        return true;
+            while (b < e)
+            {
+                if ((*(b) | *(b + 1) | *(b + 2) | *(b + 3) | *(b + 4) |
+                    *(b + 5) | *(b + 6) | *(b + 7) | *(b + 8) |
+                    *(b + 9) | *(b + 10) | *(b + 11) | *(b + 12) |
+                    *(b + 13) | *(b + 14) | *(b + 15)) != 0)
+                    return false;
+                b += 16;
+            }
+
+            for (int i = 0; i < rem; i++)
+                if (span[len - 1 - i] != 0)
+                    return false;
+
+            return true;
+        }
     }
 
     #endregion

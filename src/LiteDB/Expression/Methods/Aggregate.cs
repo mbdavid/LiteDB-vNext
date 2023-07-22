@@ -34,7 +34,7 @@ internal partial class BsonExpressionMethods
 
     /// <summary>
     /// </summary>
-    public static BsonValue MAX(IEnumerable<BsonValue> values)
+    public static BsonValue MAX(BsonValue values)
     {
         var max = BsonValue.MinValue;
 
@@ -132,7 +132,7 @@ internal partial class BsonExpressionMethods
     /// <summary>
     /// Return "true" if inner array values contains any result
     /// </summary>
-    public static BsonValue ANY(IEnumerable<BsonValue> values)
+    public static BsonValue ANY(BsonValue values)
     {
         if (values is BsonArray array) return array.Any();
 

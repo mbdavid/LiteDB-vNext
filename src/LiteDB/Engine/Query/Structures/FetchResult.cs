@@ -16,4 +16,9 @@ public struct FetchResult
         this.HasMore = hasMore;
         this.Results = results;
     }
+
+    public override string ToString()
+    {
+        return $"From: {this.From}, To: {this.To}, FetchCount: {this.FetchCount}, HasMore: {this.HasMore}";
+    }
 }

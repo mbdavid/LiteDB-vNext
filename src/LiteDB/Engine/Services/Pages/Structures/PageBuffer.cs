@@ -57,6 +57,9 @@ internal class PageBuffer
         this.Timestamp = 0;
         this.IsDirty = false;
         this.Header = new();
+
+        // clear buffer content (needed on FindIndex on header page)
+        this.Buffer.Span.Fill(0);
     }
 
     /// <summary>

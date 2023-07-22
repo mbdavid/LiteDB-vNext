@@ -35,7 +35,6 @@ internal partial class BsonExpressionMethods
         if (source is BsonDocument src && extend is BsonDocument ext)
         {
             throw new NotImplementedException();
-
         }
         else if (source.IsDocument) return source;
         else if (extend.IsDocument) return extend;
@@ -80,9 +79,9 @@ internal partial class BsonExpressionMethods
     /// <summary>
     /// Return CreationTime from ObjectId value - returns null if not an ObjectId
     /// </summary>
-    public static BsonValue OID_CREATIONTIME(BsonValue value)
+    public static BsonValue OID_CREATIONTIME(BsonValue objectID)
     {
-        if (value is not BsonObjectId objId) return BsonValue.Null;
+        if (objectID is not BsonObjectId objId) return BsonValue.Null;
 
         return objId.Value.CreationTime;
     }
@@ -114,9 +113,8 @@ internal partial class BsonExpressionMethods
         if (value is BsonBinary bin) return bin.Value.Length;
         if (value is BsonArray arr) return arr.Count;
         if (value is BsonDocument doc) return doc.Keys.Count;
-        if (value.IsNull) return value;
 
-        return BsonValue.Null;
+        return 0;
     }
 
     /// <summary>
@@ -152,9 +150,9 @@ internal partial class BsonExpressionMethods
     /// <summary>
     /// Returns a unique list of items
     /// </summary>
-    public static IEnumerable<BsonValue> DISTINCT(IEnumerable<BsonValue> items)
+    public static IEnumerable<BsonValue> DISTINCT(BsonValue values)
     {
-        return items.Distinct();
+        throw new NotImplementedException();
     }
 
     /// <summary>

@@ -114,6 +114,7 @@ internal partial class BsonExpressionMethods
 
         if (value is BsonString str && culture is BsonString cult)
         {
+            //TODO: re-use same cultureinfo instance
             var cultureInfo = new CultureInfo(cult.Value); // en-US
 
             if (double.TryParse(str, NumberStyles.Any, cultureInfo.NumberFormat, out var val))

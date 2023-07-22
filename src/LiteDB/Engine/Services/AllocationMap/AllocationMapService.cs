@@ -251,7 +251,7 @@ internal class AllocationMapService : IAllocationMapService
                 _ => null
             };
 
-            ENSURE(list is not null, list!.Contains(pageID), $"page {pageID} already in this list");
+            ENSURE(list is not null, list!.Contains(pageID) == false, $"page {pageID} already in this list");
 
             // insert (if has a list) this pageID in a correct free bucket 
             list?.Insert(pageID);

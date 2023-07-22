@@ -249,7 +249,7 @@ internal class Transaction : ITransaction
         // add pages to cache or decrement sharecount
         foreach (var page in _localPages.Values)
         {
-            if (page.IsDirty)
+            if (page.IsDirty || page.Header.ColID == MASTER_COL_ID)
             {
                 _bufferFactory.DeallocatePage(page);
             }

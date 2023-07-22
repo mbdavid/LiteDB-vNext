@@ -4,61 +4,56 @@ global using LiteDB;
 global using LiteDB.Engine;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using Bogus;
 
-var doc = new BsonDocument
+Randomizer.Seed = new Random(420);
+
+var filename = @"C:\temp\test-03.db";
+
+File.Delete(filename);
+
+var settings = new EngineSettings
 {
-    ["_id"] = 1,
-    ["first"] = "Mauricio",
-    ["last"] = "david",
-    ["age"] = 45,
-    ["address"] = new BsonDocument
-    {
-        ["street"] = "av pernambuco",
-        ["number"] = 123
-    },
-    ["primary"] = 51,
-    ["phones"] = new BsonArray
-    {
-        new BsonDocument { ["ddd"] = 51, ["number"] = "123" },
-        new BsonDocument { ["ddd"] = 11, ["number"] = "456" },
-        new BsonDocument { ["ddd"] = 21, ["number"] = "789" },
-    }
+    Filename = filename
 };
 
-var parameters = new BsonDocument
+var db = new LiteEngine(settings);
+
+var data = GetData(10, 0);
+
+await db.OpenAsync();
+
+await db.CreateCollectionAsync("col1");
+
+await db.InsertAsync("col1", data, BsonAutoId.Int32);
+
+var cursor = db.Query("col1", new Query { Select = "name" });
+
+var result = await db.FetchAsync(cursor, 100);
+
+
+Console.WriteLine("Results: " + result);
+
+foreach(var item in result.Results)
 {
-    ["qrcode"] = "237467846234263",
-    ["usuario"] = new BsonDocument
-    {
-        ["_id"] = 15,
-        ["nome"] = "jose",
-    }
-};
+    Console.WriteLine(item.ToString());
+}
 
-
-//BsonExpression expr = "$"
-
-// _id, age
-
-var exprA = Create("10 between 5 and 20");
-
-
-//var exprA = Between(Path(Root(), "age"), MakeArray(new BsonExpression[] { Constant(30), Constant(50) }));
-//var exprB = Create("age between 30 and 50");
-//
-//Console.WriteLine(exprA == exprB);
-//
-//Console.WriteLine("Expr A: " + exprA.ToString());
-//Console.WriteLine("Expr B: " + exprB.ToString());
-//
-//
-var result = exprA.Execute(doc, parameters);
-
-//Console.WriteLine(exprB.ToString());
-//Console.WriteLine("-----------------------------");
-Console.WriteLine("Result: " + result.ToString());
-//Console.WriteLine(result.Type);
-//
+await db.ShutdownAsync();
 
 
 Console.WriteLine("\n\nEnd");
+
+
+BsonDocument[] GetData(int count, int lorem)
+{
+    var faker = new Faker();
+
+    return Enumerable.Range(1, count).Select(x => new BsonDocument
+    {
+        ["_id"] = x,
+        ["name"] = faker.Name.FullName(),
+        ["age"] = faker.Random.Number(15, 80),
+        ["lorem"] = lorem == 0 ? BsonValue.Null : faker.Lorem.Sentence(lorem)
+    }).ToArray();
+}

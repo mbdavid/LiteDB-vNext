@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LiteDB\LiteDB.csproj" />
+	<PackageReference Include="Bogus" Version="34.0.2" />
   </ItemGroup>
-
+	
 </Project>
