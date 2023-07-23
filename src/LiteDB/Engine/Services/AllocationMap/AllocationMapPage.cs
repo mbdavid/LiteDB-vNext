@@ -18,6 +18,8 @@ internal class AllocationMapPage
 
     public PageBuffer Page => _page;
 
+    public int AllocationMapID => _allocationMapID;
+
     /// <summary>
     /// Create a new AllocationMapPage
     /// </summary>
@@ -53,7 +55,7 @@ internal class AllocationMapPage
     /// <summary>
     /// Read all allocation map page and populate collectionFreePages from AllocationMap service instance
     /// </summary>
-    public void ReadAllocationMap(CollectionFreePages[] collectionFreePages)
+    public void ReadAllocationMap()
     {
         // if this page contais all empty extends, there is no need to read all buffer
         if (_emptyExtends.Count == AM_EXTEND_COUNT) return;
@@ -83,10 +85,10 @@ internal class AllocationMapPage
                 var pagesBytes = span.Slice(position + 1, AM_BYTES_PER_EXTEND - 1);
 
                 // get (or create) free page lists from collection
-                var freePages = collectionFreePages[colID] ??= new CollectionFreePages();
+                // var freePages = collectionFreePages[colID] ??= new CollectionFreePages();
 
                 // read all extend pages and add to collection free pages
-                this.ReadExtend(freePages, extendIndex, pagesBytes);
+                this.ReadExtend(extendIndex, pagesBytes);
             }
         }
     }
@@ -94,7 +96,7 @@ internal class AllocationMapPage
     /// <summary>
     /// Read a single extend with 8 pages in 3 bytes. Add pageID into collectionFreePages
     /// </summary>
-    private void ReadExtend(CollectionFreePages freePages, int extendID, Span<byte> pageBytes)
+    private void ReadExtend(int extendID, Span<byte> pageBytes)
     {
         // do not use array to avoid memory allocation on heap
 
@@ -127,30 +129,27 @@ internal class AllocationMapPage
             // get pageID based on extendID
             var pageID = GetBlockPageID(extendID, index);
 
-            var list = pageData switch
-            {
-                0b000 => freePages.EmptyPages,
-                0b001 => freePages.DataPagesLarge,
-                0b010 => freePages.DataPagesMedium,
-                0b011 => freePages.DataPagesSmall,
-                0b100 => null, // data full
-                0b101 => freePages.IndexPages,
-                0b110 => null, // index full
-                0b111 => null, // reserved
-                _ => null
-            };
+            //var list = pageData switch
+            //{
+            //    0b000 => freePages.EmptyPages,
+            //    0b001 => freePages.DataPagesLarge,
+            //    0b010 => freePages.DataPagesMedium,
+            //    0b011 => freePages.DataPagesSmall,
+            //    0b100 => null, // data full
+            //    0b101 => freePages.IndexPages,
+            //    0b110 => null, // index full
+            //    0b111 => null, // reserved
+            //    _ => null
+            //};
 
-            list?.Enqueue(pageID);
         }
     }
 
     /// <summary>
-    /// Create a new extend for a collection. Remove this free extend from emptyExtends
-    /// If there is no more free extends, returns false. Populate freePages with new 8 empty pages for this collection
     /// </summary>
-    public bool CreateNewExtend(byte colID, CollectionFreePages freePages)
+    public int CreateNewExtend(byte colID)
     {
-        if (_emptyExtends.Count == 0) return false;
+        if (_emptyExtends.Count == 0) return -1;
 
         // get a empty extend on this page
         var extendIndex = _emptyExtends.Dequeue();
@@ -161,7 +160,7 @@ internal class AllocationMapPage
         // add all pages as emptyPages in freePages list
         for (var i = 0; i < AM_EXTEND_SIZE; i++)
         {
-            freePages.EmptyPages.Enqueue(firstPageID + i);
+            // freePages.EmptyPages.Enqueue(firstPageID + i);
         }
 
         // get page span
@@ -176,7 +175,7 @@ internal class AllocationMapPage
         // mark page as dirty
         _page.IsDirty = true;
 
-        return true;
+        return extendIndex;
     }
 
     /// <summary>

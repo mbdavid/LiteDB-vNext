@@ -28,6 +28,9 @@ internal class Transaction : ITransaction
     // all writable collections ID (must be lock on init)
     private readonly byte[] _writeCollections;
 
+    // all ammaps for writable collections
+    private readonly AllocationMapSession[] _sessions;
+
     /// <summary>
     /// Read wal version
     /// </summary>
@@ -64,6 +67,13 @@ internal class Transaction : ITransaction
         this.ReadVersion = readVersion; // -1 means not initialized
 
         _writeCollections = writeCollections;
+        _sessions = new AllocationMapSession[writeCollections.Length];
+
+        // for write collection, load all needed sessions on am
+        for (var i = 0; i < writeCollections.Length; i++)
+        {
+            _sessions[i] = _allocationMapService.GetSession(writeCollections[i]);
+        }
     }
 
     /// <summary>
@@ -145,15 +155,11 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetFreePageAsync(byte colID, PageType pageType, int bytesLength)
     {
-        // first check if exists in localPages (TODO: como indexar isso??)
-        var localPage = _localPages.Values
-            .Where(x => x.Header.PageType == pageType && x.Header.FreeBytes >= bytesLength)
-            .FirstOrDefault();
-
-        if (localPage is not null) return localPage;
+        var colIndex = Array.IndexOf(_writeCollections, colID);
+        var session = _sessions[colIndex];
 
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = _allocationMapService.GetFreePageID(colID, pageType, bytesLength);
+        var (pageID, isNew) = session.GetFreePageID(pageType, bytesLength);
 
         if (isNew)
         {
@@ -206,9 +212,6 @@ internal class Transaction : ITransaction
 
         // write pages on disk and flush data
         await _logService.WriteLogPagesAsync(dirtyPages);
-
-        // update allocation map with all dirty pages
-        _allocationMapService.UpdateMap(dirtyPages);
 
         // add pages to cache or decrement sharecount
         foreach(var page in _localPages.Values)
