@@ -4,15 +4,12 @@ internal class AllocationMapSession
 {
     private readonly byte _colID;
 
-    private int _startExtendIndex;
-    private int _startAllocationMapID;
-
-    private int _currentExtendIndex;
-    private int _currentAllocationMapID;
+    private int _currentExtendIndex = -1;
+    private int _currentAllocationMapID = -1;
 
     private byte[] _currentExtendPagesValues = new byte[AM_EXTEND_SIZE]; // armazena a situacao das 8 paginas do extend lido
 
-    private Dictionary<int, byte> _sessionPages = new();
+    private Dictionary<int, uint> _sessionExtends = new();
 
     public AllocationMapSession(byte colID)
     {
@@ -31,19 +28,8 @@ internal class AllocationMapSession
 
     }
 
-    private int GetNextExtend(PageType type, int length)
-    {
-        throw new NotImplementedException();
-        // começa varrendo os extends a partir do _current em diante, até chegar em algum que 
-        // tenha disponivel
-        // retorna a extendID criada
-    }
-
     public void UpdatePage(PageHeader header)
     {
-        // adiciona/atualiza a pageID dentro do _sessionPages (atualizando o value);
-        // deve ser chamado assim que cada pagina for alterada... e não no commit
-        // ps: Se a pagina atualiza for "menor" que o extend atual, poderia voltar (se liberar espaço)
 
     }
 

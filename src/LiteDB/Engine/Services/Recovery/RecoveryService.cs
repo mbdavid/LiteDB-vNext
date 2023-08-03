@@ -239,7 +239,7 @@ internal class RecoveryService : IRecoveryService
                     var value = AllocationMapPage.GetAllocationPageValue(ref page.Header);
 
                     // update page allocation free space
-                    pageMap.UpdateMap(extendIndex, pageIndex, value);
+                    pageMap.UpdateExtendValue(extendIndex, pageIndex, value);
 
                     // move no next position
                     positionID++;

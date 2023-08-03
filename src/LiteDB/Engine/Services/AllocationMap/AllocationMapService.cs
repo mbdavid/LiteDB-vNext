@@ -90,7 +90,7 @@ internal class AllocationMapService : IAllocationMapService
 
         foreach(var page in _pages)
         {
-            if (page.Page.IsDirty)
+            if (page.UpdatePageBuffer())
             {
                 await writer.WritePageAsync(page.Page);
             }
