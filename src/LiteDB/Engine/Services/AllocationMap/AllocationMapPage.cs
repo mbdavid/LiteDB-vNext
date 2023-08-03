@@ -115,14 +115,28 @@ internal class AllocationMapPage
     }
 
     /// <summary>
-    /// Read all extendValues to return the first extendIndex with 
+    /// Read all extendValues to return the first extendID with avaliable space 
     /// </summary>
-    /// <param name="colID"></param>
-    /// <param name="type"></param>
-    /// <param name="length"></param>
-    /// <returns></returns>
     public int GetFreeExtendID(byte colID, PageType type, int length)
     {
+
+        for(var i = 0; i < AM_EXTEND_COUNT; i++)
+        {
+            // get extend value as uint
+            var value = _extendValues[i];
+
+            // check for same colID
+            if (colID != value >> 24) continue;
+
+            if (type == PageType.Data && length < AM_DATA_PAGE_SPACE_SMALL)
+            {
+                // Condição 1
+            }
+
+        }
+
+
+
 
     }
 
