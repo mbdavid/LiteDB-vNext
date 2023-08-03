@@ -25,11 +25,11 @@ internal class Transaction : ITransaction
     // local page cache - contains only data/index pages about this collection
     private readonly Dictionary<int, PageBuffer> _localPages = new();
 
+    // original extend values from all requested writable pages
+    private readonly Dictionary<int, uint> _initialExtendValues = new();
+
     // all writable collections ID (must be lock on init)
     private readonly byte[] _writeCollections;
-
-    // all ammaps for writable collections
-    private readonly AllocationMapSession[] _sessions;
 
     /// <summary>
     /// Read wal version
@@ -67,13 +67,6 @@ internal class Transaction : ITransaction
         this.ReadVersion = readVersion; // -1 means not initialized
 
         _writeCollections = writeCollections;
-        _sessions = new AllocationMapSession[writeCollections.Length];
-
-        // for write collection, load all needed sessions on am
-        for (var i = 0; i < writeCollections.Length; i++)
-        {
-            _sessions[i] = _allocationMapService.GetSession(writeCollections[i]);
-        }
     }
 
     /// <summary>
@@ -110,6 +103,19 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetPageAsync(int pageID, bool writable)
     {
+        // if page can be write, get initial (if not exists yet) extend value (4 bytes)
+        if (writable)
+        {
+            var extendID = 0; //sombrio, calcular a partir do pageID
+
+            if (!_initialExtendValues.ContainsKey(extendID))
+            {
+                var extendValue = _allocationMapService.GetExtendValue(extendID);
+
+                _initialExtendValues.Add(extendID, extendValue);
+            }
+        }
+
         if (_localPages.TryGetValue(pageID, out var page))
         {
             ENSURE(writable, page.ShareCounter == NO_CACHE, "page should not be in cache");
@@ -155,11 +161,17 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetFreePageAsync(byte colID, PageType pageType, int bytesLength)
     {
-        var colIndex = Array.IndexOf(_writeCollections, colID);
-        var session = _sessions[colIndex];
-
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = session.GetFreePageID(pageType, bytesLength);
+        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, pageType, bytesLength);
+
+        var extendID = 0; // sombrio (baseado no pageID)
+
+        if (!_initialExtendValues.ContainsKey(extendID))
+        {
+            var extendValue = _allocationMapService.GetExtendValue(extendID);
+
+            _initialExtendValues.Add(extendID, extendValue);
+        }
 
         if (isNew)
         {
@@ -279,6 +291,14 @@ internal class Transaction : ITransaction
 
         // clear page buffer references
         _localPages.Clear();
+
+        // restore initial values in allocation map to return original state before any change
+        if (_initialExtendValues.Count > 0)
+        {
+            _allocationMapService.RestoreExtendValues(_initialExtendValues);
+        }
+
+        _initialExtendValues.Clear();
     }
 
     public void Dispose()

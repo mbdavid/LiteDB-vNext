@@ -14,10 +14,6 @@ internal class AllocationMapService : IAllocationMapService
     /// </summary>
     private readonly List<AllocationMapPage> _pages = new();
 
-    /// <summary>
-    /// </summary>
-    private readonly AllocationMapSession[] _sessions = new AllocationMapSession[byte.MaxValue + 1];
-
     public AllocationMapService(
         IDiskService diskService, 
         IBufferFactory bufferFactory)
@@ -40,16 +36,6 @@ internal class AllocationMapService : IAllocationMapService
             // add AM page to instance
             _pages.Add(page);
         }
-    }
-
-    /// <summary>
-    /// Get session allocation map for a collection. Reuse same session instance for each collection
-    /// </summary>
-    public AllocationMapSession GetSession(byte colID)
-    {
-        var session = _sessions[colID] ??= new AllocationMapSession(colID);
-
-        return session;
     }
 
     /// <summary>
@@ -82,6 +68,73 @@ internal class AllocationMapService : IAllocationMapService
     }
 
     /// <summary>
+    /// Get a free PageID based on colID/type/length. Create extend or new am page if needed. Return isNew if page are empty (must be initialized)
+    /// </summary>
+    public (int pageID, bool isNew) GetFreeExtend(byte colID, PageType type, int length)
+    {
+        foreach(var page in _pages)
+        {
+            var (extendIndex, pageIndex, isNew) = page.GetFreeExtend(colID, type, length);
+
+            if (extendIndex != -1)
+            {
+                var pageID = 0; // sombrio (pageIndex)
+
+                return (pageID, isNew);
+            }
+        }
+
+        var extendLocation = this.CreateNewExtend(colID);
+
+        var firstPageID = extendLocation.FirstPageID;
+
+        return (firstPageID, true);
+    }
+
+    /// <summary>
+    /// Get an extend value from a extendID (global). This extendID should be already exists
+    /// </summary>
+    public uint GetExtendValue(int extendID)
+    {
+        var extendLocation = new ExtendLocation(extendID);
+
+        var page = _pages[extendLocation.AllocationMapID];
+
+        return page.GetExtendValue(extendLocation.ExtendIndex);
+    }
+
+    /// <summary>
+    /// Update allocation page map according with header page type and used bytes
+    /// </summary>
+    public void UpdatePageMap(ref PageHeader header)
+    {
+        var allocationMapID = 0;
+        var extendIndex = 0;
+        var pageIndex = 0;
+
+        var page = _pages[allocationMapID];
+
+        var pageValue = AllocationMapPage.GetAllocationPageValue(ref header);
+
+        page.UpdateExtendPageValue(extendIndex, pageIndex, pageValue);
+    }
+
+    /// <summary>
+    /// In a rollback error, should return all initial values to used extends
+    /// </summary>
+    public void RestoreExtendValues(IDictionary<int, uint> extendValues)
+    {
+        foreach(var extendValue in extendValues)
+        {
+            var extendLocation = new ExtendLocation(extendValue.Key);
+
+            var page = _pages[extendLocation.AllocationMapID];
+
+            page.SetExtendValue(extendLocation.ExtendIndex, extendValue.Value);
+        }
+    }
+
+    /// <summary>
     /// Write all dirty pages direct into disk (there is no log file to amp)
     /// </summary>
     public async ValueTask WriteAllChangesAsync()
@@ -99,7 +152,7 @@ internal class AllocationMapService : IAllocationMapService
 
     /// <summary>
     /// </summary>
-    public ExtendLocation CreateNewExtend(byte colID)
+    private ExtendLocation CreateNewExtend(byte colID)
     {
         //TODO: lock, pois não pode ter 2 threads aqui
 

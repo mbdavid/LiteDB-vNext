@@ -74,6 +74,35 @@ internal class AllocationMapPage
     }
 
     /// <summary>
+    /// Get a extend value from this page based on extend index
+    /// </summary>
+    public uint GetExtendValue(int extendIndex) => _extendValues[extendIndex];
+
+    public void SetExtendValue(int extendIndex, uint value) => _extendValues[extendIndex] = value;
+
+    /// <summary>
+    /// Read all extendValues to return the first extendIndex with avaliable space. Returns pageIndex for this pag
+    /// Returns -1 if has no extend with this condition.
+    /// </summary>
+    public (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(byte colID, PageType type, int length)
+    {
+        for (var i = 0; i < AM_EXTEND_COUNT; i++)
+        {
+            // get extend value as uint
+            var extendValue = _extendValues[i];
+
+            var (pageIndex, isNew) = HasFreeSpaceInExtend(extendValue, colID, type, length);
+
+            if (pageIndex != -1)
+            {
+                return (i, pageIndex, isNew);
+            }
+        }
+
+        return (-1, 0, false);
+    }
+
+    /// <summary>
     /// Create a new extend (if contains empty extends) and return new extendIndex or -1 if has no more empty extends
     /// </summary>
     public int CreateNewExtend(byte colID)
@@ -95,7 +124,7 @@ internal class AllocationMapPage
     /// <summary>
     /// Update extend value based on extendIndex (0-2039) and pageIndex (0-7). PageValue should be 0-7
     /// </summary>
-    public void UpdateExtendValue(int extendIndex, int pageIndex, uint pageValue)
+    public void UpdateExtendPageValue(int extendIndex, int pageIndex, uint pageValue)
     {
         // get extend value from array
         var value = _extendValues[extendIndex];
@@ -120,25 +149,6 @@ internal class AllocationMapPage
         _isDirty = true;
     }
 
-    /// <summary>
-    /// Read all extendValues to return the first extendIndex with avaliable space 
-    /// Returns -1 if has no extend with this condition.
-    /// </summary>
-    public int GetFreeExtend(byte colID, PageType type, int length)
-    {
-        for (var i = 0; i < AM_EXTEND_COUNT; i++)
-        {
-            // get extend value as uint
-            var extendValue = _extendValues[i];
-
-            if (HasFreeSpaceInExtend(extendValue, colID, type, length) != -1)
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
 
     /// <summary>
     /// Get PageID from a block page based on ExtendIndex (0-2039) and PageIndex (0-7)
@@ -173,10 +183,11 @@ internal class AllocationMapPage
     #region Static Helpers
 
     /// <summary>
-    /// Returns true is extend is from same colID and has at least 1 page with space avaiable
+    /// Check if extend value contains a page that fit on request (type/length)
+    /// Returns pageIndex if found or -1 if this extend has no space. Returns if page is new (empty)
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int HasFreeSpaceInExtend(uint extendValue, byte colID, PageType type, int length)
+    public static (int pageIndex, bool isNew) HasFreeSpaceInExtend(uint extendValue, byte colID, PageType type, int length)
     {
         // extendValue (colID + 8 pages values)
 
@@ -185,9 +196,9 @@ internal class AllocationMapPage
         //  ColID      00011122   23334445   55666777
 
         // check for same colID
-        if (colID != extendValue >> 24) return -1;
+        if (colID != extendValue >> 24) return (-1, false);
 
-        uint result = 0;
+        uint result;
 
         if (type == PageType.Data && length <= AM_DATA_PAGE_SPACE_SMALL)
         {
@@ -250,7 +261,7 @@ internal class AllocationMapPage
         }
         else
         {
-            return -1;
+            return (-1, false);
         }
 
         if (result > 0)
@@ -268,11 +279,11 @@ internal class AllocationMapPage
                 _ => throw new NotSupportedException()
             };
 
-            return pageIndex;
+            return (pageIndex, false); //sombrio
         }
         else
         {
-            return -1;
+            return (-1, false);
         }
     }
 
