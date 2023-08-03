@@ -34,11 +34,8 @@ internal class AllocationMapService : IAllocationMapService
         // read all allocation maps pages on disk
         await foreach (var pageBuffer in this.ReadAllocationMapPages())
         {
-            // get page buffer from disk
+            // read all page buffer into an int array
             var page = new AllocationMapPage(pageBuffer);
-
-            // read all collection map in memory
-            page.ReadAllocationMap();
 
             // add AM page to instance
             _pages.Add(page);

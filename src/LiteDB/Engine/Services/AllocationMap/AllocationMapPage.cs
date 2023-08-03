@@ -1,5 +1,3 @@
-using static System.Net.Mime.MediaTypeNames;
-
 namespace LiteDB.Engine;
 
 /// <summary>
@@ -12,26 +10,31 @@ namespace LiteDB.Engine;
 /// </summary>
 internal class AllocationMapPage
 {
-    private readonly int _pageID;
-
     private readonly int _allocationMapID;
+
+    private readonly PageBuffer _page;
 
     private readonly uint[] _extendValues = new uint[AM_EXTEND_COUNT];
 
     private readonly Queue<int> _emptyExtends;
 
-    public bool IsDirty = false;
+    private bool _isDirty = false;
 
     public int AllocationMapID => _allocationMapID;
+
+    public PageBuffer Page => _page;
 
     /// <summary>
     /// Create a new AllocationMapPage
     /// </summary>
     public AllocationMapPage(int pageID, PageBuffer page)
     {
+        // keep pageBuffer instance
+        _page = page;
+
         // update page header
-        page.Header.PageID = pageID;
-        page.Header.PageType = PageType.AllocationMap;
+        _page.Header.PageID = pageID;
+        _page.Header.PageType = PageType.AllocationMap;
 
         // get allocationMapID
         _allocationMapID = GetAllocationMapID(pageID);
@@ -45,13 +48,16 @@ internal class AllocationMapPage
     /// </summary>
     public AllocationMapPage(PageBuffer page)
     {
+        // keep pageBuffer instance
+        _page = page;
+
         // get allocationMapID
         _allocationMapID = GetAllocationMapID(page.Header.PageID);
 
         // create an empty list of extends
         _emptyExtends = new Queue<int>(AM_EXTEND_COUNT);
 
-        var span = page.AsSpan(PAGE_HEADER_SIZE);
+        var span = _page.AsSpan(PAGE_HEADER_SIZE);
 
         // read all page
         for(var i = 0; i < AM_EXTEND_COUNT; i++)
@@ -81,7 +87,7 @@ internal class AllocationMapPage
         _extendValues[extendIndex] = (uint)(colID << 24);
 
         // mark page as dirty
-        this.IsDirty = true;
+        _isDirty = true;
 
         return extendIndex;
     }
@@ -97,47 +103,41 @@ internal class AllocationMapPage
         // update value (3 bits) according pageIndex (can update 1 or 2 bytes)
         var extendValue = pageIndex switch
         {
-            0 => (value * 0b11111111_00011111_11111111_11111111) + (uint)(pageValue << 21),
-            1 => (value * 0b11111111_11100011_11111111_11111111) + (uint)(pageValue << 18),
-            2 => (value * 0b11111111_11111100_01111111_11111111) + (uint)(pageValue << 15),
-            3 => (value * 0b11111111_11111111_10001111_11111111) + (uint)(pageValue << 12),
-            4 => (value * 0b11111111_11111111_11110001_11111111) + (uint)(pageValue << 9),
-            5 => (value * 0b11111111_11111111_11111110_00111111) + (uint)(pageValue << 6),
-            6 => (value * 0b11111111_11111111_11111111_11000111) + (uint)(pageValue << 3),
-            7 => (value * 0b11111111_11111111_11111111_11111000) + (uint)(pageValue),
+            0 => (value & 0b11111111_00011111_11111111_11111111) | (uint)(pageValue << 21),
+            1 => (value & 0b11111111_11100011_11111111_11111111) | (uint)(pageValue << 18),
+            2 => (value & 0b11111111_11111100_01111111_11111111) | (uint)(pageValue << 15),
+            3 => (value & 0b11111111_11111111_10001111_11111111) | (uint)(pageValue << 12),
+            4 => (value & 0b11111111_11111111_11110001_11111111) | (uint)(pageValue << 9),
+            5 => (value & 0b11111111_11111111_11111110_00111111) | (uint)(pageValue << 6),
+            6 => (value & 0b11111111_11111111_11111111_11000111) | (uint)(pageValue << 3),
+            7 => (value & 0b11111111_11111111_11111111_11111000) | (uint)(pageValue),
             _ => throw new InvalidOperationException()
         };
 
         _extendValues[extendIndex] = extendValue;
 
         // mark page as dirty (in map page this should be manual)
-        this.IsDirty = true;
+        _isDirty = true;
     }
 
     /// <summary>
-    /// Read all extendValues to return the first extendID with avaliable space 
+    /// Read all extendValues to return the first extendIndex with avaliable space 
+    /// Returns -1 if has no extend with this condition.
     /// </summary>
-    public int GetFreeExtendID(byte colID, PageType type, int length)
+    public int GetFreeExtend(byte colID, PageType type, int length)
     {
-
-        for(var i = 0; i < AM_EXTEND_COUNT; i++)
+        for (var i = 0; i < AM_EXTEND_COUNT; i++)
         {
             // get extend value as uint
-            var value = _extendValues[i];
+            var extendValue = _extendValues[i];
 
-            // check for same colID
-            if (colID != value >> 24) continue;
-
-            if (type == PageType.Data && length < AM_DATA_PAGE_SPACE_SMALL)
+            if (HasFreeSpaceInExtend(extendValue, colID, type, length))
             {
-                // Condição 1
+                return i;
             }
-
         }
 
-
-
-
+        return -1;
     }
 
     /// <summary>
@@ -150,7 +150,63 @@ internal class AllocationMapPage
              pageIndex + 1);
     }
 
+    /// <summary>
+    /// Update PageBuffer instance with changed arrays. Returns false if there is no change
+    /// </summary>
+    public bool UpdatePageBuffer()
+    {
+        if (!_isDirty) return false;
+
+        var span = _page.AsSpan(PAGE_HEADER_SIZE);
+        var pos = 0;
+
+        for(var i = 0; i < AM_EXTEND_COUNT; i++)
+        {
+            span[pos..].WriteUInt32(_extendValues[i]);
+
+            pos += AM_BYTES_PER_EXTEND;
+        }
+
+        return true;
+    }
+
     #region Static Helpers
+
+    /// <summary>
+    /// Returns true is extend is from same colID and has at least 1 page with space avaiable
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool HasFreeSpaceInExtend(uint extendValue, byte colID, PageType type, int length)
+    {
+        //  01234567   01234567   01234567   01234567
+        // [________] [________] [________] [________]
+        //  ColID      00011122   23334445   55666777
+
+        // check for same colID
+        if (colID != extendValue >> 24) return false;
+
+        if (type == PageType.Data && length < AM_DATA_PAGE_SPACE_SMALL)
+        {
+            var result = (extendValue & 0b00000000_100_100_100_100_100_100_100_100) 
+                ^ 0b00000000_100_100_100_100_100_100_100_100;
+
+            return result > 0;
+        }
+        else if (type == PageType.Data && length < AM_DATA_PAGE_SPACE_MEDIUM)
+        {
+            var notA = (extendValue & 0b00000000_100_100_100_100_100_100_100_100) ^ 0b00000000_100_100_100_100_100_100_100_100;
+            var notB = (extendValue & 0b00000000_010_010_010_010_010_010_010_010) ^ 0b00000000_010_010_010_010_010_010_010_010;
+            var notC = (extendValue & 0b00000000_001_001_001_001_001_001_001_001) ^ 0b00000000_001_001_001_001_001_001_001_001;
+            var b = extendValue & 0b00000000_010_010_010_010_010_010_010_010;
+
+            var result = (notA & notB) | (notA & notC & b);
+
+            return result > 0;
+
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Returns a AllocationMapID from a allocation map pageID. Must return 0, 1, 2, 3
