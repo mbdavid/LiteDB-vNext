@@ -21,10 +21,4 @@ internal class BsonNull : BsonValue
     }
 
     #endregion
-
-    #region Convert Types
-
-    public override string ToString() => "[Null]";
-
-    #endregion
 }

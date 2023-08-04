@@ -65,7 +65,7 @@ internal partial class LogService : ILogService
         var writer = _diskService.GetDiskWriter();
 
         // set IsDirty flag in header file to true at first use
-        if (!_factory.FileHeader.IsDirty)
+        if (_factory.FileHeader.IsDirty == false)
         {
             _factory.FileHeader.IsDirty = true;
 

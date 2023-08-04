@@ -50,7 +50,7 @@ internal class IndexInEnumerator : IPipeEnumerator
         }
         else
         {
-            var pipeValue = await _currentIdexer.MoveNextAsync(context);
+            var pipeValue = await _currentIdexer!.MoveNextAsync(context);
 
             if(pipeValue.IsEmpty) _init = false;
 

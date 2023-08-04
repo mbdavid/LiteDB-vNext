@@ -18,25 +18,26 @@ internal class MapBsonExpression : BsonExpression
 
     internal override BsonValue Execute(BsonExpressionContext context)
     {
-        IEnumerable<BsonValue> source()
+        return new BsonArray(getSource(this.Source, this.Selector, context));
+
+        static IEnumerable<BsonValue> getSource(BsonExpression source, BsonExpression selector, BsonExpressionContext context)
         {
-            var src = this.Source.Execute(context);
+            var src = source.Execute(context);
 
-            if (!src.IsArray) yield break;
-
-            foreach(var item in src.AsArray)
+            if (src is BsonArray array)
             {
-                context.Current = item;
+                foreach (var item in array)
+                {
+                    context.Current = item;
 
-                var value = this.Selector.Execute(context);
+                    var value = selector.Execute(context);
 
-                yield return value;
+                    yield return value;
 
-                context.Current = context.Root;
+                    context.Current = context.Root;
+                }
             }
         };
-
-        return new BsonArray(source());
     }
 
     public override bool Equals(BsonExpression expr) =>

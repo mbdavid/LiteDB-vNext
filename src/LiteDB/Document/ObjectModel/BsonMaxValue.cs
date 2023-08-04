@@ -21,10 +21,4 @@ internal class BsonMaxValue : BsonValue
     }
 
     #endregion
-
-    #region Convert Types
-
-    public override string ToString() => "[MaxValue]";
-
-    #endregion
 }

@@ -56,13 +56,11 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue INT32(BsonValue value)
     {
-        if (value.IsNumber)
+        if (value.IsNumber) return value.ToInt32();
+
+        if (value is BsonString str)
         {
-            return value.ToInt32();
-        }
-        else if(value.IsString)
-        {
-            if (int.TryParse(value.AsString, out var val))
+            if (int.TryParse(str.Value, out var val))
             {
                 return val;
             }
@@ -76,13 +74,11 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue INT64(BsonValue value)
     {
-        if (value.IsNumber)
+        if (value.IsNumber) return value.ToInt64();
+
+        if (value is BsonString str)
         {
-            return value.ToInt64();
-        }
-        else if(value.IsString)
-        {
-            if (long.TryParse(value.AsString, out var val))
+            if (long.TryParse(str.Value, out var val))
             {
                 return val;
             }
@@ -96,13 +92,11 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue DOUBLE(Collation collation, BsonValue value)
     {
-        if (value.IsNumber)
+        if (value.IsNumber) return value.ToDouble();
+
+        if (value is BsonString str)
         {
-            return value.ToDouble();
-        }
-        else if(value.IsString)
-        {
-            if (double.TryParse(value.AsString, NumberStyles.Any, collation.Culture.NumberFormat, out var val))
+            if (double.TryParse(str.Value, NumberStyles.Any, collation.Culture.NumberFormat, out var val))
             {
                 return val;
             }
@@ -116,15 +110,14 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue DOUBLE(BsonValue value, BsonValue culture)
     {
-        if (value.IsNumber)
-        {
-            return value.ToDouble();
-        }
-        else if(value.IsString && culture.IsString)
-        {
-            var c = new CultureInfo(culture.AsString); // en-US
+        if (value.IsNumber) return value.ToDouble();
 
-            if (double.TryParse(value.AsString, NumberStyles.Any, c.NumberFormat, out var val))
+        if (value is BsonString str && culture is BsonString cult)
+        {
+            //TODO: re-use same cultureinfo instance
+            var cultureInfo = new CultureInfo(cult.Value); // en-US
+
+            if (double.TryParse(str, NumberStyles.Any, cultureInfo.NumberFormat, out var val))
             {
                 return val;
             }
@@ -138,13 +131,11 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue DECIMAL(Collation collation, BsonValue value)
     {
-        if (value.IsNumber)
+        if (value.IsNumber) return value.ToDecimal();
+
+        if (value is BsonString str)
         {
-            return value.ToDecimal();
-        }
-        else if(value.IsString)
-        {
-            if (decimal.TryParse(value.AsString, NumberStyles.Any, collation.Culture.NumberFormat, out var val))
+            if (decimal.TryParse(str, NumberStyles.Any, collation.Culture.NumberFormat, out var val))
             {
                 return val;
             }
@@ -158,15 +149,13 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue DECIMAL(BsonValue value, BsonValue culture)
     {
-        if (value.IsNumber)
-        {
-            return value.ToDecimal();
-        }
-        else if(value.IsString && culture.IsString)
-        {
-            var c = new CultureInfo(culture.AsString); // en-US
+        if (value.IsNumber) return value.ToDecimal();
 
-            if (decimal.TryParse(value.AsString, NumberStyles.Any, c.NumberFormat, out var val))
+        if (value is BsonString str && culture is BsonString cult)
+        {
+            var cultureInfo = new CultureInfo(cult.Value); // en-US
+
+            if (decimal.TryParse(str, NumberStyles.Any, cultureInfo.NumberFormat, out var val))
             {
                 return val;
             }
@@ -191,15 +180,13 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue BINARY(BsonValue value)
     {
-        if (value.IsBinary)
-        {
-            return value;
-        }
-        else if (value.IsString)
+        if (value.IsBinary) return value;
+
+        if (value is BsonString str)
         {
             try
             {
-                var data = Convert.FromBase64String(value.AsString);
+                var data = Convert.FromBase64String(str);
 
                 return data;
             }
@@ -216,15 +203,13 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue OBJECTID(BsonValue value)
     {
-        if (value.IsObjectId)
-        {
-            return value.AsObjectId;
-        }
-        else if(value.IsString)
+        if (value.IsObjectId) return value;
+
+        if(value is BsonString str)
         {
             try
             {
-                var val = new ObjectId(value.AsString);
+                var val = new ObjectId(str.Value);
                 
                 return val;
             }
@@ -241,13 +226,11 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue GUID(BsonValue value)
     {
-        if (value.IsGuid)
+        if (value.IsGuid) return value;
+
+        if(value is BsonString str)
         {
-            return value.AsGuid;
-        }
-        else if(value.IsString)
-        {
-            if (Guid.TryParse(value.AsString, out var guid))
+            if (Guid.TryParse(str, out var guid))
             {
                 return guid;
             }
@@ -269,13 +252,11 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue DATETIME(Collation collation, BsonValue value)
     {
-        if (value.IsDateTime)
+        if (value.IsDateTime) return value.AsDateTime;
+
+        if (value is BsonString str)
         {
-            return value.AsDateTime;
-        }
-        else if(value.IsString)
-        {
-            if (DateTime.TryParse(value.AsString, collation.Culture.DateTimeFormat, DateTimeStyles.None, out var date))
+            if (DateTime.TryParse(str.Value, collation.Culture.DateTimeFormat, DateTimeStyles.None, out var date))
             {
                 return date;
             }
@@ -289,15 +270,13 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue DATETIME(BsonValue value, BsonValue culture)
     {
-        if (value.IsDateTime)
-        {
-            return value.AsDateTime;
-        }
-        else if(value.IsString && culture.IsString)
-        {
-            var c = new CultureInfo(culture.AsString); // en-US
+        if (value.IsDateTime) return value.AsDateTime;
 
-            if (DateTime.TryParse(value.AsString, c.DateTimeFormat, DateTimeStyles.None, out var date))
+        if (value is BsonString str && culture is BsonString cult)
+        {
+            var cultureIndo = new CultureInfo(cult.Value); // en-US
+
+            if (DateTime.TryParse(str, cultureIndo.DateTimeFormat, DateTimeStyles.None, out var date))
             {
                 return date;
             }
@@ -311,13 +290,11 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue DATETIME_UTC(Collation collation, BsonValue value)
     {
-        if (value.IsDateTime)
+        if (value.IsDateTime) return value.AsDateTime;
+
+        if (value is BsonString str)
         {
-            return value.AsDateTime;
-        }
-        else if(value.IsString)
-        {
-            if (DateTime.TryParse(value.AsString, collation.Culture.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var date))
+            if (DateTime.TryParse(str.Value, collation.Culture.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var date))
             {
                 return date;
             }
@@ -331,15 +308,13 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue DATETIME_UTC(BsonValue value, BsonValue culture)
     {
-        if (value.IsDateTime)
-        {
-            return value.AsDateTime;
-        }
-        else if(value.IsString && culture.IsString)
-        {
-            var c = new CultureInfo(culture.AsString); // en-US
+        if (value.IsDateTime) return value.AsDateTime;
 
-            if (DateTime.TryParse(value.AsString, c.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var date))
+        if (value is BsonString str && culture is BsonString cult)
+        {
+            var cultureInfo = new CultureInfo(cult.Value); // en-US
+
+            if (DateTime.TryParse(str, cultureInfo.DateTimeFormat, DateTimeStyles.AssumeUniversal, out var date))
             {
                 return date;
             }

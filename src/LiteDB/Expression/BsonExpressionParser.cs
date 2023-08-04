@@ -10,7 +10,7 @@ internal class BsonExpressionParser
     /// <summary>
     /// Operation definition by methods with defined expression type (operators are in precedence order)
     /// </summary>
-    private static readonly Dictionary<string, Func<BsonExpression, BsonExpression, BsonExpression>> _operators = new ()
+    private static readonly Dictionary<string, Func<BsonExpression, BsonExpression, BsonExpression>> _operators = new (StringComparer.OrdinalIgnoreCase)
     {
         // map function
         ["=>"] = BsonExpression.Map,
@@ -411,9 +411,9 @@ internal class BsonExpressionParser
 
         var method = BsonExpression.GetMethod(token.Value, parameters.Count);
 
-        if (method is null) throw ERR_UNEXPECTED_TOKEN($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token);
-
-        return BsonExpression.Call(method, parameters.ToArray());
+        return method is null
+            ? throw ERR_UNEXPECTED_TOKEN($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token)
+            : BsonExpression.Call(method, parameters.ToArray());
     }
 
     /// <summary>

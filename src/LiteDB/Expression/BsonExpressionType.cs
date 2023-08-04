@@ -48,12 +48,12 @@ public enum BsonExpressionType : byte
     Empty = 255
 }
 
-public static class BsonExpressionExtensions
+internal static class BsonExpressionExtensions
 {
     /// <summary>
     /// Returns if BsonExpressionType is a predicate (return a boolean). AND/OR are not in this list
     /// </summary>
-    public static bool IsPredicate(this BsonExpressionType type)
+    internal static bool IsPredicate(this BsonExpressionType type)
     {
         return type == BsonExpressionType.Equal ||
                type == BsonExpressionType.Like ||

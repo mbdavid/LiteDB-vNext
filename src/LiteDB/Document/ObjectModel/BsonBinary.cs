@@ -28,10 +28,4 @@ public class BsonBinary : BsonValue
     }
 
     #endregion
-
-    #region Convert Types
-
-    public override string ToString() => "[" + Convert.ToBase64String(this.Value) + "]";
-
-    #endregion
 }

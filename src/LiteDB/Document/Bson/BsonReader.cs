@@ -81,7 +81,7 @@ public class BsonReader : IBsonReader
                 return skip ? null : new BsonString(span.Slice(1 + varSLen, strLength).ReadString());
 
             case BsonTypeCode.Document:
-                var doc = this.ReadDocument(span[1..], null, skip, out var docLength);
+                var doc = this.ReadDocument(span[1..], Array.Empty<string>(), skip, out var docLength);
                 length = 1 + docLength;
                 return doc;
 

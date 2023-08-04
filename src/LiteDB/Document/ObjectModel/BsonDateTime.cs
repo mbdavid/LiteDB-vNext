@@ -30,10 +30,4 @@ internal class BsonDateTime : BsonValue
     }
 
     #endregion
-
-    #region Convert Types
-
-    public override string ToString() => this.Value.ToString("o");
-
-    #endregion
 }

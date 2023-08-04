@@ -217,11 +217,6 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
         return bytes;
     }
 
-    public override string ToString()
-    {
-        return BitConverter.ToString(this.ToByteArray()).Replace("-", "").ToLower();
-    }
-
     #endregion
 
     #region Operators

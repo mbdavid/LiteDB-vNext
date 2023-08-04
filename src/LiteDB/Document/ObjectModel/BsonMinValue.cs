@@ -21,10 +21,4 @@ internal class BsonMinValue : BsonValue
     }
 
     #endregion
-
-    #region Convert Types
-
-    public override string ToString() => "[MinValue]";
-
-    #endregion
 }

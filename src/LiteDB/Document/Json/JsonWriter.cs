@@ -52,7 +52,7 @@ public class JsonWriter
                 break;
 
             case BsonType.Boolean:
-                _writer.Write(value.AsBoolean.ToString().ToLower());
+                _writer.Write(value.AsBoolean ? "true" : "false");
                 break;
 
             case BsonType.String:
