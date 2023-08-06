@@ -84,7 +84,7 @@ internal class QueryOptimization : IQueryOptimization
                 throw ERR($"Invalid WHERE expression: {predicate}");
             }
         }
-        else
+        else if (predicate is not EmptyBsonExpression)
         {
             throw ERR($"Invalid WHERE expression: {predicate}");
         }
