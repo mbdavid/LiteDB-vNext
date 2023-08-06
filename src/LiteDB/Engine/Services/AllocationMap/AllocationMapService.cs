@@ -68,9 +68,11 @@ internal class AllocationMapService : IAllocationMapService
     }
 
     /// <summary>
-    /// Get a free PageID based on colID/type/length. Create extend or new am page if needed. Return isNew if page are empty (must be initialized)
+    /// Get a free PageID and ExtendID based on colID/type/length. 
+    /// Create extend or new am page if needed. 
+    /// Return isNew if page are empty (must be initialized)
     /// </summary>
-    public (int pageID, bool isNew) GetFreeExtend(byte colID, PageType type, int length)
+    public (int pageID, int extendIndex, bool isNew) GetFreeExtend(byte colID, PageType type, int length)
     {
         foreach(var page in _pages)
         {
@@ -78,17 +80,16 @@ internal class AllocationMapService : IAllocationMapService
 
             if (extendIndex != -1)
             {
-                var pageID = 0; // sombrio (pageIndex)
-
-                return (pageID, isNew);
+                return (page.GetBlockPageID(extendIndex, pageIndex), extendIndex, isNew);
             }
         }
 
         var extendLocation = this.CreateNewExtend(colID);
+        var amPage = _pages[extendLocation.AllocationMapID];
 
-        var firstPageID = extendLocation.FirstPageID;
+        var firstPageID = amPage.GetBlockPageID(extendLocation.ExtendID, 0);
 
-        return (firstPageID, true);
+        return (firstPageID, extendLocation.ExtendIndex, true);
     }
 
     /// <summary>

@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct ExtendLocation
+internal readonly struct ExtendLocation
 {
     public static ExtendLocation Empty = new(-1, -1);
     public static ExtendLocation First = new(0, 0);
@@ -8,13 +8,12 @@ internal struct ExtendLocation
     public readonly int AllocationMapID;
     public readonly int ExtendIndex;
 
-    public int ExtendID => this.IsEmpty ? -1 : (this.AllocationMapID * AM_EXTEND_COUNT) + this.ExtendIndex;
-
-    public int FirstPageID => 0; //sombrio
+    public readonly int ExtendID => this.IsEmpty ? -1 : (this.AllocationMapID * AM_EXTEND_COUNT) + this.ExtendIndex;
 
     public ExtendLocation(int extendID)
     {
-        //sombrio
+        this.AllocationMapID = extendID / AM_EXTEND_COUNT;
+        this.ExtendIndex = extendID % AM_EXTEND_COUNT;
     }
 
     public ExtendLocation(int allocationMapID, int extendIndex)
@@ -23,11 +22,11 @@ internal struct ExtendLocation
         this.ExtendIndex = extendIndex;
     }
 
-    public bool IsEmpty => 
+    public readonly bool IsEmpty => 
         this.AllocationMapID == Empty.AllocationMapID && 
         this.ExtendIndex == Empty.ExtendIndex;
 
-    public ExtendLocation Next()
+    public readonly ExtendLocation Next()
     {
         var allocationMapID = this.AllocationMapID;
         var extendIndex = this.ExtendIndex + 1;
@@ -41,7 +40,7 @@ internal struct ExtendLocation
         return new ExtendLocation(allocationMapID, extendIndex);
     }
 
-    public override string ToString()
+    public override readonly string ToString()
     {
         return $"AMP: {this.AllocationMapID}, ExtIndex: {this.ExtendIndex}, ExtendID: {this.ExtendID}";
     }

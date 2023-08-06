@@ -26,6 +26,7 @@ internal class Transaction : ITransaction
     private readonly Dictionary<int, PageBuffer> _localPages = new();
 
     // original extend values from all requested writable pages
+    // global extendID -> extendValue
     private readonly Dictionary<int, uint> _initialExtendValues = new();
 
     // all writable collections ID (must be lock on init)
@@ -106,7 +107,7 @@ internal class Transaction : ITransaction
         // if page can be write, get initial (if not exists yet) extend value (4 bytes)
         if (writable)
         {
-            var extendID = 0; //sombrio, calcular a partir do pageID
+            var extendID = pageID - pageID / (AM_EXTEND_COUNT + 1) - 1;
 
             if (!_initialExtendValues.ContainsKey(extendID))
             {
@@ -162,9 +163,8 @@ internal class Transaction : ITransaction
     public async ValueTask<PageBuffer> GetFreePageAsync(byte colID, PageType pageType, int bytesLength)
     {
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, pageType, bytesLength);
-
-        var extendID = 0; // sombrio (baseado no pageID)
+        var (pageID, extendIndex, isNew) = _allocationMapService.GetFreeExtend(colID, pageType, bytesLength);
+        var extendID = new ExtendLocation(pageID / (AM_MAP_PAGES_COUNT + 1), extendIndex).ExtendID;
 
         if (!_initialExtendValues.ContainsKey(extendID))
         {
