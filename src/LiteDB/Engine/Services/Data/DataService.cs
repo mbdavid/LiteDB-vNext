@@ -120,6 +120,8 @@ internal class DataService : IDataService
 
         // get current datablock (for first one)
         var page = await _transaction.GetPageAsync(rowID.PageID, true);
+        // HACK: all dirty pages must not have PositionID
+        page.PositionID = int.MaxValue;
         //var dataBlock = new DataBlock(page, rowID);
 
         // TODO: tá implementado só pra 1 pagina
