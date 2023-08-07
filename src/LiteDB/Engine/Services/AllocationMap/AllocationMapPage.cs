@@ -279,7 +279,9 @@ internal class AllocationMapPage
                 _ => throw new NotSupportedException()
             };
 
-            return (pageIndex, false); //sombrio
+            var isEmpty = (extendValue & (0b111 << ((7 - pageIndex) * 3))) == 0;
+
+            return (pageIndex, isEmpty); //sombrio (como verificar se meu pageIndex é uma EmptyPage)
         }
         else
         {

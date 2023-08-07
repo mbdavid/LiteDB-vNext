@@ -186,13 +186,18 @@ internal class Transaction : ITransaction
     /// </summary>
     public void UpdatePageMap(ref PageHeader header)
     {
-        var extendID = 0; // sombrio (baseado no pageID)
+        ENSURE(header.PageType == PageType.Data ||  header.PageType == PageType.Index);
 
-        if (!_initialExtendValues.ContainsKey(extendID))
+        var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
+        var extendIndex = (header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+
+        var extend = new ExtendLocation(allocationMapID, extendIndex);
+
+        if (!_initialExtendValues.ContainsKey(extend.ExtendID))
         {
-            var extendValue = _allocationMapService.GetExtendValue(extendID);
+            var extendValue = _allocationMapService.GetExtendValue(extend);
 
-            _initialExtendValues.Add(extendID, extendValue);
+            _initialExtendValues.Add(extend.ExtendID, extendValue);
         }
 
         _allocationMapService.UpdatePageMap(ref header);
