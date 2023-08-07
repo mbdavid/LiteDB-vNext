@@ -44,6 +44,9 @@ internal class IndexService : IIndexService
         head.SetNext(page, 0, tail.RowID);
         tail.SetPrev(page, 0, head.RowID);
 
+        // update allocation map after page change
+        _transaction.UpdatePageMap(ref page.Header);
+
         return (head, tail);
     }
 
@@ -77,7 +80,10 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreePageAsync(colID, PageType.Index, bytesLength);
 
         // create node in buffer
-        var node = _indexPageService.InsertIndexNode(page,index.Slot, insertLevels, key, dataBlock, bytesLength);
+        var node = _indexPageService.InsertIndexNode(page, index.Slot, insertLevels, key, dataBlock, bytesLength);
+
+        // update allocation map after page change
+        _transaction.UpdatePageMap(ref page.Header);
 
         // now, let's link my index node on right place
         var left = index.Head;

@@ -103,19 +103,6 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetPageAsync(int pageID, bool writable)
     {
-        // if page can be write, get initial (if not exists yet) extend value (4 bytes)
-        if (writable)
-        {
-            var extendID = 0; //sombrio, calcular a partir do pageID
-
-            if (!_initialExtendValues.ContainsKey(extendID))
-            {
-                var extendValue = _allocationMapService.GetExtendValue(extendID);
-
-                _initialExtendValues.Add(extendID, extendValue);
-            }
-        }
-
         if (_localPages.TryGetValue(pageID, out var page))
         {
             ENSURE(writable, page.ShareCounter == NO_CACHE, "page should not be in cache");
@@ -164,15 +151,6 @@ internal class Transaction : ITransaction
         // request for allocation map service a new PageID for this collection
         var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, pageType, bytesLength);
 
-        var extendID = 0; // sombrio (baseado no pageID)
-
-        if (!_initialExtendValues.ContainsKey(extendID))
-        {
-            var extendValue = _allocationMapService.GetExtendValue(extendID);
-
-            _initialExtendValues.Add(extendID, extendValue);
-        }
-
         if (isNew)
         {
             var page = _bufferFactory.AllocateNewPage(true);
@@ -199,6 +177,25 @@ internal class Transaction : ITransaction
 
             return page;
         }
+    }
+
+
+    /// <summary>
+    /// Update allocation page map according with header page type and used bytes but keeps a copy
+    /// of original extend value (if need rollback)
+    /// </summary>
+    public void UpdatePageMap(ref PageHeader header)
+    {
+        var extendID = 0; // sombrio (baseado no pageID)
+
+        if (!_initialExtendValues.ContainsKey(extendID))
+        {
+            var extendValue = _allocationMapService.GetExtendValue(extendID);
+
+            _initialExtendValues.Add(extendID, extendValue);
+        }
+
+        _allocationMapService.UpdatePageMap(ref header);
     }
 
     /// <summary>

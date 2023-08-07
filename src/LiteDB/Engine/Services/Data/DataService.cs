@@ -12,7 +12,6 @@ internal class DataService : IDataService
     private readonly IDataPageService _dataPageService;
     private readonly IBsonReader _bsonReader;
     private readonly IBsonWriter _bsonWriter;
-
     private readonly ITransaction _transaction;
 
     public DataService(
@@ -24,7 +23,6 @@ internal class DataService : IDataService
         _dataPageService = dataPageService;
         _bsonReader = bsonReader;
         _bsonWriter = bsonWriter;
-
         _transaction = transaction;
     }
 
@@ -56,6 +54,9 @@ internal class DataService : IDataService
             var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc, PageAddress.Empty);
 
             firstBlock = dataBlock.RowID;
+
+            // update allocation map after page change
+            _transaction.UpdatePageMap(ref page.Header);
         }
         // multiple pages
         else
@@ -92,6 +93,9 @@ internal class DataService : IDataService
                     nextBlock);
 
                 nextBlock = dataBlock.RowID;
+
+                // update allocation map after each page change
+                _transaction.UpdatePageMap(ref pages[i].Header);
             }
 
             firstBlock = nextBlock;
@@ -124,6 +128,9 @@ internal class DataService : IDataService
 
         // TODO: tá implementado só pra 1 pagina
         _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(0, docLength), PageAddress.Empty);
+
+        // update allocation map after change page
+        _transaction.UpdatePageMap(ref page.Header);
 
         // return array to pool
         ArrayPool<byte>.Shared.Return(bufferDoc);
@@ -166,6 +173,9 @@ internal class DataService : IDataService
         // delete first data block
         _dataPageService.DeleteDataBlock(page, rowID.Index);
 
+        // update allocation map after change page
+        _transaction.UpdatePageMap(ref page.Header);
+
         // keeping deleting all next pages/data blocks until nextBlock is empty
         while (!dataBlock.NextBlock.IsEmpty)
         {
@@ -176,6 +186,9 @@ internal class DataService : IDataService
 
             // delete datablock
             _dataPageService.DeleteDataBlock(page, dataBlock.NextBlock.Index);
+
+            // update allocation map after change page
+            _transaction.UpdatePageMap(ref page.Header);
         }
     }
 
