@@ -134,7 +134,7 @@ internal class CacheService : ICacheService
     {
         Interlocked.Decrement(ref page.ShareCounter);
 
-        ENSURE(page.ShareCounter < 0, $"ShareCounter cached page {page} must be large than 0");
+        ENSURE(page.ShareCounter >= 0, $"ShareCounter cached page {page} must be large than 0");
     }
 
     /// <summary>

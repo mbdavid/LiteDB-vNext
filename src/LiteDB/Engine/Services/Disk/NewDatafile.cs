@@ -54,13 +54,13 @@ internal class NewDatafile : INewDatafile
         // create new/empty $master document
         var master = new MasterDocument();
         var masterDoc = _masterMapper.MapToDocument(master);
-        var masterBuffer = ArrayPool<byte>.Shared.Rent(masterDoc.GetBytesCount());
+        using var masterBuffer = SharedBuffer.Rent(masterDoc.GetBytesCount());
 
         // serialize $master document 
-        _bsonWriter.WriteDocument(masterBuffer, masterDoc, out _);
+        _bsonWriter.WriteDocument(masterBuffer.AsSpan(), masterDoc, out _);
 
         // insert $master document into master page
-        _dataPageService.InsertDataBlock(masterPage, masterBuffer, PageAddress.Empty);
+        _dataPageService.InsertDataBlock(masterPage, masterBuffer.AsSpan(), PageAddress.Empty);
 
         // initialize fixed position id 
         mapPage.PositionID = 0;
@@ -74,9 +74,6 @@ internal class NewDatafile : INewDatafile
         // deallocate buffers
         _bufferFactory.DeallocatePage(mapPage);
         _bufferFactory.DeallocatePage(masterPage);
-
-        // returns array to pool
-        ArrayPool<byte>.Shared.Return(masterBuffer);
 
         return fileHeader;
     }

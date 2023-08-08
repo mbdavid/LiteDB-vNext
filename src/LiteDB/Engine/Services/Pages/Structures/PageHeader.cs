@@ -208,5 +208,5 @@ internal struct PageHeader
         segment.Length > 0 && segment.Length <= (PAGE_SIZE - PAGE_HEADER_SIZE - this.FooterSize);
 
     public override string ToString() =>
-        $"[PageID: {this.PageID}; PosID: {this.PositionID}; {this.PageType}; ColID: {this.ColID}; TransID: {this.TransactionID}, FreeBytes: {this.FreeBytes}, {(this.IsConfirmed ? "C" : "")}]";
+        $"[PageID: {this.PageID}; PosID: {this.PositionID}; {this.PageType}; ColID: {this.ColID}; TransID: {this.TransactionID}, ItemsCount: {this.ItemsCount}, FreeBytes: {this.FreeBytes}, {(this.IsConfirmed ? "C" : "")}]";
 }

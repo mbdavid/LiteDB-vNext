@@ -36,10 +36,10 @@ internal class DataService : IDataService
         //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
         // rent an array to fit all document serialized
-        var bufferDoc = ArrayPool<byte>.Shared.Rent(docLength);
+        using var bufferDoc = SharedBuffer.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
-        _bsonWriter.WriteDocument(bufferDoc, doc, out _);
+        _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         var bytesToCopy = Math.Min(docLength, MAX_DATA_BYTES_PER_PAGE);
 
@@ -51,7 +51,7 @@ internal class DataService : IDataService
         // one single page
         if (bytesToCopy <= docLength)
         {
-            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc, PageAddress.Empty);
+            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(), PageAddress.Empty);
 
             firstBlock = dataBlock.RowID;
 
@@ -101,9 +101,6 @@ internal class DataService : IDataService
             firstBlock = nextBlock;
         }
 
-        // return array after use
-        ArrayPool<byte>.Shared.Return(bufferDoc);
-
         return firstBlock;
     }
 
@@ -117,23 +114,20 @@ internal class DataService : IDataService
         //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
         // rent an array to fit all document serialized
-        var bufferDoc = ArrayPool<byte>.Shared.Rent(docLength);
+        using var bufferDoc = SharedBuffer.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
-        _bsonWriter.WriteDocument(bufferDoc, doc, out _);
+        _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get current datablock (for first one)
         var page = await _transaction.GetPageAsync(rowID.PageID, true);
         //var dataBlock = new DataBlock(page, rowID);
 
         // TODO: tá implementado só pra 1 pagina
-        _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(0, docLength), PageAddress.Empty);
+        _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(), PageAddress.Empty);
 
         // update allocation map after change page
         _transaction.UpdatePageMap(ref page.Header);
-
-        // return array to pool
-        ArrayPool<byte>.Shared.Return(bufferDoc);
     }
 
     /// <summary>

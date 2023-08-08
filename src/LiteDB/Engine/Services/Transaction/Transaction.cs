@@ -138,6 +138,12 @@ internal class Transaction : ITransaction
             page = _bufferFactory.AllocateNewPage(writable);
 
             await _reader.ReadPageAsync(positionID, page);
+
+            // clear PositionID in writable page
+            if (writable)
+            {
+                page.PositionID = int.MaxValue;
+            }
         }
 
         return page;
@@ -179,7 +185,6 @@ internal class Transaction : ITransaction
         }
     }
 
-
     /// <summary>
     /// Update allocation page map according with header page type and used bytes but keeps a copy
     /// of original extend value (if need rollback)
@@ -191,13 +196,14 @@ internal class Transaction : ITransaction
         var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
         var extendIndex = (header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
 
-        var extend = new ExtendLocation(allocationMapID, extendIndex);
+        var extendLocation = new ExtendLocation(allocationMapID, extendIndex);
+        var extendID = extendLocation.ExtendID;
 
-        if (!_initialExtendValues.ContainsKey(extend.ExtendID))
+        if (!_initialExtendValues.ContainsKey(extendID))
         {
-            var extendValue = _allocationMapService.GetExtendValue(extend);
+            var extendValue = _allocationMapService.GetExtendValue(extendLocation);
 
-            _initialExtendValues.Add(extend.ExtendID, extendValue);
+            _initialExtendValues.Add(extendID, extendValue);
         }
 
         _allocationMapService.UpdatePageMap(ref header);
@@ -305,8 +311,6 @@ internal class Transaction : ITransaction
 
     public void Dispose()
     {
-        ENSURE(_localPages.Count == 0, $"no pages in transaction before dispose");
-
         // return reader if used
         if (_reader is not null)
         {

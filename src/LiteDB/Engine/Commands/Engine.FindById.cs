@@ -30,7 +30,10 @@ public partial class LiteEngine : ILiteEngine
         if (node is null) return null;
 
         // read full document based on first datablock
-        var doc = await dataService.ReadDocumentAsync(node.Value.Node.RowID, fields);
+        var doc = await dataService.ReadDocumentAsync(node.Value.Node.DataBlock, fields);
+
+        // rollback transaction to release pages back to cache
+        transaction.Rollback();
 
         // release transaction
         monitorService.ReleaseTransaction(transaction);

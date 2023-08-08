@@ -267,6 +267,8 @@ internal partial class LogService : ILogService
 
         await stream.ReadPageAsync(positionID, page);
 
+
+
         return page;
     }
 

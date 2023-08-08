@@ -156,17 +156,12 @@ internal partial class BsonExpressionMethods
     }
 
     /// <summary>
-    /// Static random instance
-    /// </summary>
-    private static Random _random = new();
-
-    /// <summary>
     /// Return a random int value
     /// </summary>
     [Volatile]
     public static BsonValue RANDOM()
     {
-        return _random.Next();
+        return Randomizer.Next();
     }
 
     /// <summary>
@@ -177,7 +172,7 @@ internal partial class BsonExpressionMethods
     {
         if (min is BsonInt32 bmin && max is BsonInt32 bmax)
         {
-            return _random.Next(bmin, bmax);
+            return Randomizer.Next(bmin, bmax);
         }
         else
         {

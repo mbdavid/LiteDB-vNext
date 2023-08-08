@@ -11,7 +11,6 @@ internal class IndexService : IIndexService
     private readonly IIndexPageService _indexPageService;
     private readonly ITransaction _transaction;
     private readonly Collation _collation;
-    private readonly Random _random; // do not use as static (Random are not thread safe)
 
     public IndexService(
         IIndexPageService indexPageService,
@@ -21,8 +20,6 @@ internal class IndexService : IIndexService
         _indexPageService = indexPageService;
         _collation = collation;
         _transaction = transaction;
-
-        _random = new();
     }
 
     /// <summary>
@@ -155,7 +152,7 @@ internal class IndexService : IIndexService
     {
         byte levels = 1;
 
-        for (int R = _random.Next(); (R & 1) == 1; R >>= 1)
+        for (int R = Randomizer.Next(); (R & 1) == 1; R >>= 1)
         {
             levels++;
             if (levels == INDEX_MAX_LEVELS) break;
