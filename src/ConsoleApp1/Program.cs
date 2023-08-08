@@ -27,20 +27,20 @@ await db.CreateCollectionAsync("col1");
 
 await db.InsertAsync("col1", data, BsonAutoId.Int32);
 
-//var cursor = db.Query("col1", new Query());
-//
-//var result = await db.FetchAsync(cursor, 100);
-//
-//
-//Console.WriteLine("Results: " + result);
-//
-//foreach (var item in result.Results)
-//{
-//    Console.WriteLine(item.ToString());
-//}
+var cursor = db.Query("col1", new Query());
 
-var um = await db.FindById("col1", 1, Array.Empty<string>());
-var dois = await db.FindById("col1", 2, Array.Empty<string>());
+var result = await db.FetchAsync(cursor, 100);
+
+
+Console.WriteLine("Results: " + result);
+
+foreach (var item in result.Results)
+{
+    Console.WriteLine(item.ToString());
+}
+
+//var um = await db.FindById("col1", 1, Array.Empty<string>());
+//var dois = await db.FindById("col1", 2, Array.Empty<string>());
 
 
 await db.ShutdownAsync();

@@ -34,6 +34,10 @@ public partial class LiteEngine : ILiteEngine
         // fetch next results (closes cursor when eof)
         var result = await queryService.FetchAsync(cursor, fetchSize, pipeContext);
 
+        // rollback transaction to release pages back to cache
+        transaction.Rollback();
+
+        // release transaction
         monitorService.ReleaseTransaction(transaction);
 
         return result;

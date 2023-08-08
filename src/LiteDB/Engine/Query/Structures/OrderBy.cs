@@ -18,4 +18,9 @@ public struct OrderBy
         this.Expression = expression;
         this.Order = order;
     }
+
+    public override string ToString()
+    {
+        return this.IsEmpty ? "<EMPTY>" : $"Expr: {this.Expression}, Order: {this.Order}";
+    }
 }

@@ -108,5 +108,5 @@ internal class PageBuffer
 
     }
 
-    public override string ToString() => $"PageID: {Header.PageID} / PositionID: {this.PositionID}";
+    public override string ToString() => $"PageID: {Header.PageID.DumpID()} / PositionID: {this.PositionID.DumpID()}";
 }

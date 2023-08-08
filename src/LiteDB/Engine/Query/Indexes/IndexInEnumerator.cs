@@ -11,7 +11,7 @@ internal class IndexInEnumerator : IPipeEnumerator
 
     private int _index = -1;
 
-    private IndexEqualsEnumerator? _currentIdexer;
+    private IndexEqualsEnumerator? _currentIndex;
 
     public IndexInEnumerator(
         BsonArray values,
@@ -44,15 +44,15 @@ internal class IndexInEnumerator : IPipeEnumerator
                 return PipeValue.Empty;
             }
 
-            _currentIdexer = new IndexEqualsEnumerator(value, _indexDocument, _collation);
+            _currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation);
 
-            return await _currentIdexer.MoveNextAsync(context);
+            return await _currentIndex.MoveNextAsync(context);
         }
         else
         {
-            var pipeValue = await _currentIdexer!.MoveNextAsync(context);
+            var pipeValue = await _currentIndex!.MoveNextAsync(context);
 
-            if(pipeValue.IsEmpty) _init = false;
+            if (pipeValue.IsEmpty) _init = false;
 
             return pipeValue;
         }

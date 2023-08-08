@@ -30,30 +30,36 @@ internal class IndexAllEnumerator : IPipeEnumerator
         if (_eof) return PipeValue.Empty;
 
         var indexService = context.IndexService;
+        var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
+        var end = _order == Query.Ascending ? _indexDocument.Tail : _indexDocument.Head;
 
         // in first run, gets head node
         if (!_init)
         {
             _init = true;
 
-            var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
-
             var nodeRef = await indexService.GetNodeAsync(start, false);
 
-            // get pointer to next
+            // get pointer to first element 
             _next = nodeRef.Node.GetNextPrev(0, _order);
 
-            return new PipeValue(nodeRef.Node.RowID);
+            // check if not empty
+            if (_next == end)
+            {
+                _eof = true;
+
+                return PipeValue.Empty;
+            }
         }
+
         // go forward
-        if (!_next.IsEmpty)
+        if (_next != end || _next.IsEmpty)
         {
             var nodeRef = await indexService.GetNodeAsync(_next, false);
 
             _next = nodeRef.Node.GetNextPrev(0, _order);
 
-            return new PipeValue(nodeRef.Node.RowID);
-
+            return new PipeValue(nodeRef.Node.DataBlock);
         }
 
         _eof = true;
