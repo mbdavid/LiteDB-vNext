@@ -77,8 +77,6 @@ internal class Transaction : ITransaction
         // enter transaction lock
         await _lockService.EnterTransactionAsync();
 
-        _lockCounter = 1;
-
         for(var i = 0; i < _writeCollections.Length; i++)
         {
             // enter in all
@@ -317,11 +315,9 @@ internal class Transaction : ITransaction
             _diskService.ReturnDiskReader(_reader);
         }
 
-        if (_lockCounter == 0) return; // no locks
-
-        while (_lockCounter > 1)
+        while (_lockCounter > 0)
         {
-            _lockService.ExitCollectionWriteLock(_writeCollections[_lockCounter - 2]);
+            _lockService.ExitCollectionWriteLock(_writeCollections[_lockCounter - 1]);
             _lockCounter--;
         }
 

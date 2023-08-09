@@ -20,21 +20,29 @@ internal static class ObjectDumpExtensions
 
         void Append(string name, object? value)
         {
-            if (sb.Length > 0) sb.Append(", ");
-
-            sb.Append($"{name} = ");
-
             if (value is null)
             {
-                sb.Append("null");
+                sb.Append($"{name} = null");
             }
-            else if (value is Array arr)
+            else 
             {
-                sb.Append($"[{arr.Length}]");
-            }
-            else
-            {
-                sb.Append(value.ToString());
+                var type = value.GetType();
+
+                if (Reflection.IsDictionary(type))
+                {
+                    if (sb.Length > 0) sb.Append(", ");
+                    sb.Append($"{name} = [{(value as IDictionary)!.Count}]");
+                }
+                else if (Reflection.IsCollection(type))
+                {
+                    if (sb.Length > 0) sb.Append(", ");
+                    sb.Append($"{name} = [{(value as ICollection)!.Count}]");
+                }
+                else if (Reflection.IsSimpleType(type))
+                {
+                    if (sb.Length > 0) sb.Append(", ");
+                    sb.Append($"{name} = {value}");
+                }
             }
         }
 
@@ -51,6 +59,32 @@ internal static class ObjectDumpExtensions
             }
         }
 
-        return "{ " + sb.ToString() + " }";
+        return sb.Length > 0 ? $"{{ {sb} }}" : "";
+    }
+
+    public static string PrettyName(this Type type)
+    {
+        var str = type.Name;
+
+        str = Regex.Replace(str, @"^<(.*)>.*", "$1");
+
+        return str;
+    }
+
+    /// <summary>
+    /// A quick-simple expression string cleanner
+    /// </summary>
+    public static string Clean(this Expression e)
+    {
+        var str = e.ToString();
+
+        str = Regex.Replace(str, @"value\(.*?\)\.", "");
+        str = Regex.Replace(str, @"^value\(.*\.(.*)\)$", "$1");
+        str = Regex.Replace(str, @" AndAlso ", " && ");
+        str = Regex.Replace(str, @" OrElse ", " || ");
+
+        str = Regex.Replace(str, @"^\((.*)\)$", "$1");
+
+        return str;
     }
 }
