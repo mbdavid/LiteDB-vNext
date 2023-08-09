@@ -81,7 +81,7 @@ internal class BinaryBsonExpression : BsonExpression
         other.Right.Equals(this.Right) &&
         other.Type == this.Type;
 
-    public override int GetHashCode() => HASH(this.Left, this.Right, this.Type);
+    public override int GetHashCode() => HashCode.Combine(this.Left, this.Right, this.Type);
 
     public override string ToString()
     {

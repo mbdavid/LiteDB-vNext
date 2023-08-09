@@ -74,6 +74,8 @@ internal class QueryService : IQueryService
             else if (count < fetchSize)
             {
                 list.Add(item.Document!);
+
+                count++;
             }
             else
             {

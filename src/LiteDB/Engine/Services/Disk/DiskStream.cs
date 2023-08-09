@@ -38,7 +38,7 @@ internal class DiskStream : IDiskStream
 
         var read = await _stream.ReadAsync(buffer, ct);
 
-        ENSURE(read != PAGE_HEADER_SIZE, $"file too small");
+        ENSURE(() => read != PAGE_HEADER_SIZE);
 
         var header = new FileHeader(buffer);
 
@@ -128,8 +128,8 @@ internal class DiskStream : IDiskStream
 
     public async ValueTask WritePageAsync(PageBuffer page, CancellationToken ct = default)
     {
-        ENSURE(page.IsDirty);
-        ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have defined Position before WriteAsync");
+        ENSURE(() => page.IsDirty);
+        ENSURE(() => page.PositionID != int.MaxValue);
 
         // update crc8 page
         page.Header.Crc8 = page.ComputeCrc8();

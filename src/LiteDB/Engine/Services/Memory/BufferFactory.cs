@@ -39,7 +39,7 @@ internal class BufferFactory : IBufferFactory
 
     public void DeallocatePage(PageBuffer page)
     {
-        ENSURE(page.ShareCounter == NO_CACHE, "ShareCounter must be 0 before return page to memory");
+        ENSURE(() => page.ShareCounter == NO_CACHE, "ShareCounter must be 0 before return page to memory");
 
         // clear buffer position/sharecounter
         page.Reset();

@@ -78,7 +78,7 @@ internal class AllocationMapService : IAllocationMapService
 
             if (extendIndex != -1)
             {
-                var pageID = 0; // sombrio (pageIndex)
+                var pageID = page.AllocationMapID * AM_PAGE_STEP + extendIndex * AM_EXTEND_SIZE + 1 + pageIndex;
 
                 return (pageID, isNew);
             }
@@ -94,13 +94,11 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Get an extend value from a extendID (global). This extendID should be already exists
     /// </summary>
-    public uint GetExtendValue(int extendID)
+    public uint GetExtendValue(ExtendLocation extend)
     {
-        var extendLocation = new ExtendLocation(extendID);
+        var page = _pages[extend.AllocationMapID];
 
-        var page = _pages[extendLocation.AllocationMapID];
-
-        return page.GetExtendValue(extendLocation.ExtendIndex);
+        return page.GetExtendValue(extend.ExtendIndex);
     }
 
     /// <summary>
@@ -108,9 +106,9 @@ internal class AllocationMapService : IAllocationMapService
     /// </summary>
     public void UpdatePageMap(ref PageHeader header)
     {
-        var allocationMapID = 0;
-        var extendIndex = 0;
-        var pageIndex = 0;
+        var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
+        var extendIndex = (header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+        var pageIndex = header.PageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE;
 
         var page = _pages[allocationMapID];
 

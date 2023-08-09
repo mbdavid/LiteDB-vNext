@@ -73,10 +73,11 @@ internal class Constants
     /// [001] - 1 - Data  (between 91% and 99.99% free) [LARGE]
     /// [010] - 2 - Data  (between 51% and 90% free)  [MEDIUM]
     /// [011] - 3 - Data  (between 31% and 50% free)  [SMALL]
-    /// [100] - 4 - Data  (between 0% and 30% free - page full)
     /// --
-    /// [101] - 5 - Index (between 8160 and 1050 bytes free)
-    /// [110] - 6 - Index (between 1049 and 0 bytes free)
+    /// [100] - 4 - Index (between 8160 and 1050 bytes free)
+    /// --
+    /// [101] - 5 - Data  (between 0% and 30% free - page full)
+    /// [110] - 6 - Index (between 1049 and 0 bytes free - page full)
     /// [111] - 7 - reserved
     /// </summary>
     public const int AM_DATA_PAGE_SPACE_LARGE  = (int)(PAGE_CONTENT_SIZE * 0.9); // 7344;

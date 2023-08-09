@@ -1,8 +1,4 @@
-﻿using LiteDB.Engine.Structures.ErrorHandler;
-
-using System.IO;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 public partial class LiteEngine : ILiteEngine
 {

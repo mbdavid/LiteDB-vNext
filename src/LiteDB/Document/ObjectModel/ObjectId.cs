@@ -277,10 +277,8 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
         }
         catch (Exception)
         {
-            var rnd = new Random();
-
-            _machine = rnd.Next();
-            _pid = (short)rnd.Next(1, 10000);
+            _machine = Randomizer.Next();
+            _pid = (short)Randomizer.Next(1, 10000);
         }
     }
 

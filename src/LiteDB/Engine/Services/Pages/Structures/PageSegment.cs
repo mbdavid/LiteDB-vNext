@@ -44,7 +44,7 @@ internal readonly struct PageSegment
         // create new segment based on location and length from page footer
         var segment = new PageSegment(location, length);
 
-        //ENSURE(page.Header.IsValidSegment(segment), $"invalid segment {segment}");
+        ENSURE(() => page.Header.IsValidSegment(segment), $"Invalid segment {segment}");
 
         return segment;
     }

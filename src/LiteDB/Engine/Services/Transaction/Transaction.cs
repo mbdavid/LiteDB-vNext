@@ -95,7 +95,7 @@ internal class Transaction : ITransaction
             this.ReadVersion = _walIndexService.GetNextReadVersion();
         }
 
-        ENSURE(this.ReadVersion >= _walIndexService.MinReadVersion, $"read version do not exists in wal index: {this.ReadVersion} >= {_walIndexService.MinReadVersion}");
+        ENSURE(() => this.ReadVersion >= _walIndexService.MinReadVersion, $"Read version do not exists in wal index: {this.ReadVersion} >= {_walIndexService.MinReadVersion}");
     }
 
     /// <summary>
@@ -103,22 +103,9 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetPageAsync(int pageID, bool writable)
     {
-        // if page can be write, get initial (if not exists yet) extend value (4 bytes)
-        if (writable)
-        {
-            var extendID = 0; //sombrio, calcular a partir do pageID
-
-            if (!_initialExtendValues.ContainsKey(extendID))
-            {
-                var extendValue = _allocationMapService.GetExtendValue(extendID);
-
-                _initialExtendValues.Add(extendID, extendValue);
-            }
-        }
-
         if (_localPages.TryGetValue(pageID, out var page))
         {
-            ENSURE(writable, page.ShareCounter == NO_CACHE, "page should not be in cache");
+            ENSURE(writable, () => page.ShareCounter == NO_CACHE, "Page should not be in cache");
 
             return page;
         }
@@ -151,6 +138,12 @@ internal class Transaction : ITransaction
             page = _bufferFactory.AllocateNewPage(writable);
 
             await _reader.ReadPageAsync(positionID, page);
+
+            // clear PositionID in writable page
+            if (writable)
+            {
+                page.PositionID = int.MaxValue;
+            }
         }
 
         return page;
@@ -163,15 +156,6 @@ internal class Transaction : ITransaction
     {
         // request for allocation map service a new PageID for this collection
         var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, pageType, bytesLength);
-
-        var extendID = 0; // sombrio (baseado no pageID)
-
-        if (!_initialExtendValues.ContainsKey(extendID))
-        {
-            var extendValue = _allocationMapService.GetExtendValue(extendID);
-
-            _initialExtendValues.Add(extendID, extendValue);
-        }
 
         if (isNew)
         {
@@ -202,6 +186,30 @@ internal class Transaction : ITransaction
     }
 
     /// <summary>
+    /// Update allocation page map according with header page type and used bytes but keeps a copy
+    /// of original extend value (if need rollback)
+    /// </summary>
+    public void UpdatePageMap(ref PageHeader header)
+    {
+        ENSURE(header, header => header.PageType == PageType.Data ||  header.PageType == PageType.Index);
+
+        var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
+        var extendIndex = (header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+
+        var extendLocation = new ExtendLocation(allocationMapID, extendIndex);
+        var extendID = extendLocation.ExtendID;
+
+        if (!_initialExtendValues.ContainsKey(extendID))
+        {
+            var extendValue = _allocationMapService.GetExtendValue(extendLocation);
+
+            _initialExtendValues.Add(extendID, extendValue);
+        }
+
+        _allocationMapService.UpdatePageMap(ref header);
+    }
+
+    /// <summary>
     /// </summary>
     public async ValueTask CommitAsync()
     {
@@ -214,8 +222,8 @@ internal class Transaction : ITransaction
         {
             var page = dirtyPages[i];
 
-            ENSURE(page.ShareCounter == NO_CACHE, "page should not be on cache when saving");
-            ENSURE(page.PositionID == int.MaxValue, "page must be empty position id");
+            ENSURE(() => page.ShareCounter == NO_CACHE, "Page should not be on cache when saving");
+            ENSURE(() => page.PositionID == int.MaxValue);
 
             // update page header
             page.Header.TransactionID = this.TransactionID;
@@ -303,8 +311,6 @@ internal class Transaction : ITransaction
 
     public void Dispose()
     {
-        ENSURE(_localPages.Count == 0, $"no pages in transaction before dispose");
-
         // return reader if used
         if (_reader is not null)
         {
@@ -324,7 +330,7 @@ internal class Transaction : ITransaction
 
         _lockCounter--;
 
-        ENSURE(_localPages.Count == 0, $"missing dispose pages in transaction {this}");
-        ENSURE(_lockCounter == 0, $"missing release lock in transaction {this}");
+        ENSURE(() => _localPages.Count == 0, $"Missing dispose pages in transaction");
+        ENSURE(() =>_lockCounter == 0, $"Missing release lock in transaction");
     }
 }

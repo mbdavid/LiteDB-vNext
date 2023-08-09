@@ -39,7 +39,7 @@ internal class CallBsonExpression : BsonExpression
         other.Parameters.SequenceEqual(this.Parameters) &&
         other.IsVolatile == this.IsVolatile;
 
-    public override int GetHashCode() => HASH(this.Method, this.Parameters);
+    public override int GetHashCode() => HashCode.Combine(this.Method, this.Parameters);
 
     public override string ToString()
     {

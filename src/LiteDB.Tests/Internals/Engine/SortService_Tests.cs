@@ -9,7 +9,7 @@ public class SortService_Tests
     public async Task Sort_ShouldReturnSortedByName_WhenInputUnSortedData()
     {
         // Arrange
-        Randomizer.Seed = new Random(420);
+        Bogus.Randomizer.Seed = new Random(420);
 
         var collation = Collation.Default;
 

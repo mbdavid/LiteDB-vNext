@@ -82,13 +82,15 @@ internal class IncludeEnumerator : IPipeEnumerator
 
             if (indexNode is not null)
             {
-                var refDoc = await context.DataService.ReadDocumentAsync(indexNode.Value.Node.DataBlock, Array.Empty<string>());
+                var refDocResult = await context.DataService.ReadDocumentAsync(indexNode.Value.Node.DataBlock, Array.Empty<string>());
+
+                if (refDocResult.Fail) throw refDocResult.Exception;
 
                 //do not remove $id
                 value.Remove("$ref");
 
                 // copy values from refDocument into current documet (except _id - will keep $id)
-                foreach (var element in refDoc.Where(x => x.Key != "_id"))
+                foreach (var element in refDocResult.Value.AsDocument.Where(x => x.Key != "_id"))
                 {
                     value[element.Key] = element.Value;
                 }

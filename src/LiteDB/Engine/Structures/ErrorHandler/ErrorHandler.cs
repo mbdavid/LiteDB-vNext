@@ -1,4 +1,4 @@
-﻿namespace LiteDB.Engine.Structures.ErrorHandler;
+﻿namespace LiteDB.Engine;
 
 internal static class ErrorHandler
 {

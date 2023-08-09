@@ -65,7 +65,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
 
                 if (!node.Key.IsMinValue && !node.Key.IsMaxValue)
                 { 
-                    return new PipeValue(firstRef.Value.Node.RowID);
+                    return new PipeValue(firstRef.Value.Node.DataBlock);
                 }
             }
         }

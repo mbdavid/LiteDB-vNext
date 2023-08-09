@@ -68,6 +68,8 @@ internal class QueryOptimization : IQueryOptimization
     /// </summary>
     private void SplitWhereInTerms(BsonExpression predicate)
     {
+        if (predicate.IsEmpty) return;
+
         if (predicate is BinaryBsonExpression bin)
         {
             if (bin.IsPredicate || bin.Type == BsonExpressionType.Or)

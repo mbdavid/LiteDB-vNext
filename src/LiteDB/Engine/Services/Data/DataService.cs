@@ -12,7 +12,6 @@ internal class DataService : IDataService
     private readonly IDataPageService _dataPageService;
     private readonly IBsonReader _bsonReader;
     private readonly IBsonWriter _bsonWriter;
-
     private readonly ITransaction _transaction;
 
     public DataService(
@@ -24,7 +23,6 @@ internal class DataService : IDataService
         _dataPageService = dataPageService;
         _bsonReader = bsonReader;
         _bsonWriter = bsonWriter;
-
         _transaction = transaction;
     }
 
@@ -38,10 +36,10 @@ internal class DataService : IDataService
         //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
         // rent an array to fit all document serialized
-        var bufferDoc = ArrayPool<byte>.Shared.Rent(docLength);
+        using var bufferDoc = SharedBuffer.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
-        _bsonWriter.WriteDocument(bufferDoc, doc, out _);
+        _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         var bytesToCopy = Math.Min(docLength, MAX_DATA_BYTES_PER_PAGE);
 
@@ -53,9 +51,12 @@ internal class DataService : IDataService
         // one single page
         if (bytesToCopy <= docLength)
         {
-            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc, PageAddress.Empty);
+            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(), PageAddress.Empty);
 
             firstBlock = dataBlock.RowID;
+
+            // update allocation map after page change
+            _transaction.UpdatePageMap(ref page.Header);
         }
         // multiple pages
         else
@@ -92,13 +93,13 @@ internal class DataService : IDataService
                     nextBlock);
 
                 nextBlock = dataBlock.RowID;
+
+                // update allocation map after each page change
+                _transaction.UpdatePageMap(ref pages[i].Header);
             }
 
             firstBlock = nextBlock;
         }
-
-        // return array after use
-        ArrayPool<byte>.Shared.Return(bufferDoc);
 
         return firstBlock;
     }
@@ -113,26 +114,26 @@ internal class DataService : IDataService
         //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
         // rent an array to fit all document serialized
-        var bufferDoc = ArrayPool<byte>.Shared.Rent(docLength);
+        using var bufferDoc = SharedBuffer.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
-        _bsonWriter.WriteDocument(bufferDoc, doc, out _);
+        _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get current datablock (for first one)
         var page = await _transaction.GetPageAsync(rowID.PageID, true);
         //var dataBlock = new DataBlock(page, rowID);
 
         // TODO: tá implementado só pra 1 pagina
-        _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(0, docLength), PageAddress.Empty);
+        _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(), PageAddress.Empty);
 
-        // return array to pool
-        ArrayPool<byte>.Shared.Return(bufferDoc);
+        // update allocation map after change page
+        _transaction.UpdatePageMap(ref page.Header);
     }
 
     /// <summary>
     /// Read a single document in a single/multiple pages
     /// </summary>
-    public async ValueTask<BsonDocument> ReadDocumentAsync(PageAddress rowID, string[] fields)
+    public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress rowID, string[] fields)
     {
         var page = await _transaction.GetPageAsync(rowID.PageID, false);
 
@@ -143,10 +144,10 @@ internal class DataService : IDataService
 
         if (dataBlock.NextBlock.IsEmpty)
         {
-            var doc = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
+            var result = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
                 fields, false, out var _);
 
-            return doc!;
+            return result;
         }
         else
         {
@@ -166,6 +167,9 @@ internal class DataService : IDataService
         // delete first data block
         _dataPageService.DeleteDataBlock(page, rowID.Index);
 
+        // update allocation map after change page
+        _transaction.UpdatePageMap(ref page.Header);
+
         // keeping deleting all next pages/data blocks until nextBlock is empty
         while (!dataBlock.NextBlock.IsEmpty)
         {
@@ -176,6 +180,9 @@ internal class DataService : IDataService
 
             // delete datablock
             _dataPageService.DeleteDataBlock(page, dataBlock.NextBlock.Index);
+
+            // update allocation map after change page
+            _transaction.UpdatePageMap(ref page.Header);
         }
     }
 

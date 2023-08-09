@@ -10,17 +10,20 @@ internal struct ExtendLocation
 
     public int ExtendID => this.IsEmpty ? -1 : (this.AllocationMapID * AM_EXTEND_COUNT) + this.ExtendIndex;
 
-    public int FirstPageID => 0; //sombrio
+    public int FirstPageID => this.AllocationMapID * AM_PAGE_STEP + this.ExtendIndex * AM_EXTEND_SIZE + 1;
 
     public ExtendLocation(int extendID)
     {
-        //sombrio
+        this.AllocationMapID = extendID / AM_EXTEND_COUNT;
+        this.ExtendIndex = extendID % AM_EXTEND_COUNT;
     }
 
     public ExtendLocation(int allocationMapID, int extendIndex)
     {
         this.AllocationMapID = allocationMapID;
         this.ExtendIndex = extendIndex;
+
+        ENSURE(() => extendIndex < AM_EXTEND_COUNT);
     }
 
     public bool IsEmpty => 

@@ -184,4 +184,6 @@ internal static class StringExtensions
             str[26..29] + '-' +
             str[29..];
     }
+
+    public static string DumpID(this int id) => id == int.MaxValue ? "**" : id.ToString().PadLeft(4, '0');
 }

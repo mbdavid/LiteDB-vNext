@@ -11,8 +11,10 @@ internal class DataServiceLookup : IDocumentLookup
 
     public async ValueTask<BsonDocument> LoadAsync(PipeValue key, PipeContext context)
     {
-        var doc = await context.DataService.ReadDocumentAsync(key.RowID, _fields);
+        var result = await context.DataService.ReadDocumentAsync(key.RowID, _fields);
 
-        return doc;
+        if (result.Fail) throw result.Exception;
+
+        return result.Value.AsDocument;
     }
 }

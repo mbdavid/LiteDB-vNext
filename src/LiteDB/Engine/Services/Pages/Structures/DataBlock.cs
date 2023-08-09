@@ -34,7 +34,8 @@ internal struct DataBlock
     {
         this.RowID = rowID;
 
-        ENSURE(page.Header.PageID == rowID.PageID, $"PageID {page.Header.PageID} and RowID.PageID {rowID.PageID} must be the same value");
+        ENSURE(() => page.Header.PageID == rowID.PageID, $"PageID {page.Header.PageID} and RowID.PageID {rowID.PageID} must be the same value");
+        ENSURE(() => page.Header.PageType == PageType.Data);
 
         var segment = PageSegment.GetSegment(page, rowID.Index, out _);
         var span = page.AsSpan(segment);

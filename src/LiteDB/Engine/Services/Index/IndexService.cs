@@ -11,7 +11,6 @@ internal class IndexService : IIndexService
     private readonly IIndexPageService _indexPageService;
     private readonly ITransaction _transaction;
     private readonly Collation _collation;
-    private readonly Random _random; // do not use as static (Random are not thread safe)
 
     public IndexService(
         IIndexPageService indexPageService,
@@ -21,8 +20,6 @@ internal class IndexService : IIndexService
         _indexPageService = indexPageService;
         _collation = collation;
         _transaction = transaction;
-
-        _random = new();
     }
 
     /// <summary>
@@ -43,6 +40,9 @@ internal class IndexService : IIndexService
         // link head-to-tail with double link list in first level
         head.SetNext(page, 0, tail.RowID);
         tail.SetPrev(page, 0, head.RowID);
+
+        // update allocation map after page change
+        _transaction.UpdatePageMap(ref page.Header);
 
         return (head, tail);
     }
@@ -77,7 +77,10 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreePageAsync(colID, PageType.Index, bytesLength);
 
         // create node in buffer
-        var node = _indexPageService.InsertIndexNode(page,index.Slot, insertLevels, key, dataBlock, bytesLength);
+        var node = _indexPageService.InsertIndexNode(page, index.Slot, insertLevels, key, dataBlock, bytesLength);
+
+        // update allocation map after page change
+        _transaction.UpdatePageMap(ref page.Header);
 
         // now, let's link my index node on right place
         var left = index.Head;
@@ -149,7 +152,7 @@ internal class IndexService : IIndexService
     {
         byte levels = 1;
 
-        for (int R = _random.Next(); (R & 1) == 1; R >>= 1)
+        for (int R = Randomizer.Next(); (R & 1) == 1; R >>= 1)
         {
             levels++;
             if (levels == INDEX_MAX_LEVELS) break;
