@@ -133,7 +133,7 @@ internal class DataService : IDataService
     /// <summary>
     /// Read a single document in a single/multiple pages
     /// </summary>
-    public async ValueTask<BsonDocument> ReadDocumentAsync(PageAddress rowID, string[] fields)
+    public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress rowID, string[] fields)
     {
         var page = await _transaction.GetPageAsync(rowID.PageID, false);
 
@@ -144,10 +144,10 @@ internal class DataService : IDataService
 
         if (dataBlock.NextBlock.IsEmpty)
         {
-            var doc = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
+            var result = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
                 fields, false, out var _);
 
-            return doc!;
+            return result;
         }
         else
         {
