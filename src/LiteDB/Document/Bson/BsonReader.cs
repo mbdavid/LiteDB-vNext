@@ -41,14 +41,14 @@ public class BsonReader : IBsonReader
 
                 if (valueResult.Fail)
                 {
-                    return new(doc, valueResult.Exception!);
+                    return new(doc, valueResult.Exception);
                 }
 
                 offset += valueLength;
 
                 if (fieldSkip == false)
                 {
-                    doc.Add(key, valueResult.Value!);
+                    doc.Add(key, valueResult.Value);
                 }
             }
 
@@ -80,11 +80,11 @@ public class BsonReader : IBsonReader
 
                 if (valueResult.Ok)
                 {
-                    array.Add(valueResult.Value!);
+                    array.Add(valueResult.Value);
                 }
                 else
                 {
-                    return new(array, valueResult.Exception!);
+                    return new(array, valueResult.Exception);
                 }
 
                 offset += valueLength;

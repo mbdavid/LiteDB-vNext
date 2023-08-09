@@ -118,9 +118,9 @@ internal static class SpanExtensions
     {
         var result = _reader.ReadValue(span, false, out length)!; // skip = false - always returns a BsonValue
 
-        if (result.Fail) throw result.Exception!;
+        if (result.Fail) throw result.Exception;
 
-        return result.Value!;
+        return result.Value;
     }
 
     #endregion

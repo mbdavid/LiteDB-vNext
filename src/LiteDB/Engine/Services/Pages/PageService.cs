@@ -25,7 +25,7 @@ internal class PageService : IPageService
         // calculate how many continuous bytes are available in this page
         var continuousBlocks = header.FreeBytes - header.FragmentedBytes - (isNewInsert ? PageHeader.SLOT_SIZE : 0);
 
-        //ENSURE(continuousBlocks == PAGE_SIZE - header.NextFreeLocation - header.FooterSize - (isNewInsert ? PageHeader.SLOT_SIZE : 0), "continuosBlock must be same as from NextFreePosition");
+        ENSURE(header, header => continuousBlocks == PAGE_SIZE - header.NextFreeLocation - header.FooterSize - (isNewInsert ? PageHeader.SLOT_SIZE : 0), "ContinuosBlock must be same as from NextFreePosition");
 
         // if continuous blocks are not big enough for this data, must run page defrag
         if (bytesLength > continuousBlocks)
@@ -35,7 +35,7 @@ internal class PageService : IPageService
 
         if (index > header.HighestIndex || header.HighestIndex == byte.MaxValue)
         {
-            //ENSURE(index == (byte)(header.HighestIndex + 1), "new index must be next highest index");
+            ENSURE(header, header => index == (byte)(header.HighestIndex + 1), "new index must be next highest index");
 
             header.HighestIndex = index;
         }
@@ -43,8 +43,8 @@ internal class PageService : IPageService
         // get segment addresses
         var segmentAddr = PageSegment.GetSegmentAddr(index);
 
-        //ENSURE(span[segmentAddr.Location..].ReadUInt16() == 0, "slot position must be empty before use");
-        //ENSURE(span[segmentAddr.Length..].ReadUInt16() == 0, "slot length must be empty before use");
+        DEBUG(span[segmentAddr.Location..].ReadUInt16() == 0, "slot position must be empty before use");
+        DEBUG(span[segmentAddr.Length..].ReadUInt16() == 0, "slot length must be empty before use");
 
         // get next free location in page
         var location = header.NextFreeLocation;
@@ -60,7 +60,7 @@ internal class PageService : IPageService
         header.UsedBytes += bytesLength;
         header.NextFreeLocation += bytesLength;
 
-        //ENSURE(() => location + bytesLength <= (PAGE_SIZE - (header.HighestIndex + 1) * PageHeader.SLOT_SIZE), "New buffer slice could not override footer area");
+        ENSURE(header, header => location + bytesLength <= (PAGE_SIZE - (header.HighestIndex + 1) * PageHeader.SLOT_SIZE), "New buffer slice could not override footer area");
 
         // create page segment based new inserted segment
         return new (location, bytesLength);
@@ -118,8 +118,8 @@ internal class PageService : IPageService
         // if there is no more blocks in page, clean FragmentedBytes and NextFreePosition
         if (header.ItemsCount == 0)
         {
-            //ENSURE(header.HighestIndex == byte.MaxValue, "if there is no items, HighestIndex must be clear");
-            //ENSURE(header.UsedBytes == 0, "should be no bytes used in clean page");
+            ENSURE(header, header => header.HighestIndex == byte.MaxValue, "if there is no items, HighestIndex must be clear");
+            ENSURE(header, header => header.UsedBytes == 0, "should be no bytes used in clean page");
 
             header.NextFreeLocation = PAGE_HEADER_SIZE;
             header.FragmentedBytes = 0;
@@ -214,6 +214,7 @@ internal class PageService : IPageService
     /// </summary>
     protected void Defrag(PageBuffer page)
     {
+        throw new NotImplementedException();
         //// get span and header instance (dirty)
         //var span = page.AsSpan();
         //ref var header = ref page.Header;

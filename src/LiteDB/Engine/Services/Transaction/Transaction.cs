@@ -191,7 +191,7 @@ internal class Transaction : ITransaction
     /// </summary>
     public void UpdatePageMap(ref PageHeader header)
     {
-        //ENSURE(header.PageType == PageType.Data ||  header.PageType == PageType.Index);
+        ENSURE(header, header => header.PageType == PageType.Data ||  header.PageType == PageType.Index);
 
         var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
         var extendIndex = (header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
