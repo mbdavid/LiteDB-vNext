@@ -1,17 +1,13 @@
 ﻿using Bogus.Bson;
 using Castle.Core.Configuration;
 using Newtonsoft.Json.Linq;
+using static LiteDB.BsonExpression;
 
 namespace LiteDB.Tests.Expressions;
 
 
 public class Expressions_Tests
 {
-    private static BsonExpression Constant(BsonValue value)
-    {
-        return BsonExpression.Constant(value);
-    }
-
     private static BsonExpression Array(params BsonValue[] values)
     {
         var expressions = new List<BsonExpression>();
@@ -19,16 +15,7 @@ public class Expressions_Tests
         {
             expressions.Add(Constant(value));
         }
-        return BsonExpression.MakeArray(expressions);
-    }
-    private static BsonExpression Call(MethodInfo method, BsonExpression[] parameters)
-    {
-        return BsonExpression.Call(method, parameters);
-    }
-
-    private static MethodInfo GetMethod(string name, int paramCount)
-    {
-        return BsonExpression.GetMethod(name, paramCount);
+        return MakeArray(expressions);
     }
 
     private BsonDocument doc = new BsonDocument
@@ -45,16 +32,16 @@ public class Expressions_Tests
 
     public static IEnumerable<object[]> Get_Expressions()
     {
-        yield return new object[] { BsonExpression.Add(Constant(12), Constant(14)), new BsonInt32(26) };
-        yield return new object[] { BsonExpression.Add(Constant(2.9), Constant(3)), new BsonDouble(5.9) };
-        yield return new object[] { BsonExpression.Add(Constant("Lite"), Constant("DB")), new BsonString("LiteDB") };
-        yield return new object[] { BsonExpression.Add(Constant(12), Constant("string")), new BsonString("12string") };
-        yield return new object[] { BsonExpression.Add(BsonExpression.MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = "1" }), Constant("string")), new BsonString("{\"a\":1}string") };
-        yield return new object[] { BsonExpression.Add(Constant(1), "string"), BsonValue.Null };
-        yield return new object[] { BsonExpression.Add(Array(1, 2), Constant(3)), BsonValue.Null };
+        yield return new object[] { Add(Constant(12), Constant(14)), new BsonInt32(26) };
+        yield return new object[] { Add(Constant(2.9), Constant(3)), new BsonDouble(5.9) };
+        yield return new object[] { Add(Constant("Lite"), Constant("DB")), new BsonString("LiteDB") };
+        yield return new object[] { Add(Constant(12), Constant("string")), new BsonString("12string") };
+        yield return new object[] { Add(MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }), Constant("string")), new BsonString("{\"a\":1}string") };
+        yield return new object[] { Add(Constant(1), "string"), BsonValue.Null };
+        yield return new object[] { Add(Array(1, 2), Constant(3)), BsonValue.Null };
 
-        yield return new object[] { BsonExpression.Map(Array(1, 2), Constant(1)), new BsonArray() { 1, 1 } };
-        yield return new object[] { BsonExpression.ArrayIndex(Array(1, 2, 3), Constant(2)), new BsonInt32(3) };
+        yield return new object[] { Map(Array(1, 2), Constant(1)), new BsonArray() { 1, 1 } };
+        yield return new object[] { ArrayIndex(Array(1, 2, 3), Constant(2)), new BsonInt32(3) };
         yield return new object[] { Call(GetMethod("LOWER", 1), new BsonExpression[] { Constant("LiteDB") }), new BsonString("litedb") };
         yield return new object[] { Call(GetMethod("UPPER", 1), new BsonExpression[] { Constant("LiteDB") }), new BsonString("LITEDB") };
         yield return new object[] { Call(GetMethod("LTRIM", 1), new BsonExpression[] { Constant("    LiteDB") }), new BsonString("LiteDB") };
