@@ -33,7 +33,7 @@ internal class CacheService : ICacheService
 
         if (!found) return null;
 
-        ENSURE(page.ShareCounter != NO_CACHE, $"rent page {page} only for cache");
+        ENSURE(() => page.ShareCounter != NO_CACHE);
 
         // increment ShareCounter to be used by another transaction
         Interlocked.Increment(ref page.ShareCounter);
@@ -107,9 +107,9 @@ internal class CacheService : ICacheService
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
-        ENSURE(!page.IsDirty, "page must be clean before add into cache");
-        ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
-        ENSURE(page.ShareCounter == NO_CACHE, "ShareCounter must be zero before add in cache");
+        ENSURE(() => !page.IsDirty, "Page must be clean before add into cache");
+        ENSURE(() => page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
+        ENSURE(() =>page.ShareCounter == NO_CACHE, "ShareCounter must be zero before add in cache");
 
         // before add, checks cache limit and cleanup if full
         if (_cache.Count >= CACHE_LIMIT)
@@ -134,7 +134,7 @@ internal class CacheService : ICacheService
     {
         Interlocked.Decrement(ref page.ShareCounter);
 
-        ENSURE(page.ShareCounter >= 0, $"ShareCounter cached page {page} must be large than 0");
+        ENSURE(() => page.ShareCounter >= 0);
     }
 
     /// <summary>
@@ -143,8 +143,8 @@ internal class CacheService : ICacheService
     /// </summary>
     private void RemovePageFromCache(PageBuffer page)
     {
-        ENSURE(page.IsDirty == false);
-        ENSURE(page.ShareCounter == 0, $"page {page} should not be in use");
+        ENSURE(() => page.IsDirty == false);
+        ENSURE(() => page.ShareCounter == 0, $"Page should not be in use");
 
         page.PositionID = int.MaxValue;
         page.ShareCounter = NO_CACHE;
@@ -202,8 +202,7 @@ internal class CacheService : ICacheService
 
     public void Dispose()
     {
-        ENSURE(_cache.Count(x => x.Value.ShareCounter != 0) == 0, "cache must be clean before dipose");
-
+        ENSURE(() => _cache.Count(x => x.Value.ShareCounter != 0) == 0, "Cache must be clean before dipose");
 
         // deattach PageBuffers from _cache object
         _cache.Clear();

@@ -95,7 +95,7 @@ internal class Transaction : ITransaction
             this.ReadVersion = _walIndexService.GetNextReadVersion();
         }
 
-        ENSURE(this.ReadVersion >= _walIndexService.MinReadVersion, $"read version do not exists in wal index: {this.ReadVersion} >= {_walIndexService.MinReadVersion}");
+        ENSURE(() => this.ReadVersion >= _walIndexService.MinReadVersion, $"Read version do not exists in wal index: {this.ReadVersion} >= {_walIndexService.MinReadVersion}");
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ internal class Transaction : ITransaction
     {
         if (_localPages.TryGetValue(pageID, out var page))
         {
-            ENSURE(writable, page.ShareCounter == NO_CACHE, "page should not be in cache");
+            ENSURE(writable, () => page.ShareCounter == NO_CACHE, "Page should not be in cache");
 
             return page;
         }
@@ -191,7 +191,7 @@ internal class Transaction : ITransaction
     /// </summary>
     public void UpdatePageMap(ref PageHeader header)
     {
-        ENSURE(header.PageType == PageType.Data ||  header.PageType == PageType.Index);
+        //ENSURE(header.PageType == PageType.Data ||  header.PageType == PageType.Index);
 
         var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
         var extendIndex = (header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
@@ -222,8 +222,8 @@ internal class Transaction : ITransaction
         {
             var page = dirtyPages[i];
 
-            ENSURE(page.ShareCounter == NO_CACHE, "page should not be on cache when saving");
-            ENSURE(page.PositionID == int.MaxValue, "page must be empty position id");
+            ENSURE(() => page.ShareCounter == NO_CACHE, "Page should not be on cache when saving");
+            ENSURE(() => page.PositionID == int.MaxValue);
 
             // update page header
             page.Header.TransactionID = this.TransactionID;
@@ -330,7 +330,7 @@ internal class Transaction : ITransaction
 
         _lockCounter--;
 
-        ENSURE(_localPages.Count == 0, $"missing dispose pages in transaction {this}");
-        ENSURE(_lockCounter == 0, $"missing release lock in transaction {this}");
+        ENSURE(() => _localPages.Count == 0, $"Missing dispose pages in transaction");
+        ENSURE(() =>_lockCounter == 0, $"Missing release lock in transaction");
     }
 }

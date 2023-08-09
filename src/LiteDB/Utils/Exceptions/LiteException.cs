@@ -1,4 +1,4 @@
-﻿namespace LiteDB; // the "Engine" sufix name was not used to maintain compatibility with previous versions
+﻿namespace LiteDB;
 
 /// <summary>
 /// The main exception for LiteDB
@@ -16,7 +16,7 @@ public partial class LiteException : Exception
         this.ErrorCode = code;
     }
 
-    private LiteException(int code, string message, Exception inner)
+    private LiteException(int code, string message, Exception? inner)
     : base(message, inner)
     {
         this.ErrorCode = code;

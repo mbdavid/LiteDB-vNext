@@ -20,6 +20,10 @@ public partial class LiteException
     internal static NotSupportedException ERR_READONLY_OBJECT() =>
         new($"This object are marked as readonly and can't be changed");
 
+    internal static LiteException ERR_INVALID_CTOR(Type type, Exception? inner) =>
+        new(4, $"Failed to create instance for type `{type.FullName}` from assembly `{type.FullName}`. Checks if the class has a public constructor with no parameters.", inner);
+
+
     #region ERR_UNEXPECTED_TOKEN
 
     internal static LiteException ERR_UNEXPECTED_TOKEN(Token token, string? expected = null)

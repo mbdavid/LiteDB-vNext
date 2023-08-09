@@ -47,7 +47,7 @@ internal class FilterBsonExpression : BsonExpression
         other.Source.Equals(this.Source) &&
         other.Selector.Equals(this.Selector);
 
-    public override int GetHashCode() => HASH(this.Source, this.Selector);
+    public override int GetHashCode() => HashCode.Combine(this.Source, this.Selector);
 
     public override string ToString()
     {

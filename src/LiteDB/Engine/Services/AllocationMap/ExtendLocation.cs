@@ -23,7 +23,7 @@ internal struct ExtendLocation
         this.AllocationMapID = allocationMapID;
         this.ExtendIndex = extendIndex;
 
-        ENSURE(extendIndex < AM_EXTEND_COUNT);
+        ENSURE(() => extendIndex < AM_EXTEND_COUNT);
     }
 
     public bool IsEmpty => 
