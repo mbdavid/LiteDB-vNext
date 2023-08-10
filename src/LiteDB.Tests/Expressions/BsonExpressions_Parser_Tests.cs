@@ -8,6 +8,7 @@ namespace LiteDB.Tests.Expressions;
 
 public class BsonExpressions_Parser_Tests
 {
+    #region StaticAuxiliaryMethods
     private static BsonExpression Array(params BsonValue[] values)
     {
         var expressions = new List<BsonExpression>();
@@ -17,18 +18,43 @@ public class BsonExpressions_Parser_Tests
         }
         return MakeArray(expressions);
     }
+    #endregion
 
 
 
     public static IEnumerable<object[]> Get_Methods()
     {
+        #region BasicTypes
+        yield return new object[] { "10", Constant(10) };
+        yield return new object[] { "2.6", Constant(2.6) };
+        yield return new object[] { "true", Constant(true) };
+        yield return new object[] { "\"LiteDB\"", Constant("LiteDB") };
+        yield return new object[] { "[12,13,14]", Array(12, 13, 14) };
+        yield return new object[] { "{a:1}", MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) };
+        yield return new object[] { "@LiteDB", Parameter("LiteDB") };
+        yield return new object[] { "$.field", Path(Root(), "field") };
+        #endregion
+
+        #region InterTypesInteraction
+        yield return new object[] {"12+14", Add(Constant(12), Constant(14)) };
+        yield return new object[] {"2.9+3", Add(Constant(2.9), Constant(3)) };
+        yield return new object[] {"\"Lite\"+\"DB\"", Add(Constant("Lite"), Constant("DB")) };
+        yield return new object[] {"12+\"string\"", Add(Constant(12), Constant("string")) };
+        yield return new object[] {"{a:1}+\"string\"", Add(MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = "1" }), Constant("string")) };
+        yield return new object[] {"1+\"string\"", Add(Constant(1), Constant("string")) };
+        yield return new object[] {"[1,2]+3", Add(Array(1, 2), Constant(3)) };
+        #endregion
+
+        #region DocumentRelated
         yield return new object[] { "$.clients", new PathBsonExpression(Root(), "clients") };
         yield return new object[] { "$.doc.arr", new PathBsonExpression(new PathBsonExpression(Root(), "doc"), "arr") };
         yield return new object[] { "@.name", new PathBsonExpression(Current(), "name") };
         yield return new object[] { "$.clients[age>=18]", new FilterBsonExpression(new PathBsonExpression(Root(), "clients"), new BinaryBsonExpression(BsonExpressionType.GreaterThanOrEqual, new PathBsonExpression(Current(), "age"), Constant(18))) };
         yield return new object[] { "$.clients=>@.name", new MapBsonExpression(new PathBsonExpression(Root(), "clients"), new PathBsonExpression(Current(), "name")) };
         yield return new object[] { "$.arr[1]", new ArrayIndexBsonExpression(new PathBsonExpression(Root(), "arr"), Constant(1)) };
+        #endregion
 
+        #region BinaryExpressions
         yield return new object[] { "'LiteDB' LIKE 'L%'", new BinaryBsonExpression(BsonExpressionType.Like, Constant("LiteDB"), Constant("L%")) };
         yield return new object[] { "1+2", new BinaryBsonExpression(BsonExpressionType.Add, Constant(1), Constant(2)) };
         yield return new object[] { "1-2", new BinaryBsonExpression(BsonExpressionType.Subtract, Constant(1), Constant(2)) };
@@ -47,7 +73,9 @@ public class BsonExpressions_Parser_Tests
         yield return new object[] { "1 IN [2,3]", new BinaryBsonExpression(BsonExpressionType.In, Constant(1), Array(2, 3)) };
         yield return new object[] { "true OR false", new BinaryBsonExpression(BsonExpressionType.Or, Constant(true), Constant(false)) };
         yield return new object[] { "true AND false", new BinaryBsonExpression(BsonExpressionType.And, Constant(true), Constant(false)) };
+        #endregion
 
+        #region CallMethods
         yield return new object[] { "LOWER(\"LiteDB\")", Call(GetMethod("LOWER", 1), new BsonExpression[] { Constant("LiteDB") }) };
         yield return new object[] { "UPPER(\"LiteDB\")", Call(GetMethod("UPPER", 1), new BsonExpression[] { Constant("LiteDB") }) };
         yield return new object[] { "LTRIM(\"    LiteDB\")", Call(GetMethod("LTRIM", 1), new BsonExpression[] { Constant("    LiteDB") }) };
@@ -65,8 +93,7 @@ public class BsonExpressions_Parser_Tests
         yield return new object[] { "FORMAT(42,\"X\")", Call(GetMethod("FORMAT", 2), new BsonExpression[] { Constant(42), Constant("X") }) };
         yield return new object[] { "JOIN([\"LiteDB\",\"-LiteDB\"])", Call(GetMethod("JOIN", 1), new BsonExpression[] { Array("LiteDB", "-LiteDB") }) };
         yield return new object[] { "JOIN([\"LiteDB\",\"LiteDB\"],\"/\")", Call(GetMethod("JOIN", 2), new BsonExpression[] { Array("LiteDB", "LiteDB"), Constant("/") }) };
-
-
+        #endregion
     }
 
     [Theory]
