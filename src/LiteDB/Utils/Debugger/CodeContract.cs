@@ -3,7 +3,7 @@
 /// <summary>
 /// Static methods for test (in Debug mode) some parameters - ideal to debug database
 /// </summary>
-//[DebuggerStepThrough]
+[DebuggerStepThrough]
 internal static class CodeContract
 {
     /// <summary>
@@ -73,15 +73,21 @@ internal static class CodeContract
         var st = new StackTrace();
         var frame = st.GetFrame(2);
         var method = frame?.GetMethod();
-        var location = $"{method?.DeclaringType?.Name}.{method?.Name}";
+
+        // crazy way to detect name when async/sync
+        var location = $"{method?.DeclaringType?.DeclaringType?.PrettyName()}.{method?.DeclaringType?.PrettyName()}.{method?.Name}";
+
+        location = Regex.Replace(location, @"^\.", "");
+        location = Regex.Replace(location, @"\.MoveNext", "");
 
         var expr = expression.Clean();
         var sb = new StringBuilder();
+        var types = new List<Type>();
 
-        PrintValues(expression, sb, input, param);
-        FindObjects(expression, sb, input, param);
+        PrintValues(expression, sb, input, param, types);
+        FindObjects(expression, sb, input, param, types);
 
-        var err = new StringBuilder($"ENSURE: `{expr}` is false at {location}. ");
+        var err = new StringBuilder($"`{expr}` is false at '{location}'. ");
 
         if (message is not null)
         {
@@ -90,94 +96,29 @@ internal static class CodeContract
 
         var msg = err.ToString() + sb.ToString();
 
-        if (Debugger.IsAttached)
-        {
-            Debug.Fail(msg);
-        }
-        else
+        //if (Debugger.IsAttached)
+        //{
+        //    Debug.Fail(msg);
+        //}
+        //else
         {
             throw ERR_ENSURE(msg);
         }
     }
 
     /// <summary>
-    /// Find (recursively) looking for LiteDB objects/structs to print
-    /// </summary>
-    private static void FindObjects(Expression? e, StringBuilder sb, object? input, ParameterExpression? param)
-    {
-        if (e is null) return;
-
-        if (e is BinaryExpression bin)
-        {
-            FindObjects(bin.Left, sb, input, param);
-            FindObjects(bin.Right, sb, input, param);
-        }
-        if (e is MethodCallExpression call)
-        {
-            FindObjects(call.Object, sb, input, param);
-
-            foreach (var arg in call.Arguments)
-            {
-                FindObjects(arg, sb, input, param);
-            }
-        }
-        else if (e is ConstantExpression con)
-        {
-            var value = con.Value;
-            var ns = value.GetType().Namespace ?? "";
-
-            if (ns.StartsWith("LiteDB"))
-            {
-                if (sb.Length > 0) sb.Append(", ");
-
-                sb.Append(value.GetType().Name + " = " + value.Dump());
-            }
-        }
-        else if (e is MemberExpression mem)
-        {
-            var ns = mem.Member.DeclaringType?.Namespace ?? "";
-
-            if (ns.StartsWith("LiteDB"))
-            {
-                object result;
-
-                if (param is not null)
-                {
-                    var compiled = Expression.Lambda(mem.Expression, param).Compile();
-
-                    result = compiled.DynamicInvoke(input);
-                }
-                else
-                {
-                    result = Expression.Lambda(mem.Expression).Compile().DynamicInvoke();
-                }
-
-                if (sb.Length > 0) sb.Append(", ");
-
-                sb.Append(mem.Expression.Clean() + " = " + result.Dump());
-            }
-
-            FindObjects(mem.Expression!, sb, input, param);
-        }
-        else if (e is UnaryExpression un)
-        {
-            FindObjects(un.Operand, sb, input, param);
-        }
-    }
-
-    /// <summary>
     /// Print expressions results
     /// </summary>
-    private static void PrintValues(Expression e, StringBuilder sb, object? input, ParameterExpression? param)
+    private static void PrintValues(Expression e, StringBuilder sb, object? input, ParameterExpression? param, List<Type> types)
     {
         if (e is BinaryExpression bin)
         {
-            PrintValues(bin.Left, sb, input, param);
-            PrintValues(bin.Right, sb, input, param);
+            PrintValues(bin.Left, sb, input, param, types);
+            PrintValues(bin.Right, sb, input, param, types);
         }
         else if (e is UnaryExpression un)
         {
-            PrintValues(un.Operand, sb, input, param);
+            PrintValues(un.Operand, sb, input, param, types);
         }
         else if (e is ConstantExpression)
         {
@@ -201,22 +142,92 @@ internal static class CodeContract
             if (sb.Length > 0) sb.Append(", ");
 
             sb.Append($"`{e.Clean()}` = {result}");
+
+            if (result is not null)
+            {
+                types.Add(result.GetType());
+            }
         }
     }
 
     /// <summary>
-    /// A quick-simple expression string cleanner
+    /// Find (recursively) looking for LiteDB objects/structs to print
     /// </summary>
-    private static string Clean(this Expression e)
+    private static void FindObjects(Expression? e, StringBuilder sb, object? input, ParameterExpression? param, List<Type> types)
     {
-        var str = e.ToString();
+        if (e is null) return;
 
-        str = Regex.Replace(str, @"value\(.*?\)\.", "");
-        str = Regex.Replace(str, @" AndAlso ", " && ");
-        str = Regex.Replace(str, @" OrElse ", " || ");
+        if (e is BinaryExpression bin)
+        {
+            FindObjects(bin.Left, sb, input, param, types);
+            FindObjects(bin.Right, sb, input, param, types);
+        }
+        if (e is MethodCallExpression call)
+        {
+            FindObjects(call.Object, sb, input, param, types);
 
-        str = Regex.Replace(str, @"^\((.*)\)$", "$1");
+            foreach (var arg in call.Arguments)
+            {
+                FindObjects(arg, sb, input, param, types);
+            }
+        }
+        else if (e is ConstantExpression con)
+        {
+            var value = con.Value;
+            var ns = value.GetType().Namespace ?? "";
 
-        return str;
+            if (ns.StartsWith("LiteDB"))
+            {
+                if (types.Contains(value.GetType())) return;
+
+                var key = con.Clean();
+                var dump = value.Dump();
+
+                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(dump))
+                {
+                    if (sb.Length > 0) sb.Append(", ");
+
+                    sb.Append($"{key}: {dump}");
+                }
+            }
+        }
+        else if (e is MemberExpression mem)
+        {
+            var ns = mem.Member.DeclaringType?.Namespace ?? "";
+
+            if (ns.StartsWith("LiteDB"))
+            {
+                object value;
+
+                if (param is not null)
+                {
+                    var compiled = Expression.Lambda(mem.Expression, param).Compile();
+
+                    value = compiled.DynamicInvoke(input);
+                }
+                else
+                {
+                    value = Expression.Lambda(mem.Expression).Compile().DynamicInvoke();
+                }
+
+                if (types.Contains(value.GetType())) return;
+
+                var key = mem.Expression.Clean();
+                var dump = value.Dump();
+
+                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(dump))
+                {
+                    if (sb.Length > 0) sb.Append(", ");
+
+                    sb.Append($"{key}: {dump}");
+                }
+            }
+
+            FindObjects(mem.Expression!, sb, input, param, types);
+        }
+        else if (e is UnaryExpression un)
+        {
+            FindObjects(un.Operand, sb, input, param, types);
+        }
     }
 }

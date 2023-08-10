@@ -14,7 +14,8 @@ File.Delete(filename);
 
 var settings = new EngineSettings
 {
-    Filename = filename
+    Filename = filename,
+    Timeout = TimeSpan.FromSeconds(5),
 };
 
 var db = new LiteEngine(settings);
@@ -31,7 +32,6 @@ var cursor = db.Query("col1", new Query());
 
 var result = await db.FetchAsync(cursor, 100);
 
-
 Console.WriteLine("Results: " + result);
 
 foreach (var item in result.Results)
@@ -44,6 +44,18 @@ foreach (var item in result.Results)
 
 
 await db.ShutdownAsync();
+
+await db.OpenAsync();
+
+var um = await db.FindById("col1", 1, Array.Empty<string>());
+
+await db.InsertAsync("col1", GetData(10_000, 0), BsonAutoId.Int32);
+
+
+var cursor2 = db.Query("col1", new Query());
+
+var result2 = await db.FetchAsync(cursor, 100);
+var result3 = await db.FetchAsync(cursor, 100);
 
 
 Console.WriteLine("\n\nEnd");
