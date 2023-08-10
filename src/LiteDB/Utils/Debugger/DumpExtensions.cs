@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-internal static class ObjectDumpExtensions
+internal static class DumpExtensions
 {
     /// <summary>
     /// Implement a simple object deserialization do better reader in debug mode
@@ -60,31 +60,5 @@ internal static class ObjectDumpExtensions
         }
 
         return sb.Length > 0 ? $"{{ {sb} }}" : "";
-    }
-
-    public static string PrettyName(this Type type)
-    {
-        var str = type.Name;
-
-        str = Regex.Replace(str, @"^<(.*)>.*", "$1");
-
-        return str;
-    }
-
-    /// <summary>
-    /// A quick-simple expression string cleanner
-    /// </summary>
-    public static string Clean(this Expression e)
-    {
-        var str = e.ToString();
-
-        str = Regex.Replace(str, @"value\(.*?\)\.", "");
-        str = Regex.Replace(str, @"^value\(.*\.(.*)\)$", "$1");
-        str = Regex.Replace(str, @" AndAlso ", " && ");
-        str = Regex.Replace(str, @" OrElse ", " || ");
-
-        str = Regex.Replace(str, @"^\((.*)\)$", "$1");
-
-        return str;
     }
 }

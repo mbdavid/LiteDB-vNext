@@ -324,8 +324,6 @@ internal class Transaction : ITransaction
         // exit lock transaction
         _lockService.ExitTransaction();
 
-        _lockCounter--;
-
         ENSURE(() => _localPages.Count == 0, $"Missing dispose pages in transaction");
         ENSURE(() =>_lockCounter == 0, $"Missing release lock in transaction");
     }

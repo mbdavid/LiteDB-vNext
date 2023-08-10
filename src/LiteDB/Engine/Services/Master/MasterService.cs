@@ -58,7 +58,6 @@ internal class MasterService : IMasterService
         return writable ? new MasterDocument(_master) : _master; 
     }
 
-
     /// <summary>
     /// Set a new (in-memory) master object to Master service
     /// </summary>
