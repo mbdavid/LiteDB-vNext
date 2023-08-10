@@ -21,7 +21,7 @@ public class BsonExpressions_ToString_Tests
     }
     #endregion
 
-    public static IEnumerable<object[]> Get_ToStringExpressions()
+    public static IEnumerable<object[]> Get_Expressions()
     {
         #region BasicTypes
         yield return new object[] { Constant(10), "10" };
@@ -96,7 +96,7 @@ public class BsonExpressions_ToString_Tests
     }
 
     [Theory]
-    [MemberData(nameof(Get_ToStringExpressions))]
+    [MemberData(nameof(Get_Expressions))]
     public void ToString_Theory(params object[] T)
     {
         var res = T[0].ToString();

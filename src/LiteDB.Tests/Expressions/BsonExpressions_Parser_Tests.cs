@@ -22,7 +22,7 @@ public class BsonExpressions_Parser_Tests
 
 
 
-    public static IEnumerable<object[]> Get_Methods()
+    public static IEnumerable<object[]> Get_Expressions()
     {
         #region BasicTypes
         yield return new object[] { "10", Constant(10) };
@@ -97,7 +97,7 @@ public class BsonExpressions_Parser_Tests
     }
 
     [Theory]
-    [MemberData(nameof(Get_Methods))]
+    [MemberData(nameof(Get_Expressions))]
     public void Create_Theory(params object[] T)
     {
         var test = Create(T[0] as string);
