@@ -1,11 +1,11 @@
 ﻿namespace LiteDB;
 
-internal static class DumpExtensions
+internal static class Dump
 {
     /// <summary>
     /// Implement a simple object deserialization do better reader in debug mode
     /// </summary>
-    public static string Dump(this object obj)
+    public static string Object(object obj)
     {
         var type = obj.GetType();
         var ns = type.Namespace ?? "";
@@ -61,4 +61,10 @@ internal static class DumpExtensions
 
         return sb.Length > 0 ? $"{{ {sb} }}" : "";
     }
+
+    public static string PageID(int id)
+    {
+        return id == int.MaxValue ? "<EMPTY>" : id.ToString().PadLeft(4, '0');
+    }
+
 }

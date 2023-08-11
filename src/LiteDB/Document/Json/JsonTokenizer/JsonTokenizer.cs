@@ -337,6 +337,6 @@ internal class JsonTokenizer
 
     public override string ToString()
     {
-        return _current?.ToString() + " - position: " + _position;
+        return $"{{ Current = {_current}, Position = {_position} }}";
     }
 }

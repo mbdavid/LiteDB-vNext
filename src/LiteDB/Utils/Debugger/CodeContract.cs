@@ -83,7 +83,7 @@ internal static class CodeContract
 
         if (input is not null)
         {
-            err.Append(input.GetType().Name + " = " + input.Dump());
+            err.Append(input.GetType().Name + " = " + Dump.Object(input));
         }
 
         var msg = err.ToString().Trim();

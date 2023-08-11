@@ -29,6 +29,6 @@ internal struct PipeValue
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : $"[{this.RowID}] = {this.Document}";
+        return this.IsEmpty ? "<EMPTY>" : $"{{ RowID = {RowID}, Document = {Document} }}";
     }
 }
