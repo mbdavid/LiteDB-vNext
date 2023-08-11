@@ -74,51 +74,51 @@ public class Expressions_Tests
         #endregion
 
         #region DocumentRelated
-        yield return new object[] { Path(new PathBsonExpression(Root(), "doc"), "arr"), new BsonArray { 10, 11, 12 } };
+        yield return new object[] { Path(Path(Root(), "doc"), "arr"), new BsonArray { 10, 11, 12 } };
         yield return new object[] { Path(Current(), "name"), new BsonString("Name Surname") };
-        yield return new object[] { Filter(new PathBsonExpression(Root(), "clients"), new BinaryBsonExpression(BsonExpressionType.GreaterThanOrEqual, new PathBsonExpression(Current(), "age"), Constant(18))), new BsonArray { new BsonDocument { ["name"] = "Jhon", ["age"] = 42 }, new BsonDocument { ["name"] = "Maria", ["age"] = 21 } } };
-        yield return new object[] { Map(new PathBsonExpression(Root(), "clients"), new PathBsonExpression(Current(), "name")), new BsonArray { "Jhon", "Fred", "Maria" } };
-        yield return new object[] { ArrayIndex(new PathBsonExpression(Root(), "arr"), Constant(1)), new BsonInt32(2) };
+        yield return new object[] { Filter(Path(Root(), "clients"), GreaterThanOrEqual(Path(Current(), "age"), Constant(18))), new BsonArray { new BsonDocument { ["name"] = "Jhon", ["age"] = 42 }, new BsonDocument { ["name"] = "Maria", ["age"] = 21 } } };
+        yield return new object[] { Map(Path(Root(), "clients"), Path(Current(), "name")), new BsonArray { "Jhon", "Fred", "Maria" } };
+        yield return new object[] { ArrayIndex(Path(Root(), "arr"), Constant(1)), new BsonInt32(2) };
         #endregion
 
         #region CallMethods
-        yield return new object[] { Call(GetMethod("LOWER", 1), new BsonExpression[] { Constant("LiteDB") }), new BsonString("litedb") };
-        yield return new object[] { Call(GetMethod("UPPER", 1), new BsonExpression[] { Constant("LiteDB") }), new BsonString("LITEDB") };
-        yield return new object[] { Call(GetMethod("LTRIM", 1), new BsonExpression[] { Constant("    LiteDB") }), new BsonString("LiteDB") };
-        yield return new object[] { Call(GetMethod("RTRIM", 1), new BsonExpression[] { Constant("LiteDB    ") }), new BsonString("LiteDB") };
-        yield return new object[] { Call(GetMethod("TRIM", 1), new BsonExpression[] { Constant("    LiteDB    ") }), new BsonString("LiteDB") };
-        yield return new object[] { Call(GetMethod("INDEXOF", 2), new BsonExpression[] { Constant("LiteDB"), Constant("D") }), new BsonInt32(4) };
-        yield return new object[] { Call(GetMethod("INDEXOF", 3), new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant("D"), Constant(5) }), new BsonInt32(11) };
-        yield return new object[] { Call(GetMethod("SUBSTRING", 2), new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant(4) }), new BsonString("DB-LiteDB") };
-        yield return new object[] { Call(GetMethod("SUBSTRING", 3), new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant(4), Constant(2) }), new BsonString("DB") };
-        yield return new object[] { Call(GetMethod("REPLACE", 3), new BsonExpression[] { Constant("LiteDB"), Constant("t"), Constant("v") }), new BsonString("LiveDB") };
-        yield return new object[] { Call(GetMethod("LPAD", 3), new BsonExpression[] { Constant("LiteDB"), Constant(10), Constant("-") }), new BsonString("----LiteDB") };
-        yield return new object[] { Call(GetMethod("RPAD", 3), new BsonExpression[] { Constant("LiteDB"), Constant(10), Constant("-") }), new BsonString("LiteDB----") };
-        yield return new object[] { Call(GetMethod("SPLIT", 2), new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant("-") }), new BsonArray() { "LiteDB", "LiteDB" } };
-        yield return new object[] { Call(GetMethod("SPLIT", 3), new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant("(-)"), Constant(true) }), new BsonArray() { "LiteDB", "-", "LiteDB" } };
-        yield return new object[] { Call(GetMethod("FORMAT", 2), new BsonExpression[] { Constant(42), Constant("X") }), new BsonString("2A") };
-        yield return new object[] { Call(GetMethod("JOIN", 1), new BsonExpression[] { Array("LiteDB", "-LiteDB") }), new BsonString("LiteDB-LiteDB") };
-        yield return new object[] { Call(GetMethod("JOIN", 2), new BsonExpression[] { Array("LiteDB", "LiteDB"), Constant("/") }), new BsonString("LiteDB/LiteDB") };
+        yield return new object[] { Call("LOWER", new BsonExpression[] { Constant("LiteDB") }), new BsonString("litedb") };
+        yield return new object[] { Call("UPPER", new BsonExpression[] { Constant("LiteDB") }), new BsonString("LITEDB") };
+        yield return new object[] { Call("LTRIM", new BsonExpression[] { Constant("    LiteDB") }), new BsonString("LiteDB") };
+        yield return new object[] { Call("RTRIM", new BsonExpression[] { Constant("LiteDB    ") }), new BsonString("LiteDB") };
+        yield return new object[] { Call("TRIM", new BsonExpression[] { Constant("    LiteDB    ") }), new BsonString("LiteDB") };
+        yield return new object[] { Call("INDEXOF", new BsonExpression[] { Constant("LiteDB"), Constant("D") }), new BsonInt32(4) };
+        yield return new object[] { Call("INDEXOF", new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant("D"), Constant(5) }), new BsonInt32(11) };
+        yield return new object[] { Call("SUBSTRING", new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant(4) }), new BsonString("DB-LiteDB") };
+        yield return new object[] { Call("SUBSTRING", new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant(4), Constant(2) }), new BsonString("DB") };
+        yield return new object[] { Call("REPLACE", new BsonExpression[] { Constant("LiteDB"), Constant("t"), Constant("v") }), new BsonString("LiveDB") };
+        yield return new object[] { Call("LPAD", new BsonExpression[] { Constant("LiteDB"), Constant(10), Constant("-") }), new BsonString("----LiteDB") };
+        yield return new object[] { Call("RPAD", new BsonExpression[] { Constant("LiteDB"), Constant(10), Constant("-") }), new BsonString("LiteDB----") };
+        yield return new object[] { Call("SPLIT", new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant("-") }), new BsonArray() { "LiteDB", "LiteDB" } };
+        yield return new object[] { Call("SPLIT", new BsonExpression[] { Constant("LiteDB-LiteDB"), Constant("(-)"), Constant(true) }), new BsonArray() { "LiteDB", "-", "LiteDB" } };
+        yield return new object[] { Call("FORMAT", new BsonExpression[] { Constant(42), Constant("X") }), new BsonString("2A") };
+        yield return new object[] { Call("JOIN", new BsonExpression[] { Array("LiteDB", "-LiteDB") }), new BsonString("LiteDB-LiteDB") };
+        yield return new object[] { Call("JOIN", new BsonExpression[] { Array("LiteDB", "LiteDB"), Constant("/") }), new BsonString("LiteDB/LiteDB") };
         #endregion
 
         #region BinaryExpressions
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Add, Constant(1), Constant(2)), new BsonInt32(3) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Subtract, Constant(1), Constant(2)), new BsonInt32(-1) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Multiply, Constant(1), Constant(2)), new BsonInt32(2) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Divide, Constant(4), Constant(2)), new BsonInt32(2) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Modulo, Constant(1), Constant(2)), new BsonInt32(1) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Equal, Constant(1), Constant(2)), new BsonBoolean(false) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.NotEqual, Constant(1), Constant(2)), new BsonBoolean(true) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.GreaterThan, Constant(1), Constant(2)), new BsonBoolean(false) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.GreaterThanOrEqual, Constant(1), Constant(2)), new BsonBoolean(false) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.LessThan, Constant(1), Constant(2)), new BsonBoolean(true) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.LessThanOrEqual, Constant(1), Constant(2)), new BsonBoolean(true) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Contains, Array(1, 2, 3), Constant(3)), new BsonBoolean(true) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Between, Constant(1), Array(2, 3)), new BsonBoolean(false) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Like, Constant("LiteDB"), Constant("L%")), new BsonBoolean(true) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.In, Constant(1), Array(2, 3)), new BsonBoolean(false) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.Or, Constant(true), Constant(false)), new BsonBoolean(true) };
-        yield return new object[] { new BinaryBsonExpression(BsonExpressionType.And, Constant(true), Constant(false)), new BsonBoolean(false) };
+        yield return new object[] { Add(Constant(1), Constant(2)), new BsonInt32(3) };
+        yield return new object[] { Subtract(Constant(1), Constant(2)), new BsonInt32(-1) };
+        yield return new object[] { Multiply(Constant(1), Constant(2)), new BsonInt32(2) };
+        yield return new object[] { Divide(Constant(4), Constant(2)), new BsonInt32(2) };
+        yield return new object[] { Modulo(Constant(1), Constant(2)), new BsonInt32(1) };
+        yield return new object[] { Equal(Constant(1), Constant(2)), new BsonBoolean(false) };
+        yield return new object[] { NotEqual(Constant(1), Constant(2)), new BsonBoolean(true) };
+        yield return new object[] { GreaterThan(Constant(1), Constant(2)), new BsonBoolean(false) };
+        yield return new object[] { GreaterThanOrEqual(Constant(1), Constant(2)), new BsonBoolean(false) };
+        yield return new object[] { LessThan(Constant(1), Constant(2)), new BsonBoolean(true) };
+        yield return new object[] { LessThanOrEqual(Constant(1), Constant(2)), new BsonBoolean(true) };
+        yield return new object[] { Contains(Array(1, 2, 3), Constant(3)), new BsonBoolean(true) };
+        yield return new object[] { Between(Constant(1), Array(2, 3)), new BsonBoolean(false) };
+        yield return new object[] { Like(Constant("LiteDB"), Constant("L%")), new BsonBoolean(true) };
+        yield return new object[] { In(Constant(1), Array(2, 3)), new BsonBoolean(false) };
+        yield return new object[] { Or(Constant(true), Constant(false)), new BsonBoolean(true) };
+        yield return new object[] { And(Constant(true), Constant(false)), new BsonBoolean(false) };
         #endregion
     }
 
