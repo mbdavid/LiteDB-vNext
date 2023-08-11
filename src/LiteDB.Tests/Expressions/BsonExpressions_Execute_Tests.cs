@@ -74,11 +74,11 @@ public class Expressions_Tests
         #endregion
 
         #region DocumentRelated
-        yield return new object[] { new PathBsonExpression(new PathBsonExpression(Root(), "doc"), "arr"), new BsonArray { 10, 11, 12 } };
-        yield return new object[] { new PathBsonExpression(Current(), "name"), new BsonString("Name Surname") };
-        yield return new object[] { new FilterBsonExpression(new PathBsonExpression(Root(), "clients"), new BinaryBsonExpression(BsonExpressionType.GreaterThanOrEqual, new PathBsonExpression(Current(), "age"), Constant(18))), new BsonArray { new BsonDocument { ["name"] = "Jhon", ["age"] = 42 }, new BsonDocument { ["name"] = "Maria", ["age"] = 21 } } };
-        yield return new object[] { new MapBsonExpression(new PathBsonExpression(Root(), "clients"), new PathBsonExpression(Current(), "name")), new BsonArray { "Jhon", "Fred", "Maria" } };
-        yield return new object[] { new ArrayIndexBsonExpression(new PathBsonExpression(Root(), "arr"), Constant(1)), new BsonInt32(2) };
+        yield return new object[] { Path(new PathBsonExpression(Root(), "doc"), "arr"), new BsonArray { 10, 11, 12 } };
+        yield return new object[] { Path(Current(), "name"), new BsonString("Name Surname") };
+        yield return new object[] { Filter(new PathBsonExpression(Root(), "clients"), new BinaryBsonExpression(BsonExpressionType.GreaterThanOrEqual, new PathBsonExpression(Current(), "age"), Constant(18))), new BsonArray { new BsonDocument { ["name"] = "Jhon", ["age"] = 42 }, new BsonDocument { ["name"] = "Maria", ["age"] = 21 } } };
+        yield return new object[] { Map(new PathBsonExpression(Root(), "clients"), new PathBsonExpression(Current(), "name")), new BsonArray { "Jhon", "Fred", "Maria" } };
+        yield return new object[] { ArrayIndex(new PathBsonExpression(Root(), "arr"), Constant(1)), new BsonInt32(2) };
         #endregion
 
         #region CallMethods

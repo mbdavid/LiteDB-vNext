@@ -93,6 +93,8 @@ public class BsonExpressions_Parser_Tests
         yield return new object[] { "FORMAT(42,\"X\")", Call(GetMethod("FORMAT", 2), new BsonExpression[] { Constant(42), Constant("X") }) };
         yield return new object[] { "JOIN([\"LiteDB\",\"-LiteDB\"])", Call(GetMethod("JOIN", 1), new BsonExpression[] { Array("LiteDB", "-LiteDB") }) };
         yield return new object[] { "JOIN([\"LiteDB\",\"LiteDB\"],\"/\")", Call(GetMethod("JOIN", 2), new BsonExpression[] { Array("LiteDB", "LiteDB"), Constant("/") }) };
+
+
         #endregion
     }
 
