@@ -8,7 +8,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     /// <summary>
     /// Singleton Empty document (readonly)
     /// </summary>
-    public static BsonDocument Empty = new(true);
+    public static readonly BsonDocument Empty = new(true);
 
     private readonly Dictionary<string, BsonValue> _value;
     private int _length = -1;

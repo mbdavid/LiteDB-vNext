@@ -33,6 +33,9 @@ public abstract partial class BsonExpression
 
     public static BsonExpression Call(MethodInfo method, BsonExpression[] parameters) => new CallBsonExpression(method, parameters);
 
+    public static BsonExpression Call(string method, BsonExpression[] parameters) =>
+        Call(GetMethod(method, parameters.Length) ?? throw ERR($"Method {method} not found"), parameters);
+
     #region BinaryBsonExpressions
 
     public static BsonExpression Add(BsonExpression left, BsonExpression right) => new BinaryBsonExpression(BsonExpressionType.Add, left, right);

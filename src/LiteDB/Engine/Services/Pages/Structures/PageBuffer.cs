@@ -112,4 +112,9 @@ internal class PageBuffer
     {
         return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter} }}";
     }
+
+    public string ToHtml()
+    {
+        return new HtmlPageDump(this).Render();
+    }
 }
