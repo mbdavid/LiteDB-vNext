@@ -8,7 +8,7 @@ public class BsonArray : BsonValue, IList<BsonValue>
     /// <summary>
     /// Singleton Empty BsonArray (readonly)
     /// </summary>
-    public static BsonArray Empty = new(true);
+    public static readonly BsonArray Empty = new(true);
 
     private readonly List<BsonValue> _value;
     private int _length = -1;

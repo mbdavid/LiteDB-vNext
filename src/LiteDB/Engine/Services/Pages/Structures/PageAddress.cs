@@ -43,16 +43,7 @@ internal struct PageAddress : IEquatable<PageAddress>
         return !(left == right);
     }
 
-    public override int GetHashCode()
-    {
-        unchecked
-        {
-            int hash = 17;
-            hash = hash * 23 + (int)this.PageID;
-            hash = hash * 23 + this.Index;
-            return hash;
-        }
-    }
+    public override int GetHashCode() => HashCode.Combine(this.PageID, this.Index);
 
     public PageAddress(int pageID, byte index)
     {
@@ -62,6 +53,6 @@ internal struct PageAddress : IEquatable<PageAddress>
 
     public override string ToString()
     {
-        return this.IsEmpty ? "(empty)" : this.PageID.ToString().PadLeft(4, '0') + ":" + this.Index.ToString().PadLeft(2, '0');
+        return this.IsEmpty ? "<EMPTY>" : $"{PageID:0000}:{Index:00}";
     }
 }

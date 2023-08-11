@@ -21,6 +21,6 @@ public struct OrderBy
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : $"Expr: {this.Expression}, Order: {this.Order}";
+        return this.IsEmpty ? "<EMPTY>" : $"{{ Expr: {Expression}, Order: {Order} }}";
     }
 }

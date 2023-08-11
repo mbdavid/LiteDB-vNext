@@ -108,5 +108,13 @@ internal class PageBuffer
 
     }
 
-    public override string ToString() => $"PageID: {Header.PageID.DumpID()} / PositionID: {this.PositionID.DumpID()}";
+    public override string ToString()
+    {
+        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter} }}";
+    }
+
+    public string ToHtml()
+    {
+        return new HtmlPageDump(this).Render();
+    }
 }

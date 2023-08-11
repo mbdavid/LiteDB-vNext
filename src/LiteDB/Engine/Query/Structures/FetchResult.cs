@@ -19,6 +19,6 @@ public struct FetchResult
 
     public override string ToString()
     {
-        return $"From: {this.From}, To: {this.To}, FetchCount: {this.FetchCount}, HasMore: {this.HasMore}";
+        return $"{{ From = {From}, To = {To}, FetchCount = {FetchCount}, HasMore = {HasMore}, Results = [{Results.Count}] }}";
     }
 }

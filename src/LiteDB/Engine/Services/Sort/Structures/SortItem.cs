@@ -1,13 +1,13 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct SortItem
+internal readonly struct SortItem
 {
-    public PageAddress RowID;
-    public BsonValue Key;
+    public static readonly SortItem Empty = new();
+
+    public readonly PageAddress RowID;
+    public readonly BsonValue Key;
 
     public bool IsEmpty => this.RowID.IsEmpty;
-
-    public static SortItem Empty = new();
 
     public SortItem()
     {
@@ -28,6 +28,6 @@ internal struct SortItem
 
     public override string ToString()
     {
-        return $"[{this.RowID}] = {this.Key}";
+        return this.IsEmpty ? "<EMPTY>" : $"{{ RowID = {RowID}, Key = {Key} }}";
     }
 }

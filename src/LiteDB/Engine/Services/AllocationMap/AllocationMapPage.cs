@@ -18,8 +18,6 @@ internal class AllocationMapPage
 
     private readonly Queue<int> _emptyExtends;
 
-    private bool _isDirty = false;
-
     public int AllocationMapID => _allocationMapID;
 
     public PageBuffer Page => _page;
@@ -78,7 +76,12 @@ internal class AllocationMapPage
     /// </summary>
     public uint GetExtendValue(int extendIndex) => _extendValues[extendIndex];
 
-    public void SetExtendValue(int extendIndex, uint value) => _extendValues[extendIndex] = value;
+    public void SetExtendValue(int extendIndex, uint value)
+    {
+        _page.IsDirty = true;
+
+        _extendValues[extendIndex] = value;
+    }
 
     /// <summary>
     /// Read all extendValues to return the first extendIndex with avaliable space. Returns pageIndex for this pag
@@ -116,7 +119,7 @@ internal class AllocationMapPage
         _extendValues[extendIndex] = (uint)(colID << 24);
 
         // mark page as dirty
-        _isDirty = true;
+        _page.IsDirty = true;
 
         return extendIndex;
     }
@@ -146,7 +149,7 @@ internal class AllocationMapPage
         _extendValues[extendIndex] = extendValue;
 
         // mark page as dirty (in map page this should be manual)
-        _isDirty = true;
+        _page.IsDirty = true;
     }
 
 
@@ -165,7 +168,7 @@ internal class AllocationMapPage
     /// </summary>
     public bool UpdatePageBuffer()
     {
-        if (!_isDirty) return false;
+        if (!_page.IsDirty) return false;
 
         var span = _page.AsSpan(PAGE_HEADER_SIZE);
         var pos = 0;

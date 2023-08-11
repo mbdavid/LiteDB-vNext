@@ -54,7 +54,7 @@ public partial class LiteEngine : ILiteEngine
         // write all dirty pages into disk
         await transaction.CommitAsync();
 
-        // update master document
+        // update master document (only after commit completed)
         masterService.SetMaster(master);
 
         // release transaction

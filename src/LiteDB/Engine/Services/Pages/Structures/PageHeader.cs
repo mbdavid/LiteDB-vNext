@@ -207,6 +207,8 @@ internal struct PageHeader
         segment.Location >= PAGE_HEADER_SIZE && segment.Location < (PAGE_SIZE - this.FooterSize) &&
         segment.Length > 0 && segment.Length <= (PAGE_SIZE - PAGE_HEADER_SIZE - this.FooterSize);
 
-    public override string ToString() =>
-        $"[PageID: {this.PageID}; PosID: {this.PositionID}; {this.PageType}; ColID: {this.ColID}; TransID: {this.TransactionID}, ItemsCount: {this.ItemsCount}, FreeBytes: {this.FreeBytes}, {(this.IsConfirmed ? "C" : "")}]";
+    public override string ToString()
+    {
+        return $"{{ PageID = {PageID}, PositionID = {PositionID}, PageType = {PageType}, ColID = {ColID}, TransID = {TransactionID}, ItemsCount = {ItemsCount}, FreeBytes = {FreeBytes}, IsConfirmed = {IsConfirmed}, HIndex = {HighestIndex}, Fragments = {FragmentedBytes}, Crc8 = {Crc8} }}";
+    }
 }

@@ -114,4 +114,9 @@ internal struct Sequence
         this.LastInt = int.MaxValue;
         this.LastLong = long.MaxValue;
     }
+
+    public override string ToString()
+    {
+        return $"{{ LastInt = {LastInt}, LastLong = {LastLong} }}";
+    }
 }

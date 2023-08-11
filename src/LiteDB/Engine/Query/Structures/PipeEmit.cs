@@ -16,6 +16,6 @@ internal struct PipeEmit
 
     public override string ToString()
     {
-        return $"RowID: {this.RowID}, Document: {this.Document}";
+        return $"{{ RowID = {RowID}, Document = {Document} }}";
     }
 }

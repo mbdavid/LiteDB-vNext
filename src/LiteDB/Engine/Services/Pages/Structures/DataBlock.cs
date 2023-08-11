@@ -65,6 +65,6 @@ internal struct DataBlock
 
     public override string ToString()
     {
-        return $"RowID: [{this.RowID}] - Next: [{this.NextBlock}]";
+        return $"{{ RowID = {RowID}, Next = {NextBlock} }}";
     }
 }

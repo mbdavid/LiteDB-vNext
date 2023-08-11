@@ -269,6 +269,6 @@ internal struct IndexNode
 
     public override string ToString()
     {
-        return $"RowID: [{this.RowID}] - Key: {this.Key}";
+        return $"{{ RowID = {RowID}, Slot = {Slot}, Levels = {Levels}, Key = {Key}, DataBlock = {DataBlock}, NextNode = {NextNode} }}";
     }
 }
