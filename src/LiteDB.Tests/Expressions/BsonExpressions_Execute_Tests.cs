@@ -82,6 +82,26 @@ public class Expressions_Tests
         #endregion
 
         #region CallMethods
+        #region Date
+        //yield return new object[] { Call("YEAR", new BsonExpression[] { Constant(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) }), new BsonInt32(2003) };
+        #endregion
+
+        #region Math
+        yield return new object[] { Call("ABS", new BsonExpression[] { Constant(-10) }), new BsonInt32(10)};
+        yield return new object[] { Call("ABS", new BsonExpression[] { Constant(-10.5) }), new BsonDouble(10.5) };
+        yield return new object[] { Call("ROUND", new BsonExpression[] { Constant(2), Constant(1) }), new BsonInt32(2) };
+        yield return new object[] { Call("ROUND", new BsonExpression[] { Constant(2.4), Constant(0) }), new BsonDouble(2) };
+        yield return new object[] { Call("ROUND", new BsonExpression[] { Constant(2.5), Constant(0) }), new BsonDouble(2) };
+        yield return new object[] { Call("ROUND", new BsonExpression[] { Constant(2.6), Constant(0) }), new BsonDouble(3) };
+        yield return new object[] { Call("POW", new BsonExpression[] { Constant(2.0), Constant(3.0) }), new BsonDouble(8.0) };
+        #endregion
+
+        #region Misc
+        //yield return new object[] { Call("JSON", new BsonExpression[] { Constant("{a:1}") }), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) };
+        //yield return new object[] { Call("EXTEND", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["b"] = Constant(2) }), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) }), new BsonDocument { ["b"] = 2, ["a"] = 1 } };
+        #endregion
+
+        #region String
         yield return new object[] { Call("LOWER", new BsonExpression[] { Constant("LiteDB") }), new BsonString("litedb") };
         yield return new object[] { Call("UPPER", new BsonExpression[] { Constant("LiteDB") }), new BsonString("LITEDB") };
         yield return new object[] { Call("LTRIM", new BsonExpression[] { Constant("    LiteDB") }), new BsonString("LiteDB") };
@@ -99,6 +119,7 @@ public class Expressions_Tests
         yield return new object[] { Call("FORMAT", new BsonExpression[] { Constant(42), Constant("X") }), new BsonString("2A") };
         yield return new object[] { Call("JOIN", new BsonExpression[] { Array("LiteDB", "-LiteDB") }), new BsonString("LiteDB-LiteDB") };
         yield return new object[] { Call("JOIN", new BsonExpression[] { Array("LiteDB", "LiteDB"), Constant("/") }), new BsonString("LiteDB/LiteDB") };
+        #endregion
         #endregion
 
         #region BinaryExpressions

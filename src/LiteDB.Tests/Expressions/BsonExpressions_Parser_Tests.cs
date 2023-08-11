@@ -76,6 +76,22 @@ public class BsonExpressions_Parser_Tests
         #endregion
 
         #region CallMethods
+        #region Math
+        yield return new object[] { "ABS(-10)", Call("ABS", new BsonExpression[] { Constant(-10) }) };
+        yield return new object[] { "ABS(-10.5)", Call("ABS", new BsonExpression[] { Constant(-10.5) }) };
+        yield return new object[] { "ROUND(2,1)", Call("ROUND", new BsonExpression[] { Constant(2), Constant(1) }) };
+        yield return new object[] { "ROUND(2.4,0)", Call("ROUND", new BsonExpression[] { Constant(2.4), Constant(0) }) };
+        yield return new object[] { "ROUND(2.5,0)", Call("ROUND", new BsonExpression[] { Constant(2.5), Constant(0) }) };
+        yield return new object[] { "ROUND(2.6,0)", Call("ROUND", new BsonExpression[] { Constant(2.6), Constant(0) }) };
+        yield return new object[] { "POW(2,3)", Call("POW", new BsonExpression[] { Constant(2), Constant(3) }) };
+        #endregion
+
+        #region Misc
+        yield return new object[] { "JSON(\"{a:1}\")", Call("JSON", new BsonExpression[] { Constant("{a:1}") }) };
+        yield return new object[] { "EXTEND($,{a:1})", Call("EXTEND", new BsonExpression[] { Path(Root(),""), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) }) };
+        #endregion
+
+        #region String
         yield return new object[] { "LOWER(\"LiteDB\")", Call("LOWER", new BsonExpression[] { Constant("LiteDB") }) };
         yield return new object[] { "UPPER(\"LiteDB\")", Call("UPPER", new BsonExpression[] { Constant("LiteDB") }) };
         yield return new object[] { "LTRIM(\"    LiteDB\")", Call("LTRIM", new BsonExpression[] { Constant("    LiteDB") }) };
@@ -93,8 +109,7 @@ public class BsonExpressions_Parser_Tests
         yield return new object[] { "FORMAT(42,\"X\")", Call("FORMAT", new BsonExpression[] { Constant(42), Constant("X") }) };
         yield return new object[] { "JOIN([\"LiteDB\",\"-LiteDB\"])", Call("JOIN", new BsonExpression[] { Array("LiteDB", "-LiteDB") }) };
         yield return new object[] { "JOIN([\"LiteDB\",\"LiteDB\"],\"/\")", Call("JOIN", new BsonExpression[] { Array("LiteDB", "LiteDB"), Constant("/") }) };
-
-
+        #endregion
         #endregion
     }
 

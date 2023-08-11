@@ -1,6 +1,7 @@
 ﻿using Bogus.Bson;
 using Castle.Core.Configuration;
 using Newtonsoft.Json.Linq;
+using System;
 using static LiteDB.BsonExpression;
 
 namespace LiteDB.Tests.Expressions;
@@ -75,6 +76,26 @@ public class BsonExpressions_ToString_Tests
         #endregion
 
         #region CallMethods
+        #region Date
+        //yield return new object[] { Call("YEAR", new BsonExpression[] { Constant(new DateTime(2003, 1, 10)) }), "YEAR(\"10/01/2003\")" };
+        #endregion
+
+        #region Math
+        yield return new object[] { Call("ABS", new BsonExpression[] { Constant(-10) }), "ABS(-10)" };
+        yield return new object[] { Call("ABS", new BsonExpression[] { Constant(-10.5) }), "ABS(-10.5)" };
+        yield return new object[] { Call("ROUND", new BsonExpression[] { Constant(2), Constant(1) }), "ROUND(2,1)" };
+        yield return new object[] { Call("ROUND", new BsonExpression[] { Constant(2.4), Constant(0) }), "ROUND(2.4,0)" };
+        yield return new object[] { Call("ROUND", new BsonExpression[] { Constant(2.5), Constant(0) }), "ROUND(2.5,0)" };
+        yield return new object[] { Call("ROUND", new BsonExpression[] { Constant(2.6), Constant(0) }), "ROUND(2.6,0)" };
+        yield return new object[] { Call("POW", new BsonExpression[] { Constant(2), Constant(3) }), "POW(2,3)" };
+        #endregion
+
+        #region Misc
+        yield return new object[] { Call("JSON", new BsonExpression[] { Constant("{a:1}") }), "JSON(\"{a:1}\")" };
+        yield return new object[] { Call("EXTEND", new BsonExpression[] { Root(), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) }), "EXTEND($,{a:1})" };
+        #endregion
+
+        #region String
         yield return new object[] { Call("LOWER", new BsonExpression[] { Constant("LiteDB") }), "LOWER(\"LiteDB\")" };
         yield return new object[] { Call("UPPER", new BsonExpression[] { Constant("LiteDB") }), "UPPER(\"LiteDB\")" };
         yield return new object[] { Call("LTRIM", new BsonExpression[] { Constant("    LiteDB") }), "LTRIM(\"    LiteDB\")" };
@@ -92,6 +113,7 @@ public class BsonExpressions_ToString_Tests
         yield return new object[] { Call("FORMAT", new BsonExpression[] { Constant(42), Constant("X") }), "FORMAT(42,\"X\")" };
         yield return new object[] { Call("JOIN", new BsonExpression[] { Array("LiteDB", "-LiteDB") }), "JOIN([\"LiteDB\",\"-LiteDB\"])" };
         yield return new object[] { Call("JOIN", new BsonExpression[] { Array("LiteDB", "LiteDB"), Constant("/") }), "JOIN([\"LiteDB\",\"LiteDB\"],\"/\")" };
+        #endregion
         #endregion
     }
 

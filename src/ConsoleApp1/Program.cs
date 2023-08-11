@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Bogus;
 
 Bogus.Randomizer.Seed = new Random(420);
+Bogus.Randomizer.Seed = new Random(420);
 
 var filename = @"C:\temp\test-03.db";
 
