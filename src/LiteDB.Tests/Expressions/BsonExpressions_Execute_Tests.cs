@@ -97,8 +97,22 @@ public class Expressions_Tests
         #endregion
 
         #region Misc
-        //yield return new object[] { Call("JSON", new BsonExpression[] { Constant("{a:1}") }), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) };
+        yield return new object[] { Call("JSON", new BsonExpression[] { Constant("{a:1}") }), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) };
         //yield return new object[] { Call("EXTEND", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["b"] = Constant(2) }), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) }), new BsonDocument { ["b"] = 2, ["a"] = 1 } };
+        yield return new object[] { Call("KEYS", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) }), new BsonArray() { "name", "age" } };
+        yield return new object[] { Call("VALUES", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) }), new BsonArray() { "Maria", 18 } };
+        //yield return new object[] { Call("OID_CREATIONTIME", new BsonExpression[] {  }),  };
+        yield return new object[] { Call("COALESCE", new BsonExpression[] { Constant(10), Constant(20)}), new BsonInt32(10) };
+        yield return new object[] { Call("COALESCE", new BsonExpression[] { Constant(BsonValue.Null), Constant(20) }), new BsonInt32(20) };
+        yield return new object[] { Call("LENGTH", new BsonExpression[] { Constant("14LengthString") }), new BsonInt32(14) };
+        yield return new object[] { Call("LENGTH", new BsonExpression[] { Constant(new BsonBinary(new byte[] { 255, 255, 255})) }), new BsonInt32(3) };
+        yield return new object[] { Call("LENGTH", new BsonExpression[] { Array(10, 11, 12, 13) }), new BsonInt32(4) };
+        yield return new object[] { Call("LENGTH", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) }), new BsonInt32(2) };
+        //TOP
+        //UNION
+        //EXCEPT
+        //DISTINCT
+        
         #endregion
 
         #region String
