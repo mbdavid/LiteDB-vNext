@@ -137,6 +137,8 @@ internal class Transaction : ITransaction
 
             await _reader.ReadPageAsync(positionID, page);
 
+            ENSURE(() => page.Header.PageType == PageType.Data || page.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {page}");
+
             // clear PositionID in writable page
             if (writable)
             {
@@ -270,7 +272,7 @@ internal class Transaction : ITransaction
         // add pages to cache or decrement sharecount
         foreach (var page in _localPages.Values)
         {
-            if (page.IsDirty || page.Header.ColID == MASTER_COL_ID)
+            if (page.IsDirty/* || page.Header.ColID == MASTER_COL_ID*/)
             {
                 _bufferFactory.DeallocatePage(page);
             }

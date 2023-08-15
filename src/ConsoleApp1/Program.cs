@@ -20,13 +20,27 @@ var settings = new EngineSettings
 
 var db = new LiteEngine(settings);
 
-var data = GetData(20000, 0);
+var data = GetData(20000, 30);
 
 await db.OpenAsync();
 
-await db.CreateCollectionAsync("col1");
+for(var i = 0; i < 200; i++)
+{
+    await db.CreateCollectionAsync("collection-" + i);
+}
 
-await db.InsertAsync("col1", data, BsonAutoId.Int32);
+
+//await db.InsertAsync("col1", data, BsonAutoId.Int32);
+
+await db.Dump(0);
+
+
+//await db.ShutdownAsync();
+//
+//await db.OpenAsync();
+//
+
+
 //
 //var cursor = db.Query("col1", new Query());
 //
@@ -40,20 +54,21 @@ await db.InsertAsync("col1", data, BsonAutoId.Int32);
 
 await db.ShutdownAsync();
 
-return;
-
-await db.OpenAsync();
-
-var um = await db.FindById("col1", 1, Array.Empty<string>());
-
-await db.InsertAsync("col1", GetData(10_000, 0), BsonAutoId.Int32);
-
-
-var cursor2 = db.Query("col1", new Query());
-
+//return;
+//
+//await db.OpenAsync();
+//
+//var um = await db.FindById("col1", 1, Array.Empty<string>());
+//
+//await db.InsertAsync("col1", GetData(10_000, 0), BsonAutoId.Int32);
+//
+//
+//var cursor2 = db.Query("col1", new Query());
+//
 
 
 Console.WriteLine("\n\nEnd");
+Console.ReadKey();
 
 
 BsonDocument[] GetData(int count, int lorem)

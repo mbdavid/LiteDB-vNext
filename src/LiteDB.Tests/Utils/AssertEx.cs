@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using FluentAssertions;
-
-namespace LiteDB.Tests
+﻿namespace LiteDB.Tests
 {
     /// <summary>
     /// Extension and additional methods for debug

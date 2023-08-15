@@ -128,7 +128,14 @@ internal struct PageHeader
         var span = page.AsSpan();
 
         this.PageID = span[P_PAGE_ID..].ReadInt32();
-        this.PageType = (PageType)span[P_PAGE_TYPE];
+        this.PageType = span[P_PAGE_TYPE] switch
+        {
+            (byte)PageType.Empty => PageType.Empty,
+            (byte)PageType.AllocationMap => PageType.AllocationMap,
+            (byte)PageType.Index => PageType.Index,
+            (byte)PageType.Data => PageType.Data,
+            _ => PageType.Unknown
+        };
         this.PositionID = span[P_POSITION_ID..].ReadInt32();
 
         this.ColID = span[P_COL_ID];
@@ -209,6 +216,6 @@ internal struct PageHeader
 
     public override string ToString()
     {
-        return $"{{ PageID = {PageID}, PositionID = {PositionID}, PageType = {PageType}, ColID = {ColID}, TransID = {TransactionID}, ItemsCount = {ItemsCount}, FreeBytes = {FreeBytes}, IsConfirmed = {IsConfirmed}, HIndex = {HighestIndex}, Fragments = {FragmentedBytes}, Crc8 = {Crc8} }}";
+        return $"{{ PageID = {Dump.PageID(PageID)}, PositionID = {Dump.PageID(PositionID)}, PageType = {PageType}, ColID = {ColID}, TransID = {TransactionID}, ItemsCount = {ItemsCount}, FreeBytes = {FreeBytes}, IsConfirmed = {IsConfirmed}, HIndex = {HighestIndex}, Fragments = {FragmentedBytes}, Crc8 = {Crc8} }}";
     }
 }

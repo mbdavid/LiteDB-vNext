@@ -134,7 +134,7 @@ internal partial class LogService : ILogService
 
         if (logLength == 0 && !crop) return new ValueTask<int>(0);
 
-        ENSURE(() => _logPositionID == _logPages.Last().PositionID, $"Last log page must be {_logPositionID}");
+        ENSURE(logLength > 0, () => _logPositionID == _logPages.Last().PositionID, $"Last log page must be {_logPositionID}");
 
         // temp file start after lastPageID or last log used page
         var startTempPositionID = Math.Max(_lastPageID, _logPositionID) + 1;

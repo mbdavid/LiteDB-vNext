@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IDisposable))]
 internal class DiskStream : IDiskStream

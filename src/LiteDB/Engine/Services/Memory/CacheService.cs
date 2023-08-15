@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// Page buffer cache. Keep a concurrent dictionary with buffers (byte[]) based on disk file position.

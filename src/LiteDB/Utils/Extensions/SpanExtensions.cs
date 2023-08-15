@@ -27,6 +27,11 @@ internal static class SpanExtensions
         return BinaryPrimitives.ReadUInt32LittleEndian(span);
     }
 
+    public static UInt32 ReadUInt32BigEndian(this Span<byte> span)
+    {
+        return BinaryPrimitives.ReadUInt32BigEndian(span);
+    }
+
     public static Int64 ReadInt64(this Span<byte> span)
     {
         return BinaryPrimitives.ReadInt64LittleEndian(span);
@@ -145,6 +150,11 @@ internal static class SpanExtensions
     public static void WriteUInt32(this Span<byte> span, UInt32 value)
     {
         BinaryPrimitives.WriteUInt32LittleEndian(span, value);
+    }
+
+    public static void WriteUInt32BigEndian(this Span<byte> span, UInt32 value)
+    {
+        BinaryPrimitives.WriteUInt32BigEndian(span, value);
     }
 
     public static void WriteInt64(this Span<byte> span, Int64 value)

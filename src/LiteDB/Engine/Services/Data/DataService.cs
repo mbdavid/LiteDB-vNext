@@ -137,14 +137,11 @@ internal class DataService : IDataService
     {
         var page = await _transaction.GetPageAsync(rowID.PageID, false);
 
-        // read document size
-        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
-
         var dataBlock = new DataBlock(page, rowID);
 
         if (dataBlock.NextBlock.IsEmpty)
         {
-            var result = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
+            var result = _bsonReader.ReadDocument(dataBlock.GetDataSpan(page),
                 fields, false, out var _);
 
             return result;

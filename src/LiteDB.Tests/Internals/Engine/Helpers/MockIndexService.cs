@@ -17,7 +17,7 @@ internal class MockIndexService : IIndexService
         new (new PageAddress(999, 0), BsonValue.MaxValue, PageAddress.Empty, new PageAddress(), PageAddress.Empty)
     };
 
-    private readonly PageBuffer _page = new PageBuffer();
+    private readonly PageBuffer _page = new PageBuffer(0);
 
     public PageAddress Head => _values.First().indexRowID;
 

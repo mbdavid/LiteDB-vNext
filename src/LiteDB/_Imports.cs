@@ -14,11 +14,11 @@ global using System.Runtime.InteropServices;
 global using System.Runtime.CompilerServices;
 global using System.Security;
 global using System.Diagnostics;
+global using System.Diagnostics.CodeAnalysis;
 global using System.Security.Cryptography;
 global using System.Reflection;
 global using System.Buffers;
 global using System.Buffers.Binary;
-
 
 global using LiteDB.Engine;
 global using static LiteDB.Constants;

@@ -7,6 +7,11 @@
 internal class PageBuffer
 {
     /// <summary>
+    /// A unique ID for all genereted PageBuffers (this ID never changes)
+    /// </summary>
+    public readonly int UniqueID;
+
+    /// <summary>
     /// Position on disk where this page came from or where this page must be stored
     /// </summary>
     public int PositionID = int.MaxValue;
@@ -43,8 +48,9 @@ internal class PageBuffer
     public bool IsLogFile => this.PositionID > this.Header.PageID && this.PositionID == this.Header.PositionID;
     public bool IsTempFile => this.PositionID > this.Header.PageID && this.PositionID > this.Header.PositionID;
 
-    public PageBuffer()
+    public PageBuffer(int uniqueID)
     {
+        this.UniqueID = uniqueID;
     }
 
     /// <summary>
@@ -113,8 +119,8 @@ internal class PageBuffer
         return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter} }}";
     }
 
-    public string ToHtml()
+    public string DumpPage()
     {
-        return new HtmlPageDump(this).Render();
+        return PageDump.Render(this);
     }
 }

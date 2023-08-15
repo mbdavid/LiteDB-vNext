@@ -1,8 +1,4 @@
-﻿using System;
-using System.Net.Http.Headers;
-using System.Xml.Linq;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class IndexLikeEnumerator : IPipeEnumerator
 {

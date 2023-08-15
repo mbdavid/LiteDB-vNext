@@ -60,7 +60,7 @@ internal class AllocationMapPage
         // read all page
         for(var i = 0; i < AM_EXTEND_COUNT; i++)
         {
-            var value = span[(i * AM_BYTES_PER_EXTEND)..].ReadUInt32();
+            var value = span[(i * AM_BYTES_PER_EXTEND)..].ReadUInt32BigEndian();
 
             if (value == 0)
             {
@@ -76,7 +76,7 @@ internal class AllocationMapPage
     /// </summary>
     public uint GetExtendValue(int extendIndex) => _extendValues[extendIndex];
 
-    public void SetExtendValue(int extendIndex, uint value)
+    public void RestoreExtendValue(int extendIndex, uint value)
     {
         _page.IsDirty = true;
 
@@ -146,10 +146,19 @@ internal class AllocationMapPage
             _ => throw new InvalidOperationException()
         };
 
+        // update extend array value
         _extendValues[extendIndex] = extendValue;
 
         // mark page as dirty (in map page this should be manual)
         _page.IsDirty = true;
+
+#if DEBUG
+        // in debug mode, I will update not only _extendValues array, but also PageBuffer array
+        // in release mode, this update will occurs only in UpdatePageBuffer(), on Shutdown process
+        var pos = extendIndex * AM_BYTES_PER_EXTEND;
+        var span = _page.AsSpan(PAGE_HEADER_SIZE);
+        span[pos..].WriteUInt32BigEndian(extendValue);
+#endif
     }
 
 
@@ -175,7 +184,7 @@ internal class AllocationMapPage
 
         for(var i = 0; i < AM_EXTEND_COUNT; i++)
         {
-            span[pos..].WriteUInt32(_extendValues[i]);
+            span[pos..].WriteUInt32BigEndian(_extendValues[i]);
 
             pos += AM_BYTES_PER_EXTEND;
         }
@@ -197,6 +206,16 @@ internal class AllocationMapPage
         //  01234567   01234567   01234567   01234567
         // [________] [________] [________] [________]
         //  ColID      00011122   23334445   55666777
+
+        // 000 - empty
+        // 001 - data large
+        // 010 - data medium
+        // 011 - data small
+        // 100 - index 
+        // 101 - data full
+        // 110 - index full
+        // 111 - reserved
+
 
         // check for same colID
         if (colID != extendValue >> 24) return (-1, false);
