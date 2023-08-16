@@ -312,7 +312,7 @@ internal class PageService : IPageService
         for (int index = header.HighestIndex - 1; index >= 0; index--)
         {
             var segmentAddr = PageSegment.GetSegmentAddr((byte)index);
-            var location = span[segmentAddr.Location..2].ReadUInt16();
+            var location = span[segmentAddr.Location..].ReadUInt16();
 
             if (location != 0)
             {

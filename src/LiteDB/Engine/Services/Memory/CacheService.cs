@@ -139,7 +139,6 @@ internal class CacheService : ICacheService
         ENSURE(() => page.IsDirty == false);
         ENSURE(() => page.ShareCounter == 0, $"Page should not be in use");
 
-        page.PositionID = int.MaxValue;
         page.ShareCounter = NO_CACHE;
         page.Timestamp = 0;
     }

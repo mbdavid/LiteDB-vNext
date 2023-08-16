@@ -31,11 +31,7 @@ await db.OpenAsync();
 
 await db.InsertAsync("col1", data, BsonAutoId.Int32);
 
-await db.DeleteAsync("col1", new BsonValue[] { 1 });
-
-
-// await db.Dump(0);
-
+await db.DeleteAsync("col1", Enumerable.Range(2,200).Select(x => new BsonInt32(x)).ToArray());
 
 //await db.ShutdownAsync();
 //
@@ -53,6 +49,7 @@ PrintResult(await db.FetchAsync(cursor, 100));
 //var um = await db.FindById("col1", 1, Array.Empty<string>());
 //var dois = await db.FindById("col1", 2, Array.Empty<string>());
 
+await db.Dump(0);
 
 await db.ShutdownAsync();
 
