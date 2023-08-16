@@ -20,17 +20,19 @@ var settings = new EngineSettings
 
 var db = new LiteEngine(settings);
 
-var data = GetData(20000, 30);
+var data = GetData(200, 30);
 
 await db.OpenAsync();
 
-for(var i = 0; i < 200; i++)
+//for(var i = 0; i < 200; i++)
 {
-    await db.CreateCollectionAsync("collection-" + i);
+    await db.CreateCollectionAsync("col1");
 }
 
+await db.InsertAsync("col1", data, BsonAutoId.Int32);
 
-//await db.InsertAsync("col1", data, BsonAutoId.Int32);
+await db.DeleteAsync("col1", new BsonValue[] { 1 });
+
 
 await db.Dump(0);
 

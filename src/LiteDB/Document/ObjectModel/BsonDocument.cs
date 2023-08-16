@@ -12,7 +12,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 
     private readonly Dictionary<string, BsonValue> _value;
     private int _length = -1;
-    private bool _readonly = false;
+    private readonly bool _readonly = false;
 
     public IReadOnlyDictionary<string, BsonValue> Value => _value;
 

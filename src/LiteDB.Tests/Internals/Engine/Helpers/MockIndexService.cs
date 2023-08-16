@@ -2,7 +2,6 @@
 
 internal class MockIndexService : IIndexService
 {
-
     private List<(PageAddress indexRowID, BsonValue key, PageAddress rowID, PageAddress prev, PageAddress next)> _values = new()
     {
         new (new PageAddress(0, 0), BsonValue.MinValue, PageAddress.Empty, PageAddress.Empty, new PageAddress(2, 0)),
@@ -23,7 +22,7 @@ internal class MockIndexService : IIndexService
 
     public PageAddress Tail => _values.Last().indexRowID;
 
-    public ValueTask<IndexNodeRef> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeRef? last)
+    public ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult last)
     {
         throw new NotImplementedException();
     }
@@ -33,9 +32,8 @@ internal class MockIndexService : IIndexService
         throw new NotImplementedException();
     }
 
-    public ValueTask<IndexNodeRef?> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
+    public ValueTask<IndexNodeResult> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
     {
-
         var data = _values.FirstOrDefault(x => x.key == key);
 
         var node = new IndexNode(_page, data.indexRowID, 0, 1, data.key, data.rowID);
@@ -43,9 +41,9 @@ internal class MockIndexService : IIndexService
         node.SetNext(_page, 0, data.next);
         node.SetPrev(_page, 0, data.prev);
 
-        var result = new IndexNodeRef(node, _page);
+        var result = new IndexNodeResult(node, _page);
 
-        return new ValueTask<IndexNodeRef?>(result);
+        return new ValueTask<IndexNodeResult>(result);
     }
 
     public int Flip()
@@ -53,7 +51,7 @@ internal class MockIndexService : IIndexService
         throw new NotImplementedException();
     }
 
-    public ValueTask<IndexNodeRef> GetNodeAsync(PageAddress rowID, bool writable)
+    public ValueTask<IndexNodeResult> GetNodeAsync(PageAddress rowID, bool writable)
     {
         var data = _values.First(x => x.indexRowID == rowID);
 
@@ -62,8 +60,8 @@ internal class MockIndexService : IIndexService
         node.SetNext(_page, 0, data.next);
         node.SetPrev(_page, 0, data.prev);
 
-        var result = new IndexNodeRef(node, _page);
+        var result = new IndexNodeResult(node, _page);
 
-        return new ValueTask<IndexNodeRef>(result);
+        return new ValueTask<IndexNodeResult>(result);
     }
 }

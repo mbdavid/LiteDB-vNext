@@ -5,6 +5,8 @@
 /// </summary>
 internal struct IndexNode
 {
+    public static readonly IndexNode Empty = new();
+
     /// <summary>
     /// Fixed length of IndexNode (13 bytes)
     /// </summary>
@@ -66,6 +68,8 @@ internal struct IndexNode
     /// Link to next value (used in skip lists - Prev.Length = Next.Length)
     /// </summary>
     public readonly PageAddress[] Next;
+
+    public bool IsEmpty => this.RowID.IsEmpty;
 
     /// <summary>
     /// Read index node from page block
@@ -161,6 +165,17 @@ internal struct IndexNode
 
         // index node key IS document
         this.Key = doc;
+    }
+
+    /// <summary>
+    /// Empty IndexNode singleton instance
+    /// </summary>
+    public IndexNode()
+    {
+        this.RowID = PageAddress.Empty;
+        this.Key = BsonValue.Null;
+        this.Prev = Array.Empty<PageAddress>();
+        this.Next = Array.Empty<PageAddress>();
     }
 
     /// <summary>

@@ -36,16 +36,14 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         {
             _init = true;
 
-            var nodeRef = await indexService.FindAsync(_indexDocument, _value, false, Query.Ascending);
+            var (node, _) = await indexService.FindAsync(_indexDocument, _value, false, Query.Ascending);
 
             // if node was not found, end enumerator
-            if (nodeRef is null)
+            if (node.IsEmpty)
             {
                 _eof = true;
                 return PipeValue.Empty;
             }
-
-            var node = nodeRef.Value.Node;
 
             if (_indexDocument.Unique)
             {
@@ -65,14 +63,13 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         // first go forward
         if (!_prev.IsEmpty)
         {
-            var nodeRef = await indexService.GetNodeAsync(_prev, false);
-            var node = nodeRef.Node;
+            var (node, _) = await indexService.GetNodeAsync(_prev, false);
 
             var isEqual = _collation.Equals(_value, node.Key);
 
             if (isEqual)
             {
-                _prev = nodeRef.Node.Prev[0];
+                _prev = node.Prev[0];
 
                 return new PipeValue(node.DataBlock);
             }
@@ -85,14 +82,13 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         // and than, go backward
         if (!_next.IsEmpty)
         {
-            var nodeRef = await indexService.GetNodeAsync(_next, false);
-            var node = nodeRef.Node;
+            var (node, _) = await indexService.GetNodeAsync(_next, false);
 
             var isEqual = _collation.Equals(_value, node.Key);
 
             if (isEqual)
             {
-                _next = nodeRef.Node.Prev[0];
+                _next = node.Prev[0];
 
                 return new PipeValue(node.DataBlock);
             }

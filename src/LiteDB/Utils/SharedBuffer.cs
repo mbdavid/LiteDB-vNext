@@ -1,7 +1,7 @@
 ﻿namespace LiteDB;
 
 /// <summary>
-/// A shared byte array to rent and reuse on dispose
+/// A shared byte array to rent and return on dispose
 /// </summary>
 internal readonly struct SharedBuffer : IDisposable
 {

@@ -44,7 +44,7 @@ internal static class PageDump
             var span = page.AsSpan(PAGE_HEADER_SIZE + (i * AM_BYTES_PER_EXTEND));
 
             var extendLocation = new ExtendLocation(allocationMapID, i);
-            var extendValue = span.ReadUInt32BigEndian();
+            var extendValue = span.ReadExtendValue();
 
             var extendID = extendLocation.ExtendID.ToString().PadLeft(4, ' ');
             var colID = span[0].ToString().PadLeft(3, ' ');

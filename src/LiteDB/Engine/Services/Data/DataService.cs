@@ -121,7 +121,11 @@ internal class DataService : IDataService
 
         // get current datablock (for first one)
         var page = await _transaction.GetPageAsync(rowID.PageID, true);
-        //var dataBlock = new DataBlock(page, rowID);
+
+        // get first data block
+        var dataBlock = new DataBlock(page, rowID);
+
+
 
         // TODO: tá implementado só pra 1 pagina
         _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(), PageAddress.Empty);
@@ -157,7 +161,7 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask DeleteDocumentAsync(PageAddress rowID)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID, false);
+        var page = await _transaction.GetPageAsync(rowID.PageID, true);
 
         var dataBlock = new DataBlock(page, rowID);
 
@@ -171,7 +175,7 @@ internal class DataService : IDataService
         while (!dataBlock.NextBlock.IsEmpty)
         {
             // get next page
-            page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID, false);
+            page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID, true);
 
             dataBlock = new DataBlock(page, dataBlock.NextBlock);
 

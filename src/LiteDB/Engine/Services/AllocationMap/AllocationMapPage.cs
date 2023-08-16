@@ -60,7 +60,7 @@ internal class AllocationMapPage
         // read all page
         for(var i = 0; i < AM_EXTEND_COUNT; i++)
         {
-            var value = span[(i * AM_BYTES_PER_EXTEND)..].ReadUInt32BigEndian();
+            var value = span[(i * AM_BYTES_PER_EXTEND)..].ReadExtendValue();
 
             if (value == 0)
             {
@@ -157,7 +157,7 @@ internal class AllocationMapPage
         // in release mode, this update will occurs only in UpdatePageBuffer(), on Shutdown process
         var pos = extendIndex * AM_BYTES_PER_EXTEND;
         var span = _page.AsSpan(PAGE_HEADER_SIZE);
-        span[pos..].WriteUInt32BigEndian(extendValue);
+        span[pos..].WriteExtendValue(extendValue);
 #endif
     }
 
@@ -184,7 +184,7 @@ internal class AllocationMapPage
 
         for(var i = 0; i < AM_EXTEND_COUNT; i++)
         {
-            span[pos..].WriteUInt32BigEndian(_extendValues[i]);
+            span[pos..].WriteExtendValue(_extendValues[i]);
 
             pos += AM_BYTES_PER_EXTEND;
         }

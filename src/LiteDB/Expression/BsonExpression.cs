@@ -1,6 +1,4 @@
-﻿using LiteDB.Engine;
-
-namespace LiteDB;
+﻿namespace LiteDB;
 
 public abstract partial class BsonExpression : IEquatable<BsonExpression>
 {
@@ -68,8 +66,14 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
 
         if (keys.IsArray)
         {
+            var distinct = new HashSet<BsonValue>(); //TODO: how reuse this?
+
             foreach (var key in keys.AsArray)
             {
+                if (distinct.Contains(key)) continue;
+
+                distinct.Add(key);
+
                 yield return key;
             }
         }
