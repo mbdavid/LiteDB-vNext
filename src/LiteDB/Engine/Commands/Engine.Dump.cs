@@ -25,7 +25,7 @@ public partial class LiteEngine : ILiteEngine
         }
         else
         {
-            page = await transaction.GetPageAsync(pageID, false);
+            page = await transaction.GetPageAsync(pageID);
         }
 
         var dump = page.DumpPage();

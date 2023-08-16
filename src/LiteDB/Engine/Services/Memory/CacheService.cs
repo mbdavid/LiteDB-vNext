@@ -21,63 +21,58 @@ internal class CacheService : ICacheService
         _bufferFactory = bufferFactory;
     }
 
-    /// <summary>
-    /// Get a page from memory cache. If not exists, return null
-    /// If exists, increase sharecounter (and must call Return() after use)
-    /// </summary>
-    public PageBuffer? GetPageRead(int positionID)
+    public PageBuffer? GetPageReadWrite(int positionID, byte[] writeCollections, out bool writable)
     {
         var found = _cache.TryGetValue(positionID, out PageBuffer page);
 
-        if (!found) return null;
-
-        ENSURE(() => page.ShareCounter != NO_CACHE);
-
-        // increment ShareCounter to be used by another transaction
-        Interlocked.Increment(ref page.ShareCounter);
-
-        page.Timestamp = DateTime.UtcNow.Ticks;
-
-        return page;
-    }
-
-    /// <summary>
-    /// Get a page from memory cache. If not exists, return null
-    /// If exists, checks if ShareCounter == 0, remove from _cache and returns.
-    /// If ShareCounter > 0, create a new PageBuffer with copied content
-    /// </summary>
-    public PageBuffer? GetPageWrite(int positionID)
-    {
-        // try find page using remove
-        var found = _cache.TryRemove(positionID, out PageBuffer page);
-
-        if (!found) return null;
-
-        // if no one are using, reset page and returns
-        if (page.ShareCounter == 0)
+        if (!found)
         {
-            this.RemovePageFromCache(page);
+            writable = false;
+            return null;
+        }
 
-            return page;
+        // test if this page are getted from a writable collection in transaction
+        writable = Array.IndexOf(writeCollections, page.Header.ColID) > -1;
+
+        if (writable)
+        {
+            // if no one are using, remove from cache (double check)
+            if (page.ShareCounter == 0)
+            {
+                var removed = _cache.TryRemove(positionID, out _);
+
+                ENSURE(() => removed);
+
+                this.ClearPageWhenRemoveFromCache(page);
+
+                return page;
+            }
+            else
+            {
+                // if page is in use, create a new page
+                var newPage = _bufferFactory.AllocateNewPage(false);
+
+                // copy all content for this new created page
+                page.CopyBufferTo(newPage);
+
+                // and return as a new page instance
+                return newPage;
+            }
         }
         else
         {
-            // if page is in use, create a new page
-            var newPage = _bufferFactory.AllocateNewPage(false);
+            // get page for read-only
+            ENSURE(() => page.ShareCounter != NO_CACHE);
 
-            // copy all content for this new created page
-            page.CopyBufferTo(newPage);
+            // increment ShareCounter to be used by another transaction
+            Interlocked.Increment(ref page.ShareCounter);
 
-            // re-add page on cache
-            var added = _cache.TryAdd(positionID, page);
+            page.Timestamp = DateTime.UtcNow.Ticks;
 
-            if (!added)
-            {
-                throw new NotImplementedException("problema de concorrencia. não posso descartar paginas.. como fazer? manter em lista paralela?");
-            }
-
-            return newPage;
+            return page;
         }
+
+        throw new NotSupportedException();
     }
 
     /// <summary>
@@ -87,7 +82,7 @@ internal class CacheService : ICacheService
     {
         if (_cache.TryRemove(positionID, out PageBuffer cachePage))
         {
-            this.RemovePageFromCache(cachePage);
+            this.ClearPageWhenRemoveFromCache(cachePage);
 
             page = cachePage;
 
@@ -107,7 +102,7 @@ internal class CacheService : ICacheService
     {
         ENSURE(() => !page.IsDirty, "Page must be clean before add into cache");
         ENSURE(() => page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
-        ENSURE(() =>page.ShareCounter == NO_CACHE, "ShareCounter must be zero before add in cache");
+        ENSURE(() => page.InCache == false, "ShareCounter must be zero before add in cache");
 
         // before add, checks cache limit and cleanup if full
         if (_cache.Count >= CACHE_LIMIT)
@@ -139,7 +134,7 @@ internal class CacheService : ICacheService
     /// Set all variables to indicate that page are not in cache anymore 
     /// At this point, this PageBuffer are only out of _cache
     /// </summary>
-    private void RemovePageFromCache(PageBuffer page)
+    private void ClearPageWhenRemoveFromCache(PageBuffer page)
     {
         ENSURE(() => page.IsDirty == false);
         ENSURE(() => page.ShareCounter == 0, $"Page should not be in use");

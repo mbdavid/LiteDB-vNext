@@ -5,7 +5,7 @@
 /// </summary>
 internal static class Randomizer
 {
-    private static readonly Random _random = new();
+    private static readonly Random _random = new(RANDOMIZER_SEED);
 
     public static int Next()
     {

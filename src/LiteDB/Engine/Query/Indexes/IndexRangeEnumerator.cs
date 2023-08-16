@@ -51,8 +51,8 @@ internal class IndexRangeEnumerator : IPipeEnumerator
 
             // find first indexNode (or get from head/tail if Min/Max value)
             var (first, _) =
-                _start.IsMinValue ? await indexService.GetNodeAsync(_indexDocument.Head, false) :
-                _start.IsMaxValue ? await indexService.GetNodeAsync(_indexDocument.Tail, false) :
+                _start.IsMinValue ? await indexService.GetNodeAsync(_indexDocument.Head) :
+                _start.IsMaxValue ? await indexService.GetNodeAsync(_indexDocument.Tail) :
                 await indexService.FindAsync(_indexDocument, _start, true, _order);
 
             // get pointer to next/prev at level 0
@@ -71,7 +71,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         // first go forward
         if (!_prev.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_prev, false);
+            var (node, _) = await indexService.GetNodeAsync(_prev);
 
             // check for Min/Max bson values index node key
             if (node.Key.IsMaxValue || node.Key.IsMinValue)
@@ -98,7 +98,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         // and than, go backward
         if (!_next.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_next, false);
+            var (node, _) = await indexService.GetNodeAsync(_next);
 
             // check for Min/Max bson values index node key
             if (node.Key.IsMaxValue || node.Key.IsMinValue)

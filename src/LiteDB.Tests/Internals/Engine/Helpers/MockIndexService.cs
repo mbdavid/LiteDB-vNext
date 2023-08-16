@@ -51,7 +51,7 @@ internal class MockIndexService : IIndexService
         throw new NotImplementedException();
     }
 
-    public ValueTask<IndexNodeResult> GetNodeAsync(PageAddress rowID, bool writable)
+    public ValueTask<IndexNodeResult> GetNodeAsync(PageAddress rowID)
     {
         var data = _values.First(x => x.indexRowID == rowID);
 
@@ -63,5 +63,10 @@ internal class MockIndexService : IIndexService
         var result = new IndexNodeResult(node, _page);
 
         return new ValueTask<IndexNodeResult>(result);
+    }
+
+    public ValueTask DeleteAllAsync(IndexNodeResult nodeResult)
+    {
+        throw new NotImplementedException();
     }
 }

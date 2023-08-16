@@ -70,8 +70,8 @@ internal class AutoIdService : IAutoIdService
     /// </summary>
     public async Task InitializeAsync(byte colID, PageAddress tailRowID, IIndexService indexService)
     {
-        var tail = await indexService.GetNodeAsync(tailRowID, true); // must be writable because will be run over "insert"
-        var last = await indexService.GetNodeAsync(tail.Node.Prev[0], true);
+        var tail = await indexService.GetNodeAsync(tailRowID);
+        var last = await indexService.GetNodeAsync(tail.Node.Prev[0]);
 
         if (last.Node.Key.IsInt32)
         {

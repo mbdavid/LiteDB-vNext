@@ -44,6 +44,7 @@ internal class PageBuffer
     /// </summary>
     public readonly Memory<byte> Buffer = new byte[PAGE_SIZE];
 
+    public bool InCache => this.ShareCounter > NO_CACHE;
     public bool IsDataFile => this.PositionID == this.Header.PageID;
     public bool IsLogFile => this.PositionID > this.Header.PageID && this.PositionID == this.Header.PositionID;
     public bool IsTempFile => this.PositionID > this.Header.PageID && this.PositionID > this.Header.PositionID;
@@ -111,12 +112,11 @@ internal class PageBuffer
 
         // update page header
         page.Header.ReadFromPage(page);
-
     }
 
     public override string ToString()
     {
-        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter} }}";
+        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter}, InCache = {InCache} }}";
     }
 
     public string DumpPage()

@@ -120,7 +120,7 @@ internal class DataService : IDataService
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get current datablock (for first one)
-        var page = await _transaction.GetPageAsync(rowID.PageID, true);
+        var page = await _transaction.GetPageAsync(rowID.PageID);
 
         // get first data block
         var dataBlock = new DataBlock(page, rowID);
@@ -139,7 +139,7 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress rowID, string[] fields)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID, false);
+        var page = await _transaction.GetPageAsync(rowID.PageID);
 
         var dataBlock = new DataBlock(page, rowID);
 
@@ -161,7 +161,7 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask DeleteDocumentAsync(PageAddress rowID)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID, true);
+        var page = await _transaction.GetPageAsync(rowID.PageID);
 
         var dataBlock = new DataBlock(page, rowID);
 
@@ -175,7 +175,7 @@ internal class DataService : IDataService
         while (!dataBlock.NextBlock.IsEmpty)
         {
             // get next page
-            page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID, true);
+            page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID);
 
             dataBlock = new DataBlock(page, dataBlock.NextBlock);
 

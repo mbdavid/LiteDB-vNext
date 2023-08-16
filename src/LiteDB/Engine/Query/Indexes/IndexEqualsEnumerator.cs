@@ -63,7 +63,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         // first go forward
         if (!_prev.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_prev, false);
+            var (node, _) = await indexService.GetNodeAsync(_prev);
 
             var isEqual = _collation.Equals(_value, node.Key);
 
@@ -82,7 +82,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         // and than, go backward
         if (!_next.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_next, false);
+            var (node, _) = await indexService.GetNodeAsync(_next);
 
             var isEqual = _collation.Equals(_value, node.Key);
 

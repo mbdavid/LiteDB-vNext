@@ -109,7 +109,12 @@ internal class Constants
     /// <summary>
     /// Define when ShareCounter (on PageBuffer) are in cache or not
     /// </summary>
-    public const int NO_CACHE = -1; 
+    public const int NO_CACHE = -1;
+
+    /// <summary>
+    /// Initial seed for Random
+    /// </summary>
+    public const int RANDOMIZER_SEED = 42901;
 
     /// <summary>
     /// Define index name max length

@@ -76,7 +76,7 @@ internal partial class LogService : ILogService
         {
             var page = pages[i];
 
-            ENSURE(() => page.PositionID == int.MaxValue);
+            ENSURE(() => page.InCache == false);
 
             // get next page position on log (update header PositionID too)
             page.PositionID = this.GetNextLogPositionID();

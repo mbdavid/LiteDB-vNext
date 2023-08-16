@@ -62,8 +62,8 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         if(!_next.IsEmpty || !_prev.IsEmpty)
         {
             var (node, _) = !_next.IsEmpty ?
-                await indexService.GetNodeAsync(_next, false) :
-                await indexService.GetNodeAsync(_prev, false);
+                await indexService.GetNodeAsync(_next) :
+                await indexService.GetNodeAsync(_prev);
             
             if(node.Key.AsString.StartsWith(_startsWith, StringComparison.OrdinalIgnoreCase))
             {
@@ -89,7 +89,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
 
             var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
 
-            var nodeRef = await indexService.GetNodeAsync(start, false);
+            var nodeRef = await indexService.GetNodeAsync(start);
             var node = nodeRef.Node;
 
             // get pointer to next at level 0
@@ -105,7 +105,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         {
             do
             {
-                var nodeRef = await indexService.GetNodeAsync(_next, false);
+                var nodeRef = await indexService.GetNodeAsync(_next);
                 var node = nodeRef.Node;
 
                 if (node.Key.AsString.SqlLike(_value, _collation))

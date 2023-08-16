@@ -84,7 +84,7 @@ internal class IndexService : IIndexService
 
         // now, let's link my index node on right place
         var left = index.Head;
-        var leftNode = await this.GetNodeAsync(left, true);
+        var leftNode = await this.GetNodeAsync(left);
 
         // for: scan from top to bottom
         for (int i = INDEX_MAX_LEVELS - 1; i >= 0; i--)
@@ -95,7 +95,7 @@ internal class IndexService : IIndexService
             // while: scan from left to right
             while (right.IsEmpty == false)
             {
-                var rightNode = await this.GetNodeAsync(right, true);
+                var rightNode = await this.GetNodeAsync(right);
 
                 // read next node to compare
                 var diff = rightNode.Node.Key.CompareTo(key, _collation);
@@ -130,7 +130,7 @@ internal class IndexService : IIndexService
 
                 right = node.Next[currentLevel];
 
-                var rightNode = await this.GetNodeAsync(right, true);
+                var rightNode = await this.GetNodeAsync(right);
                 rightNode.Node.SetPrev(rightNode.Page, currentLevel, node.RowID);
             }
         }
@@ -164,9 +164,9 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Get a node/pageBuffer inside a page using PageAddress. RowID must be a valid position
     /// </summary>
-    public async ValueTask<IndexNodeResult> GetNodeAsync(PageAddress rowID, bool writable)
+    public async ValueTask<IndexNodeResult> GetNodeAsync(PageAddress rowID)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID, writable);
+        var page = await _transaction.GetPageAsync(rowID.PageID);
 
         return new(new IndexNode(page, rowID), page);
     }
@@ -181,7 +181,7 @@ internal class IndexService : IIndexService
     public async ValueTask<IndexNodeResult> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
     {
         var left = order == Query.Ascending ? index.Head : index.Tail;
-        var leftNode = await this.GetNodeAsync(left, false);
+        var leftNode = await this.GetNodeAsync(left);
 
         for (var level = INDEX_MAX_LEVELS - 1; level >= 0; level--)
         {
@@ -189,7 +189,7 @@ internal class IndexService : IIndexService
 
             while (right.IsEmpty == false)
             {
-                var rightNode = await this.GetNodeAsync(right, false);
+                var rightNode = await this.GetNodeAsync(right);
 
                 var diff = rightNode.Node.Key.CompareTo(key, _collation);
                 
@@ -228,8 +228,10 @@ internal class IndexService : IIndexService
         {
             await this.DeleteSingleNodeAsync(nodeResult);
 
+            if (nodeResult.Node.NextNode.IsEmpty) break;
+
             // move to next node
-            nodeResult = await this.GetNodeAsync(nodeResult.Node.NextNode, true);
+            nodeResult = await this.GetNodeAsync(nodeResult.Node.NextNode);
         }
     }
 
@@ -241,8 +243,8 @@ internal class IndexService : IIndexService
         for (int i = node.Levels - 1; i >= 0; i--)
         {
             // get previous and next nodes (between my deleted node)
-            var (prevNode, prevPage) = await this.GetNodeAsync(node.Prev[i], true);
-            var (nextNode, nextPage) = await this.GetNodeAsync(node.Next[i], true);
+            var (prevNode, prevPage) = await this.GetNodeAsync(node.Prev[i]);
+            var (nextNode, nextPage) = await this.GetNodeAsync(node.Next[i]);
 
             if (!prevNode.IsEmpty)
             {
@@ -251,7 +253,7 @@ internal class IndexService : IIndexService
 
             if (!nextNode.IsEmpty)
             {
-                nextNode.SetNext(nextPage, (byte)i, node.Next[i]);
+                nextNode.SetPrev(nextPage, (byte)i, node.Prev[i]);
             }
         }
 

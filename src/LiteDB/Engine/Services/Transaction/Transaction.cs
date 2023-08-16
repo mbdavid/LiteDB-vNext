@@ -97,18 +97,22 @@ internal class Transaction : ITransaction
     }
 
     /// <summary>
-    /// Try get page from local cache. If page not found, use ReadPage from disk
+    /// Get a existing page on database based on ReadVersion. Try get first from localPages,
+    /// cache and in last case read from disk (and add to localPages)
     /// </summary>
-    public async ValueTask<PageBuffer> GetPageAsync(int pageID, bool writable)
+    public async ValueTask<PageBuffer> GetPageAsync(int pageID)
     {
+        ENSURE(() => pageID != int.MaxValue, "PageID must have a value");
+
         if (_localPages.TryGetValue(pageID, out var page))
         {
-            ENSURE(writable, () => page.ShareCounter == NO_CACHE, "Page should not be in cache");
+            // if writable, page should not be in cache
+            ENSURE(Array.IndexOf(_writeCollections, page.Header.ColID) > -1, () => page.ShareCounter == NO_CACHE, "Page should not be in cache");
 
             return page;
         }
 
-        page = await this.ReadPageAsync(pageID, this.ReadVersion, writable);
+        page = await this.ReadPageAsync(pageID, this.ReadVersion);
 
         _localPages.Add(pageID, page);
 
@@ -118,7 +122,7 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Read a data/index page from disk (data or log). Can return page from global cache
     /// </summary>
-    private async ValueTask<PageBuffer> ReadPageAsync(int pageID, int readVersion, bool writable)
+    private async ValueTask<PageBuffer> ReadPageAsync(int pageID, int readVersion)
     {
         _reader ??= _diskService.RentDiskReader();
 
@@ -126,24 +130,16 @@ internal class Transaction : ITransaction
         var positionID = _walIndexService.GetPagePositionID(pageID, readVersion, out _);
 
         // get a page from cache (if writable, this page are not linked to cache anymore)
-        var page = writable ? 
-            _cacheService.GetPageWrite(positionID) :
-            _cacheService.GetPageRead(positionID);
+        var page = _cacheService.GetPageReadWrite(positionID, _writeCollections, out var writable);
 
         // if page not found, allocate new page and read from disk
         if (page is null)
         {
-            page = _bufferFactory.AllocateNewPage(writable);
+            page = _bufferFactory.AllocateNewPage(false);
 
             await _reader.ReadPageAsync(positionID, page);
 
             ENSURE(() => page.Header.PageType == PageType.Data || page.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {page}");
-
-            // clear PositionID in writable page
-            if (writable)
-            {
-                page.PositionID = int.MaxValue;
-            }
         }
 
         return page;
@@ -179,7 +175,7 @@ internal class Transaction : ITransaction
         }
         else
         {
-            var page = await this.GetPageAsync(pageID, true);
+            var page = await this.GetPageAsync(pageID);
 
             return page;
         }
@@ -223,7 +219,6 @@ internal class Transaction : ITransaction
             var page = dirtyPages[i];
 
             ENSURE(() => page.ShareCounter == NO_CACHE, "Page should not be on cache when saving");
-            ENSURE(() => page.PositionID == int.MaxValue);
 
             // update page header
             page.Header.TransactionID = this.TransactionID;
