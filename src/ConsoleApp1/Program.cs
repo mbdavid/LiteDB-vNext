@@ -30,7 +30,7 @@ await db.OpenAsync();
 
 await db.InsertAsync("col1", GetData(1, 500), BsonAutoId.Int32);
 
-await db.DeleteAsync("col1", Enumerable.Range(5, 800).Select(x => new BsonInt32(x)).ToArray());
+await db.DeleteAsync("col1", Enumerable.Range(5, 100).Select(x => new BsonInt32(x)).ToArray());
 
 await db.InsertAsync("col1", GetData(10, 50), BsonAutoId.Int32);
 
