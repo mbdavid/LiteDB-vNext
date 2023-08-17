@@ -29,4 +29,9 @@ internal readonly struct SharedBuffer : IDisposable
     {
         ArrayPool<byte>.Shared.Return(_array);
     }
+
+    public override string ToString()
+    {
+        return $"{{ Length = {_length} }}";
+    }
 }

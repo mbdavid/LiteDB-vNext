@@ -324,9 +324,9 @@ internal class AllocationMapPage
     /// Get a value (0-7) thats represent diferent page types/avaiable spaces
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static byte GetAllocationPageValue(ref PageHeader header)
+    public static byte GetAllocationPageValue(PageType pageType, int freeBytes)
     {
-        return (header.PageType, header.FreeBytes) switch
+        return (pageType, freeBytes) switch
         {
             (_, PAGE_CONTENT_SIZE) => 0, // empty page, no matter page type
             (PageType.Data, >= AM_DATA_PAGE_SPACE_LARGE and < PAGE_CONTENT_SIZE) => 1,

@@ -49,20 +49,20 @@ internal class DataService : IDataService
         var page = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
 
         // one single page
-        if (bytesToCopy <= docLength)
+        if (docLength <= bytesToCopy)
         {
             var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(), PageAddress.Empty);
 
             firstBlock = dataBlock.RowID;
 
             // update allocation map after page change
-            _transaction.UpdatePageMap(ref page.Header);
+            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
         }
         // multiple pages
         else
         {
             var pageCount = docLength / MAX_DATA_BYTES_PER_PAGE + (docLength % MAX_DATA_BYTES_PER_PAGE == 0 ? 0 : 1);
-            var pages = new PageBuffer[pageCount];
+            var pages = new PageBuffer[pageCount]; //TODO: use stack array
 
             // copy first page to array
             pages[0] = page;
@@ -74,6 +74,9 @@ internal class DataService : IDataService
                     (docLength - ((pages.Length - 1) * MAX_DATA_BYTES_PER_PAGE)) : 
                     MAX_DATA_BYTES_PER_PAGE;
 
+
+                //todo: tenho que pedir todas ao mesmo tempo pro allocation map, pois
+                // nao 
                 pages[i] = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
             }
 
@@ -95,7 +98,7 @@ internal class DataService : IDataService
                 nextBlock = dataBlock.RowID;
 
                 // update allocation map after each page change
-                _transaction.UpdatePageMap(ref pages[i].Header);
+                //**_transaction.UpdatePageMap(ref pages[i].Header);
             }
 
             firstBlock = nextBlock;
@@ -131,7 +134,7 @@ internal class DataService : IDataService
         _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(), PageAddress.Empty);
 
         // update allocation map after change page
-        _transaction.UpdatePageMap(ref page.Header);
+        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
     }
 
     /// <summary>
@@ -169,7 +172,7 @@ internal class DataService : IDataService
         _dataPageService.DeleteDataBlock(page, rowID.Index);
 
         // update allocation map after change page
-        _transaction.UpdatePageMap(ref page.Header);
+        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
 
         // keeping deleting all next pages/data blocks until nextBlock is empty
         while (!dataBlock.NextBlock.IsEmpty)
@@ -183,7 +186,7 @@ internal class DataService : IDataService
             _dataPageService.DeleteDataBlock(page, dataBlock.NextBlock.Index);
 
             // update allocation map after change page
-            _transaction.UpdatePageMap(ref page.Header);
+            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
         }
     }
 

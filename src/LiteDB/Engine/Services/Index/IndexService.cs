@@ -42,7 +42,7 @@ internal class IndexService : IIndexService
         tail.SetPrev(page, 0, head.RowID);
 
         // update allocation map after page change
-        _transaction.UpdatePageMap(ref page.Header);
+        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
 
         return (head, tail);
     }
@@ -80,7 +80,7 @@ internal class IndexService : IIndexService
         var node = _indexPageService.InsertIndexNode(page, index.Slot, insertLevels, key, dataBlock, bytesLength);
 
         // update allocation map after page change
-        _transaction.UpdatePageMap(ref page.Header);
+        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
 
         // now, let's link my index node on right place
         var left = index.Head;
@@ -260,7 +260,7 @@ internal class IndexService : IIndexService
         // delete node segment in page
         _indexPageService.DeleteIndexNode(page, node.RowID.Index);
 
-        // update map page without deleted node
-        _transaction.UpdatePageMap(ref page.Header);
+        // update map page 
+        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
     }
 }

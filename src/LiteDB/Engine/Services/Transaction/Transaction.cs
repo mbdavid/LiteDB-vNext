@@ -185,12 +185,12 @@ internal class Transaction : ITransaction
     /// Update allocation page map according with header page type and used bytes but keeps a copy
     /// of original extend value (if need rollback)
     /// </summary>
-    public void UpdatePageMap(ref PageHeader header)
+    public void UpdatePageMap(int pageID, PageType pageType, int freeBytes)
     {
-        ENSURE(header, header => header.PageType == PageType.Data ||  header.PageType == PageType.Index);
+        ENSURE(() => pageType == PageType.Data || pageType == PageType.Index);
 
-        var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
-        var extendIndex = (header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+        var allocationMapID = (int)(pageID / AM_PAGE_STEP);
+        var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
 
         var extendLocation = new ExtendLocation(allocationMapID, extendIndex);
         var extendID = extendLocation.ExtendID;
@@ -202,7 +202,7 @@ internal class Transaction : ITransaction
             _initialExtendValues.Add(extendID, extendValue);
         }
 
-        _allocationMapService.UpdatePageMap(ref header);
+        _allocationMapService.UpdatePageMap(pageID, pageType, freeBytes);
     }
 
     /// <summary>

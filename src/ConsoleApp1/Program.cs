@@ -5,6 +5,7 @@ global using LiteDB.Engine;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using Bogus;
+using Bogus.DataSets;
 
 Bogus.Randomizer.Seed = new Random(420);
 
@@ -20,8 +21,6 @@ var settings = new EngineSettings
 
 var db = new LiteEngine(settings);
 
-var data = GetData(200, 30);
-
 await db.OpenAsync();
 
 //for(var i = 0; i < 200; i++)
@@ -29,9 +28,12 @@ await db.OpenAsync();
     await db.CreateCollectionAsync("col1");
 }
 
-await db.InsertAsync("col1", data, BsonAutoId.Int32);
+await db.InsertAsync("col1", GetData(1, 500), BsonAutoId.Int32);
 
-await db.DeleteAsync("col1", Enumerable.Range(2,200).Select(x => new BsonInt32(x)).ToArray());
+await db.DeleteAsync("col1", Enumerable.Range(5, 800).Select(x => new BsonInt32(x)).ToArray());
+
+await db.InsertAsync("col1", GetData(10, 50), BsonAutoId.Int32);
+
 
 //await db.ShutdownAsync();
 //
@@ -41,7 +43,6 @@ await db.DeleteAsync("col1", Enumerable.Range(2,200).Select(x => new BsonInt32(x
 
 //
 var cursor = db.Query("col1", new Query());
-
 PrintResult(await db.FetchAsync(cursor, 100));
 //PrintResult(await db.FetchAsync(cursor, 100));
 //PrintResult(await db.FetchAsync(cursor, 100));
@@ -53,34 +54,40 @@ await db.Dump(0);
 
 await db.ShutdownAsync();
 
-//return;
-//
-//await db.OpenAsync();
-//
-//var um = await db.FindById("col1", 1, Array.Empty<string>());
-//
+return;
+
+await db.OpenAsync();
+
+var um = await db.FindById("col1", 1, Array.Empty<string>());
+
 //await db.InsertAsync("col1", GetData(10_000, 0), BsonAutoId.Int32);
-//
-//
-//var cursor2 = db.Query("col1", new Query());
-//
+
+
+var cursor2 = db.Query("col1", new Query());
+PrintResult(await db.FetchAsync(cursor2, 100));
 
 
 Console.WriteLine("\n\nEnd");
 Console.ReadKey();
 
 
-BsonDocument[] GetData(int count, int lorem)
+BsonDocument[] GetData(int start, int end, int lorem = 5)
 {
     var faker = new Faker();
+    var result = new List<BsonDocument>();
 
-    return Enumerable.Range(1, count).Select(x => new BsonDocument
+    for(var i = start; i <= end; i++)
     {
-        //["_id"] = x,
-        ["name"] = faker.Name.FullName(),
-        ["age"] = faker.Random.Number(15, 80),
-        ["lorem"] = lorem == 0 ? BsonValue.Null : faker.Lorem.Sentence(lorem)
-    }).ToArray();
+        result.Add(new BsonDocument
+        {
+            ["_id"] = i,
+            ["name"] = faker.Name.FullName(),
+            ["age"] = faker.Random.Number(15, 80),
+            ["lorem"] = lorem == 0 ? BsonValue.Null : faker.Lorem.Sentence(lorem)
+        });
+    }
+
+    return result.ToArray();
 }
 
 void PrintResult(FetchResult result)
