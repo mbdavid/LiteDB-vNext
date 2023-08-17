@@ -60,7 +60,7 @@ internal class NewDatafile : INewDatafile
         _bsonWriter.WriteDocument(masterBuffer.AsSpan(), masterDoc, out _);
 
         // insert $master document into master page
-        _dataPageService.InsertDataBlock(masterPage, masterBuffer.AsSpan(), PageAddress.Empty);
+        _dataPageService.InsertDataBlock(masterPage, masterBuffer.AsSpan());
 
         // initialize fixed position id 
         mapPage.PositionID = 0;

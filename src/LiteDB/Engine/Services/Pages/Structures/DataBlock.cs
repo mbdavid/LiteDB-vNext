@@ -25,7 +25,7 @@ internal struct DataBlock
     /// <summary>
     /// If document need more than 1 block, use this link to next block
     /// </summary>
-    public readonly PageAddress NextBlock;
+    public PageAddress NextBlock;
 
     /// <summary>
     /// Read new DataBlock from filled page block
@@ -60,6 +60,23 @@ internal struct DataBlock
         var span = page.AsSpan(segment);
 
         span[P_BLOCK_TYPE] = this.BlockType;
+        span[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
+    }
+
+    /// <summary>
+    /// Update NextBlock pointer (update in buffer too)
+    /// </summary>
+    public void SetNextBlock(PageBuffer page, PageAddress nextBlock)
+    {
+        ENSURE(this, x => x.RowID.PageID == page.Header.PageID, $"should be same data page {page}");
+
+        page.IsDirty = true;
+
+        this.NextBlock = nextBlock;
+
+        var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
+        var span = page.AsSpan(segment);
+
         span[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
     }
 

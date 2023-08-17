@@ -146,27 +146,19 @@ internal class Transaction : ITransaction
     }
 
     /// <summary>
-    /// Get a page with free space avaiable to store, at least, bytesLength
+    /// Get a Data Page with, at least, 30% free space
     /// </summary>
-    public async ValueTask<PageBuffer> GetFreePageAsync(byte colID, PageType pageType, int bytesLength)
+    public async ValueTask<PageBuffer> GetFreeDataPageAsync(byte colID)
     {
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, pageType, bytesLength);
+        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, PageType.Data);
 
         if (isNew)
         {
             var page = _bufferFactory.AllocateNewPage(true);
 
-            // initialize empty page as data/index page
-            if (pageType == PageType.Data)
-            {
-                _dataPageService.InitializeDataPage(page, pageID, colID);
-            }
-            else if (pageType == PageType.Index)
-            {
-                _indexPageService.InitializeIndexPage(page, pageID, colID);
-            }
-            else throw new NotSupportedException();
+            // initialize empty page as data page
+            _dataPageService.InitializeDataPage(page, pageID, colID);
 
             // add in local cache
             _localPages.Add(pageID, page);
@@ -176,6 +168,45 @@ internal class Transaction : ITransaction
         else
         {
             var page = await this.GetPageAsync(pageID);
+
+            return page;
+        }
+    }
+
+    /// <summary>
+    /// Get a Index Page with space enougth for index node
+    /// </summary>
+    public async ValueTask<PageBuffer> GetFreeIndexPageAsync(byte colID, int indexNodeLength)
+    {
+        // request for allocation map service a new PageID for this collection
+        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, PageType.Data);
+
+        if (isNew)
+        {
+            var page = _bufferFactory.AllocateNewPage(true);
+
+            // initialize empty page as data page
+            _dataPageService.InitializeDataPage(page, pageID, colID);
+
+            // add in local cache
+            _localPages.Add(pageID, page);
+
+            return page;
+        }
+        else
+        {
+            var page = await this.GetPageAsync(pageID);
+
+            // if current page has no avaiable space (super rare cases), get another page
+            if (page.Header.FreeBytes < indexNodeLength)
+            {
+                // set this page as full before get next page
+                this.UpdatePageMap(page.Header.PageID, PageType.Index, 0);
+
+                // call recursive to get another page
+                return await this.GetFreeIndexPageAsync(colID, indexNodeLength);
+            }
+
 
             return page;
         }

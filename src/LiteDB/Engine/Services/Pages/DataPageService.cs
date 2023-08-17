@@ -16,7 +16,7 @@ internal class DataPageService : PageService, IDataPageService
     /// <summary>
     /// Write a new document (or document fragment) into a DataPage
     /// </summary>
-    public DataBlock InsertDataBlock(PageBuffer page, Span<byte> buffer, PageAddress nextBlock)
+    public DataBlock InsertDataBlock(PageBuffer page, Span<byte> buffer)
     {
         // get required bytes this insert
         var bytesLength = (ushort)(buffer.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
@@ -29,7 +29,7 @@ internal class DataPageService : PageService, IDataPageService
 
         var rowID = new PageAddress(page.Header.PageID, newIndex);
 
-        var dataBlock = new DataBlock(page, rowID, nextBlock);
+        var dataBlock = new DataBlock(page, rowID, PageAddress.Empty);
 
         // get data block location inside page
         var dataBlockBuffer = page.AsSpan(segment.Location + DataBlock.P_BUFFER, buffer.Length);

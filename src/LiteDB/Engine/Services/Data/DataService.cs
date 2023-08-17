@@ -1,13 +1,10 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+
+namespace LiteDB.Engine;
 
 [AutoInterface]
 internal class DataService : IDataService
 {
-    /// <summary>
-    /// Get maximum data bytes[] that fit in 1 page = 7343 bytes
-    /// </summary>
-    public const int MAX_DATA_BYTES_PER_PAGE = AM_DATA_PAGE_SPACE_LARGE - 1;
-
     // dependency injection
     private readonly IDataPageService _dataPageService;
     private readonly IBsonReader _bsonReader;
@@ -41,70 +38,50 @@ internal class DataService : IDataService
         // write all document into buffer doc before copy to pages
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
-        var bytesToCopy = Math.Min(docLength, MAX_DATA_BYTES_PER_PAGE);
-
-        PageAddress firstBlock;
-
         // get first page
-        var page = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
+        var page = await _transaction.GetFreeDataPageAsync(colID);
 
-        // one single page
-        if (docLength <= bytesToCopy)
+        // keep last instance to update nextBlock
+        PageBuffer? lastPage = null;
+        DataBlock? lastDataBlock = null;
+
+        // return rowID - will be update in first insert
+        var rowID = PageAddress.Empty;
+
+        var bytesLeft = docLength;
+        var position = 0;
+
+        while (true)
         {
-            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(), PageAddress.Empty);
+            // get how many bytes must be copied in this page
+            var bytesToCopy = Math.Min(page.Header.FreeBytes, bytesLeft);
 
-            firstBlock = dataBlock.RowID;
+            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(position, bytesToCopy));
 
-            // update allocation map after page change
-            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
-        }
-        // multiple pages
-        else
-        {
-            var pageCount = docLength / MAX_DATA_BYTES_PER_PAGE + (docLength % MAX_DATA_BYTES_PER_PAGE == 0 ? 0 : 1);
-            var pages = new PageBuffer[pageCount]; //TODO: use stack array
-
-            // copy first page to array
-            pages[0] = page;
-
-            // load all pages with full space available
-            for (var i = 1; i < pages.Length; i++)
+            if (lastPage is not null && lastDataBlock is not null)
             {
-                bytesToCopy = i == pages.Length - 1 ? 
-                    (docLength - ((pages.Length - 1) * MAX_DATA_BYTES_PER_PAGE)) : 
-                    MAX_DATA_BYTES_PER_PAGE;
-
-
-                //todo: tenho que pedir todas ao mesmo tempo pro allocation map, pois
-                // nao 
-                pages[i] = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
+                // update NextDataBlock from last page
+                lastDataBlock.Value.SetNextBlock(lastPage, dataBlock.RowID);
+            }
+            else
+            {
+                // get first dataBlock rowID
+                rowID = dataBlock.RowID;
             }
 
-            var nextBlock = PageAddress.Empty;
+            bytesLeft -= bytesToCopy;
+            position += bytesToCopy;
 
-            // copy document bytes in reverse page order (to set next block)
-            for (var i = pages.Length - 1; i >= 0; i--)
-            {
-                var startIndex = i * MAX_DATA_BYTES_PER_PAGE;
+            if (bytesLeft == 0) break;
 
-                bytesToCopy = i == pages.Length - 1 ?
-                    (docLength - ((pages.Length - 1) * MAX_DATA_BYTES_PER_PAGE)) :
-                    MAX_DATA_BYTES_PER_PAGE;
+            // keep last instance
+            lastPage = page;
+            lastDataBlock = dataBlock;
 
-                var dataBlock = _dataPageService.InsertDataBlock(pages[i], 
-                    bufferDoc.AsSpan(startIndex, bytesToCopy), 
-                    nextBlock);
-
-                nextBlock = dataBlock.RowID;
-
-                // update allocation map after each page change
-                //**_transaction.UpdatePageMap(ref pages[i].Header);
-            }
-
-            firstBlock = nextBlock;
+            page = await _transaction.GetFreeDataPageAsync(colID);
         }
 
-        return firstBlock;
+        return rowID;
     }
 
     /// <summary>
