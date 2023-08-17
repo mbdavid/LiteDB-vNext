@@ -50,22 +50,20 @@ internal class IndexRangeEnumerator : IPipeEnumerator
             _init = true;
 
             // find first indexNode (or get from head/tail if Min/Max value)
-            var firstRef =
-                _start.IsMinValue ? await indexService.GetNodeAsync(_indexDocument.Head, false) :
-                _start.IsMaxValue ? await indexService.GetNodeAsync(_indexDocument.Tail, false) :
+            var (first, _) =
+                _start.IsMinValue ? await indexService.GetNodeAsync(_indexDocument.Head) :
+                _start.IsMaxValue ? await indexService.GetNodeAsync(_indexDocument.Tail) :
                 await indexService.FindAsync(_indexDocument, _start, true, _order);
 
             // get pointer to next/prev at level 0
-            _prev = firstRef.Value.Node.Prev[0];
-            _next = firstRef.Value.Node.Next[0];
+            _prev = first.Prev[0];
+            _next = first.Next[0];
 
-            if (_startEquals && firstRef is not null)
+            if (_startEquals && !first.IsEmpty)
             {
-                var node = firstRef.Value.Node;
-
-                if (!node.Key.IsMinValue && !node.Key.IsMaxValue)
+                if (!first.Key.IsMinValue && !first.Key.IsMaxValue)
                 { 
-                    return new PipeValue(firstRef.Value.Node.DataBlock);
+                    return new PipeValue(first.DataBlock);
                 }
             }
         }
@@ -73,8 +71,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         // first go forward
         if (!_prev.IsEmpty)
         {
-            var nodeRef = await indexService.GetNodeAsync(_prev, false);
-            var node = nodeRef.Node;
+            var (node, _) = await indexService.GetNodeAsync(_prev);
 
             // check for Min/Max bson values index node key
             if (node.Key.IsMaxValue || node.Key.IsMinValue)
@@ -87,7 +84,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
 
                 if (diff == (_order /* 1 */) || (diff == 0 && _startEquals))
                 {
-                    _prev = nodeRef.Node.Prev[0];
+                    _prev = node.Prev[0];
 
                     return new PipeValue(node.DataBlock);
                 }
@@ -101,8 +98,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         // and than, go backward
         if (!_next.IsEmpty)
         {
-            var nodeRef = await indexService.GetNodeAsync(_next, false);
-            var node = nodeRef.Node;
+            var (node, _) = await indexService.GetNodeAsync(_next);
 
             // check for Min/Max bson values index node key
             if (node.Key.IsMaxValue || node.Key.IsMinValue)
@@ -116,7 +112,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
 
             if (diff == (_order * -1 /* -1 */) || (diff == 0 && _endEquals))
             {
-                _next = nodeRef.Node.Next[0];
+                _next = node.Next[0];
 
                 return new PipeValue(node.DataBlock);
             }

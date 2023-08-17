@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IDisposable))]
 internal class DiskStream : IDiskStream
@@ -112,6 +110,8 @@ internal class DiskStream : IDiskStream
     /// </summary>
     public async ValueTask<bool> ReadPageAsync(int positionID, PageBuffer page, CancellationToken ct = default)
     {
+        ENSURE(() => positionID != int.MaxValue, "PositionID should not be empty");
+
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 

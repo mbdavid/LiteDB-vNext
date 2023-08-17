@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq.Expressions;
-using System.Xml.Linq;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class PipelineBuilder
 {

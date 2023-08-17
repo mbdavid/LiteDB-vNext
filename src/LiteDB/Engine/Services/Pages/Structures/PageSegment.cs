@@ -20,6 +20,11 @@ internal readonly struct PageSegment
     /// </summary>
     public ushort EndLocation => (ushort)(this.Location + this.Length);
 
+    /// <summary>
+    /// Indicate this segment are clear (no reference)
+    /// </summary>
+    public bool IsEmpty => this.Location == 0 && this.Length == 0;
+
     public PageSegment(ushort location, ushort length)
     {
         this.Location = location;
@@ -49,7 +54,7 @@ internal readonly struct PageSegment
         return segment;
     }
 
-    public override string ToString() => $"{this.Location}/{this.Length}";
+    public override string ToString() => this.IsEmpty ? "<EMPTY>" : $"{{ Loc = {this.Location}, Len = {this.Length} }}";
 
     /// <summary>
     /// Get segment address at footer page. Returns only footer address reference (not real page segment)

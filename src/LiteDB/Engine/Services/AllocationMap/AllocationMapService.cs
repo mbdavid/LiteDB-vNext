@@ -102,17 +102,25 @@ internal class AllocationMapService : IAllocationMapService
     }
 
     /// <summary>
+    /// Get PageBuffer instance for a specific allocationMapID
+    /// </summary>
+    public PageBuffer GetPageBuffer(int allocationMapID)
+    {
+        return _pages[allocationMapID].Page;
+    }
+
+    /// <summary>
     /// Update allocation page map according with header page type and used bytes
     /// </summary>
-    public void UpdatePageMap(ref PageHeader header)
+    public void UpdatePageMap(int pageID, PageType pageType, int freeBytes)
     {
-        var allocationMapID = (int)(header.PageID / AM_PAGE_STEP);
-        var extendIndex = (header.PageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
-        var pageIndex = header.PageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE;
+        var allocationMapID = (int)(pageID / AM_PAGE_STEP);
+        var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
+        var pageIndex = pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE;
 
         var page = _pages[allocationMapID];
 
-        var pageValue = AllocationMapPage.GetAllocationPageValue(ref header);
+        var pageValue = AllocationMapPage.GetAllocationPageValue(pageType, freeBytes);
 
         page.UpdateExtendPageValue(extendIndex, pageIndex, pageValue);
     }
@@ -128,7 +136,7 @@ internal class AllocationMapService : IAllocationMapService
 
             var page = _pages[extendLocation.AllocationMapID];
 
-            page.SetExtendValue(extendLocation.ExtendIndex, extendValue.Value);
+            page.RestoreExtendValue(extendLocation.ExtendIndex, extendValue.Value);
         }
     }
 

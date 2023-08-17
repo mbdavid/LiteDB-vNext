@@ -9,6 +9,8 @@ internal class CheckpointActions
         int startTempPositionID,
         IList<PageHeader> tempPages)
     {
+        if (logPages.Count == 0) yield break;
+
         // get last file position ID
         var lastFilePositionID = tempPages.Count > 0 ?
             startTempPositionID + tempPages.Count - 1 :

@@ -63,6 +63,16 @@ internal struct DataBlock
         span[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
     }
 
+    /// <summary>
+    /// Get span from data content inside dataBlock
+    /// </summary>
+    public Span<byte> GetDataSpan(PageBuffer page)
+    {
+        var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
+
+        return page.AsSpan(segment.Location + DataBlock.P_BUFFER, segment.Length);
+    }
+
     public override string ToString()
     {
         return $"{{ RowID = {RowID}, Next = {NextBlock} }}";

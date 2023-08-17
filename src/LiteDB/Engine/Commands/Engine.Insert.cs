@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+
+namespace LiteDB.Engine;
 
 public partial class LiteEngine : ILiteEngine
 {
@@ -50,18 +52,24 @@ public partial class LiteEngine : ILiteEngine
             // insert document and get position address
             var rowID = await dataService.InsertDocumentAsync(collection.ColID, doc);
 
-            foreach(var index in collection.Indexes.Values)
+            // insert _id as PK and get node to be used 
+            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, rowID, IndexNodeResult.Empty);
+
+            if (collection.Indexes.Count > 1)
             {
-                // get a single or multiple (distinct) values
-                var keys = index.Expression.GetIndexKeys(doc, collation);
-
-                IndexNodeRef? last = null;
-
-                foreach(var key in keys)
+                foreach (var index in collection.Indexes.Values)
                 {
-                    var node = await indexService.AddNodeAsync(collection.ColID, index, key, rowID, last);
+                    if (index.Name == "_id") continue; // avoid use in linq expression
 
-                    last = node;
+                    // get a single or multiple (distinct) values
+                    var keys = index.Expression.GetIndexKeys(doc, collation);
+
+                    foreach (var key in keys)
+                    {
+                        var node = await indexService.AddNodeAsync(collection.ColID, index, key, rowID, last);
+
+                        last = node;
+                    }
                 }
             }
 

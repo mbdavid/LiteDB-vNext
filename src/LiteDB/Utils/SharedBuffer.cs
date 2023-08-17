@@ -1,7 +1,7 @@
 ﻿namespace LiteDB;
 
 /// <summary>
-/// A shared byte array to rent and reuse on dispose
+/// A shared byte array to rent and return on dispose
 /// </summary>
 internal readonly struct SharedBuffer : IDisposable
 {
@@ -28,5 +28,10 @@ internal readonly struct SharedBuffer : IDisposable
     public void Dispose()
     {
         ArrayPool<byte>.Shared.Return(_array);
+    }
+
+    public override string ToString()
+    {
+        return $"{{ Length = {_length} }}";
     }
 }

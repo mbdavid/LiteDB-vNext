@@ -73,6 +73,11 @@ internal static class SpanExtensions
         return new PageAddress(span.ReadInt32(), span[4]);
     }
 
+    public static UInt32 ReadExtendValue(this Span<byte> span)
+    {
+        return BinaryPrimitives.ReadUInt32BigEndian(span);
+    }
+
     public static string ReadString(this Span<byte> span)
     {
         return Encoding.UTF8.GetString(span);
@@ -175,6 +180,11 @@ internal static class SpanExtensions
     {
         span.WriteInt32(value.PageID);
         span[4] = value.Index;
+    }
+
+    public static void WriteExtendValue(this Span<byte> span, UInt32 value)
+    {
+        BinaryPrimitives.WriteUInt32BigEndian(span, value);
     }
 
     public static void WriteGuid(this Span<byte> span, Guid value)

@@ -214,79 +214,69 @@ internal class PageService : IPageService
     /// </summary>
     protected void Defrag(PageBuffer page)
     {
-        throw new NotImplementedException();
-        //// get span and header instance (dirty)
-        //var span = page.AsSpan();
-        //ref var header = ref page.Header;
+        var span = page.AsSpan();
+        ref var header = ref page.Header;
 
-        //ENSURE(header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
-        //ENSURE(header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
+        ENSURE(header, (header) => header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
+        ENSURE(header, (header) => header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
 
-        ////LOG($"defrag page #{this.PageID} (fragments: {this.FragmentedBytes})", "DISK");
+        // first get all blocks inside this page sorted by location (location, index)
+        var blocks = new SortedList<ushort, byte>(header.ItemsCount);
 
-        //// first get all blocks inside this page sorted by position (position, index)
-        //var blocks = new SortedList<ushort, byte>();
+        // use int to avoid byte overflow
+        for (int index = 0; index <= header.HighestIndex; index++)
+        {
+            var addr = PageSegment.GetSegmentAddr((byte)index);
 
-        //// use int to avoid byte overflow
-        //for (int index = 0; index <= header.HighestIndex; index++)
-        //{
-        //    var positionAddr = CalcPositionAddr((byte)index);
-        //    var position = span[positionAddr..].ReadUInt16();
+            var location = span[addr.Location..].ReadUInt16();
 
-        //    // get only used index
-        //    if (position != 0)
-        //    {
-        //        ENSURE(this.IsValidPos(header, position), "invalid segment position");
+            // get only used index
+            if (location != 0)
+            {
+                // sort by position
+                blocks.Add(location, (byte)index);
+            }
+        }
 
-        //        // sort by position
-        //        blocks.Add(position, (byte)index);
-        //    }
-        //}
+        // here first block position
+        var next = (ushort)PAGE_HEADER_SIZE;
 
-        //// here first block position
-        //var next = (ushort)PAGE_HEADER_SIZE;
+        // now, list all segments order by location
+        foreach (var slot in blocks)
+        {
+            var index = slot.Value;
+            var location = slot.Key;
 
-        //// now, list all segments order by Position
-        //foreach (var slot in blocks)
-        //{
-        //    var index = slot.Value;
-        //    var position = slot.Key;
+            // get segment address
+            var addr = PageSegment.GetSegmentAddr(index);
+            var length = span[addr.Length..].ReadUInt16();
 
-        //    // get segment length
-        //    var lengthAddr = CalcLengthAddr(index);
-        //    var length = span[lengthAddr..].ReadUInt16();
+            // if current segment are not as excpect, copy buffer to right position (excluding empty space)
+            if (location != next)
+            {
+                ENSURE(() => location > next, "current segment position must be greater than current empty space");
 
-        //    ENSURE(this.IsValidLen(header, length), "invalid segment length");
+                // copy from original location into new (correct) location
+                var source = span[location..(location + length)];
+                var dest = span[next..(next + length)];
 
-        //    // if current segment are not as excpect, copy buffer to right position (excluding empty space)
-        //    if (position != next)
-        //    {
-        //        ENSURE(position > next, "current segment position must be greater than current empty space");
+                source.CopyTo(dest);
 
-        //        // copy from original position into new (correct) position
-        //        var source = span[position..(position + length)];
-        //        var dest = span[next..(next + length)];
+                // update new location for this index (on footer page)
+                span[addr.Location..].WriteUInt16(next);
+            }
 
-        //        source.CopyTo(dest);
+            next += length;
+        }
 
-        //        // update index slot with this new block position
-        //        var positionAddr = CalcPositionAddr(index);
+        // fill all non-used content area with 0
+        var endContent = PAGE_SIZE - header.FooterSize;
 
-        //        // update position in footer
-        //        span[positionAddr..].WriteUInt16(next);
-        //    }
+        span[next..endContent].Fill(0);
 
-        //    next += length;
-        //}
-
-        //// fill all non-used content area with 0
-        //var endContent = PAGE_SIZE - header.FooterSize;
-
-        //span[next..endContent].Fill(0);
-
-        //// clear fragment blocks (page are in a continuous segment)
-        //header.FragmentedBytes = 0;
-        //header.NextFreeLocation = next;
+        // clear fragment blocks (page are in a continuous segment)
+        header.FragmentedBytes = 0;
+        header.NextFreeLocation = next;
     }
 
     /// <summary>
@@ -312,7 +302,7 @@ internal class PageService : IPageService
         for (int index = header.HighestIndex - 1; index >= 0; index--)
         {
             var segmentAddr = PageSegment.GetSegmentAddr((byte)index);
-            var location = span[segmentAddr.Location..2].ReadUInt16();
+            var location = span[segmentAddr.Location..].ReadUInt16();
 
             if (location != 0)
             {

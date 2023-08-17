@@ -236,7 +236,7 @@ internal class RecoveryService : IRecoveryService
                     }
 
                     // get allocation value for each page
-                    var value = AllocationMapPage.GetAllocationPageValue(ref page.Header);
+                    var value = AllocationMapPage.GetAllocationPageValue(page.Header.PageType, page.Header.FreeBytes);
 
                     // update page allocation free space
                     pageMap.UpdateExtendPageValue(extendIndex, pageIndex, value);

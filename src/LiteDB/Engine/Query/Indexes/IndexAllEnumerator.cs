@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class IndexAllEnumerator : IPipeEnumerator
 {
@@ -38,10 +36,10 @@ internal class IndexAllEnumerator : IPipeEnumerator
         {
             _init = true;
 
-            var nodeRef = await indexService.GetNodeAsync(start, false);
+            var (node, _) = await indexService.GetNodeAsync(start);
 
             // get pointer to first element 
-            _next = nodeRef.Node.GetNextPrev(0, _order);
+            _next = node.GetNextPrev(0, _order);
 
             // check if not empty
             if (_next == end)
@@ -55,11 +53,11 @@ internal class IndexAllEnumerator : IPipeEnumerator
         // go forward
         if (_next != end || _next.IsEmpty)
         {
-            var nodeRef = await indexService.GetNodeAsync(_next, false);
+            var (node, _) = await indexService.GetNodeAsync(_next);
 
-            _next = nodeRef.Node.GetNextPrev(0, _order);
+            _next = node.GetNextPrev(0, _order);
 
-            return new PipeValue(nodeRef.Node.DataBlock);
+            return new PipeValue(node.DataBlock);
         }
 
         _eof = true;

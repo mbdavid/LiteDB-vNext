@@ -7,6 +7,11 @@
 internal class PageBuffer
 {
     /// <summary>
+    /// A unique ID for all genereted PageBuffers (this ID never changes)
+    /// </summary>
+    public readonly int UniqueID;
+
+    /// <summary>
     /// Position on disk where this page came from or where this page must be stored
     /// </summary>
     public int PositionID = int.MaxValue;
@@ -39,12 +44,14 @@ internal class PageBuffer
     /// </summary>
     public readonly Memory<byte> Buffer = new byte[PAGE_SIZE];
 
+    public bool InCache => this.ShareCounter > NO_CACHE;
     public bool IsDataFile => this.PositionID == this.Header.PageID;
     public bool IsLogFile => this.PositionID > this.Header.PageID && this.PositionID == this.Header.PositionID;
     public bool IsTempFile => this.PositionID > this.Header.PageID && this.PositionID > this.Header.PositionID;
 
-    public PageBuffer()
+    public PageBuffer(int uniqueID)
     {
+        this.UniqueID = uniqueID;
     }
 
     /// <summary>
@@ -105,16 +112,15 @@ internal class PageBuffer
 
         // update page header
         page.Header.ReadFromPage(page);
-
     }
 
     public override string ToString()
     {
-        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter} }}";
+        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter}, InCache = {InCache} }}";
     }
 
-    public string ToHtml()
+    public string DumpPage()
     {
-        return new HtmlPageDump(this).Render();
+        return PageDump.Render(this);
     }
 }

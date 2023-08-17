@@ -1,8 +1,4 @@
-﻿using System;
-using System.Net.Http.Headers;
-using System.Xml.Linq;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class IndexLikeEnumerator : IPipeEnumerator
 {
@@ -50,32 +46,24 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         {
             _init = true;
 
-            var node = await indexService.FindAsync(_indexDocument, _startsWith, true, Query.Ascending);
+            var (node, _) = await indexService.FindAsync(_indexDocument, _startsWith, true, Query.Ascending);
 
-            if (node == null)
+            if (node.IsEmpty)
             {
                 _eof = true;
                 return PipeValue.Empty;
             };
 
             // get pointer to next/prev
-            _prev = node.Value.Node.Prev[0];
-            _next = node.Value.Node.Next[0];
+            _prev = node.Prev[0];
+            _next = node.Next[0];
         }
+
         if(!_next.IsEmpty || !_prev.IsEmpty)
         {
-            IndexNode node;
-            if (!_next.IsEmpty)
-            {
-                var nodeRef = await indexService.GetNodeAsync(_next, false);
-                node = nodeRef.Node;
-            }
-
-            else
-            {
-                var nodeRef = await indexService.GetNodeAsync(_prev, false);
-                node = nodeRef.Node;
-            }
+            var (node, _) = !_next.IsEmpty ?
+                await indexService.GetNodeAsync(_next) :
+                await indexService.GetNodeAsync(_prev);
             
             if(node.Key.AsString.StartsWith(_startsWith, StringComparison.OrdinalIgnoreCase))
             {
@@ -101,7 +89,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
 
             var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
 
-            var nodeRef = await indexService.GetNodeAsync(start, false);
+            var nodeRef = await indexService.GetNodeAsync(start);
             var node = nodeRef.Node;
 
             // get pointer to next at level 0
@@ -117,7 +105,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         {
             do
             {
-                var nodeRef = await indexService.GetNodeAsync(_next, false);
+                var nodeRef = await indexService.GetNodeAsync(_next);
                 var node = nodeRef.Node;
 
                 if (node.Key.AsString.SqlLike(_value, _collation))

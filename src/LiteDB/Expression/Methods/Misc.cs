@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LiteDB;
+﻿namespace LiteDB;
 
 internal partial class BsonExpressionMethods
 {

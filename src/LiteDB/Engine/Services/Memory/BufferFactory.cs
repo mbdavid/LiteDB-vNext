@@ -8,6 +8,8 @@
 [AutoInterface(typeof(IDisposable))]
 internal class BufferFactory : IBufferFactory
 {
+    private readonly ConcurrentDictionary<int, PageBuffer> _inUsePages = new();
+
     /// <summary>
     /// A queue of all available (re-used) free page buffers. Rental model
     /// </summary>
@@ -17,6 +19,11 @@ internal class BufferFactory : IBufferFactory
     /// Track how many pages was allocated in memory. Reduce this size occurs only in CleanUp process
     /// </summary>
     private int _pagesAllocated = 0;
+
+    /// <summary>
+    /// Used to create unique identifier to PageBuffer (starts in 1000 just for better debug)
+    /// </summary>
+    private int _nextUniqueID = 1000;
 
     public BufferFactory()
     {
@@ -29,12 +36,22 @@ internal class BufferFactory : IBufferFactory
     {
         if (_freePages.TryDequeue(out var page))
         {
+            _inUsePages.TryAdd(page.UniqueID, page);
+
             return page;
         }
 
         Interlocked.Increment(ref _pagesAllocated);
 
-        return new PageBuffer() { IsDirty = isDirty };
+        var uniqueID = Interlocked.Increment(ref _nextUniqueID);
+
+        var newPage = new PageBuffer(uniqueID) { IsDirty = isDirty };
+
+        var added = _inUsePages.TryAdd(newPage.UniqueID, newPage);
+
+        ENSURE(() => added);
+
+        return newPage;
     }
 
     public void DeallocatePage(PageBuffer page)
@@ -44,8 +61,13 @@ internal class BufferFactory : IBufferFactory
         // clear buffer position/sharecounter
         page.Reset();
 
-        // neste momento posso escolher se adiciono no _freePages
+        // add used page as new free page
         _freePages.Enqueue(page);
+
+        // remove from inUse pages 
+        var removed = _inUsePages.TryRemove(page.UniqueID, out _);
+
+        ENSURE(() => removed);
     }
 
     public int CleanUp()

@@ -49,20 +49,20 @@ internal class DataService : IDataService
         var page = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
 
         // one single page
-        if (bytesToCopy <= docLength)
+        if (docLength <= bytesToCopy)
         {
             var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(), PageAddress.Empty);
 
             firstBlock = dataBlock.RowID;
 
             // update allocation map after page change
-            _transaction.UpdatePageMap(ref page.Header);
+            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
         }
         // multiple pages
         else
         {
             var pageCount = docLength / MAX_DATA_BYTES_PER_PAGE + (docLength % MAX_DATA_BYTES_PER_PAGE == 0 ? 0 : 1);
-            var pages = new PageBuffer[pageCount];
+            var pages = new PageBuffer[pageCount]; //TODO: use stack array
 
             // copy first page to array
             pages[0] = page;
@@ -74,6 +74,9 @@ internal class DataService : IDataService
                     (docLength - ((pages.Length - 1) * MAX_DATA_BYTES_PER_PAGE)) : 
                     MAX_DATA_BYTES_PER_PAGE;
 
+
+                //todo: tenho que pedir todas ao mesmo tempo pro allocation map, pois
+                // nao 
                 pages[i] = await _transaction.GetFreePageAsync(colID, PageType.Data, bytesToCopy);
             }
 
@@ -95,7 +98,7 @@ internal class DataService : IDataService
                 nextBlock = dataBlock.RowID;
 
                 // update allocation map after each page change
-                _transaction.UpdatePageMap(ref pages[i].Header);
+                //**_transaction.UpdatePageMap(ref pages[i].Header);
             }
 
             firstBlock = nextBlock;
@@ -120,14 +123,18 @@ internal class DataService : IDataService
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get current datablock (for first one)
-        var page = await _transaction.GetPageAsync(rowID.PageID, true);
-        //var dataBlock = new DataBlock(page, rowID);
+        var page = await _transaction.GetPageAsync(rowID.PageID);
+
+        // get first data block
+        var dataBlock = new DataBlock(page, rowID);
+
+
 
         // TODO: tá implementado só pra 1 pagina
         _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(), PageAddress.Empty);
 
         // update allocation map after change page
-        _transaction.UpdatePageMap(ref page.Header);
+        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
     }
 
     /// <summary>
@@ -135,16 +142,13 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress rowID, string[] fields)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID, false);
-
-        // read document size
-        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+        var page = await _transaction.GetPageAsync(rowID.PageID);
 
         var dataBlock = new DataBlock(page, rowID);
 
         if (dataBlock.NextBlock.IsEmpty)
         {
-            var result = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER),
+            var result = _bsonReader.ReadDocument(dataBlock.GetDataSpan(page),
                 fields, false, out var _);
 
             return result;
@@ -160,7 +164,7 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask DeleteDocumentAsync(PageAddress rowID)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID, false);
+        var page = await _transaction.GetPageAsync(rowID.PageID);
 
         var dataBlock = new DataBlock(page, rowID);
 
@@ -168,13 +172,13 @@ internal class DataService : IDataService
         _dataPageService.DeleteDataBlock(page, rowID.Index);
 
         // update allocation map after change page
-        _transaction.UpdatePageMap(ref page.Header);
+        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
 
         // keeping deleting all next pages/data blocks until nextBlock is empty
         while (!dataBlock.NextBlock.IsEmpty)
         {
             // get next page
-            page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID, false);
+            page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID);
 
             dataBlock = new DataBlock(page, dataBlock.NextBlock);
 
@@ -182,7 +186,7 @@ internal class DataService : IDataService
             _dataPageService.DeleteDataBlock(page, dataBlock.NextBlock.Index);
 
             // update allocation map after change page
-            _transaction.UpdatePageMap(ref page.Header);
+            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
         }
     }
 

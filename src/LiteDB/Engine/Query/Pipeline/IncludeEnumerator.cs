@@ -78,11 +78,11 @@ internal class IncludeEnumerator : IPipeEnumerator
 
         if (master.Collections.TryGetValue(refCol.AsString, out var collection))
         {
-            var indexNode = await context.IndexService.FindAsync(collection.PK, refId, false, Query.Ascending);
+            var (indexNode, _) = await context.IndexService.FindAsync(collection.PK, refId, false, Query.Ascending);
 
-            if (indexNode is not null)
+            if (!indexNode.IsEmpty)
             {
-                var refDocResult = await context.DataService.ReadDocumentAsync(indexNode.Value.Node.DataBlock, Array.Empty<string>());
+                var refDocResult = await context.DataService.ReadDocumentAsync(indexNode.DataBlock, Array.Empty<string>());
 
                 if (refDocResult.Fail) throw refDocResult.Exception;
 

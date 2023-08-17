@@ -37,7 +37,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
             var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
 
-            var nodeRef = await indexService.GetNodeAsync(start, false);
+            var nodeRef = await indexService.GetNodeAsync(start);
 
             // get pointer to next at level 0
             _next = nodeRef.Node.GetNextPrev(0, _order);
@@ -53,7 +53,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
         {
             do
             {
-                var nodeRef = await indexService.GetNodeAsync(_next, false);
+                var nodeRef = await indexService.GetNodeAsync(_next);
                 var node = nodeRef.Node;
 
                 _next = nodeRef.Node.GetNextPrev(0, _order);
