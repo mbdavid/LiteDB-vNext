@@ -82,8 +82,73 @@ public class Expressions_Tests
         #endregion
 
         #region CallMethods
+        #region DataTypes
+        #region NEW_INSTANCE
+        yield return new object[] { Call("MINVALUE", new BsonExpression[] { }), new BsonMinValue()};
+        //yield return new object[] { Call("OBJECTID", new BsonExpression[] { }), new BsonObjectId(ObjectId.NewObjectId()) };
+        //yield return new object[] { Call("GUID", new BsonExpression[] { }), new BsonGuid(Guid.NewGuid()) };
+        //yield return new object[] { Call("NOW", new BsonExpression[] { }), new BsonDateTime(DateTime.Now) };
+        //yield return new object[] { Call("NOW_UTC", new BsonExpression[] { }), new BsonDateTime(DateTime.UtcNow) };
+        yield return new object[] { Call("TODAY", new BsonExpression[] { }), new BsonDateTime(DateTime.Today) };
+        yield return new object[] { Call("MAXVALUE", new BsonExpression[] { }), new BsonMaxValue() };
+        #endregion
+
+        #region DATATYPE
+        yield return new object[] { Call("INT32", new BsonExpression[] { Constant(2.4) }), new BsonInt32(2) };
+        yield return new object[] { Call("INT32", new BsonExpression[] { Constant(2.9) }), new BsonInt32(3) };
+        yield return new object[] { Call("INT64", new BsonExpression[] { Constant(2) }), new BsonInt64(2) };
+        yield return new object[] { Call("DOUBLE", new BsonExpression[] { Constant(2) }), new BsonDouble(2.0) };
+        yield return new object[] { Call("DECIMAL", new BsonExpression[] { Constant(2) }), new BsonDecimal(2) };
+        yield return new object[] { Call("STRING", new BsonExpression[] { Constant(2) }), new BsonString("2") };
+        //yield return new object[] { Call("BINARY", new BsonExpression[] { Constant(new BsonString("11111111")) }), new BsonBinary(new byte[] { 0b11111111}) };
+        //yield return new object[] { Call("OBJECTID", new BsonExpression[] { Constant(new BsonInt32(2)) }), new BsonString("2") };
+        yield return new object[] { Call("GUID", new BsonExpression[] { Constant("cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5") }), new BsonGuid(new Guid("cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5")) };
+        yield return new object[] { Call("BOOLEAN", new BsonExpression[] { Constant(true) }), new BsonBoolean(true) };
+        yield return new object[] { Call("DATETIME", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), new BsonDateTime(new DateTime(2000, 10, 16)) };
+        yield return new object[] { Call("DATETIME_UTC", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), new BsonDateTime(new DateTime(2000, 10, 16, 0, 0, 0, DateTimeKind.Utc)) };
+        yield return new object[] { Call("DATETIME", new BsonExpression[] { Constant(2000), Constant(10), Constant(16) }), new BsonDateTime(new DateTime(2000, 10, 16)) };
+        yield return new object[] { Call("DATETIME_UTC", new BsonExpression[] { Constant(2000), Constant(10), Constant(16) }), new BsonDateTime(new DateTime(2000, 10, 16, 0, 0, 0, DateTimeKind.Utc)) };
+        #endregion
+
+        #region IS_DATETYPE
+        yield return new object[] { Call("IS_MINVALUE", new BsonExpression[] { Constant(BsonValue.MinValue) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_NULL", new BsonExpression[] { Constant(BsonValue.Null) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_INT32", new BsonExpression[] { Constant(2) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_INT64", new BsonExpression[] { Constant(new BsonInt64(2)) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_DOUBLE", new BsonExpression[] { Constant(2.6) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_DECIMAL", new BsonExpression[] { Constant(new BsonDecimal(2)) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_NUMBER", new BsonExpression[] { Constant(2) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_NUMBER", new BsonExpression[] { Constant(new BsonInt64(2)) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_NUMBER", new BsonExpression[] { Constant(2.6) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_NUMBER", new BsonExpression[] { Constant(new BsonDecimal(2)) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_STRING", new BsonExpression[] { Constant("string") }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_DOCUMENT", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_ARRAY", new BsonExpression[] { Array(10, 11, 12) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_BINARY", new BsonExpression[] { Constant(new BsonBinary(new byte[] { 255, 255, 255, 255 })) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_OBJECTID", new BsonExpression[] { Constant(new BsonObjectId(new ObjectId())) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_GUID", new BsonExpression[] { Constant(new BsonGuid(new Guid("cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5"))) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_BOOLEAN", new BsonExpression[] { Constant(true) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_DATETIME", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), new BsonBoolean(true) };
+        yield return new object[] { Call("IS_MAXVALUE", new BsonExpression[] { Constant(BsonValue.MaxValue) }), new BsonBoolean(true) };
+        #endregion
+
+        #region ALIAS
+
+        #endregion
+
+        #endregion
+
         #region Date
-        //yield return new object[] { Call("YEAR", new BsonExpression[] { Constant(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) }), new BsonInt32(2003) };
+        yield return new object[] { Call("YEAR", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), new BsonInt32(2000) };
+        yield return new object[] { Call("MONTH", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), new BsonInt32(10) };
+        yield return new object[] { Call("DAY", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), new BsonInt32(16) };
+        yield return new object[] { Call("HOUR", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16, 12, 30, 56))) }), new BsonInt32(12) };
+        yield return new object[] { Call("MINUTE", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16, 12, 30, 56))) }), new BsonInt32(30) };
+        yield return new object[] { Call("SECOND", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16, 12, 30, 56))) }), new BsonInt32(56) };
+        yield return new object[] { Call("DATEADD", new BsonExpression[] { Constant("M"), Constant(1), Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), new BsonDateTime(new DateTime(2000, 11, 16)) };
+        yield return new object[] { Call("DATEDIFF", new BsonExpression[] { Constant("M"), Constant(new BsonDateTime(new DateTime(2000, 10, 16))), Constant(new BsonDateTime(new DateTime(2001, 10, 16))) }), new BsonInt32(12) };
+        yield return new object[] { Call("TO_LOCAL", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16, 12, 00, 00, DateTimeKind.Utc))) }), new BsonDateTime(new DateTime(2000, 10, 16, 9, 00, 00, DateTimeKind.Local)) };
+        yield return new object[] { Call("TO_UTC", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16, 9, 00, 00, DateTimeKind.Local))) }), new BsonDateTime(new DateTime(2000, 10, 16, 12, 00, 00, DateTimeKind.Utc)) };
         #endregion
 
         #region Math
@@ -97,11 +162,14 @@ public class Expressions_Tests
         #endregion
 
         #region Misc
-        yield return new object[] { Call("JSON", new BsonExpression[] { Constant("{a:1}") }), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) };
+        yield return new object[] { Call("JSON", new BsonExpression[] { Constant("{\"a\":1}") }), new BsonDocument { ["a"] = 1 } };
         //yield return new object[] { Call("EXTEND", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["b"] = Constant(2) }), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) }), new BsonDocument { ["b"] = 2, ["a"] = 1 } };
         yield return new object[] { Call("KEYS", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) }), new BsonArray() { "name", "age" } };
         yield return new object[] { Call("VALUES", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) }), new BsonArray() { "Maria", 18 } };
-        //yield return new object[] { Call("OID_CREATIONTIME", new BsonExpression[] {  }),  };
+        /*var obj = new ObjectId();
+        ObjectId objId = obj;
+        BsonObjectId id = new BsonObjectId(objId);
+        yield return new object[] { Call("OID_CREATIONTIME", new BsonExpression[] { Constant(id) }),  id.Value.CreationTime};*/
         yield return new object[] { Call("COALESCE", new BsonExpression[] { Constant(10), Constant(20)}), new BsonInt32(10) };
         yield return new object[] { Call("COALESCE", new BsonExpression[] { Constant(BsonValue.Null), Constant(20) }), new BsonInt32(20) };
         yield return new object[] { Call("LENGTH", new BsonExpression[] { Constant("14LengthString") }), new BsonInt32(14) };
@@ -112,7 +180,6 @@ public class Expressions_Tests
         //UNION
         //EXCEPT
         //DISTINCT
-        
         #endregion
 
         #region String
