@@ -76,6 +76,8 @@ public class BsonExpressions_ToString_Tests
         #endregion
 
         #region CallMethods
+
+
         #region DataTypes
         #region NEW_INSTANCE
         yield return new object[] { Call("MINVALUE", new BsonExpression[] { }), "MINVALUE()" };
@@ -93,8 +95,6 @@ public class BsonExpressions_ToString_Tests
         yield return new object[] { Call("DOUBLE", new BsonExpression[] { Constant(2) }), "DOUBLE(2)" };
         yield return new object[] { Call("DECIMAL", new BsonExpression[] { Constant(2) }), "DECIMAL(2)" };
         yield return new object[] { Call("STRING", new BsonExpression[] { Constant(2) }), "STRING(2)" };
-        yield return new object[] { Call("BINARY", new BsonExpression[] { Constant(new BsonString("11111111")) }), "BINARY(\"11111111\")" };
-        yield return new object[] { Call("OBJECTID", new BsonExpression[] { Constant(new BsonInt32(2)) }), "OBJECTID(2)" };
         yield return new object[] { Call("GUID", new BsonExpression[] { Constant("cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5") }), "GUID(\"cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5\")" };
         yield return new object[] { Call("BOOLEAN", new BsonExpression[] { Constant(true) }), "BOOLEAN(true)" };
         yield return new object[] { Call("DATETIME", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), "DATETIME({\"$date\":\"2000-10-16T03:00:00.0000000Z\"})" };
@@ -115,17 +115,12 @@ public class BsonExpressions_ToString_Tests
         yield return new object[] { Call("IS_DOCUMENT", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) }), "IS_DOCUMENT({name:\"Maria\",age:18})" };
         yield return new object[] { Call("IS_ARRAY", new BsonExpression[] { Array(10, 11, 12) }), "IS_ARRAY([10,11,12])" };
         yield return new object[] { Call("IS_BINARY", new BsonExpression[] { Constant(new BsonBinary(new byte[] { 255, 255, 255, 255 })) }), "IS_BINARY({\"$binary\":\"/////w==\"})" };
-        yield return new object[] { Call("IS_OBJECTID", new BsonExpression[] { Constant(new BsonObjectId(new ObjectId())) }), "IS_OBJECTID({\"$oid\":\"LiteDB.ObjectId\"})" };
+        yield return new object[] { Call("IS_OBJECTID", new BsonExpression[] { Constant(new BsonObjectId(new ObjectId("64de6507a2237f9d84596189"))) }), "IS_OBJECTID({\"$oid\":\"64de6507a2237f9d84596189\"})" };
         yield return new object[] { Call("IS_GUID", new BsonExpression[] { Constant(new BsonGuid(new Guid("cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5"))) }), "IS_GUID({\"$guid\":\"cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5\"})" };
         yield return new object[] { Call("IS_BOOLEAN", new BsonExpression[] { Constant(true) }), "IS_BOOLEAN(true)" };
         yield return new object[] { Call("IS_DATETIME", new BsonExpression[] { Constant(new BsonDateTime(new DateTime(2000, 10, 16))) }), "IS_DATETIME({\"$date\":\"2000-10-16T03:00:00.0000000Z\"})" };
         yield return new object[] { Call("IS_MAXVALUE", new BsonExpression[] { Constant(BsonValue.MaxValue) }), "IS_MAXVALUE({\"$maxValue\":\"1\"})" };
         #endregion
-
-        #region ALIAS
-
-        #endregion
-
         #endregion
 
         #region Date

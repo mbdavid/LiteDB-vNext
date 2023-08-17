@@ -76,6 +76,43 @@ public class BsonExpressions_Parser_Tests
         #endregion
 
         #region CallMethods
+        #region DataTypes
+        #region NEW_INSTANCE
+        yield return new object[] { "MINVALUE()" , Call("MINVALUE", new BsonExpression[] { })   };
+        yield return new object[] { "OBJECTID()" , Call("OBJECTID", new BsonExpression[] { })   };
+        yield return new object[] { "GUID()"     , Call("GUID", new BsonExpression[] { })       };
+        yield return new object[] { "NOW()"      , Call("NOW", new BsonExpression[] { })        };
+        yield return new object[] { "NOW_UTC()"  , Call("NOW_UTC", new BsonExpression[] { })    };
+        yield return new object[] { "TODAY()"    , Call("TODAY", new BsonExpression[] { })      };
+        yield return new object[] { "MAXVALUE()" , Call("MAXVALUE", new BsonExpression[] { })   };
+        #endregion
+
+        #region DATATYPE
+        yield return new object[] { "INT32(2.4)"                                                , Call("INT32", new BsonExpression[] { Constant(2.4) })                                                    };
+        yield return new object[] { "INT64(2)"                                                  , Call("INT64", new BsonExpression[] { Constant(2) })                                                      };
+        yield return new object[] { "DOUBLE(2)"                                                 , Call("DOUBLE", new BsonExpression[] { Constant(2) })                                                     };
+        yield return new object[] { "DECIMAL(2)"                                                , Call("DECIMAL", new BsonExpression[] { Constant(2) })                                                    };
+        yield return new object[] { "STRING(2)"                                                 , Call("STRING", new BsonExpression[] { Constant(2) })                                                     };
+        yield return new object[] { "BINARY(\"11111111\")"                                      , Call("BINARY", new BsonExpression[] { Constant(new BsonString("11111111")) })                            };
+        yield return new object[] { "OBJECTID(2)"                                               , Call("OBJECTID", new BsonExpression[] { Constant(new BsonInt32(2)) })                                    };
+        yield return new object[] { "GUID(\"cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5\")"            , Call("GUID", new BsonExpression[] { Constant("cf9fc62e-6a10-4e0b-b597-bcd7c19dddf5") })                  };
+        yield return new object[] { "BOOLEAN(true)"                                             , Call("BOOLEAN", new BsonExpression[] { Constant(true) })                                                 };
+        yield return new object[] { "DATETIME(2000,10,16)"                                      , Call("DATETIME", new BsonExpression[] { Constant(2000), Constant(10), Constant(16) })                    };
+        yield return new object[] { "DATETIME_UTC(2000,10,16)"                                  , Call("DATETIME_UTC", new BsonExpression[] { Constant(2000), Constant(10), Constant(16) })                };
+        #endregion
+
+        #region IS_DATETYPE
+        yield return new object[] { "IS_NULL(null)"                                                   , Call("IS_NULL", new BsonExpression[] { Constant(BsonValue.Null) })                                                                                                        };
+        yield return new object[] { "IS_INT32(2)"                                                     , Call("IS_INT32", new BsonExpression[] { Constant(2) })                                                                                                                    };
+        yield return new object[] { "IS_DOUBLE(2.6)"                                                  , Call("IS_DOUBLE", new BsonExpression[] { Constant(2.6) })                                                                                                                 };
+        yield return new object[] { "IS_NUMBER(2)"                                                    , Call("IS_NUMBER", new BsonExpression[] { Constant(2) })                                                                                                                   };
+        yield return new object[] { "IS_STRING(\"string\")"                                           , Call("IS_STRING", new BsonExpression[] { Constant("string") })                                                                                                            };
+        yield return new object[] { "IS_DOCUMENT({name:\"Maria\",age:18})"                            , Call("IS_DOCUMENT", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) })               };
+        yield return new object[] { "IS_ARRAY([10,11,12])"                                            , Call("IS_ARRAY", new BsonExpression[] { Array(10, 11, 12) })                                                                                                              };
+        yield return new object[] { "IS_BOOLEAN(true)"                                                , Call("IS_BOOLEAN", new BsonExpression[] { Constant(true) })                                                                                                               };
+        #endregion
+        #endregion
+
         #region Math
         yield return new object[] { "ABS(-10)", Call("ABS", new BsonExpression[] { Constant(-10) }) };
         yield return new object[] { "ABS(-10.5)", Call("ABS", new BsonExpression[] { Constant(-10.5) }) };
@@ -87,8 +124,20 @@ public class BsonExpressions_Parser_Tests
         #endregion
 
         #region Misc
-        yield return new object[] { "JSON(\"{a:1}\")", Call("JSON", new BsonExpression[] { Constant("{a:1}") }) };
-        yield return new object[] { "EXTEND($,{a:1})", Call("EXTEND", new BsonExpression[] { Path(Root(),""), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) }) };
+        yield return new object[] { "JSON(\"{\\\"a\\\":1}\")"              , Call("JSON", new BsonExpression[] { Constant("{\"a\":1}") })                                                                                                                                       };
+        yield return new object[] { "EXTEND({b:2},{a:1})"                  , Call("EXTEND", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["b"] = Constant(2) }), MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }) })};
+        yield return new object[] { "KEYS({name:\"Maria\",age:18})"        , Call("KEYS", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) })                                               };
+        yield return new object[] { "VALUES({name:\"Maria\",age:18})"      , Call("VALUES", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) })                                             };
+        yield return new object[] { "OID_CREATIONTIME(2)"                  , Call("OID_CREATIONTIME", new BsonExpression[] { Constant(2) })                                                                                                                                     };
+        yield return new object[] { "COALESCE(10,20)"                      , Call("COALESCE", new BsonExpression[] { Constant(10), Constant(20) })                                                                                                                              };
+        yield return new object[] { "COALESCE(null,20)"                    , Call("COALESCE", new BsonExpression[] { Constant(BsonValue.Null), Constant(20) })                                                                                                                  };
+        yield return new object[] { "LENGTH(\"14LengthString\")"           , Call("LENGTH", new BsonExpression[] { Constant("14LengthString") })                                                                                                                                };
+        yield return new object[] { "LENGTH([10,11,12,13])"                , Call("LENGTH", new BsonExpression[] { Array(10, 11, 12, 13) })                                                                                                                                     };
+        yield return new object[] { "LENGTH({name:\"Maria\",age:18})"      , Call("LENGTH", new BsonExpression[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria"), ["age"] = Constant(18) }) })                                             };
+        yield return new object[] { "TOP([10,11,12,13],3)"                 , Call("TOP", new BsonExpression[] { Array(10, 11, 12, 13), Constant(3) })                                                                                                                           };
+        yield return new object[] { "UNION([10,11,12,13],[14,15,16,17])"   , Call("UNION", new BsonExpression[] { Array(10, 11, 12, 13), Array(14, 15, 16, 17) })                                                                                                               };
+        yield return new object[] { "EXCEPT([10,11,12,13],[12,13,14,15])"  , Call("EXCEPT", new BsonExpression[] { Array(10, 11, 12, 13), Array(12, 13, 14, 15) })                                                                                                              };
+        yield return new object[] { "DISTINCT([10,10,11,12,13])"           , Call("DISTINCT", new BsonExpression[] { Array(10, 10, 11, 12, 13) })                                                                                                                               };
         #endregion
 
         #region String

@@ -21,10 +21,12 @@ internal struct JsonToken
     public JsonToken Expect(params JsonTokenType[] types)
     {
         foreach(var type in types)
+        {
             if (this.Type == type)
             {
                 return this;
             }
+        }
         throw new Exception();
     }
 
