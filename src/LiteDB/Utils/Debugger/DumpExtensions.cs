@@ -92,10 +92,10 @@ internal static class Dump
         {
             return str switch
             {
-                "00" => "0", // empty
+                "00" => "e", // empty
                 "01" => "d", // data page
                 "10" => "i", // index page
-                "11" => "F", // page full
+                "11" => "f", // page full
                 _ => throw new NotSupportedException()
             };
         }

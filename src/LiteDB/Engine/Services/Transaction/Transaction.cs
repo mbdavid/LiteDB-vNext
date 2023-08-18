@@ -179,14 +179,14 @@ internal class Transaction : ITransaction
     public async ValueTask<PageBuffer> GetFreeIndexPageAsync(byte colID, int indexNodeLength)
     {
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, PageType.Data);
+        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, PageType.Index);
 
         if (isNew)
         {
             var page = _bufferFactory.AllocateNewPage(true);
 
-            // initialize empty page as data page
-            _dataPageService.InitializeDataPage(page, pageID, colID);
+            // initialize empty page as index page
+            _indexPageService.InitializeIndexPage(page, pageID, colID);
 
             // add in local cache
             _localPages.Add(pageID, page);
@@ -201,7 +201,7 @@ internal class Transaction : ITransaction
             if (page.Header.FreeBytes < indexNodeLength)
             {
                 // set this page as full before get next page
-                this.UpdatePageMap(page.Header.PageID, PageType.Index, 0);
+                this.UpdatePageMap(page.Header.PageID, ExtendPageValue.Full);
 
                 // call recursive to get another page
                 return await this.GetFreeIndexPageAsync(colID, indexNodeLength);
@@ -216,10 +216,8 @@ internal class Transaction : ITransaction
     /// Update allocation page map according with header page type and used bytes but keeps a copy
     /// of original extend value (if need rollback)
     /// </summary>
-    public void UpdatePageMap(int pageID, PageType pageType, int freeBytes)
+    public void UpdatePageMap(int pageID, ExtendPageValue value)
     {
-        ENSURE(() => pageType == PageType.Data || pageType == PageType.Index);
-
         var allocationMapID = (int)(pageID / AM_PAGE_STEP);
         var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
 
@@ -233,7 +231,7 @@ internal class Transaction : ITransaction
             _initialExtendValues.Add(extendID, extendValue);
         }
 
-        _allocationMapService.UpdatePageMap(pageID, pageType, freeBytes);
+        _allocationMapService.UpdatePageMap(pageID, value);
     }
 
     /// <summary>

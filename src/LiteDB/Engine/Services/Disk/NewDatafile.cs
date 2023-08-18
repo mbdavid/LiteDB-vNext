@@ -43,7 +43,7 @@ internal class NewDatafile : INewDatafile
 
         // mark first extend to $master and first page as data
         mapPage.AsSpan(PAGE_HEADER_SIZE)[0] = MASTER_COL_ID;
-        mapPage.AsSpan(PAGE_HEADER_SIZE)[1] = (byte)(1 << 5); // set first 3 bits as "001" - large data page
+        mapPage.AsSpan(PAGE_HEADER_SIZE)[1] = (byte)(1 << 6); // set first 3 bits as "01" - data page
 
         // create $master page buffer
         var masterPage = _bufferFactory.AllocateNewPage(true);

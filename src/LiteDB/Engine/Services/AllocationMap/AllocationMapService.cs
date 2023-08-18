@@ -112,15 +112,13 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Update allocation page map according with header page type and used bytes
     /// </summary>
-    public void UpdatePageMap(int pageID, PageType pageType, int freeBytes)
+    public void UpdatePageMap(int pageID, ExtendPageValue pageValue)
     {
         var allocationMapID = (int)(pageID / AM_PAGE_STEP);
         var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
         var pageIndex = pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE;
 
         var page = _pages[allocationMapID];
-
-        var pageValue = AllocationMapPage.GetExtendPageValue(pageType, freeBytes);
 
         page.UpdateExtendPageValue(extendIndex, pageIndex, pageValue);
     }

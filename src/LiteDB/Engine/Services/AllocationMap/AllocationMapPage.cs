@@ -135,7 +135,7 @@ internal class AllocationMapPage
         // get extend value from array
         var value = _extendValues[extendIndex];
 
-        // update value (3 bits) according pageIndex
+        // update value (2 bits) according pageIndex
         var extendValue = pageIndex switch
         {
             0 => (value & 0b11111111_00_11_11_11_11_11_11_11_11_11_11_11) | ((uint)pageValue << 22),
@@ -265,20 +265,9 @@ internal class AllocationMapPage
                 <= 2097151 => 2,   // =2^(20+1)-1
                 <= 8388607 => 1,   // =2^(22+1)-1
                 <= 33554431 => 0,  // =2^(24+1)-1
-                /*
-                <= 31 => 7,        // =2^(3+2)-1
-                <= 255 => 6,       // =2^(6+2)-1
-                <= 2047 => 5,      // =2^(9+2)-1
-                <= 16383 => 4,     // =2^(12+2)-1
-                <= 131071 => 3,    // =2^(15+2)-1
-                <= 1048575 => 2,   // =2^(18+2)-1
-                <= 8388607 => 1,   // =2^(21+2)-1
-                <= 67108863 => 0,  // =2^(24+2)-1
-                */
                 _ => throw new NotSupportedException()
             };
 
-            //var isEmpty = (extendValue & (0b111 << ((7 - pageIndex) * 3))) == 0;
             var isEmpty = (extendValue & (0b11 << ((11 - pageIndex) * 2))) == 0;
 
             return (pageIndex, isEmpty);

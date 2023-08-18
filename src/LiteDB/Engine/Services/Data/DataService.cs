@@ -56,7 +56,18 @@ internal class DataService : IDataService
             // get how many bytes must be copied in this page
             var bytesToCopy = Math.Min(page.Header.FreeBytes, bytesLeft);
 
+            // get extend page value before page change
+            var before = page.Header.ExtendPageValue;
+
             var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(position, bytesToCopy));
+
+            // checks if extend page value change and update map
+            var after = page.Header.ExtendPageValue;
+
+            if (before != after)
+            {
+                _transaction.UpdatePageMap(page.Header.PageID, after);
+            }
 
             if (lastPage is not null && lastDataBlock is not null)
             {
@@ -107,11 +118,12 @@ internal class DataService : IDataService
 
 
 
+
         // TODO: tá implementado só pra 1 pagina
         _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(), PageAddress.Empty);
 
         // update allocation map after change page
-        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        _transaction.UpdatePageMap(page.Header.PageID, page.Header.ExtendPageValue);
     }
 
     /// <summary>
@@ -171,16 +183,18 @@ internal class DataService : IDataService
             // and get dataBlock
             var dataBlock = new DataBlock(page, rowID);
 
-            var initial = page.Header.ExtendPageValue;
+            var before = page.Header.ExtendPageValue;
 
             // delete dataBlock
             _dataPageService.DeleteDataBlock(page, rowID.Index);
 
             // checks if extend pageValue changes
-            if (page.Header.ExtendPageValue != initial)
+            var after = page.Header.ExtendPageValue;
+
+            if (before != after)
             {
                 // update allocation map after change page
-                _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+                _transaction.UpdatePageMap(page.Header.PageID, after);
             }
 
             // stop if there is not block to delete

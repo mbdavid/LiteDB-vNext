@@ -34,7 +34,7 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
 
         // get initial pageExtend value
-        var initial = page.Header.ExtendPageValue;
+        var before = page.Header.ExtendPageValue;
 
         // add head/tail nodes into page
         var head = _indexPageService.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MinValue, PageAddress.Empty, bytesLength);
@@ -45,9 +45,11 @@ internal class IndexService : IIndexService
         tail.SetPrev(page, 0, head.RowID);
 
         // update allocation map if needed
-        if (page.Header.ExtendPageValue != initial)
+        var after = page.Header.ExtendPageValue;
+
+        if (before != after)
         {
-            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+            _transaction.UpdatePageMap(page.Header.PageID, after);
         }
 
         return (head, tail);
@@ -83,15 +85,17 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
 
         // get initial pageValue
-        var initial = page.Header.ExtendPageValue;
+        var before = page.Header.ExtendPageValue;
 
         // create node in buffer
         var node = _indexPageService.InsertIndexNode(page, index.Slot, insertLevels, key, dataBlock, bytesLength);
 
         // update allocation map if needed (this page has no more "size" changes)
-        if (page.Header.ExtendPageValue != initial)
+        var after = page.Header.ExtendPageValue;
+
+        if (before != after)
         {
-            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+            _transaction.UpdatePageMap(page.Header.PageID, after);
         }
 
         // now, let's link my index node on right place
@@ -179,6 +183,8 @@ internal class IndexService : IIndexService
     public async ValueTask<IndexNodeResult> GetNodeAsync(PageAddress rowID)
     {
         var page = await _transaction.GetPageAsync(rowID.PageID);
+
+        ENSURE(() => page.Header.PageType == PageType.Index);
 
         return new(new IndexNode(page, rowID), page);
     }
@@ -272,15 +278,18 @@ internal class IndexService : IIndexService
             }
         }
 
-        var initial = page.Header.ExtendPageValue;
+        // get extend page value before page change
+        var before = page.Header.ExtendPageValue;
 
         // delete node segment in page
         _indexPageService.DeleteIndexNode(page, node.RowID.Index);
 
         // update map page only if change page value
-        if (page.Header.ExtendPageValue != initial)
+        var after = page.Header.ExtendPageValue;
+
+        if (before != after)
         {
-            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+            _transaction.UpdatePageMap(page.Header.PageID, after);
         }
     }
 }
