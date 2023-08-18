@@ -44,11 +44,6 @@ internal class PageBuffer
     /// </summary>
     public readonly Memory<byte> Buffer = new byte[PAGE_SIZE];
 
-    /// <summary>
-    /// Get current extend page value based on PageType and FreeSpace
-    /// </summary>
-    public ExtendPageValue GetExtendPageValue() => AllocationMapPage.GetExtendPageValue(this.Header.PageType, this.Header.FreeBytes);
-
     public bool InCache => this.ShareCounter > NO_CACHE;
     public bool IsDataFile => this.PositionID == this.Header.PageID;
     public bool IsLogFile => this.PositionID > this.Header.PageID && this.PositionID == this.Header.PositionID;

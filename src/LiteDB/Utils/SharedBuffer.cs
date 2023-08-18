@@ -16,6 +16,8 @@ internal readonly struct SharedBuffer : IDisposable
 
     public readonly Span<byte> AsSpan() => _array.AsSpan(0, _length);
 
+    public readonly Span<byte> AsSpan(int start) => _array.AsSpan(start);
+
     public readonly Span<byte> AsSpan(int start, int length) => _array.AsSpan(start, length);
 
     public static SharedBuffer Rent(int length)

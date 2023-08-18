@@ -125,14 +125,36 @@ internal class DataService : IDataService
 
         if (dataBlock.NextBlock.IsEmpty)
         {
-            var result = _bsonReader.ReadDocument(dataBlock.GetDataSpan(page),
-                fields, false, out var _);
+            var result = _bsonReader.ReadDocument(dataBlock.GetDataSpan(page), fields, false, out _);
 
             return result;
         }
         else
         {
-            throw new NotImplementedException();
+            // get a full array to read all document chuncks
+            using var docBuffer = SharedBuffer.Rent(dataBlock.DocumentLength);
+
+            // copy first page into full buffer
+            dataBlock.GetDataSpan(page).CopyTo(docBuffer.AsSpan());
+
+            var position = dataBlock.DataLength;
+
+            ENSURE(() => dataBlock.DocumentLength != int.MaxValue);
+
+            while (dataBlock.NextBlock.IsEmpty)
+            {
+                page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID);
+
+                dataBlock = new DataBlock(page, dataBlock.NextBlock);
+
+                dataBlock.GetDataSpan(page).CopyTo(docBuffer.AsSpan(position));
+
+                position += dataBlock.DataLength;
+            }
+
+            var result = _bsonReader.ReadDocument(docBuffer.AsSpan(), fields, false, out _);
+
+            return result;
         }
     }
 
@@ -141,29 +163,31 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask DeleteDocumentAsync(PageAddress rowID)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID);
-
-        var dataBlock = new DataBlock(page, rowID);
-
-        // delete first data block
-        _dataPageService.DeleteDataBlock(page, rowID.Index);
-
-        // update allocation map after change page
-        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
-
-        // keeping deleting all next pages/data blocks until nextBlock is empty
-        while (!dataBlock.NextBlock.IsEmpty)
+        while (true)
         {
-            // get next page
-            page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID);
+            // get page from rowID
+            var page = await _transaction.GetPageAsync(rowID.PageID);
 
-            dataBlock = new DataBlock(page, dataBlock.NextBlock);
+            // and get dataBlock
+            var dataBlock = new DataBlock(page, rowID);
 
-            // delete datablock
-            _dataPageService.DeleteDataBlock(page, dataBlock.NextBlock.Index);
+            var initial = page.Header.ExtendPageValue;
 
-            // update allocation map after change page
-            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+            // delete dataBlock
+            _dataPageService.DeleteDataBlock(page, rowID.Index);
+
+            // checks if extend pageValue changes
+            if (page.Header.ExtendPageValue != initial)
+            {
+                // update allocation map after change page
+                _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+            }
+
+            // stop if there is not block to delete
+            if (dataBlock.NextBlock.IsEmpty) break;
+
+            // go to next block
+            rowID = dataBlock.NextBlock;
         }
     }
 

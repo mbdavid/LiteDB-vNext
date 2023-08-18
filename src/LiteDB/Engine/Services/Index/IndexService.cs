@@ -34,7 +34,7 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
 
         // get initial pageExtend value
-        var initial = page.GetExtendPageValue();
+        var initial = page.Header.ExtendPageValue;
 
         // add head/tail nodes into page
         var head = _indexPageService.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MinValue, PageAddress.Empty, bytesLength);
@@ -45,7 +45,7 @@ internal class IndexService : IIndexService
         tail.SetPrev(page, 0, head.RowID);
 
         // update allocation map if needed
-        if (page.GetExtendPageValue() != initial)
+        if (page.Header.ExtendPageValue != initial)
         {
             _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
         }
@@ -83,13 +83,13 @@ internal class IndexService : IIndexService
         var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
 
         // get initial pageValue
-        var initial = page.GetExtendPageValue();
+        var initial = page.Header.ExtendPageValue;
 
         // create node in buffer
         var node = _indexPageService.InsertIndexNode(page, index.Slot, insertLevels, key, dataBlock, bytesLength);
 
         // update allocation map if needed (this page has no more "size" changes)
-        if (page.GetExtendPageValue() != initial)
+        if (page.Header.ExtendPageValue != initial)
         {
             _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
         }
@@ -247,6 +247,9 @@ internal class IndexService : IIndexService
         }
     }
 
+    /// <summary>
+    /// Delete a single node fixing all next/prev levels pointers
+    /// </summary>
     private async ValueTask DeleteSingleNodeAsync(IndexNodeResult nodeResult)
     {
         var (node, page) = nodeResult;
@@ -269,10 +272,15 @@ internal class IndexService : IIndexService
             }
         }
 
+        var initial = page.Header.ExtendPageValue;
+
         // delete node segment in page
         _indexPageService.DeleteIndexNode(page, node.RowID.Index);
 
-        // update map page 
-        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        // update map page only if change page value
+        if (page.Header.ExtendPageValue != initial)
+        {
+            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        }
     }
 }
