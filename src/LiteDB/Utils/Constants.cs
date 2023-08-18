@@ -43,11 +43,11 @@ internal class Constants
     /// <summary>
     /// Represent how many pages each extend will allocate in AllocationMapPage
     /// </summary>
-    public const int AM_EXTEND_SIZE = 8;
+    public const int AM_EXTEND_SIZE = 12;
 
     /// <summary>
-    /// Bytes used in each extend (8 pages)
-    /// 1 byte for colID + 3 bytes for 8 pages bit wise for pageType/freeSpace
+    /// Bytes used in each extend (12 pages)
+    /// 1 byte for colID + 2 bytes for 12 pages bit wise for Empty|Data|Index|Full
     /// </summary>
     public const int AM_BYTES_PER_EXTEND = 4;
 
@@ -57,7 +57,7 @@ internal class Constants
     public const int AM_EXTEND_COUNT = PAGE_CONTENT_SIZE / AM_BYTES_PER_EXTEND;
 
     /// <summary>
-    /// Get how many pages (data/index/empty) a single allocation map page support (16.320 pages)
+    /// Get how many pages (data/index/empty) a single allocation map page support (24.480 pages)
     /// </summary>
     public const int AM_MAP_PAGES_COUNT = AM_EXTEND_COUNT * AM_EXTEND_SIZE;
 
@@ -67,24 +67,14 @@ internal class Constants
     public const int AM_PAGE_STEP = AM_MAP_PAGES_COUNT + 1;
 
     /// <summary>
-    /// Represent an array of how distribuited pages are inside AllocationMap using 3 bits
-    /// [000] - 0 - Empty
-    /// --
-    /// [001] - 1 - Data  (between 91% and 99.99% free) [LARGE]
-    /// [010] - 2 - Data  (between 51% and 90% free)  [MEDIUM]
-    /// [011] - 3 - Data  (between 31% and 50% free)  [SMALL]
-    /// --
-    /// [100] - 4 - Index (between 8160 and 1050 bytes free)
-    /// --
-    /// [101] - 5 - Data  (between 0% and 30% free - page full)
-    /// [110] - 6 - Index (between 1049 and 0 bytes free - page full)
-    /// [111] - 7 - reserved
+    /// Represent an array of how distribuited pages are inside AllocationMap using 2 bits
+    /// [00] - 0 - Empty Page (can be used for both data/index)
+    /// [01] - 1 - Data Page with free space (more than 30%)
+    /// [10] - 2 - Index Page with free space (more than 300 bytes)
+    /// [11] - 3 - Page Full (for both data/index pages)
     /// </summary>
-    public const int AM_DATA_PAGE_SPACE_LARGE  = (int)(PAGE_CONTENT_SIZE * 0.9); // 7344;
-    public const int AM_DATA_PAGE_SPACE_MEDIUM = (int)(PAGE_CONTENT_SIZE * 0.5); // 4095;
-    public const int AM_DATA_PAGE_SPACE_SMALL  = (int)(PAGE_CONTENT_SIZE * 0.3); // 2248;
-
-    public const int AM_INDEX_PAGE_SPACE = 1050;
+    public const int AM_DATA_PAGE_FREE_SPACE = (int)(PAGE_CONTENT_SIZE * 0.3); // 2248;
+    public const int AM_INDEX_PAGE_FREE_SPACE = 300;
 
     /// <summary>
     /// Get first DataPage from $master

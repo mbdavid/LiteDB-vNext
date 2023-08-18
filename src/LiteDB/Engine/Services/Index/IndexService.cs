@@ -30,8 +30,11 @@ internal class IndexService : IIndexService
         // get how many bytes needed for each head/tail (both has same size)
         var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, BsonValue.MinValue, out _);
 
-        // get a new empty index page for this collection
-        var page = await _transaction.GetFreePageAsync(colID, PageType.Index, PAGE_CONTENT_SIZE);
+        // get a index page for this collection
+        var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
+
+        // get initial pageExtend value
+        var initial = page.Header.ExtendPageValue;
 
         // add head/tail nodes into page
         var head = _indexPageService.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MinValue, PageAddress.Empty, bytesLength);
@@ -41,8 +44,11 @@ internal class IndexService : IIndexService
         head.SetNext(page, 0, tail.RowID);
         tail.SetPrev(page, 0, head.RowID);
 
-        // update allocation map after page change
-        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        // update allocation map if needed
+        if (page.Header.ExtendPageValue != initial)
+        {
+            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        }
 
         return (head, tail);
     }
@@ -73,14 +79,20 @@ internal class IndexService : IIndexService
         // test for index key maxlength
         if (keyLength > INDEX_MAX_KEY_LENGTH) throw ERR($"Index key must be less than {INDEX_MAX_KEY_LENGTH} bytes.");
 
-        // get page with avaiable space to add this node
-        var page = await _transaction.GetFreePageAsync(colID, PageType.Index, bytesLength);
+        // get an index page with avaliable space to add this node
+        var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
+
+        // get initial pageValue
+        var initial = page.Header.ExtendPageValue;
 
         // create node in buffer
         var node = _indexPageService.InsertIndexNode(page, index.Slot, insertLevels, key, dataBlock, bytesLength);
 
-        // update allocation map after page change
-        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        // update allocation map if needed (this page has no more "size" changes)
+        if (page.Header.ExtendPageValue != initial)
+        {
+            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        }
 
         // now, let's link my index node on right place
         var left = index.Head;
@@ -235,6 +247,9 @@ internal class IndexService : IIndexService
         }
     }
 
+    /// <summary>
+    /// Delete a single node fixing all next/prev levels pointers
+    /// </summary>
     private async ValueTask DeleteSingleNodeAsync(IndexNodeResult nodeResult)
     {
         var (node, page) = nodeResult;
@@ -257,10 +272,15 @@ internal class IndexService : IIndexService
             }
         }
 
+        var initial = page.Header.ExtendPageValue;
+
         // delete node segment in page
         _indexPageService.DeleteIndexNode(page, node.RowID.Index);
 
-        // update map page 
-        _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        // update map page only if change page value
+        if (page.Header.ExtendPageValue != initial)
+        {
+            _transaction.UpdatePageMap(page.Header.PageID, page.Header.PageType, page.Header.FreeBytes);
+        }
     }
 }

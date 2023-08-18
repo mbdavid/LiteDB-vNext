@@ -114,6 +114,11 @@ internal struct PageHeader
         0 :  // no items in page
         ((this.HighestIndex + 1) * SLOT_SIZE)); // 4 bytes PER item (2 to position + 2 to length) - need consider HighestIndex used
 
+    /// <summary>
+    /// Get current extend page value based on PageType and FreeSpace
+    /// </summary>
+    public ExtendPageValue ExtendPageValue => AllocationMapPage.GetExtendPageValue(this.PageType, this.FreeBytes);
+
     #endregion
 
     /// <summary>
