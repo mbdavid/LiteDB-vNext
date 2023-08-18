@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using System.Net.WebSockets;
+
+namespace LiteDB;
 
 /// <summary>
 /// Represent a 12-bytes BSON type used in document Id
@@ -215,6 +217,17 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
         this.TryWriteBytes(bytes.AsSpan());
 
         return bytes;
+    }
+
+    public override string ToString()
+    {
+        var sb = StringBuilderCache.Acquire();
+        var bytes = this.ToByteArray();
+        foreach(var b in bytes)
+        {
+            sb.AppendFormat("{0:x2}", b);
+        }
+        return StringBuilderCache.Release(sb);
     }
 
     #endregion

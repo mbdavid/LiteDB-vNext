@@ -28,8 +28,8 @@ internal partial class BsonExpressionMethods
             {
                 case BsonType.Int32: return value.AsInt32;
                 case BsonType.Int64: return value.AsInt64;
-                case BsonType.Double: return Math.Round(value.AsDouble, value.AsInt32);
-                case BsonType.Decimal: return Math.Round(value.AsDecimal, value.AsInt32);
+                case BsonType.Double: return Math.Round(value.AsDouble, digits.AsInt32);
+                case BsonType.Decimal: return Math.Round(value.AsDecimal, digits.AsInt32);
             }
 
         }
