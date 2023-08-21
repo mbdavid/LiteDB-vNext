@@ -50,16 +50,18 @@ internal class DataService : IDataService
 
         var bytesLeft = docLength;
         var position = 0;
+        var extend = false;
 
         while (true)
         {
-            // get how many bytes must be copied in this page
-            var bytesToCopy = Math.Min(page.Header.FreeBytes, bytesLeft);
+            // get how many bytes must be copied in this page (should consider data block and new footer item)
+            var pageFreeSpace = page.Header.FreeBytes - DataBlock.DATA_BLOCK_FIXED_SIZE - 4;
+            var bytesToCopy = Math.Min(pageFreeSpace, bytesLeft);
 
             // get extend page value before page change
             var before = page.Header.ExtendPageValue;
 
-            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(position, bytesToCopy));
+            var dataBlock = _dataPageService.InsertDataBlock(page, bufferDoc.AsSpan(position, bytesToCopy), extend);
 
             // checks if extend page value change and update map
             var after = page.Header.ExtendPageValue;
@@ -90,6 +92,9 @@ internal class DataService : IDataService
             lastDataBlock = dataBlock;
 
             page = await _transaction.GetFreeDataPageAsync(colID);
+
+            // mark next data block as extend
+            extend = true;
         }
 
         return rowID;

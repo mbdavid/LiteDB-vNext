@@ -22,6 +22,8 @@ internal readonly struct SharedBuffer : IDisposable
 
     public static SharedBuffer Rent(int length)
     {
+        ENSURE(() => length < int.MaxValue);
+
         var array = ArrayPool<byte>.Shared.Rent(length);
 
         return new (array, length);

@@ -28,11 +28,11 @@ await db.OpenAsync();
     await db.CreateCollectionAsync("col1");
 }
 
-await db.InsertAsync("col1", GetData(1, 500), BsonAutoId.Int32);
+await db.InsertAsync("col1", GetData(1, 500, 2000), BsonAutoId.Int32);
 
 await db.DeleteAsync("col1", Enumerable.Range(5, 100).Select(x => new BsonInt32(x)).ToArray());
-
-await db.InsertAsync("col1", GetData(10, 50), BsonAutoId.Int32);
+//
+await db.InsertAsync("col1", GetData(10, 50,6000), BsonAutoId.Int32);
 
 
 await db.ShutdownAsync();
@@ -42,7 +42,7 @@ await db.OpenAsync();
 
 
 //
-var cursor = db.Query("col1", new Query());
+var cursor = db.Query("col1", new Query { Select = "{_id,name,len:length(lorem)}" });
 PrintResult(await db.FetchAsync(cursor, 100));
 //PrintResult(await db.FetchAsync(cursor, 100));
 //PrintResult(await db.FetchAsync(cursor, 100));

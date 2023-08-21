@@ -223,10 +223,12 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     {
         var sb = StringBuilderCache.Acquire();
         var bytes = this.ToByteArray();
+
         foreach(var b in bytes)
         {
             sb.AppendFormat("{0:x2}", b);
         }
+
         return StringBuilderCache.Release(sb);
     }
 

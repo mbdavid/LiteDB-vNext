@@ -2,8 +2,8 @@
 
 internal struct ExtendLocation
 {
-    public static ExtendLocation Empty = new(-1, -1);
-    public static ExtendLocation First = new(0, 0);
+    public static readonly ExtendLocation Empty = new(-1, -1);
+    public static readonly ExtendLocation First = new(0, 0);
 
     public readonly int AllocationMapID;
     public readonly int ExtendIndex;
