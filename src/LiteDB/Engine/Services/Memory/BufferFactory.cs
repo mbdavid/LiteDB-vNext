@@ -79,6 +79,11 @@ internal class BufferFactory : IBufferFactory
         return 0;
     }
 
+    public override string ToString()
+    {
+        return $"InUse: {_inUsePages.Count} - FreeBuffers: {_freePages.Count} - Allocated: {_pagesAllocated}";
+    }
+
     public void Dispose()
     {
         // diattach all PageBuffers from _freePages object

@@ -46,7 +46,10 @@ public partial class LiteEngine : ILiteEngine
             count++;
 
             // do a safepoint after insert each document
-            monitorService.Safepoint(transaction);
+            if (monitorService.Safepoint(transaction))
+            {
+                await transaction.SafepointAsync();
+            }
         }
 
         // write all dirty pages into disk

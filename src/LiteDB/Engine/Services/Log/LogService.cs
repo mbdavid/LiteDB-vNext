@@ -93,7 +93,6 @@ internal partial class LogService : ILogService
         await writer.FlushAsync();
     }
 
-
     /// <summary>
     /// Get next positionID in log
     /// </summary>
@@ -151,7 +150,7 @@ internal partial class LogService : ILogService
             _confirmedTransactions,
             _lastPageID,
             startTempPositionID, 
-            tempPages).ToArray();
+            tempPages);
 
         // get writer stream from disk service
         var writer = _diskService.GetDiskWriter();

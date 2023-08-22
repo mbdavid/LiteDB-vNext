@@ -23,6 +23,8 @@ internal class QueryService : IQueryService
 
         var enumerator = queryOptimization.ProcessQuery(query, parameters);
 
+        Console.WriteLine("==> " + enumerator);
+
         var cursor = new Cursor(query, parameters, readVersion, enumerator);
 
         _openCursors.TryAdd(cursor.CursorID, cursor);

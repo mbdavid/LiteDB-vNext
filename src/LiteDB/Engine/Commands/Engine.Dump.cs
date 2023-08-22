@@ -36,4 +36,17 @@ public partial class LiteEngine : ILiteEngine
 
         monitorService.ReleaseTransaction(transaction);
     }
+
+    public void DumpMemory()
+    {
+        var monitorService = _factory.MonitorService;
+        var bufferFactory = _factory.BufferFactory;
+        var cacheService = _factory.CacheService;
+
+        Console.WriteLine($"BufferFactory : {bufferFactory}");
+        Console.WriteLine($"CacheService  : {cacheService}");
+        Console.WriteLine($"MonitorService: {monitorService}");
+
+
+    }
 }

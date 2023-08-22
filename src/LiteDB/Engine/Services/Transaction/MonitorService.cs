@@ -65,9 +65,14 @@ internal class MonitorService : IMonitorService
     /// </summary>
     public bool Safepoint(ITransaction transaction)
     {
-        return false; //TODO: implementar o momento de fazer safepoint
+        return transaction.PagesUsed > 1000; //TODO: implementar o momento de fazer safepoint
 //            trans.Pages.TransactionSize >= trans.MaxTransactionSize &&
 //            this.TryExtend(trans) == false;
+    }
+
+    public override string ToString()
+    {
+        return $"Transactions: {_transactions.Count} -> ";
     }
 
     /// <summary>

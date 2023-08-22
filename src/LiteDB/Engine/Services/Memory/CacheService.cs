@@ -192,6 +192,11 @@ internal class CacheService : ICacheService
         return total;
     }
 
+    public override string ToString()
+    {
+        return $"Cached pages: {_cache.Count}";
+    }
+
     public void Dispose()
     {
         ENSURE(() => _cache.Count(x => x.Value.ShareCounter != 0) == 0, "Cache must be clean before dipose");

@@ -25,6 +25,9 @@ internal class Transaction : ITransaction
     // local page cache - contains only data/index pages about this collection
     private readonly Dictionary<int, PageBuffer> _localPages = new();
 
+    // when safepoint occurs, save reference for changed pages on log (PageID, PositionID)
+    private readonly Dictionary<int, int> _walDirtyPages = new();
+
     // original extend values from all requested writable pages
     private readonly Dictionary<int, uint> _initialExtendValues = new();
 
@@ -40,6 +43,11 @@ internal class Transaction : ITransaction
     /// Incremental transaction ID
     /// </summary>
     public int TransactionID { get; }
+
+    /// <summary>
+    /// Get how many pages, in memory, this transaction are using
+    /// </summary>
+    public int PagesUsed => _localPages.Count;
 
     public Transaction(
         IDiskService diskService,
@@ -126,8 +134,20 @@ internal class Transaction : ITransaction
     {
         _reader ??= _diskService.RentDiskReader();
 
+        // test if page are in transaction wal pages
+        if (_walDirtyPages.TryGetValue(pageID, out var positionID))
+        {
+            var walPage = _bufferFactory.AllocateNewPage(false);
+
+            await _reader.ReadPageAsync(positionID, walPage);
+
+            ENSURE(() => walPage.Header.PageType == PageType.Data || walPage.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {walPage}");
+
+            return walPage;
+        }
+
         // get disk position (data/log)
-        var positionID = _walIndexService.GetPagePositionID(pageID, readVersion, out _);
+        positionID = _walIndexService.GetPagePositionID(pageID, readVersion, out _);
 
         // get a page from cache (if writable, this page are not linked to cache anymore)
         var page = _cacheService.GetPageReadWrite(positionID, _writeCollections, out var writable);
@@ -235,6 +255,56 @@ internal class Transaction : ITransaction
     }
 
     /// <summary>
+    /// Persist current pages changes and discard all local pages. Works as a Commit, but without
+    /// marking last page as confirmed
+    /// </summary>
+    public async Task SafepointAsync()
+    {
+        // get dirty pages only //TODO: can be re-used array?
+        var dirtyPages = _localPages.Values
+            .Where(x => x.IsDirty)
+            .ToArray();
+
+        for (var i = 0; i < dirtyPages.Length; i++)
+        {
+            var page = dirtyPages[i];
+
+            ENSURE(() => page.ShareCounter == NO_CACHE, "Page should not be on cache when saving");
+            ENSURE(() => page.Header.IsConfirmed == false);
+
+            // update page header
+            page.Header.TransactionID = this.TransactionID;
+        }
+
+        // write pages on disk and flush data
+        await _logService.WriteLogPagesAsync(dirtyPages);
+
+        // update local transaction wal index
+        foreach (var page in dirtyPages)
+        {
+            _walDirtyPages[page.Header.PageID] = page.PositionID;
+        }
+
+        // add pages to cache or decrement sharecount
+        foreach (var page in _localPages.Values)
+        {
+            if (page.ShareCounter > 0)
+            {
+                // page already in cache (was not changed)
+                _cacheService.ReturnPage(page);
+            }
+            else
+            {
+                // all other pages are not came from cache, must be deallocated
+                _bufferFactory.DeallocatePage(page);
+            }
+        }
+
+        // clear page buffer references
+        _localPages.Clear();
+    }
+
+    /// <summary>
     /// </summary>
     public async ValueTask CommitAsync()
     {
@@ -257,8 +327,23 @@ internal class Transaction : ITransaction
         // write pages on disk and flush data
         await _logService.WriteLogPagesAsync(dirtyPages);
 
+        // update wal index with this new version
+        IEnumerable<(int pageID, int positionID)> changedPages()
+        {
+            foreach (var pageRef in _walDirtyPages)
+            {
+                yield return (pageRef.Key, pageRef.Value);
+            }
+            foreach (var page in dirtyPages)
+            {
+                yield return (page.Header.PageID, page.PositionID);
+            }
+        }
+
+        _walIndexService.AddVersion(this.ReadVersion, changedPages());
+
         // add pages to cache or decrement sharecount
-        foreach(var page in _localPages.Values)
+        foreach (var page in _localPages.Values)
         {
             // page already in cache (was not changed)
             if (page.ShareCounter > 0)
@@ -277,18 +362,9 @@ internal class Transaction : ITransaction
             }
         }
 
-        // update wal index with this new version
-        var pagePositions = dirtyPages
-            .Select(x => (x.Header.PageID, x.PositionID))
-#if DEBUG
-            .ToArray()
-#endif
-            ;
-
-        _walIndexService.AddVersion(this.ReadVersion, pagePositions);
-
         // clear page buffer references
         _localPages.Clear();
+        _walDirtyPages.Clear();
     }
 
     public void Rollback()
