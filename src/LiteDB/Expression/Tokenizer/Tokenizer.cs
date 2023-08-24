@@ -173,12 +173,12 @@ internal struct Token : INullable
 /// </summary>
 internal class Tokenizer
 {
-    private TextReader _reader;
+    private string _reader;
     private char _char = '\0';
     private Token _current = new Token(TokenType.Unknown, "", 0);
     private Token _ahead = new Token(TokenType.Unknown, "", 0);
     private bool _eof = false;
-    private long _position = 0;
+    private int _position = 0;
 
     public bool EOF => _eof && _ahead.IsNull;
     public long Position => _position;
@@ -194,15 +194,9 @@ internal class Tokenizer
         return false;
     }
 
-    public Tokenizer(string source)
-        : this(new StringReader(source))
-    {
-    }
-
-    public Tokenizer(TextReader reader)
+    public Tokenizer(string reader)
     {
         _reader = reader;
-
         _position = 0;
         this.ReadChar();
     }
@@ -225,9 +219,9 @@ internal class Tokenizer
     /// </summary>
     private char ReadChar()
     {
-        if (_eof) return '\0';
+        if (_position >= _reader.Length || _eof) return '\0';
 
-        var c = _reader.Read();
+        var c = _reader[_position];
 
         _position++;
 
@@ -267,7 +261,7 @@ internal class Tokenizer
         }
         else
         {
-            var keepPos = _position-1;
+            var keepPos = _position;
             var keepCurent = _current;
             var keepAhead = this.ReadNext(eatWhitespace);
             for (int i=1; i<tokensCount-1; i++)
@@ -314,7 +308,7 @@ internal class Tokenizer
             return new Token(TokenType.EOF, "", _position);
         }
 
-        Token? token = null;
+        Token token = new Token(TokenType.Unknown, _char.ToString(), _position);
 
         switch (_char)
         {
@@ -535,7 +529,7 @@ internal class Tokenizer
                 break;
         }
 
-        return token ?? new Token(TokenType.Unknown, _char.ToString(), _position);
+        return token;
     }
 
     /// <summary>
