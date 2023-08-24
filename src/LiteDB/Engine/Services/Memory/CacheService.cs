@@ -35,8 +35,8 @@ internal class CacheService : ICacheService
             return null;
         }
 
-        ENSURE(() => page.Header.TransactionID == 0);
-        ENSURE(() => page.Header.IsConfirmed == false);
+        ENSURE(page.Header.TransactionID == 0, new { page });
+        ENSURE(page.Header.IsConfirmed == false, new { page });
 
         // test if this page are getted from a writable collection in transaction
         writable = Array.IndexOf(writeCollections, page.Header.ColID) > -1;
@@ -48,7 +48,7 @@ internal class CacheService : ICacheService
             {
                 var removed = _cache.TryRemove(positionID, out _);
 
-                ENSURE(() => removed);
+                ENSURE(removed, new { removed, self = this });
 
                 this.ClearPageWhenRemoveFromCache(page);
 
@@ -69,7 +69,7 @@ internal class CacheService : ICacheService
         else
         {
             // get page for read-only
-            ENSURE(() => page.ShareCounter != NO_CACHE);
+            ENSURE(page.ShareCounter != NO_CACHE, new { page });
 
             // increment ShareCounter to be used by another transaction
             Interlocked.Increment(ref page.ShareCounter);
@@ -107,9 +107,9 @@ internal class CacheService : ICacheService
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
-        ENSURE(() => !page.IsDirty, "Page must be clean before add into cache");
-        ENSURE(() => page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
-        ENSURE(() => page.InCache == false, "ShareCounter must be zero before add in cache");
+        ENSURE(!page.IsDirty, "Page must be clean before add into cache", new { page });
+        ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache", new { page });
+        ENSURE(page.InCache == false, "ShareCounter must be zero before add in cache", new { page });
 
         // clear any transaction info before add in cache
         page.Header.TransactionID = 0;
@@ -142,7 +142,7 @@ internal class CacheService : ICacheService
         page.Header.TransactionID = 0;
         page.Header.IsConfirmed = false;
 
-        ENSURE(() => page.ShareCounter >= 0);
+        ENSURE(page.ShareCounter >= 0, new { page });
     }
 
     /// <summary>
@@ -151,10 +151,10 @@ internal class CacheService : ICacheService
     /// </summary>
     private void ClearPageWhenRemoveFromCache(PageBuffer page)
     {
-        ENSURE(() => page.IsDirty == false);
-        ENSURE(() => page.ShareCounter == 0, $"Page should not be in use");
-        ENSURE(() => page.Header.TransactionID == 0);
-        ENSURE(() => page.Header.IsConfirmed == false);
+        ENSURE(page.IsDirty == false, new { page });
+        ENSURE(page.ShareCounter == 0, $"Page should not be in use", new { page });
+        ENSURE(page.Header.TransactionID == 0, new { page });
+        ENSURE(page.Header.IsConfirmed == false, new { page });
 
         page.ShareCounter = NO_CACHE;
         page.Timestamp = 0;
@@ -232,7 +232,7 @@ internal class CacheService : ICacheService
 
     public void Dispose()
     {
-        ENSURE(() => _cache.Count(x => x.Value.ShareCounter != 0) == 0, "Cache must be clean before dipose");
+        ENSURE(_cache.Count(x => x.Value.ShareCounter != 0) == 0, "Cache must be clean before dipose");
 
         // deattach PageBuffers from _cache object
         _cache.Clear();

@@ -188,7 +188,7 @@ internal class IndexService : IIndexService
     {
         var page = await _transaction.GetPageAsync(indexNodeID.PageID);
 
-        ENSURE(() => page.Header.PageType == PageType.Index);
+        ENSURE(page.Header.PageType == PageType.Index, new { indexNodeID, page });
 
         var indexNode = _transaction.GetIndexNode(indexNodeID);
 

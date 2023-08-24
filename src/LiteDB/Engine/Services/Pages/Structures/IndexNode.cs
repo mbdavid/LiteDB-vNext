@@ -183,7 +183,7 @@ internal struct IndexNode
     /// </summary>
     public void SetNextNodeID(PageBuffer page, PageAddress nextNodeID)
     {
-        ENSURE(this, x => x.IndexNodeID.PageID == page.Header.PageID, $"should be same index page {page}");
+        ENSURE(this.IndexNodeID.PageID == page.Header.PageID, $"should be same index page", new { self = this, page, nextNodeID });
 
         if (this.NextNodeID == nextNodeID) return;
 
@@ -202,8 +202,8 @@ internal struct IndexNode
     /// </summary>
     public void SetPrev(PageBuffer page, int level, PageAddress prev)
     {
-        ENSURE(this, indexNode => indexNode.IndexNodeID.PageID == page.Header.PageID, $"Should be same index page {page}");
-        ENSURE(this, indexNode => level < indexNode.Levels, "Out of index in level");
+        ENSURE(this.IndexNodeID.PageID == page.Header.PageID, $"Should be same index page", new { self = this, page, prev });
+        ENSURE(level < this.Levels, "Out of index in level", new { self = this, page, level, prev });
 
         if (this.Prev[level] == prev) return;
 
@@ -224,8 +224,8 @@ internal struct IndexNode
     /// </summary>
     public void SetNext(PageBuffer page, int level, PageAddress next)
     {
-        ENSURE(this, indexNode => indexNode.IndexNodeID.PageID == page.Header.PageID, $"should be same index page {page}");
-        ENSURE(this, indexNode => level < indexNode.Levels, "out of index in level");
+        ENSURE(this.IndexNodeID.PageID == page.Header.PageID, $"Should be same index page", new { self = this, page, next });
+        ENSURE(level < this.Levels, "Out of index in level", new { self = this, page, level, next });
 
         if (this.Next[level] == next) return;
 

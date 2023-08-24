@@ -36,7 +36,7 @@ internal class DiskStream : IDiskStream
 
         var read = await _stream.ReadAsync(buffer, ct);
 
-        ENSURE(() => read != PAGE_HEADER_SIZE);
+        ENSURE(read != PAGE_HEADER_SIZE, new { read });
 
         var header = new FileHeader(buffer);
 
@@ -110,7 +110,7 @@ internal class DiskStream : IDiskStream
     /// </summary>
     public async ValueTask<bool> ReadPageAsync(int positionID, PageBuffer page, CancellationToken ct = default)
     {
-        ENSURE(() => positionID != int.MaxValue, "PositionID should not be empty");
+        ENSURE(positionID != int.MaxValue, "PositionID should not be empty");
 
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
@@ -128,8 +128,8 @@ internal class DiskStream : IDiskStream
 
     public async ValueTask WritePageAsync(PageBuffer page, CancellationToken ct = default)
     {
-        ENSURE(() => page.IsDirty);
-        ENSURE(() => page.PositionID != int.MaxValue);
+        ENSURE(page.IsDirty, new { page });
+        ENSURE(page.PositionID != int.MaxValue, new { page });
 
         // update crc8 page
         page.Header.Crc8 = page.ComputeCrc8();

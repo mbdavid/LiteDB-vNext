@@ -176,7 +176,7 @@ internal class DataService : IDataService
 
             var position = dataBlock.DataLength;
 
-            ENSURE(() => dataBlock.DocumentLength != int.MaxValue);
+            ENSURE(dataBlock.DocumentLength != int.MaxValue, new { dataBlock });
 
             while (dataBlock.NextBlockID.IsEmpty)
             {

@@ -232,7 +232,7 @@ internal class RecoveryService : IRecoveryService
                     }
                     else
                     {
-                        ENSURE(page.Header.ColID > 0, () => page.Header.ColID == colID, "All pages in an extend must be from same collection");
+                        ENSURE(page.Header.ColID > 0, page.Header.ColID == colID, "All pages in an extend must be from same collection", new { page, colID });
                     }
 
                     // get allocation value for each page

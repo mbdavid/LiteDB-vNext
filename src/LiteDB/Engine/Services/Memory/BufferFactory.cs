@@ -49,14 +49,14 @@ internal class BufferFactory : IBufferFactory
 
         var added = _inUsePages.TryAdd(newPage.UniqueID, newPage);
 
-        ENSURE(() => added);
+        ENSURE(added, new { _pagesAllocated, _freePages, _inUsePages });
 
         return newPage;
     }
 
     public void DeallocatePage(PageBuffer page)
     {
-        ENSURE(() => page.ShareCounter == NO_CACHE, "ShareCounter must be 0 before return page to memory");
+        ENSURE(page.ShareCounter == NO_CACHE, "ShareCounter must be 0 before return page to memory", new { page });
 
         // clear buffer position/sharecounter
         page.Reset();
@@ -67,7 +67,7 @@ internal class BufferFactory : IBufferFactory
         // remove from inUse pages 
         var removed = _inUsePages.TryRemove(page.UniqueID, out _);
 
-        ENSURE(() => removed);
+        ENSURE(removed, new { page, _pagesAllocated, _freePages, _inUsePages });
     }
 
     public int CleanUp()
