@@ -246,6 +246,9 @@ internal partial class LogService : ILogService
         _logPages.Clear();
         _confirmedTransactions.Clear();
 
+        // clear all logfile pages (keeps in cache only non-changed datafile pages)
+        _cacheService.ClearLogPages();
+
         // ao terminar o checkpoint, nenhuma pagina na cache deve ser de log
         return counter;
     }
@@ -265,8 +268,6 @@ internal partial class LogService : ILogService
         page = _bufferFactory.AllocateNewPage(true);
 
         await stream.ReadPageAsync(positionID, page);
-
-
 
         return page;
     }

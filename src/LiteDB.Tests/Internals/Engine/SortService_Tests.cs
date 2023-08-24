@@ -38,6 +38,7 @@ public class SortService_Tests
         // create unsorted fake data
         var source = Enumerable.Range(1, 50000)
             .Select(i => new PipeValue(
+                new PageAddress(i, 0),
                 new PageAddress(i, 0), 
                 new BsonDocument
                 {

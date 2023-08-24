@@ -5,17 +5,19 @@
 /// </summary>
 internal struct PipeEmit
 {
+    public readonly bool IndexNodeID;
     public readonly bool DataBlockID;
     public readonly bool Document;
 
-    public PipeEmit(bool dataBlockID, bool value)
+    public PipeEmit(bool indexNodeID, bool dataBlockID, bool value)
     {
+        this.IndexNodeID = indexNodeID;
         this.DataBlockID = dataBlockID;
         this.Document = value;
     }
 
     public override string ToString()
     {
-        return $"{{ DataBlockID = {DataBlockID}, Document = {Document} }}";
+        return $"{{ IndexNodeID = {IndexNodeID}, DataBlockID = {DataBlockID}, Document = {Document} }}";
     }
 }

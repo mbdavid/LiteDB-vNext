@@ -116,7 +116,7 @@ internal class PageBuffer
 
     public override string ToString()
     {
-        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter}, InCache = {InCache} }}";
+        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, PageType = {Header.PageType}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter}, InCache = {InCache} }}";
     }
 
     public string DumpPage()

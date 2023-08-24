@@ -22,7 +22,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
         _order = order;
     }
 
-    public PipeEmit Emit => new(true, false);
+    public PipeEmit Emit => new(true, true, false);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -44,7 +44,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
             if(_func(nodeRef.Node.Key))
             {
-                return new PipeValue(nodeRef.Node.DataBlockID);
+                return new PipeValue(nodeRef.Node.IndexNodeID, nodeRef.Node.DataBlockID);
             }
         }
 
@@ -60,7 +60,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
                 if (_func(nodeRef.Node.Key))
                 {
-                    return new PipeValue(nodeRef.Node.DataBlockID);
+                    return new PipeValue(nodeRef.Node.IndexNodeID, nodeRef.Node.DataBlockID);
                 }
 
             } while (!_next.IsEmpty);

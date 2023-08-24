@@ -22,7 +22,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
         if (_enumerator.Emit.Document == false) throw ERR($"InMemoryOrderBy pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(_enumerator.Emit.DataBlockID, true);
+    public PipeEmit Emit => new(false, _enumerator.Emit.DataBlockID, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -53,7 +53,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
         {
             var item = _sortedItems.Dequeue();
 
-            return new PipeValue(item.DataBlockID, item.Document);
+            return new PipeValue(PageAddress.Empty, item.DataBlockID, item.Document);
         }
 
         return PipeValue.Empty;

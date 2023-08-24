@@ -28,7 +28,7 @@ internal class AggregateEnumerator : IPipeEnumerator
         if (_enumerator.Emit.Document == false) throw ERR($"Aggregate pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(false, true);
+    public PipeEmit Emit => new(false, false, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -87,7 +87,7 @@ internal class AggregateEnumerator : IPipeEnumerator
             func.Reset();
         }
 
-        return new PipeValue(PageAddress.Empty, doc);
+        return new PipeValue(PageAddress.Empty, PageAddress.Empty, doc);
     }
 
     public void Dispose()

@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Collections.Generic;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// Page buffer cache. Keep a concurrent dictionary with buffers (byte[]) based on disk file position.
@@ -16,6 +18,8 @@ internal class CacheService : ICacheService
     /// </summary>
     private readonly ConcurrentDictionary<int, PageBuffer> _cache = new();
 
+    public int ItemsCount => _cache.Count;
+
     public CacheService(IBufferFactory bufferFactory)
     {
         _bufferFactory = bufferFactory;
@@ -30,6 +34,9 @@ internal class CacheService : ICacheService
             writable = false;
             return null;
         }
+
+        ENSURE(() => page.Header.TransactionID == 0);
+        ENSURE(() => page.Header.IsConfirmed == false);
 
         // test if this page are getted from a writable collection in transaction
         writable = Array.IndexOf(writeCollections, page.Header.ColID) > -1;
@@ -104,6 +111,10 @@ internal class CacheService : ICacheService
         ENSURE(() => page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
         ENSURE(() => page.InCache == false, "ShareCounter must be zero before add in cache");
 
+        // clear any transaction info before add in cache
+        page.Header.TransactionID = 0;
+        page.Header.IsConfirmed = false;
+
         // before add, checks cache limit and cleanup if full
         if (_cache.Count >= CACHE_LIMIT)
         {
@@ -127,6 +138,10 @@ internal class CacheService : ICacheService
     {
         Interlocked.Decrement(ref page.ShareCounter);
 
+        // clear header log information
+        page.Header.TransactionID = 0;
+        page.Header.IsConfirmed = false;
+
         ENSURE(() => page.ShareCounter >= 0);
     }
 
@@ -138,6 +153,8 @@ internal class CacheService : ICacheService
     {
         ENSURE(() => page.IsDirty == false);
         ENSURE(() => page.ShareCounter == 0, $"Page should not be in use");
+        ENSURE(() => page.Header.TransactionID == 0);
+        ENSURE(() => page.Header.IsConfirmed == false);
 
         page.ShareCounter = NO_CACHE;
         page.Timestamp = 0;
@@ -190,6 +207,22 @@ internal class CacheService : ICacheService
         }
 
         return total;
+    }
+
+    /// <summary>
+    /// Remove from cache all logfile pages. Keeps only page that are from datafile. Used after checkpoint operation
+    /// </summary>
+    public void ClearLogPages()
+    {
+        var logPositions = _cache.Values
+            .Where(x => x.IsDataFile)
+            .Select(x => x.PositionID)
+            .ToArray();
+
+        foreach( var logPosition in logPositions)
+        {
+            _cache.Remove(logPosition, out _);
+        }
     }
 
     public override string ToString()

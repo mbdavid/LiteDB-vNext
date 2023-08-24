@@ -21,7 +21,7 @@ internal class OrderByEnumerator : IPipeEnumerator
         _sorter = sortService.CreateSort(orderBy);
     }
 
-    public PipeEmit Emit => new(true, false);
+    public PipeEmit Emit => new(true, true, false);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -36,7 +36,7 @@ internal class OrderByEnumerator : IPipeEnumerator
         // get next sorted item (returns Empty when EOF)
         var item = await _sorter.MoveNextAsync();
 
-        return new PipeValue(item.DataBlockID);
+        return new PipeValue(PageAddress.Empty, item.DataBlockID);
     }
 
     public void Dispose()

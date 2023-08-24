@@ -15,7 +15,7 @@ internal class LookupEnumerator : IPipeEnumerator
         if (_enumerator.Emit.DataBlockID == false) throw ERR($"Lookup pipe enumerator requires DataBlockID from last pipe");
     }
 
-    public PipeEmit Emit => new(true, true);
+    public PipeEmit Emit => new(true, true, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -31,7 +31,7 @@ internal class LookupEnumerator : IPipeEnumerator
 
         var doc = await _lookup.LoadAsync(item, context);
 
-        return new PipeValue(item.DataBlockID, doc);
+        return new PipeValue(item.IndexNodeID, item.DataBlockID, doc);
     }
 
     public void Dispose()

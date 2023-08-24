@@ -29,7 +29,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
         _order = order;
     }
 
-    public PipeEmit Emit => new(true, false);
+    public PipeEmit Emit => new(true, true, false);
 
     public ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -69,7 +69,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
             {
                 if(!_hasMore || (_hasMore && node.Key.AsString.SqlLike(_value, _collation)))
                 {
-                    return new PipeValue(node.DataBlockID);
+                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
                 }
             }
         }
@@ -97,7 +97,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
 
             if (node.Key.AsString.SqlLike(_value, _collation))
             {
-                return new PipeValue(node.DataBlockID);
+                return new PipeValue(node.IndexNodeID, node.DataBlockID);
             }
         }
         // go forward
@@ -110,7 +110,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
 
                 if (node.Key.AsString.SqlLike(_value, _collation))
                 {
-                    return new PipeValue(node.DataBlockID);
+                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
                 }
 
                 _next = nodeRef.Node.GetNextPrev(0, _order);

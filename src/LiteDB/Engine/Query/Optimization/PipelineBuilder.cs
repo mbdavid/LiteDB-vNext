@@ -62,7 +62,7 @@ internal class PipelineBuilder
             var indexDocument = _collection.Indexes.Values.FirstOrDefault(x => x.Expression == expr) ??
                 throw ERR($"No index found for this expression: {expr}");
 
-            _enumerator = new IndexAllEnumerator(indexDocument, _collation, order);
+            _enumerator = new IndexAllEnumerator(indexDocument, order);
         }
 
         return this;

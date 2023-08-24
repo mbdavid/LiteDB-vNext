@@ -25,7 +25,7 @@ internal class IncludeEnumerator : IPipeEnumerator
         if (_enumerator.Emit.DataBlockID == false) throw ERR($"Include pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(_enumerator.Emit.DataBlockID, true);
+    public PipeEmit Emit => new(_enumerator.Emit.IndexNodeID, _enumerator.Emit.DataBlockID, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {

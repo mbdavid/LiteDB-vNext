@@ -22,8 +22,8 @@ var settings = new EngineSettings
 
 //var data1 = GetData(1, 100_000, 200);
 //var data2 = GetData(10, 50, 6000);
-var data1 = GetData(1, 100, 20);
-var data2 = GetData(10, 50, 600);
+var data1 = GetData(1, 100_000, 200);
+var data2 = GetData(10, 50, 6000);
 
 //Console.ReadKey();
 
@@ -66,7 +66,7 @@ var usedMemory = GC.GetTotalAllocatedBytes() - initMemory;
 
 Console.WriteLine($"Time: {sw.Elapsed.TotalMilliseconds:n0}ms");
 
-//var cursor = db.Query("col1", new Query { Select = "{_id,name,len:length(lorem)}", OrderBy = new ("name", 1) });
+//var cursor = db.Query("col1", new Query { Select = "{_id,name,age,len:length(lorem)}", OrderBy = new ("age", 1) });
 //PrintResult(await db.FetchAsync(cursor, 100));
 
 
@@ -79,6 +79,11 @@ Console.WriteLine($"  > Total time to shutdown: {swShutdown.Elapsed.TotalMillise
 
 Console.WriteLine($"Total memory used: {usedMemory} - {usedMemory / 1024:n0}K");
 Console.WriteLine($"Total time: {sw.Elapsed.TotalMilliseconds:n0}ms");
+
+Console.WriteLine($"-------------");
+db.Dispose();
+
+db.DumpMemory();
 
 //Console.ReadKey();
 return;

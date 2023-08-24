@@ -61,13 +61,13 @@ public partial class LiteEngine : ILiteEngine
         var counter = 0;
 
         // read all documents based on a full PK scan
-        using (var enumerator = new IndexAllEnumerator(collection.PK, collation, LiteDB.Engine.Query.Ascending))
+        using (var enumerator = new IndexAllEnumerator(collection.PK, LiteDB.Engine.Query.Ascending))
         {
             var result = await enumerator.MoveNextAsync(pipeContext);
 
             while(!result.IsEmpty)
             {
-                // read document fields // esse RowID é o DataBlock... não o RowID do index
+                // read document fields
                 var docResult = await dataService.ReadDocumentAsync(result.DataBlockID, fields);
 
                 if (docResult.Fail) throw docResult.Exception;
@@ -76,8 +76,8 @@ public partial class LiteEngine : ILiteEngine
                 var keys = expression.GetIndexKeys(docResult.Value.AsDocument, collation);
 
                 // get PK indexNode and Page 
-                var pkPage = await transaction.GetPageAsync(result.DataBlockID.PageID);
-                var pkIndexNode = transaction.GetIndexNode(result.DataBlockID);
+                var pkPage = await transaction.GetPageAsync(result.IndexNodeID.PageID);
+                var pkIndexNode = transaction.GetIndexNode(result.IndexNodeID);
                 var pkNextNodeID = pkIndexNode.NextNodeID;
 
                 // and set as start to NextNode
@@ -106,6 +106,9 @@ public partial class LiteEngine : ILiteEngine
                 {
                     await transaction.SafepointAsync();
                 }
+
+                // go to next result
+                result = await enumerator.MoveNextAsync(pipeContext);
             }
         }
 
