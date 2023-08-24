@@ -25,4 +25,30 @@ public class Tokenizer_Tests
             token.Type.Should().Be(s.Type);
         }
     }
+
+    public static IEnumerable<object[]> Get_Tokens2()
+    {
+        yield return new object[] { "{a b c", new Token[] { new Token(TokenType.Word, "b", 0), new Token(TokenType.OpenBrace, "{", 0), new Token(TokenType.Word, "a", 0) }, 3 };
+        yield return new object[] { "lpha beta charlie", new Token[] { new Token(TokenType.Word, "beta", 0), new Token(TokenType.Word, "lpha", 0), new Token(TokenType.Word, "beta", 0), new Token(TokenType.Word, "charlie", 0) }, 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(Get_Tokens2))]
+    public void LookAhead_Theory(params object[] T)
+    {
+        var t = new Tokenizer(T[0].As<string>());
+        var expected = T[1].As<Token[]>();
+
+        var tok = t.LookAhead(true, T[2].As<int>());
+        tok.Value.Should().Be(expected[0].Value);
+        tok.Type.Should().Be(expected[0].Type);
+
+        for (int i = 1; i < expected.Length; i++)
+        {
+            var s = expected[i];
+            tok = t.ReadToken();
+            tok.Value.Should().Be(s.Value);
+            tok.Type.Should().Be(s.Type);
+        }
+    }
 }
