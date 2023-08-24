@@ -39,7 +39,7 @@ public partial class LiteEngine : ILiteEngine
         // initialize autoId if needed
         if (autoIdService.NeedInitialize(collection.ColID, autoId))
         {
-            await autoIdService.InitializeAsync(collection.ColID, collection.PK.Tail, indexService);
+            await autoIdService.InitializeAsync(collection.ColID, collection.PK.TailIndexNodeID, indexService);
         }
 
         for (var i = 0; i < documents.Length; i++)
@@ -47,13 +47,13 @@ public partial class LiteEngine : ILiteEngine
             var doc = documents[i];
 
             // get/set _id
-            var id = autoIdService.SetID(collection.ColID, doc, autoId);
+            var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);
 
             // insert document and get position address
-            var rowID = await dataService.InsertDocumentAsync(collection.ColID, doc);
+            var dataBlockID = await dataService.InsertDocumentAsync(collection.ColID, doc);
 
             // insert _id as PK and get node to be used 
-            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, rowID, IndexNodeResult.Empty);
+            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, dataBlockID, IndexNodeResult.Empty);
 
             if (collection.Indexes.Count > 1)
             {
@@ -66,7 +66,7 @@ public partial class LiteEngine : ILiteEngine
 
                     foreach (var key in keys)
                     {
-                        var node = await indexService.AddNodeAsync(collection.ColID, index, key, rowID, last);
+                        var node = await indexService.AddNodeAsync(collection.ColID, index, key, dataBlockID, last);
 
                         last = node;
                     }

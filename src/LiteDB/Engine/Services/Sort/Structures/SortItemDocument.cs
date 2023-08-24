@@ -2,19 +2,19 @@
 
 internal readonly struct SortItemDocument
 {
-    public readonly PageAddress RowID;
+    public readonly PageAddress DataBlockID;
     public readonly BsonValue Key;
     public readonly BsonDocument Document;
 
-    public SortItemDocument(PageAddress rowID, BsonValue key, BsonDocument document)
+    public SortItemDocument(PageAddress dataBlockID, BsonValue key, BsonDocument document)
     {
-        this.RowID = rowID;
+        this.DataBlockID = dataBlockID;
         this.Key = key;
         this.Document = document;
     }
 
     public override string ToString()
     {
-        return $"{{ RowID = {RowID}, Key = {Key}, Document = {Document} }}";
+        return $"{{ DataBlockID = {DataBlockID}, Key = {Key}, Document = {Document} }}";
     }
 }

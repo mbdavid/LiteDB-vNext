@@ -6,8 +6,8 @@ internal class IndexDocument
     public required string Name { get; init; }
     public required BsonExpression Expression { get; init; }
     public bool Unique { get; init; }
-    public PageAddress Head { get; init; }
-    public PageAddress Tail { get; init; }
+    public PageAddress HeadIndexNodeID { get; init; }
+    public PageAddress TailIndexNodeID { get; init; }
 
     public IndexDocument()
     {
@@ -22,8 +22,8 @@ internal class IndexDocument
         this.Name = other.Name;
         this.Expression = other.Expression;
         this.Unique = other.Unique;
-        this.Head = other.Head;
-        this.Tail = other.Tail;
+        this.HeadIndexNodeID = other.HeadIndexNodeID;
+        this.TailIndexNodeID = other.TailIndexNodeID;
     }
 }
 

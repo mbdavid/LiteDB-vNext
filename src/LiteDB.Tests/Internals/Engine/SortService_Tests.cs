@@ -68,7 +68,7 @@ public class SortService_Tests
         // Assert
         var sorted = source
             .OrderBy(x => x.Document.AsDocument["name"].AsString)
-            .Select(x => new SortItem(x.RowID, x.Document.AsDocument["name"]))
+            .Select(x => new SortItem(x.DataBlockID, x.Document.AsDocument["name"]))
             .ToArray();
 
         result.Should().BeEquivalentTo(sorted);

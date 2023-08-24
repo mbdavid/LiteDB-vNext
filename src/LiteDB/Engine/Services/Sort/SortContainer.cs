@@ -96,8 +96,8 @@ internal class SortContainer : ISortContainer
             }
             else
             {
-                // write RowID, Key on buffer
-                span[pagePosition..].WritePageAddress(orderedItem.RowID);
+                // write DataBlockID, Key on buffer
+                span[pagePosition..].WritePageAddress(orderedItem.DataBlockID);
 
                 pagePosition += PageAddress.SIZE;
 
@@ -149,11 +149,11 @@ internal class SortContainer : ISortContainer
     {
         var span = _buffer.AsSpan(_position);
 
-        var rowID = span[0..].ReadPageAddress();
+        var dataBlockID = span[0..].ReadPageAddress();
         var key = span[PageAddress.SIZE..].ReadBsonValue(out var keyLength);
 
         // set current item
-        _current = new SortItem(rowID, key);
+        _current = new SortItem(dataBlockID, key);
 
         return PageAddress.SIZE + keyLength;
     }

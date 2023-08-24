@@ -28,8 +28,8 @@ internal class IndexAllEnumerator : IPipeEnumerator
         if (_eof) return PipeValue.Empty;
 
         var indexService = context.IndexService;
-        var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
-        var end = _order == Query.Ascending ? _indexDocument.Tail : _indexDocument.Head;
+        var start = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
+        var end = _order == Query.Ascending ? _indexDocument.TailIndexNodeID : _indexDocument.HeadIndexNodeID;
 
         // in first run, gets head node
         if (!_init)
@@ -57,7 +57,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
             _next = node.GetNextPrev(0, _order);
 
-            return new PipeValue(node.DataBlock);
+            return new PipeValue(node.DataBlockID);
         }
 
         _eof = true;

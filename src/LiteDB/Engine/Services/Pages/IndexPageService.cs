@@ -21,13 +21,13 @@ internal class IndexPageService : PageService, IIndexPageService
         // get a new index block
         var index = page.Header.GetFreeIndex(page);
 
-        var rowID = new PageAddress(page.Header.PageID, index);
+        var indexNodeID = new PageAddress(page.Header.PageID, index);
 
         // create new segment on page
         base.Insert(page, bytesLength, index, true);
 
         // create a new index node
-        var node = new IndexNode(page, rowID, slot, levels, key, dataBlock);
+        var node = new IndexNode(page, indexNodeID, slot, levels, key, dataBlock);
 
         return node;
     }

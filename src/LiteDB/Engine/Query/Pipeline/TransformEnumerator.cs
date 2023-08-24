@@ -17,7 +17,7 @@ internal class TransformEnumerator : IPipeEnumerator
         if (_enumerator.Emit.Document == false) throw ERR($"Transform pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new (_enumerator.Emit.RowID, true);
+    public PipeEmit Emit => new (_enumerator.Emit.DataBlockID, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -33,7 +33,7 @@ internal class TransformEnumerator : IPipeEnumerator
 
         var result = _expr.Execute(item.Document, context.QueryParameters, _collation);
 
-        return new PipeValue(item.RowID, result.AsDocument);
+        return new PipeValue(item.DataBlockID, result.AsDocument);
     }
 
     public void Dispose()

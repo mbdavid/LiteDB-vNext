@@ -27,14 +27,14 @@ internal class DataPageService : PageService, IDataPageService
         // get page segment for this data block
         var segment = base.Insert(page, bytesLength, newIndex, true);
 
-        // dataBlock rowID
-        var rowID = new PageAddress(page.Header.PageID, newIndex);
+        // dataBlockID
+        var dataBlockID = new PageAddress(page.Header.PageID, newIndex);
 
         // get datablock buffer segment
         var buffer = page.AsSpan(segment);
 
         // create new datablock
-        var dataBlock = new DataBlock(buffer, rowID, extend);
+        var dataBlock = new DataBlock(buffer, dataBlockID, extend);
 
         // copy content from span source to data block content area 
         content.CopyTo(buffer[DataBlock.P_BUFFER..]);
@@ -56,11 +56,11 @@ internal class DataPageService : PageService, IDataPageService
         // get datablock buffer segment
         var buffer = page.AsSpan(segment);
 
-        var rowID = new PageAddress(page.Header.PageID, index);
+        var dataBlockID = new PageAddress(page.Header.PageID, index);
 
-        var dataBlock = new DataBlock(buffer, rowID);
+        var dataBlock = new DataBlock(buffer, dataBlockID);
 
-        dataBlock.SetNextBlock(buffer, nextBlock);
+        dataBlock.SetNextBlockID(buffer, nextBlock);
 
         // copy content from span source to data block content area 
         content.CopyTo(buffer[DataBlock.P_BUFFER..]);

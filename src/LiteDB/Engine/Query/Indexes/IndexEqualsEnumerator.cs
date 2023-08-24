@@ -57,7 +57,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
             }
 
             // current node to return
-            return new PipeValue(node.DataBlock);
+            return new PipeValue(node.DataBlockID);
         }
 
         // first go forward
@@ -71,7 +71,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
             {
                 _prev = node.Prev[0];
 
-                return new PipeValue(node.DataBlock);
+                return new PipeValue(node.DataBlockID);
             }
             else
             {
@@ -90,7 +90,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
             {
                 _next = node.Prev[0];
 
-                return new PipeValue(node.DataBlock);
+                return new PipeValue(node.DataBlockID);
             }
             else
             {

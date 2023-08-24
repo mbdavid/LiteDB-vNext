@@ -42,8 +42,8 @@ public partial class LiteEngine : ILiteEngine
                     Name = "_id",
                     Expression = "$._id",
                     Unique = true,
-                    Head = head.RowID,
-                    Tail = tail.RowID
+                    HeadIndexNodeID = head.IndexNodeID,
+                    TailIndexNodeID = tail.IndexNodeID
                 }
             }
         });

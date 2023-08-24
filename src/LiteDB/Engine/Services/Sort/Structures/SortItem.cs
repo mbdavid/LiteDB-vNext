@@ -4,20 +4,20 @@ internal readonly struct SortItem
 {
     public static readonly SortItem Empty = new();
 
-    public readonly PageAddress RowID;
+    public readonly PageAddress DataBlockID;
     public readonly BsonValue Key;
 
-    public bool IsEmpty => this.RowID.IsEmpty;
+    public bool IsEmpty => this.DataBlockID.IsEmpty;
 
     public SortItem()
     {
-        this.RowID = PageAddress.Empty;
+        this.DataBlockID = PageAddress.Empty;
         this.Key = BsonValue.Null;
     }
 
-    public SortItem(PageAddress rowID, BsonValue key)
+    public SortItem(PageAddress dataBlockID, BsonValue key)
     {
-        this.RowID = rowID;
+        this.DataBlockID = dataBlockID;
         this.Key = key;
     }
 
@@ -28,6 +28,6 @@ internal readonly struct SortItem
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : $"{{ RowID = {RowID}, Key = {Key} }}";
+        return this.IsEmpty ? "<EMPTY>" : $"{{ DataBlockID = {DataBlockID}, Key = {Key} }}";
     }
 }

@@ -172,27 +172,27 @@ internal class Transaction : ITransaction
         return page;
     }
 
-    public IndexNode GetIndexNode(PageAddress rowID)
+    public IndexNode GetIndexNode(PageAddress indexNodeID)
     {
-        if (_localIndexNodes.TryGetValue(rowID, out var indexNode))
+        if (_localIndexNodes.TryGetValue(indexNodeID, out var indexNode))
         {
             return indexNode;
         }
 
-        _localPages.TryGetValue(rowID.PageID, out var page);
+        _localPages.TryGetValue(indexNodeID.PageID, out var page);
 
         ENSURE(() => page is not null, "Page not found for this index");
 
-        indexNode = new IndexNode(page, rowID);
+        indexNode = new IndexNode(page, indexNodeID);
 
-        _localIndexNodes.Add(rowID, indexNode);
+        _localIndexNodes.Add(indexNodeID, indexNode);
 
         return indexNode;
     }
 
-    public void DeleteIndexNode(PageAddress rowID)
+    public void DeleteIndexNode(PageAddress indexNodeID)
     {
-        var deleted = _localIndexNodes.Remove(rowID);
+        var deleted = _localIndexNodes.Remove(indexNodeID);
 
         ENSURE(() => deleted, "IndexNode not found in transaction local index cache");
     }

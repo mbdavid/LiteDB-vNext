@@ -17,7 +17,7 @@ internal class AutoIdService : IAutoIdService
     /// <summary>
     /// Set _id value according autoId and if not exists _id field. If exists, can update sequence if greater than last value
     /// </summary>
-    public BsonValue SetID(byte colID, BsonDocument document, BsonAutoId autoId)
+    public BsonValue SetDocumentID(byte colID, BsonDocument document, BsonAutoId autoId)
     {
         // if document as no _id, create a new
         if (!document.TryGetValue("_id", out var id))
@@ -68,9 +68,9 @@ internal class AutoIdService : IAutoIdService
     /// <summary>
     /// Initialize sequence based on last value on _id key.
     /// </summary>
-    public async Task InitializeAsync(byte colID, PageAddress tailRowID, IIndexService indexService)
+    public async Task InitializeAsync(byte colID, PageAddress tailIndexNodeID, IIndexService indexService)
     {
-        var tail = await indexService.GetNodeAsync(tailRowID);
+        var tail = await indexService.GetNodeAsync(tailIndexNodeID);
         var last = await indexService.GetNodeAsync(tail.Node.Prev[0]);
 
         if (last.Node.Key.IsInt32)

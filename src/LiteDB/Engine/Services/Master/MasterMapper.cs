@@ -51,8 +51,8 @@ internal class MasterMapper : IMasterMapper
                     ["name"] = i.Value.Name,
                     ["expr"] = i.Value.Expression.ToString(),
                     ["unique"] = i.Value.Unique,
-                    ["head"] = new BsonArray(new BsonValue[] { i.Value.Head.PageID, i.Value.Head.Index }),
-                    ["tail"] = new BsonArray(new BsonValue[] { i.Value.Tail.PageID, i.Value.Tail.Index }),
+                    ["head"] = new BsonArray(new BsonValue[] { i.Value.HeadIndexNodeID.PageID, i.Value.HeadIndexNodeID.Index }),
+                    ["tail"] = new BsonArray(new BsonValue[] { i.Value.TailIndexNodeID.PageID, i.Value.TailIndexNodeID.Index }),
                 }))
             })),
             ["pragmas"] = new BsonDocument
@@ -80,8 +80,8 @@ internal class MasterMapper : IMasterMapper
                     Name = i.Key,
                     Expression = BsonExpression.Create(i.Value["expr"]),
                     Unique = i.Value["unique"],
-                    Head = new(i.Value["head"][0], (byte)i.Value["head"][1]),
-                    Tail = new(i.Value["tail"][0], (byte)i.Value["tail"][1])
+                    HeadIndexNodeID = new(i.Value["head"][0], (byte)i.Value["head"][1]),
+                    TailIndexNodeID = new(i.Value["tail"][0], (byte)i.Value["tail"][1])
                 })
             }),
             Pragmas = new PragmaDocument

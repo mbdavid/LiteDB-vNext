@@ -41,8 +41,8 @@ public partial class LiteEngine : ILiteEngine
             Name = indexName,
             Expression = expression,
             Unique = unique,
-            Head = head.RowID,
-            Tail = tail.RowID
+            HeadIndexNodeID = head.IndexNodeID,
+            TailIndexNodeID = tail.IndexNodeID
         };
         
         // add new index into master model
@@ -68,7 +68,7 @@ public partial class LiteEngine : ILiteEngine
             while(!result.IsEmpty)
             {
                 // read document fields // esse RowID é o DataBlock... não o RowID do index
-                var docResult = await dataService.ReadDocumentAsync(result.RowID, fields);
+                var docResult = await dataService.ReadDocumentAsync(result.DataBlockID, fields);
 
                 if (docResult.Fail) throw docResult.Exception;
 
@@ -76,9 +76,9 @@ public partial class LiteEngine : ILiteEngine
                 var keys = expression.GetIndexKeys(docResult.Value.AsDocument, collation);
 
                 // get PK indexNode and Page 
-                var pkPage = await transaction.GetPageAsync(result.RowID.PageID);
-                var pkIndexNode = transaction.GetIndexNode(result.RowID);
-                var pkNextNode = pkIndexNode.NextNode;
+                var pkPage = await transaction.GetPageAsync(result.DataBlockID.PageID);
+                var pkIndexNode = transaction.GetIndexNode(result.DataBlockID);
+                var pkNextNodeID = pkIndexNode.NextNodeID;
 
                 // and set as start to NextNode
                 var first = IndexNodeResult.Empty;
@@ -86,7 +86,7 @@ public partial class LiteEngine : ILiteEngine
 
                 foreach (var key in keys)
                 {
-                    var nodeResult = await indexService.AddNodeAsync(collection.ColID, indexDocument, key, result.RowID, last);
+                    var nodeResult = await indexService.AddNodeAsync(collection.ColID, indexDocument, key, result.DataBlockID, last);
 
                     // keep first node to add in NextNode list (after pk)
                     if (first.IsEmpty) first = nodeResult;
@@ -96,9 +96,9 @@ public partial class LiteEngine : ILiteEngine
                 }
 
                 // if pk already has a nextNode, point to first added 
-                if (!pkNextNode.IsEmpty)
+                if (!pkNextNodeID.IsEmpty)
                 {
-                    first.Node.SetNextNode(first.Page, pkNextNode);
+                    first.Node.SetNextNodeID(first.Page, pkNextNodeID);
                 }
 
                 // do a safepoint after insert each document

@@ -18,8 +18,8 @@ public class IndexEqualsEnumerator_Tests
             Name = "_id",
             Expression = "$._id",
             Unique = true,
-            Head = new PageAddress(0, 1),
-            Tail = new PageAddress(10, 1)
+            HeadIndexNodeID = new PageAddress(0, 1),
+            TailIndexNodeID = new PageAddress(10, 1)
 
         };
         var _sut = new IndexEqualsEnumerator(1, indexDocument, Collation.Default);

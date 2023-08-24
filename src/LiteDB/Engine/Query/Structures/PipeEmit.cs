@@ -1,21 +1,21 @@
 ﻿namespace LiteDB.Engine;
 
 /// <summary>
-/// Structure to define enumerators emit after pipe (rowID and/or document)
+/// Structure to define enumerators emit after pipe (dataBlockID and/or document)
 /// </summary>
 internal struct PipeEmit
 {
-    public readonly bool RowID;
+    public readonly bool DataBlockID;
     public readonly bool Document;
 
-    public PipeEmit(bool rowID, bool value)
+    public PipeEmit(bool dataBlockID, bool value)
     {
-        this.RowID = rowID;
+        this.DataBlockID = dataBlockID;
         this.Document = value;
     }
 
     public override string ToString()
     {
-        return $"{{ RowID = {RowID}, Document = {Document} }}";
+        return $"{{ DataBlockID = {DataBlockID}, Document = {Document} }}";
     }
 }

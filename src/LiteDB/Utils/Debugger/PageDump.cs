@@ -82,7 +82,7 @@ internal static class PageDump
                 var content = result.Value.ToString() +
                     (result.Fail ? "..." : "");
 
-                sb.AppendLine($"[{index}] = {segment} => {dataBlock.NextBlock} = {content}");
+                sb.AppendLine($"[{index}] = {segment} => {dataBlock.NextBlockID} = {content}");
             }
             else
             {
