@@ -75,9 +75,9 @@ internal static class PageDump
 
             if (!segment.IsEmpty)
             {
-                var dataBlock = new DataBlock(page, new PageAddress(page.Header.PageID, (byte)i));
+                var dataBlock = new DataBlock(page.AsSpan(segment), new PageAddress(page.Header.PageID, (byte)i));
 
-                var result = reader.ReadDocument(dataBlock.GetDataSpan(page), Array.Empty<string>(), false, out var docLength);
+                var result = reader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength), Array.Empty<string>(), false, out _);
 
                 var content = result.Value.ToString() +
                     (result.Fail ? "..." : "");

@@ -40,74 +40,55 @@ internal struct DataBlock
     /// <summary>
     /// Read new DataBlock from filled page block
     /// </summary>
-    public DataBlock(PageBuffer page, PageAddress rowID)
+    public DataBlock(Span<byte> buffer, PageAddress rowID)
     {
         this.RowID = rowID;
 
-        ENSURE(() => page.Header.PageID == rowID.PageID, $"PageID {page.Header.PageID} and RowID.PageID {rowID.PageID} must be the same value");
-        ENSURE(() => page.Header.PageType == PageType.Data);
+        this.Extend = buffer[P_EXTEND] != 0;
+        this.NextBlock = buffer[P_NEXT_BLOCK..].ReadPageAddress();
 
-        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
-        var span = page.AsSpan(segment);
-
-        this.Extend = span[P_EXTEND] != 0;
-        this.NextBlock = span[P_NEXT_BLOCK..].ReadPageAddress();
-
-        this.DataLength = segment.Length - DATA_BLOCK_FIXED_SIZE;
-        this.DocumentLength = this.Extend ? int.MaxValue : span[P_BUFFER..].ReadVariantLength(out _);
+        this.DataLength = buffer.Length - DATA_BLOCK_FIXED_SIZE;
+        this.DocumentLength = this.Extend ? int.MaxValue : buffer[P_BUFFER..].ReadVariantLength(out _);
     }
 
     /// <summary>
     /// Create new DataBlock and fill into buffer
     /// </summary>
-    public DataBlock(PageBuffer page, PageAddress rowID, bool extend)
+    public DataBlock(Span<byte> buffer, PageAddress rowID, bool extend)
     {
-        page.IsDirty = true;
-
         this.RowID = rowID;
-
         this.Extend = extend;
         this.NextBlock = PageAddress.Empty;
 
-        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
-        var span = page.AsSpan(segment);
+        buffer[P_EXTEND] = this.Extend ? (byte)1 : (byte)0;
+        buffer[P_NEXT_BLOCK..].WritePageAddress(PageAddress.Empty);
 
-        span[P_EXTEND] = this.Extend ? (byte)1 : (byte)0;
-        span[P_NEXT_BLOCK..].WritePageAddress(PageAddress.Empty);
-
-        this.DataLength = segment.Length - DATA_BLOCK_FIXED_SIZE;
+        this.DataLength = buffer.Length - DATA_BLOCK_FIXED_SIZE;
         this.DocumentLength = int.MaxValue;
     }
 
     /// <summary>
     /// Update NextBlock pointer (update in buffer too)
     /// </summary>
-    public void SetNextBlock(PageBuffer page, PageAddress nextBlock)
+    public void SetNextBlock(Span<byte> buffer, PageAddress nextBlock)
     {
-        ENSURE(this, x => x.RowID.PageID == page.Header.PageID, $"should be same data page {page}");
-
-        page.IsDirty = true;
-
         this.NextBlock = nextBlock;
 
-        var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
-        var span = page.AsSpan(segment);
-
-        span[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
+        buffer[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
     }
 
-    /// <summary>
-    /// Get span from data content inside dataBlock. Return dataLength as output parameter
-    /// </summary>
-    public Span<byte> GetDataSpan(PageBuffer page)
-    {
-        var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
+    ///// <summary>
+    ///// Get span from data content inside dataBlock. Return dataLength as output parameter
+    ///// </summary>
+    //public Span<byte> GetDataSpan(PageBuffer page)
+    //{
+    //    var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
 
-        return page.AsSpan(segment.Location + DataBlock.P_BUFFER, this.DataLength);
-    }
+    //    return page.AsSpan(segment.Location + DataBlock.P_BUFFER, this.DataLength);
+    //}
 
     public override string ToString()
     {
-        return $"{{ RowID = {RowID}, Next = {NextBlock} }}";
+        return $"{{ RowID = {RowID}, Extend = {Extend}, Next = {NextBlock} }}";
     }
 }

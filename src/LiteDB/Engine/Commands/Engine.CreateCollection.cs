@@ -10,9 +10,6 @@ public partial class LiteEngine : ILiteEngine
         var masterService = _factory.MasterService;
         var monitorService = _factory.MonitorService;
 
-        // create a new transaction locking colID = 255 ($master)
-        var transaction = await monitorService.CreateTransactionAsync(new byte[] { MASTER_COL_ID });
-
         // get exclusive $master
         var master = masterService.GetMaster(true);
 
@@ -22,6 +19,9 @@ public partial class LiteEngine : ILiteEngine
             .FirstOrDefault();
 
         if (colID > MASTER_COL_LIMIT) throw ERR("acima do limite");
+
+        // create a new transaction locking colID = 255 ($master)
+        var transaction = await monitorService.CreateTransactionAsync(new byte[] { MASTER_COL_ID, colID });
 
         // get index service
         var indexer = _factory.CreateIndexService(transaction);

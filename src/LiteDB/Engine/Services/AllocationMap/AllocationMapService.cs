@@ -70,25 +70,38 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Get a free PageID based on colID/type. Create extend or new am page if needed. Return isNew if page are empty (must be initialized)
     /// </summary>
-    public (int pageID, bool isNew) GetFreeExtend(byte colID, PageType type)
+    public (int pageID, bool isNew, ExtendLocation next) GetFreeExtend(ExtendLocation current, byte colID, PageType type)
     {
-        foreach(var page in _pages)
+        var page = _pages[current.AllocationMapID];
+
+        var (extendIndex, pageIndex, isNew) = page.GetFreeExtend(current.ExtendIndex, colID, type);
+
+        if (extendIndex >= 0)
         {
-            var (extendIndex, pageIndex, isNew) = page.GetFreeExtend(colID, type);
+            var extend = new ExtendLocation(current.AllocationMapID, extendIndex);
 
-            if (extendIndex != -1)
-            {
-                var pageID = page.AllocationMapID * AM_PAGE_STEP + extendIndex * AM_EXTEND_SIZE + 1 + pageIndex;
+            var pageID = page.AllocationMapID * AM_PAGE_STEP + extendIndex * AM_EXTEND_SIZE + 1 + pageIndex;
 
-                return (pageID, isNew);
-            }
+            return (pageID, isNew, extend);
         }
+        else
+        {
+            // create new extend map page
+            var extend = new ExtendLocation(current.AllocationMapID + 1, 0);
 
-        var extendLocation = this.CreateNewExtend(colID);
+            // if there is no more free extend in any AM page, let's create a new allocation map page
+            var mapPageBuffer = _bufferFactory.AllocateNewPage(true);
 
-        var firstPageID = extendLocation.FirstPageID;
+            // get a new PageID based on last AM page
+            var nextPageID = _pages.Last().Page.Header.PageID + AM_PAGE_STEP;
 
-        return (firstPageID, true);
+            // create new AM page and add to list
+            var newPage = new AllocationMapPage(nextPageID, mapPageBuffer);
+
+            _pages.Add(newPage);
+
+            return (extend.FirstPageID, true, extend);
+        }
     }
 
     /// <summary>
@@ -152,44 +165,6 @@ internal class AllocationMapService : IAllocationMapService
                 await writer.WritePageAsync(page.Page);
             }
         }
-    }
-
-    /// <summary>
-    /// </summary>
-    private ExtendLocation CreateNewExtend(byte colID)
-    {
-        //TODO: lock, pois não pode ter 2 threads aqui
-
-
-        // try create extend in all AM pages already exists
-        foreach (var page in _pages)
-        {
-            // create new extend on page (if this page contains empty extends)
-            var extendIndex = page.CreateNewExtend(colID);
-            
-            if (extendIndex >= 0) 
-            {
-                // return first empty page
-                return new(page.AllocationMapID, extendIndex);
-            }
-        }
-
-        // if there is no more free extend in any AM page, let's create a new allocation map page
-        var pageBuffer = _bufferFactory.AllocateNewPage(true);
-
-        // get a new PageID based on last AM page
-        var nextPageID = _pages.Last().Page.Header.PageID + AM_PAGE_STEP;
-
-        // create new AM page and add to list
-        var newPage = new AllocationMapPage(nextPageID, pageBuffer);
-
-        _pages.Add(newPage);
-
-        // create new extend for this collection - always return true because it´s a new page
-        var newExtendIndex = newPage.CreateNewExtend(colID);
-
-        // return this new extend location
-        return new(newPage.AllocationMapID, newExtendIndex);
     }
 
     public void Dispose()

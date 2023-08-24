@@ -87,41 +87,35 @@ internal class AllocationMapPage
     /// Read all extendValues to return the first extendIndex with avaliable space. Returns pageIndex for this pag
     /// Returns -1 if has no extend with this condition.
     /// </summary>
-    public (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(byte colID, PageType type)
+    public (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(int currentExtendIndex, byte colID, PageType type)
     {
-        for (var i = 0; i < AM_EXTEND_COUNT; i++)
+        while(currentExtendIndex < AM_EXTEND_COUNT)
         {
             // get extend value as uint
-            var extendValue = _extendValues[i];
+            var extendValue = _extendValues[currentExtendIndex];
 
             var (pageIndex, isNew) = HasFreeSpaceInExtend(extendValue, colID, type);
 
-            if (pageIndex != -1)
+            // current extend contains a valid page
+            if (pageIndex >= 0)
             {
-                return (i, pageIndex, isNew);
+                return (currentExtendIndex, pageIndex, isNew);
             }
+
+            // test if current extend are not empty (create extend here)
+            if (extendValue == 0)
+            {
+                // update extend value with only colID value in first 1 byte (shift 3 bytes)
+                _extendValues[currentExtendIndex] = (uint)(colID << 24);
+
+                return (currentExtendIndex, 0, true);
+            }
+
+            // go to next index
+            currentExtendIndex++;
         }
 
         return (-1, 0, false);
-    }
-
-    /// <summary>
-    /// Create a new extend (if contains empty extends) and return new extendIndex or -1 if has no more empty extends
-    /// </summary>
-    public int CreateNewExtend(byte colID)
-    {
-        if (_emptyExtends.Count == 0) return -1;
-
-        // get a empty extend on this page
-        var extendIndex = _emptyExtends.Dequeue();
-
-        // update extend value with only colID value in first 1 byte (shift 3 bytes)
-        _extendValues[extendIndex] = (uint)(colID << 24);
-
-        // mark page as dirty
-        _page.IsDirty = true;
-
-        return extendIndex;
     }
 
     /// <summary>

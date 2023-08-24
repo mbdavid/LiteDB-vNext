@@ -28,22 +28,21 @@ await db.OpenAsync();
     await db.CreateCollectionAsync("col1");
 }
 
-var data = GetData(1, 1000, 20);
+var data1 = GetData(1, 100_000, 200);
+var data2 = GetData(10, 50, 6000);
 
 //Console.ReadKey();
 
 var initMemory = GC.GetTotalAllocatedBytes();
 var sw = Stopwatch.StartNew();
 
-await db.InsertAsync("col1", data, BsonAutoId.Int32);
+// Executa operações
 
-var usedMemory = GC.GetTotalAllocatedBytes() - initMemory;
+await db.InsertAsync("col1", data1, BsonAutoId.Int32);
 
+await db.DeleteAsync("col1", Enumerable.Range(1, 50).Select(x => new BsonInt32(x)).ToArray());
 
-//await db.DeleteAsync("col1", Enumerable.Range(1, 50).Select(x => new BsonInt32(x)).ToArray());
-//
-//await db.InsertAsync("col1", GetData(10, 50,6000), BsonAutoId.Int32);
-
+await db.InsertAsync("col1", data2, BsonAutoId.Int32);
 
 
 //var cursor = db.Query("col1", new AggregateQuery
@@ -57,17 +56,23 @@ var usedMemory = GC.GetTotalAllocatedBytes() - initMemory;
 
 //db.DumpMemory();
 
+var usedMemory = GC.GetTotalAllocatedBytes() - initMemory;
 
-
-Console.WriteLine($"Total memory used: {usedMemory} - {usedMemory / 1024:n0}K");
 Console.WriteLine($"Time: {sw.Elapsed.TotalMilliseconds:n0}ms");
-
 
 //var cursor = db.Query("col1", new Query { Select = "{_id,name,len:length(lorem)}", OrderBy = new ("name", 1) });
 //PrintResult(await db.FetchAsync(cursor, 100));
 
 
+Console.WriteLine("  > Starting shutdown()...");
+var swShutdown = Stopwatch.StartNew();
+
 await db.ShutdownAsync();
+
+Console.WriteLine($"  > Total time to shutdown: {swShutdown.Elapsed.TotalMilliseconds:n0}ms");
+
+Console.WriteLine($"Total memory used: {usedMemory} - {usedMemory / 1024:n0}K");
+Console.WriteLine($"Total time: {sw.Elapsed.TotalMilliseconds:n0}ms");
 
 //Console.ReadKey();
 return;

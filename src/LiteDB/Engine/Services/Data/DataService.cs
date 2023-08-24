@@ -55,7 +55,7 @@ internal class DataService : IDataService
         while (true)
         {
             // get how many bytes must be copied in this page (should consider data block and new footer item)
-            var pageFreeSpace = page.Header.FreeBytes - DataBlock.DATA_BLOCK_FIXED_SIZE - 4;
+            var pageFreeSpace = page.Header.FreeBytes - DataBlock.DATA_BLOCK_FIXED_SIZE - 4; // -4 for a possible new record (4 footer bytes)
             var bytesToCopy = Math.Min(pageFreeSpace, bytesLeft);
 
             // get extend page value before page change
@@ -73,8 +73,11 @@ internal class DataService : IDataService
 
             if (lastPage is not null && lastDataBlock is not null)
             {
+                // get block segment
+                var segment = PageSegment.GetSegment(page, dataBlock.RowID.Index, out var _);
+
                 // update NextDataBlock from last page
-                lastDataBlock.Value.SetNextBlock(lastPage, dataBlock.RowID);
+                lastDataBlock.Value.SetNextBlock(lastPage.AsSpan(segment), dataBlock.RowID);
             }
             else
             {
@@ -118,17 +121,30 @@ internal class DataService : IDataService
         // get current datablock (for first one)
         var page = await _transaction.GetPageAsync(rowID.PageID);
 
+        // get first page segment
+        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+
         // get first data block
-        var dataBlock = new DataBlock(page, rowID);
+        var dataBlock = new DataBlock(page.AsSpan(segment), rowID);
+
+        //TODO: SOMENTE PRIMEIRA PAGINA
+        _dataPageService.UpdateDataBlock(page, rowID.Index, page.AsSpan(segment), PageAddress.Empty);
+
+        // get extend page value before page change
+        var before = page.Header.ExtendPageValue;
+
+        _dataPageService.UpdateDataBlock(page, rowID.Index, page.AsSpan(segment), PageAddress.Empty);
+
+        // checks if extend page value change and update map
+        var after = page.Header.ExtendPageValue;
+
+        if (before != after)
+        {
+            _transaction.UpdatePageMap(page.Header.PageID, after);
+        }
 
 
 
-
-        // TODO: tá implementado só pra 1 pagina
-        _dataPageService.UpdateDataBlock(page, rowID.Index, bufferDoc.AsSpan(), PageAddress.Empty);
-
-        // update allocation map after change page
-        _transaction.UpdatePageMap(page.Header.PageID, page.Header.ExtendPageValue);
     }
 
     /// <summary>
@@ -138,11 +154,14 @@ internal class DataService : IDataService
     {
         var page = await _transaction.GetPageAsync(rowID.PageID);
 
-        var dataBlock = new DataBlock(page, rowID);
+        // get data block segment
+        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+
+        var dataBlock = new DataBlock(page.AsSpan(segment), rowID);
 
         if (dataBlock.NextBlock.IsEmpty)
         {
-            var result = _bsonReader.ReadDocument(dataBlock.GetDataSpan(page), fields, false, out _);
+            var result = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength), fields, false, out _);
 
             return result;
         }
@@ -152,7 +171,8 @@ internal class DataService : IDataService
             using var docBuffer = SharedBuffer.Rent(dataBlock.DocumentLength);
 
             // copy first page into full buffer
-            dataBlock.GetDataSpan(page).CopyTo(docBuffer.AsSpan());
+            page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
+                .CopyTo(docBuffer.AsSpan()); // and copy to docBuffer byte[]
 
             var position = dataBlock.DataLength;
 
@@ -162,9 +182,13 @@ internal class DataService : IDataService
             {
                 page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID);
 
-                dataBlock = new DataBlock(page, dataBlock.NextBlock);
+                segment = PageSegment.GetSegment(page, dataBlock.NextBlock.Index, out var _);
 
-                dataBlock.GetDataSpan(page).CopyTo(docBuffer.AsSpan(position));
+                dataBlock = new DataBlock(page.AsSpan(segment), dataBlock.NextBlock);
+
+                //dataBlock.GetDataSpan(page).CopyTo(docBuffer.AsSpan(position));
+                page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
+                    .CopyTo(docBuffer.AsSpan()); // and copy to docBuffer byte[]
 
                 position += dataBlock.DataLength;
             }
@@ -185,8 +209,11 @@ internal class DataService : IDataService
             // get page from rowID
             var page = await _transaction.GetPageAsync(rowID.PageID);
 
+            // get page segment
+            var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+
             // and get dataBlock
-            var dataBlock = new DataBlock(page, rowID);
+            var dataBlock = new DataBlock(page.AsSpan(segment), rowID);
 
             var before = page.Header.ExtendPageValue;
 

@@ -29,6 +29,11 @@ internal readonly struct SharedBuffer : IDisposable
         return new (array, length);
     }
 
+    public void CopyFrom(Span<byte> source)
+    {
+        
+    }
+
     public void Dispose()
     {
         ArrayPool<byte>.Shared.Return(_array);

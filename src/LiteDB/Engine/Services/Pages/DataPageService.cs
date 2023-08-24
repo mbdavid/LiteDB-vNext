@@ -14,12 +14,12 @@ internal class DataPageService : PageService, IDataPageService
     }
 
     /// <summary>
-    /// Write a new document (or document fragment) into a DataPage
+    /// Write a new document (or document fragment) into a DataPage and returns new DataBlock
     /// </summary>
-    public DataBlock InsertDataBlock(PageBuffer page, Span<byte> buffer, bool extend)
+    public DataBlock InsertDataBlock(PageBuffer page, Span<byte> content, bool extend)
     {
         // get required bytes this insert
-        var bytesLength = (ushort)(buffer.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
+        var bytesLength = (ushort)(content.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
 
         // get a new index block
         var newIndex = page.Header.GetFreeIndex(page);
@@ -27,15 +27,17 @@ internal class DataPageService : PageService, IDataPageService
         // get page segment for this data block
         var segment = base.Insert(page, bytesLength, newIndex, true);
 
+        // dataBlock rowID
         var rowID = new PageAddress(page.Header.PageID, newIndex);
 
-        var dataBlock = new DataBlock(page, rowID, extend);
+        // get datablock buffer segment
+        var buffer = page.AsSpan(segment);
 
-        // get data block location inside page
-        var dataBlockBuffer = page.AsSpan(segment.Location + DataBlock.P_BUFFER, buffer.Length);
+        // create new datablock
+        var dataBlock = new DataBlock(buffer, rowID, extend);
 
-        // copy content from span source to block right position 
-        buffer.CopyTo(dataBlockBuffer);
+        // copy content from span source to data block content area 
+        content.CopyTo(buffer[DataBlock.P_BUFFER..]);
 
         return dataBlock;
     }
@@ -43,23 +45,32 @@ internal class DataPageService : PageService, IDataPageService
     /// <summary>
     /// Update an existing document inside a single page. This new document must fit on this page
     /// </summary>
-    public void UpdateDataBlock(PageBuffer page, byte index, Span<byte> buffer, PageAddress nextBlock)
+    public DataBlock UpdateDataBlock(PageBuffer page, byte index, Span<byte> content, PageAddress nextBlock)
     {
         // get required bytes this update
-        var bytesLength = (ushort)(buffer.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
+        var bytesLength = (ushort)(content.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
 
         // get page segment to update this buffer
         var segment = base.Update(page, index, bytesLength);
 
-        // update nextBlock
-        page.AsSpan(segment.Location + DataBlock.P_NEXT_BLOCK).WritePageAddress(nextBlock);
+        // get datablock buffer segment
+        var buffer = page.AsSpan(segment);
 
-        // copy content from buffer to page
-        buffer.CopyTo(page.AsSpan(segment.Location + DataBlock.DATA_BLOCK_FIXED_SIZE));
+        var rowID = new PageAddress(page.Header.PageID, index);
+
+        var dataBlock = new DataBlock(buffer, rowID);
+
+        dataBlock.SetNextBlock(buffer, nextBlock);
+
+        // copy content from span source to data block content area 
+        content.CopyTo(buffer[DataBlock.P_BUFFER..]);
+
+        // return updated data block
+        return dataBlock;
     }
 
     /// <summary>
-    /// Delete a single datablock from page
+    /// Delete a single datablock from page. Returns NextBlock from deleted data block
     /// </summary>
     public void DeleteDataBlock(PageBuffer page, byte index)
     {

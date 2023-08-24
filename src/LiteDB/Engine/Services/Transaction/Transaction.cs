@@ -34,6 +34,9 @@ internal class Transaction : ITransaction
     // all writable collections ID (must be lock on init)
     private readonly byte[] _writeCollections;
 
+    // for each writeCollection, a cursor for current extend disk position
+    private readonly ExtendLocation[] _currentExtendLocations;
+
     /// <summary>
     /// Read wal version
     /// </summary>
@@ -75,6 +78,7 @@ internal class Transaction : ITransaction
         this.ReadVersion = readVersion; // -1 means not initialized
 
         _writeCollections = writeCollections;
+        _currentExtendLocations = new ExtendLocation[writeCollections.Length];
     }
 
     /// <summary>
@@ -170,8 +174,14 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetFreeDataPageAsync(byte colID)
     {
+        var colIndex = Array.IndexOf(_writeCollections, colID);
+        var currentExtend = _currentExtendLocations[colIndex];
+
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, PageType.Data);
+        var (pageID, isNew, nextExtend) = _allocationMapService.GetFreeExtend(currentExtend, colID, PageType.Data);
+
+        // update current collection extend location
+        _currentExtendLocations[colIndex] = nextExtend;
 
         if (isNew)
         {
@@ -187,6 +197,7 @@ internal class Transaction : ITransaction
         }
         else
         {
+            // if page already exists, just get page
             var page = await this.GetPageAsync(pageID);
 
             return page;
@@ -198,8 +209,14 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetFreeIndexPageAsync(byte colID, int indexNodeLength)
     {
+        var colIndex = Array.IndexOf(_writeCollections, colID);
+        var currentExtend = _currentExtendLocations[colIndex];
+
         // request for allocation map service a new PageID for this collection
-        var (pageID, isNew) = _allocationMapService.GetFreeExtend(colID, PageType.Index);
+        var (pageID, isNew, nextExtend) = _allocationMapService.GetFreeExtend(currentExtend, colID, PageType.Index);
+
+        // update current collection extend location
+        _currentExtendLocations[colIndex] = nextExtend;
 
         if (isNew)
         {
@@ -226,7 +243,6 @@ internal class Transaction : ITransaction
                 // call recursive to get another page
                 return await this.GetFreeIndexPageAsync(colID, indexNodeLength);
             }
-
 
             return page;
         }

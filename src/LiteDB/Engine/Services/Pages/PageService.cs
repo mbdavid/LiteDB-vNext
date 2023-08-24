@@ -67,7 +67,7 @@ internal class PageService : IPageService
     }
 
     /// <summary>
-    /// Remove index slot about this page segment
+    /// Remove index slot about this page segment. Returns deleted page segment
     /// </summary>
     protected void Delete(PageBuffer page, byte index)
     {
@@ -143,6 +143,8 @@ internal class PageService : IPageService
 
         // read page segment
         var segment = PageSegment.GetSegment(page, index, out var segmentAddr);
+
+        ENSURE(() => page.Header.FreeBytes - segment.Length >= bytesLength, $"There is no free space in page {page} for {bytesLength} bytes required");
 
         // check if current segment are at end of page
         var isLastSegment = (segment.EndLocation == header.NextFreeLocation);
