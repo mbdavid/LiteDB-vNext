@@ -101,7 +101,7 @@ internal struct Token : INullable
     public string Value { get; private set; }
     public long Position { get; private set; }
 
-    public bool IsNull => this.Value=="";
+    public bool IsNull => this.Value==string.Empty;
 
     /// <summary>
     /// Expect if token is type (if not, throw UnexpectedToken)
@@ -249,17 +249,36 @@ internal class Tokenizer
     /// </summary>
     public Token LookAhead(bool eatWhitespace = true, int tokensCount = 1)
     {
-        if (_ahead.IsNull==false)
+        if (tokensCount <= 0)
+            return _current;
+        if(tokensCount==1)
         {
-            if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
+            if (_ahead.IsNull == false)
             {
-                _ahead = this.ReadNext(eatWhitespace);
+                if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
+                {
+                    _ahead = this.ReadNext(eatWhitespace);
+                }
+
+                return _ahead;
             }
 
-            return _ahead;
+            return _ahead = this.ReadNext(eatWhitespace);
         }
-
-        return _ahead = this.ReadNext(eatWhitespace);
+        else
+        {
+            var keepPos = _position-1;
+            var keepCurent = _current;
+            var keepAhead = this.ReadNext(eatWhitespace);
+            for (int i=1; i<tokensCount-1; i++)
+                this.ReadNext(eatWhitespace);
+            var tok = this.ReadNext(eatWhitespace);
+            _position = keepPos;
+            this.ReadChar();
+            _ahead = keepAhead;
+            _current = keepCurent;
+            return tok;
+        }
     }
 
     /// <summary>
@@ -278,7 +297,7 @@ internal class Tokenizer
         }
 
         _current = _ahead;
-        _ahead = new Token(TokenType.Unknown, "", 0);
+        _ahead = new Token(TokenType.Unknown, string.Empty, 0);
         return _current;
     }
 

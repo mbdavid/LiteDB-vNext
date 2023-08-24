@@ -11,8 +11,10 @@ Tokenizer T = new Tokenizer("{");
 var tok = T.ReadToken();
 Console.WriteLine(tok.ToString());
 
-Tokenizer T2 = new Tokenizer("{a,b,c");
-var tok2 = T2.LookAhead();
+Tokenizer T2 = new Tokenizer("{a b c");
+var tok2 = T2.LookAhead(true, 3);
+Console.WriteLine(tok2.ToString());
+tok2 = T2.ReadToken();
 Console.WriteLine(tok2.ToString());
 tok2 = T2.ReadToken();
 Console.WriteLine(tok2.ToString());
