@@ -19,29 +19,35 @@ var settings = new EngineSettings
     Timeout = TimeSpan.FromSeconds(50),
 };
 
-var db = new LiteEngine(settings);
 
-await db.OpenAsync();
-
-//for(var i = 0; i < 200; i++)
-{
-    await db.CreateCollectionAsync("col1");
-}
-
-var data1 = GetData(1, 100_000, 200);
-var data2 = GetData(10, 50, 6000);
+//var data1 = GetData(1, 100_000, 200);
+//var data2 = GetData(10, 50, 6000);
+var data1 = GetData(1, 100, 20);
+var data2 = GetData(10, 50, 600);
 
 //Console.ReadKey();
 
 var initMemory = GC.GetTotalAllocatedBytes();
 var sw = Stopwatch.StartNew();
 
+// abre o banco e inicializa
+var db = new LiteEngine(settings);
+
+await db.OpenAsync();
+
+await db.CreateCollectionAsync("col1");
+
+
 // Executa operações
 
 await db.InsertAsync("col1", data1, BsonAutoId.Int32);
 
-await db.DeleteAsync("col1", Enumerable.Range(1, 50).Select(x => new BsonInt32(x)).ToArray());
 
+await db.EnsureIndexAsync("col1", "idx_age", "age", false);
+
+
+await db.DeleteAsync("col1", Enumerable.Range(1, 50).Select(x => new BsonInt32(x)).ToArray());
+//
 await db.InsertAsync("col1", data2, BsonAutoId.Int32);
 
 

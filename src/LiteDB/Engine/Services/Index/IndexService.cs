@@ -7,6 +7,10 @@
 [AutoInterface]
 internal class IndexService : IIndexService
 {
+    //TODO: dummy test for cache!!
+    private static ConcurrentDictionary<PageAddress, IndexNode> _globalCache = new ();  // PageAddress based on Position (after log)
+
+
     // dependency injection
     private readonly IIndexPageService _indexPageService;
     private readonly ITransaction _transaction;
@@ -186,7 +190,9 @@ internal class IndexService : IIndexService
 
         ENSURE(() => page.Header.PageType == PageType.Index);
 
-        return new(new IndexNode(page, rowID), page);
+        var indexNode = _transaction.GetIndexNode(rowID);
+
+        return new(indexNode, page);
     }
 
     #region Find
@@ -283,6 +289,9 @@ internal class IndexService : IIndexService
 
         // delete node segment in page
         _indexPageService.DeleteIndexNode(page, node.RowID.Index);
+
+        // delete index node reference from collection
+        _transaction.DeleteIndexNode(node.RowID);
 
         // update map page only if change page value
         var after = page.Header.ExtendPageValue;

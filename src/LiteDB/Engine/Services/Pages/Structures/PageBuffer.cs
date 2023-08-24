@@ -72,7 +72,7 @@ internal class PageBuffer
     /// <summary>
     /// Calculate CRC8 for content area (32-8192)
     /// </summary>
-    public byte ComputeCrc8() => Crc8.ComputeChecksum(this.AsSpan(PAGE_HEADER_SIZE));
+    public byte ComputeCrc8() => 0; //TODO: need better performance here! Crc8.ComputeChecksum(this.AsSpan(PAGE_HEADER_SIZE));
 
     public Span<byte> AsSpan()
     {

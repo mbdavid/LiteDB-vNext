@@ -123,7 +123,7 @@ internal struct IndexNode
         this.Prev = new PageAddress[levels];
         this.Key = key;
 
-        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+        var segment = PageSegment.GetSegment(page, rowID.Index, out var _);
         var span = page.AsSpan(segment);
 
         // persist in buffer read only data
@@ -191,7 +191,7 @@ internal struct IndexNode
 
         this.NextNode = nextNode;
 
-        var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
+        var segment = PageSegment.GetSegment(page, this.RowID.Index, out var _);
         var span = page.AsSpan(segment);
 
         span[P_NEXT_NODE..].WritePageAddress(nextNode);
@@ -213,7 +213,7 @@ internal struct IndexNode
 
         var prevAddr = P_PREV_NEXT + (level * PageAddress.SIZE * 2);
 
-        var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
+        var segment = PageSegment.GetSegment(page, this.RowID.Index, out var _);
         var span = page.AsSpan(segment);
 
         span[prevAddr..].WritePageAddress(prev);
@@ -235,7 +235,7 @@ internal struct IndexNode
 
         var nextAddr = P_PREV_NEXT + (level * PageAddress.SIZE * 2) + PageAddress.SIZE;
 
-        var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
+        var segment = PageSegment.GetSegment(page, this.RowID.Index, out var _);
         var span = page.AsSpan(segment);
 
         span[nextAddr..].WritePageAddress(next);

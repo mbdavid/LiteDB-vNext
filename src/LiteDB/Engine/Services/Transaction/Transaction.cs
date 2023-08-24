@@ -25,6 +25,9 @@ internal class Transaction : ITransaction
     // local page cache - contains only data/index pages about this collection
     private readonly Dictionary<int, PageBuffer> _localPages = new();
 
+    // local index cache nodes
+    private readonly Dictionary<PageAddress, IndexNode> _localIndexNodes = new();
+
     // when safepoint occurs, save reference for changed pages on log (PageID, PositionID)
     private readonly Dictionary<int, int> _walDirtyPages = new();
 
@@ -167,6 +170,31 @@ internal class Transaction : ITransaction
         }
 
         return page;
+    }
+
+    public IndexNode GetIndexNode(PageAddress rowID)
+    {
+        if (_localIndexNodes.TryGetValue(rowID, out var indexNode))
+        {
+            return indexNode;
+        }
+
+        _localPages.TryGetValue(rowID.PageID, out var page);
+
+        ENSURE(() => page is not null, "Page not found for this index");
+
+        indexNode = new IndexNode(page, rowID);
+
+        _localIndexNodes.Add(rowID, indexNode);
+
+        return indexNode;
+    }
+
+    public void DeleteIndexNode(PageAddress rowID)
+    {
+        var deleted = _localIndexNodes.Remove(rowID);
+
+        ENSURE(() => deleted, "IndexNode not found in transaction local index cache");
     }
 
     /// <summary>
@@ -318,6 +346,7 @@ internal class Transaction : ITransaction
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
     }
 
     /// <summary>
@@ -380,6 +409,7 @@ internal class Transaction : ITransaction
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
         _walDirtyPages.Clear();
     }
 
@@ -415,6 +445,8 @@ internal class Transaction : ITransaction
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
+        _walDirtyPages.Clear();
 
         // restore initial values in allocation map to return original state before any change
         if (_initialExtendValues.Count > 0)

@@ -25,6 +25,12 @@ internal readonly struct PageSegment
     /// </summary>
     public bool IsEmpty => this.Location == 0 && this.Length == 0;
 
+    public PageSegment()
+    {
+        this.Location = 0;
+        this.Length = 0;
+    }
+
     public PageSegment(ushort location, ushort length)
     {
         this.Location = location;
