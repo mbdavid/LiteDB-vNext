@@ -4,10 +4,21 @@ global using LiteDB;
 global using LiteDB.Engine;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using Bogus;
-using Bogus.DataSets;
+//using Bogus;
+//using Bogus.DataSets;
 
-Bogus.Randomizer.Seed = new Random(420);
+Tokenizer T = new Tokenizer("{");
+var tok = T.ReadToken();
+Console.WriteLine(tok.ToString());
+
+Tokenizer T2 = new Tokenizer("{a,b,c");
+var tok2 = T2.LookAhead();
+Console.WriteLine(tok2.ToString());
+tok2 = T2.ReadToken();
+Console.WriteLine(tok2.ToString());
+
+
+/*Bogus.Randomizer.Seed = new Random(420);
 
 var filename = @"C:\temp\test-03.db";
 
@@ -139,4 +150,4 @@ void PrintResult(FetchResult result)
     {
         Console.WriteLine(item.ToString());
     }
-}
+}*/

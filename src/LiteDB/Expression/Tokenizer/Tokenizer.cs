@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using System.Data.SqlTypes;
+
+namespace LiteDB;
 
 #region TokenType definition
 
@@ -86,7 +88,7 @@ internal enum TokenType
 /// <summary>
 /// Represent a single string token
 /// </summary>
-internal class Token
+internal struct Token : INullable
 {
     public Token(TokenType tokenType, string value, long position)
     {
@@ -98,6 +100,8 @@ internal class Token
     public TokenType Type { get; private set; }
     public string Value { get; private set; }
     public long Position { get; private set; }
+
+    public bool IsNull => this.Value=="";
 
     /// <summary>
     /// Expect if token is type (if not, throw UnexpectedToken)
@@ -171,12 +175,12 @@ internal class Tokenizer
 {
     private TextReader _reader;
     private char _char = '\0';
-    private Token? _current = null;
-    private Token? _ahead = null;
+    private Token _current = new Token(TokenType.Unknown, "", 0);
+    private Token _ahead = new Token(TokenType.Unknown, "", 0);
     private bool _eof = false;
     private long _position = 0;
 
-    public bool EOF => _eof && _ahead == null;
+    public bool EOF => _eof && _ahead.IsNull;
     public long Position => _position;
     public Token Current => _current!;
 
@@ -245,7 +249,7 @@ internal class Tokenizer
     /// </summary>
     public Token LookAhead(bool eatWhitespace = true, int tokensCount = 1)
     {
-        if (_ahead != null)
+        if (_ahead.IsNull==false)
         {
             if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
             {
@@ -263,7 +267,7 @@ internal class Tokenizer
     /// </summary>
     public Token ReadToken(bool eatWhitespace = true)
     {
-        if (_ahead == null)
+        if (_ahead.IsNull)
         {
             return _current = this.ReadNext(eatWhitespace);
         }
@@ -274,7 +278,7 @@ internal class Tokenizer
         }
 
         _current = _ahead;
-        _ahead = null;
+        _ahead = new Token(TokenType.Unknown, "", 0);
         return _current;
     }
 
@@ -669,6 +673,6 @@ internal class Tokenizer
 
     public override string ToString()
     {
-        return _current?.ToString() + " [ahead: " + _ahead?.ToString() + "] - position: " + _position;
+        return _current.ToString() + " [ahead: " + _ahead.ToString() + "] - position: " + _position;
     }
 }
