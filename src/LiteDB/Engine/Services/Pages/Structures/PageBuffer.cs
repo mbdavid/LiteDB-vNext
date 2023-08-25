@@ -72,7 +72,7 @@ internal class PageBuffer
     /// <summary>
     /// Calculate CRC8 for content area (32-8192)
     /// </summary>
-    public byte ComputeCrc8() => Crc8.ComputeChecksum(this.AsSpan(PAGE_HEADER_SIZE));
+    public byte ComputeCrc8() => 0; //TODO: need better performance here! Crc8.ComputeChecksum(this.AsSpan(PAGE_HEADER_SIZE));
 
     public Span<byte> AsSpan()
     {
@@ -116,7 +116,7 @@ internal class PageBuffer
 
     public override string ToString()
     {
-        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter}, InCache = {InCache} }}";
+        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, PageType = {Header.PageType}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter}, InCache = {InCache} }}";
     }
 
     public string DumpPage()

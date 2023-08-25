@@ -2,7 +2,7 @@
 
 internal class MockIndexService : IIndexService
 {
-    private List<(PageAddress indexRowID, BsonValue key, PageAddress rowID, PageAddress prev, PageAddress next)> _values = new()
+    private List<(PageAddress indexNodeID, BsonValue key, PageAddress dataBlockID, PageAddress prev, PageAddress next)> _values = new()
     {
         new (new PageAddress(0, 0), BsonValue.MinValue, PageAddress.Empty, PageAddress.Empty, new PageAddress(2, 0)),
 
@@ -18,9 +18,9 @@ internal class MockIndexService : IIndexService
 
     private readonly PageBuffer _page = new PageBuffer(0);
 
-    public PageAddress Head => _values.First().indexRowID;
+    public PageAddress Head => _values.First().indexNodeID;
 
-    public PageAddress Tail => _values.Last().indexRowID;
+    public PageAddress Tail => _values.Last().indexNodeID;
 
     public ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult last)
     {
@@ -36,7 +36,7 @@ internal class MockIndexService : IIndexService
     {
         var data = _values.FirstOrDefault(x => x.key == key);
 
-        var node = new IndexNode(_page, data.indexRowID, 0, 1, data.key, data.rowID);
+        var node = new IndexNode(_page, data.indexNodeID, 0, 1, data.key, data.dataBlockID);
 
         node.SetNext(_page, 0, data.next);
         node.SetPrev(_page, 0, data.prev);
@@ -51,11 +51,11 @@ internal class MockIndexService : IIndexService
         throw new NotImplementedException();
     }
 
-    public ValueTask<IndexNodeResult> GetNodeAsync(PageAddress rowID)
+    public ValueTask<IndexNodeResult> GetNodeAsync(PageAddress indexNodeID)
     {
-        var data = _values.First(x => x.indexRowID == rowID);
+        var data = _values.First(x => x.indexNodeID == indexNodeID);
 
-        var node = new IndexNode(_page, data.indexRowID, 0, 1, data.key, data.rowID);
+        var node = new IndexNode(_page, data.indexNodeID, 0, 1, data.key, data.dataBlockID);
 
         node.SetNext(_page, 0, data.next);
         node.SetPrev(_page, 0, data.prev);

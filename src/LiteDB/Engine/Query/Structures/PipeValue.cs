@@ -4,31 +4,35 @@ internal struct PipeValue
 {
     public static readonly PipeValue Empty = new();
 
-    public readonly PageAddress RowID;
+    public readonly PageAddress IndexNodeID;
+    public readonly PageAddress DataBlockID;
     public readonly BsonDocument? Document;
 
-    public readonly bool IsEmpty => this.RowID.IsEmpty && this.Document is null;
+    public readonly bool IsEmpty => this.IndexNodeID.IsEmpty && this.DataBlockID.IsEmpty && this.Document is null;
 
-    public PipeValue(PageAddress rowID)
+    public PipeValue(PageAddress indexNodeID, PageAddress dataBlockID)
     {
-        this.RowID = rowID;
+        this.IndexNodeID = indexNodeID;
+        this.DataBlockID = dataBlockID;
         this.Document = null;
     }
 
-    public PipeValue(PageAddress rowID, BsonDocument value)
+    public PipeValue(PageAddress indexNodeID, PageAddress dataBlockID, BsonDocument value)
     {
-        this.RowID = rowID;
+        this.IndexNodeID = indexNodeID;
+        this.DataBlockID = dataBlockID;
         this.Document = value;
     }
 
     public PipeValue()
     {
-        this.RowID = PageAddress.Empty;
+        this.IndexNodeID = PageAddress.Empty;
+        this.DataBlockID = PageAddress.Empty;
         this.Document = null;
     }
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : $"{{ RowID = {RowID}, Document = {Document} }}";
+        return this.IsEmpty ? "<EMPTY>" : $"{{ IndexNodeID = {IndexNodeID}, DataBlockID = {DataBlockID}, Document = {Document} }}";
     }
 }

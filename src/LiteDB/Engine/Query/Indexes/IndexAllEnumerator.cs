@@ -2,7 +2,6 @@
 
 internal class IndexAllEnumerator : IPipeEnumerator
 {
-    private readonly Collation _collation;
     private readonly IndexDocument _indexDocument;
     private readonly int _order;
 
@@ -13,23 +12,21 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
     public IndexAllEnumerator(
         IndexDocument indexDocument, 
-        Collation collation,
         int order)
     {
         _indexDocument = indexDocument;
-        _collation = collation;
         _order = order;
     }
 
-    public PipeEmit Emit => new(true, false);
+    public PipeEmit Emit => new(true, true, false);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
         var indexService = context.IndexService;
-        var start = _order == Query.Ascending ? _indexDocument.Head : _indexDocument.Tail;
-        var end = _order == Query.Ascending ? _indexDocument.Tail : _indexDocument.Head;
+        var start = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
+        var end = _order == Query.Ascending ? _indexDocument.TailIndexNodeID : _indexDocument.HeadIndexNodeID;
 
         // in first run, gets head node
         if (!_init)
@@ -57,7 +54,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
             _next = node.GetNextPrev(0, _order);
 
-            return new PipeValue(node.DataBlock);
+            return new PipeValue(node.IndexNodeID, node.DataBlockID);
         }
 
         _eof = true;

@@ -52,7 +52,7 @@ internal class SortOperation : ISortOperation
 
             var key = _orderBy.Expression.Execute(current.Document, context.QueryParameters, _collation);
 
-            var item = new SortItem(current.RowID, key);
+            var item = new SortItem(current.DataBlockID, key);
 
             var itemSize = item.GetBytesCount();
 

@@ -27,7 +27,7 @@ public partial class LiteEngine : ILiteEngine
         var indexer = _factory.CreateIndexService(transaction);
 
         // insert head/tail nodes
-        var pkNodes = await indexer.CreateHeadTailNodesAsync(colID);
+        var (head, tail) = await indexer.CreateHeadTailNodesAsync(colID);
 
         // create new collection in $master and returns a new master document
         master.Collections.Add(collectionName, new CollectionDocument()
@@ -42,8 +42,8 @@ public partial class LiteEngine : ILiteEngine
                     Name = "_id",
                     Expression = "$._id",
                     Unique = true,
-                    Head = pkNodes.head.RowID,
-                    Tail = pkNodes.tail.RowID
+                    HeadIndexNodeID = head.IndexNodeID,
+                    TailIndexNodeID = tail.IndexNodeID
                 }
             }
         });

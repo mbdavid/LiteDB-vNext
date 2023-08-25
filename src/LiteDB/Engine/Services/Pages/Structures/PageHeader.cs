@@ -35,62 +35,62 @@ internal struct PageHeader
     #region Fields
 
     /// <summary>
-    /// Represent page number - start in 0 with HeaderPage [4 bytes]
+    /// Represent page number - start in 0 with HeaderPage [4 bytes] (default: MaxValue)
     /// </summary>
     public int PageID = int.MaxValue;
 
     /// <summary>
-    /// Indicate the page type [1 byte]
+    /// Indicate the page type [1 byte] (default Empty - 0)
     /// </summary>
     public PageType PageType = PageType.Empty;
 
     /// <summary>
-    /// Represent position on disk (used in checkpoint defrag position order)
+    /// Represent position on disk (used in checkpoint defrag position order) (default: MaxValue)
     /// </summary>
     public int PositionID = int.MaxValue;
 
     /// <summary>
-    /// Get/Set collection ID index
+    /// Get/Set collection ID index (default: 0)
     /// </summary>
     public byte ColID = 0;
 
     /// <summary>
-    /// Represent transaction ID that was stored [4 bytes]
+    /// Represent transaction ID that was stored [4 bytes] (default: 0)
     /// </summary>
     public int TransactionID = 0;
 
     /// <summary>
-    /// Used in WAL, define this page is last transaction page and are confirmed on disk [1 byte]
+    /// Used in WAL, define this page is last transaction page and are confirmed on disk [1 byte] (default: false)
     /// </summary>
     public bool IsConfirmed = false;
 
     /// <summary>
-    /// Indicate how many items are used inside this page [1 byte] -> 0-254 (255)
+    /// Indicate how many items are used inside this page [1 byte] -> 0-254 (255) (default: 0)
     /// </summary>
     public byte ItemsCount = 0;
 
     /// <summary>
-    /// Get how many bytes are used on content area (exclude header and footer blocks) [2 bytes]
+    /// Get how many bytes are used on content area (exclude header and footer blocks) [2 bytes] (default: 0)
     /// </summary>
     public ushort UsedBytes = 0;
 
     /// <summary>
-    /// Get how many bytes are fragmented inside this page (free blocks inside used blocks) [2 bytes]
+    /// Get how many bytes are fragmented inside this page (free blocks inside used blocks) [2 bytes] (default: 0)
     /// </summary>
     public ushort FragmentedBytes = 0;
 
     /// <summary>
-    /// Get next free location on page. Starts with 32 (first byte after header) - There is no fragmentation after this [2 bytes]
+    /// Get next free location on page. Starts with 32 (first byte after header) - There is no fragmentation after this [2 bytes] (default: 32)
     /// </summary>
     public ushort NextFreeLocation = PAGE_HEADER_SIZE;
 
     /// <summary>
-    /// Get last (highest) used index slot - use byte.MaxValue for empty [1 byte] -> 0-254 (255 items)
+    /// Get last (highest) used index slot - use byte.MaxValue for empty [1 byte] -> 0-254 (255 items) (default: MaxValue)
     /// </summary>
     public byte HighestIndex = byte.MaxValue;
 
     /// <summary>
-    /// Get/Set CRC8 from content
+    /// Get/Set CRC8 from content (default: 0)
     /// </summary>
     public byte Crc8 = 0;
 

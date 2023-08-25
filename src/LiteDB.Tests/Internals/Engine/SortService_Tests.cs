@@ -38,6 +38,7 @@ public class SortService_Tests
         // create unsorted fake data
         var source = Enumerable.Range(1, 50000)
             .Select(i => new PipeValue(
+                new PageAddress(i, 0),
                 new PageAddress(i, 0), 
                 new BsonDocument
                 {
@@ -68,7 +69,7 @@ public class SortService_Tests
         // Assert
         var sorted = source
             .OrderBy(x => x.Document.AsDocument["name"].AsString)
-            .Select(x => new SortItem(x.RowID, x.Document.AsDocument["name"]))
+            .Select(x => new SortItem(x.DataBlockID, x.Document.AsDocument["name"]))
             .ToArray();
 
         result.Should().BeEquivalentTo(sorted);

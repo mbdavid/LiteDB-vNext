@@ -15,13 +15,13 @@ internal class OrderByEnumerator : IPipeEnumerator
     {
         _enumerator = enumerator;
 
-        if (_enumerator.Emit.RowID == false) throw ERR($"OrderBy pipe enumerator requires rowID from last pipe");
-        if (_enumerator.Emit.Document == false) throw ERR($"OrderBy pipe enumerator requires document from last pipe");
+        if (_enumerator.Emit.DataBlockID == false) throw ERR($"OrderBy pipe enumerator requires DataBlockID from last pipe");
+        if (_enumerator.Emit.Document == false) throw ERR($"OrderBy pipe enumerator requires Document from last pipe");
 
         _sorter = sortService.CreateSort(orderBy);
     }
 
-    public PipeEmit Emit => new(true, false);
+    public PipeEmit Emit => new(true, true, false);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -36,7 +36,7 @@ internal class OrderByEnumerator : IPipeEnumerator
         // get next sorted item (returns Empty when EOF)
         var item = await _sorter.MoveNextAsync();
 
-        return new PipeValue(item.RowID);
+        return new PipeValue(PageAddress.Empty, item.DataBlockID);
     }
 
     public void Dispose()

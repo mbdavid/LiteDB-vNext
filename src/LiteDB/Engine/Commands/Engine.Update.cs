@@ -40,7 +40,7 @@ public partial class LiteEngine : ILiteEngine
             if (result.IsEmpty) continue;
 
             // update document content
-            await dataService.UpdateDocumentAsync(result.Node.RowID, doc);
+            await dataService.UpdateDocumentAsync(result.Node.IndexNodeID, doc);
 
             //if (collection.Indexes.Count > 1)
             //{
@@ -53,7 +53,7 @@ public partial class LiteEngine : ILiteEngine
             //
             //        foreach (var key in keys)
             //        {
-            //            var node = await indexService.AddNodeAsync(collection.ColID, index, key, rowID, last);
+            //            var node = await indexService.AddNodeAsync(collection.ColID, index, key, -, last);
             //
             //            last = node;
             //        }

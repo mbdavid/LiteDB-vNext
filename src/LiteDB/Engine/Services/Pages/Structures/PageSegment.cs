@@ -25,6 +25,12 @@ internal readonly struct PageSegment
     /// </summary>
     public bool IsEmpty => this.Location == 0 && this.Length == 0;
 
+    public PageSegment()
+    {
+        this.Location = 0;
+        this.Length = 0;
+    }
+
     public PageSegment(ushort location, ushort length)
     {
         this.Location = location;
@@ -49,7 +55,7 @@ internal readonly struct PageSegment
         // create new segment based on location and length from page footer
         var segment = new PageSegment(location, length);
 
-        ENSURE(() => page.Header.IsValidSegment(segment), $"Invalid segment {segment}");
+        ENSURE(page.Header.IsValidSegment(segment), $"Invalid segment", new { segment, page });
 
         return segment;
     }

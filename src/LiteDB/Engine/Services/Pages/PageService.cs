@@ -8,7 +8,7 @@ internal class PageService : IPageService
     /// </summary>
     protected PageSegment Insert(PageBuffer page, ushort bytesLength, byte index, bool isNewInsert)
     {
-        ENSURE(() => index != byte.MaxValue, "Index must be 0-254");
+        ENSURE(index != byte.MaxValue, "Index must be 0-254", new { page, bytesLength, index, isNewInsert });
 
         var span = page.AsSpan();
         ref var header = ref page.Header;
@@ -25,7 +25,8 @@ internal class PageService : IPageService
         // calculate how many continuous bytes are available in this page
         var continuousBlocks = header.FreeBytes - header.FragmentedBytes - (isNewInsert ? PageHeader.SLOT_SIZE : 0);
 
-        ENSURE(header, header => continuousBlocks == PAGE_SIZE - header.NextFreeLocation - header.FooterSize - (isNewInsert ? PageHeader.SLOT_SIZE : 0), "ContinuosBlock must be same as from NextFreePosition");
+        ENSURE(continuousBlocks == PAGE_SIZE - header.NextFreeLocation - header.FooterSize - (isNewInsert ? PageHeader.SLOT_SIZE : 0), "ContinuosBlock must be same as from NextFreePosition",
+            new { continuousBlocks, header, isNewInsert });
 
         // if continuous blocks are not big enough for this data, must run page defrag
         if (bytesLength > continuousBlocks)
@@ -35,7 +36,7 @@ internal class PageService : IPageService
 
         if (index > header.HighestIndex || header.HighestIndex == byte.MaxValue)
         {
-            ENSURE(header, header => index == (byte)(header.HighestIndex + 1), "new index must be next highest index");
+            ENSURE(index == (byte)(header.HighestIndex + 1), "new index must be next highest index", new { index, header });
 
             header.HighestIndex = index;
         }
@@ -43,8 +44,8 @@ internal class PageService : IPageService
         // get segment addresses
         var segmentAddr = PageSegment.GetSegmentAddr(index);
 
-        DEBUG(span[segmentAddr.Location..].ReadUInt16() == 0, "slot position must be empty before use");
-        DEBUG(span[segmentAddr.Length..].ReadUInt16() == 0, "slot length must be empty before use");
+        ENSURE(span[segmentAddr.Location..].ReadUInt16() == 0, "slot position must be empty before use", new { segmentAddr });
+        ENSURE(span[segmentAddr.Length..].ReadUInt16() == 0, "slot length must be empty before use", new { segmentAddr });
 
         // get next free location in page
         var location = header.NextFreeLocation;
@@ -60,7 +61,8 @@ internal class PageService : IPageService
         header.UsedBytes += bytesLength;
         header.NextFreeLocation += bytesLength;
 
-        ENSURE(header, header => location + bytesLength <= (PAGE_SIZE - (header.HighestIndex + 1) * PageHeader.SLOT_SIZE), "New buffer slice could not override footer area");
+        ENSURE(location + bytesLength <= (PAGE_SIZE - (header.HighestIndex + 1) * PageHeader.SLOT_SIZE), "New buffer slice could not override footer area",
+            new { location, bytesLength, header });
 
         // create page segment based new inserted segment
         return new (location, bytesLength);
@@ -118,8 +120,8 @@ internal class PageService : IPageService
         // if there is no more blocks in page, clean FragmentedBytes and NextFreePosition
         if (header.ItemsCount == 0)
         {
-            ENSURE(header, header => header.HighestIndex == byte.MaxValue, "if there is no items, HighestIndex must be clear");
-            ENSURE(header, header => header.UsedBytes == 0, "should be no bytes used in clean page");
+            ENSURE(header.HighestIndex == byte.MaxValue, "if there is no items, HighestIndex must be clear", new { header });
+            ENSURE(header.UsedBytes == 0, "should be no bytes used in clean page", new { header });
 
             header.NextFreeLocation = PAGE_HEADER_SIZE;
             header.FragmentedBytes = 0;
@@ -132,7 +134,7 @@ internal class PageService : IPageService
     /// </summary>
     protected PageSegment Update(PageBuffer page, byte index, ushort bytesLength)
     {
-        ENSURE(() => bytesLength > 0, "Must update more than 0 bytes");
+        ENSURE(bytesLength > 0, "Must update more than 0 bytes", new { bytesLength });
 
         // get span and header instance (dirty)
         var span = page.AsSpan();
@@ -144,7 +146,7 @@ internal class PageService : IPageService
         // read page segment
         var segment = PageSegment.GetSegment(page, index, out var segmentAddr);
 
-        ENSURE(() => page.Header.FreeBytes - segment.Length >= bytesLength, $"There is no free space in page {page} for {bytesLength} bytes required");
+        ENSURE(page.Header.FreeBytes - segment.Length >= bytesLength, $"There is no free space in page {page} for {bytesLength} bytes required");
 
         // check if current segment are at end of page
         var isLastSegment = (segment.EndLocation == header.NextFreeLocation);
@@ -219,8 +221,8 @@ internal class PageService : IPageService
         var span = page.AsSpan();
         ref var header = ref page.Header;
 
-        ENSURE(header, (header) => header.FragmentedBytes > 0, "do not call this when page has no fragmentation");
-        ENSURE(header, (header) => header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
+        ENSURE(header.FragmentedBytes > 0, "do not call this when page has no fragmentation", new { header });
+        ENSURE(header.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag", new { header });
 
         // first get all blocks inside this page sorted by location (location, index)
         var blocks = new SortedList<ushort, byte>(header.ItemsCount);
@@ -256,7 +258,7 @@ internal class PageService : IPageService
             // if current segment are not as excpect, copy buffer to right position (excluding empty space)
             if (location != next)
             {
-                ENSURE(() => location > next, "current segment position must be greater than current empty space");
+                ENSURE(location > next, "current segment position must be greater than current empty space", new { page, location, next });
 
                 // copy from original location into new (correct) location
                 var source = span[location..(location + length)];

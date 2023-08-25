@@ -25,6 +25,9 @@ internal class Transaction : ITransaction
     // local page cache - contains only data/index pages about this collection
     private readonly Dictionary<int, PageBuffer> _localPages = new();
 
+    // local index cache nodes
+    private readonly Dictionary<PageAddress, IndexNode> _localIndexNodes = new();
+
     // when safepoint occurs, save reference for changed pages on log (PageID, PositionID)
     private readonly Dictionary<int, int> _walDirtyPages = new();
 
@@ -105,7 +108,7 @@ internal class Transaction : ITransaction
             this.ReadVersion = _walIndexService.GetNextReadVersion();
         }
 
-        ENSURE(() => this.ReadVersion >= _walIndexService.MinReadVersion, $"Read version do not exists in wal index: {this.ReadVersion} >= {_walIndexService.MinReadVersion}");
+        ENSURE(this.ReadVersion >= _walIndexService.MinReadVersion, $"Read version do not exists in wal index: {this.ReadVersion} >= {_walIndexService.MinReadVersion}", new { self = this });
     }
 
     /// <summary>
@@ -114,12 +117,12 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetPageAsync(int pageID)
     {
-        ENSURE(() => pageID != int.MaxValue, "PageID must have a value");
+        ENSURE(pageID != int.MaxValue, "PageID must have a value");
 
         if (_localPages.TryGetValue(pageID, out var page))
         {
             // if writable, page should not be in cache
-            ENSURE(Array.IndexOf(_writeCollections, page.Header.ColID) > -1, () => page.ShareCounter == NO_CACHE, "Page should not be in cache");
+            ENSURE(Array.IndexOf(_writeCollections, page.Header.ColID) > -1, page.ShareCounter == NO_CACHE, "Page should not be in cache", new { _writeCollections, page });
 
             return page;
         }
@@ -145,7 +148,7 @@ internal class Transaction : ITransaction
 
             await _reader.ReadPageAsync(positionID, walPage);
 
-            ENSURE(() => walPage.Header.PageType == PageType.Data || walPage.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {walPage}");
+            ENSURE(walPage.Header.PageType == PageType.Data || walPage.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {walPage}", new { walPage });
 
             return walPage;
         }
@@ -163,10 +166,35 @@ internal class Transaction : ITransaction
 
             await _reader.ReadPageAsync(positionID, page);
 
-            ENSURE(() => page.Header.PageType == PageType.Data || page.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {page}");
+            ENSURE(page.Header.PageType == PageType.Data || page.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {page}");
         }
 
         return page;
+    }
+
+    public IndexNode GetIndexNode(PageAddress indexNodeID)
+    {
+        if (_localIndexNodes.TryGetValue(indexNodeID, out var indexNode))
+        {
+            return indexNode;
+        }
+
+        _localPages.TryGetValue(indexNodeID.PageID, out var page);
+
+        ENSURE(page is not null, "Page not found for this index", new { indexNodeID });
+
+        indexNode = new IndexNode(page!, indexNodeID);
+
+        _localIndexNodes.Add(indexNodeID, indexNode);
+
+        return indexNode;
+    }
+
+    public void DeleteIndexNode(PageAddress indexNodeID)
+    {
+        var deleted = _localIndexNodes.Remove(indexNodeID);
+
+        ENSURE(deleted, "IndexNode not found in transaction local index cache", new { indexNodeID, _localIndexNodes });
     }
 
     /// <summary>
@@ -285,8 +313,8 @@ internal class Transaction : ITransaction
         {
             var page = dirtyPages[i];
 
-            ENSURE(() => page.ShareCounter == NO_CACHE, "Page should not be on cache when saving");
-            ENSURE(() => page.Header.IsConfirmed == false);
+            ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", new { page });
+            ENSURE(page.Header.IsConfirmed == false, new { page });
 
             // update page header
             page.Header.TransactionID = this.TransactionID;
@@ -318,6 +346,7 @@ internal class Transaction : ITransaction
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
     }
 
     /// <summary>
@@ -333,7 +362,7 @@ internal class Transaction : ITransaction
         {
             var page = dirtyPages[i];
 
-            ENSURE(() => page.ShareCounter == NO_CACHE, "Page should not be on cache when saving");
+            ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", new { page });
 
             // update page header
             page.Header.TransactionID = this.TransactionID;
@@ -380,6 +409,7 @@ internal class Transaction : ITransaction
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
         _walDirtyPages.Clear();
     }
 
@@ -388,7 +418,7 @@ internal class Transaction : ITransaction
         // add pages to cache or decrement sharecount
         foreach (var page in _localPages.Values)
         {
-            if (page.IsDirty/* || page.Header.ColID == MASTER_COL_ID*/)
+            if (page.IsDirty)
             {
                 _bufferFactory.DeallocatePage(page);
             }
@@ -415,6 +445,8 @@ internal class Transaction : ITransaction
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
+        _walDirtyPages.Clear();
 
         // restore initial values in allocation map to return original state before any change
         if (_initialExtendValues.Count > 0)
@@ -442,7 +474,7 @@ internal class Transaction : ITransaction
         // exit lock transaction
         _lockService.ExitTransaction();
 
-        ENSURE(() => _localPages.Count == 0, $"Missing dispose pages in transaction");
-        ENSURE(() =>_lockCounter == 0, $"Missing release lock in transaction");
+        ENSURE(_localPages.Count == 0, $"Missing dispose pages in transaction", new { _localPages });
+        ENSURE(_lockCounter == 0, $"Missing release lock in transaction", new { _localPages, _lockCounter });
     }
 }

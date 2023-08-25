@@ -36,7 +36,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         _collation = collation;
     }
 
-    public PipeEmit Emit => new(true, false);
+    public PipeEmit Emit => new(true, true, false);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -51,8 +51,8 @@ internal class IndexRangeEnumerator : IPipeEnumerator
 
             // find first indexNode (or get from head/tail if Min/Max value)
             var (first, _) =
-                _start.IsMinValue ? await indexService.GetNodeAsync(_indexDocument.Head) :
-                _start.IsMaxValue ? await indexService.GetNodeAsync(_indexDocument.Tail) :
+                _start.IsMinValue ? await indexService.GetNodeAsync(_indexDocument.HeadIndexNodeID) :
+                _start.IsMaxValue ? await indexService.GetNodeAsync(_indexDocument.TailIndexNodeID) :
                 await indexService.FindAsync(_indexDocument, _start, true, _order);
 
             // get pointer to next/prev at level 0
@@ -63,7 +63,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
             {
                 if (!first.Key.IsMinValue && !first.Key.IsMaxValue)
                 { 
-                    return new PipeValue(first.DataBlock);
+                    return new PipeValue(first.IndexNodeID, first.DataBlockID);
                 }
             }
         }
@@ -86,7 +86,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
                 {
                     _prev = node.Prev[0];
 
-                    return new PipeValue(node.DataBlock);
+                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
                 }
                 else
                 {
@@ -114,7 +114,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
             {
                 _next = node.Next[0];
 
-                return new PipeValue(node.DataBlock);
+                return new PipeValue(node.IndexNodeID, node.DataBlockID);
             }
             else
             {

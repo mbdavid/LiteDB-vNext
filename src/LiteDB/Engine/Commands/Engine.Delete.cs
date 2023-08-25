@@ -41,7 +41,7 @@ public partial class LiteEngine : ILiteEngine
             await indexService.DeleteAllAsync(result);
 
             // delete document
-            await dataService.DeleteDocumentAsync(result.Node.DataBlock);
+            await dataService.DeleteDocumentAsync(result.Node.DataBlockID);
 
             count++;
 

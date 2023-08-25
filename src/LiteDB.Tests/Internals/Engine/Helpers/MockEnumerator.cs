@@ -9,7 +9,7 @@ internal class MockEnumerator : IPipeEnumerator
         _items = new Queue<PipeValue>(values);
     }
 
-    public PipeEmit Emit => new(true, true);
+    public PipeEmit Emit => new(true, true, true);
 
     ValueTask<PipeValue> IPipeEnumerator.MoveNextAsync(PipeContext context)
     {

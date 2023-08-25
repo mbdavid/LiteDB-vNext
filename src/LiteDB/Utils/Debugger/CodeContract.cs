@@ -23,9 +23,9 @@ internal static class CodeContract
     /// If first test is true, ensure second condition to be true, otherwise throw exception (check contract)
     /// </summary>
     [Conditional("DEBUG")]
-    public static void ENSURE(bool ifTest, Func<bool> condition, string? message = null)
+    public static void ENSURE(bool ifTest, bool condition, string? message = null, object? debugArgs = null)
     {
-        if (ifTest && condition() == false)
+        if (ifTest && condition == false)
         {
             ShowError(message, null);
         }
@@ -35,13 +35,11 @@ internal static class CodeContract
     /// Ensure condition is true, otherwise throw exception (check contract)
     /// </summary>
     [Conditional("DEBUG")]
-    public static void ENSURE(Func<bool> condition, string? message = null)
+    public static void ENSURE(bool condition, string message, object? debugArgs = null)
     {
-        var result = condition();
-
-        if (result == false)
+        if (condition == false)
         {
-            ShowError(message, null);
+            ShowError(message, debugArgs);
         }
     }
 
@@ -49,20 +47,18 @@ internal static class CodeContract
     /// Ensure condition is true, otherwise throw exception (check contract)
     /// </summary>
     [Conditional("DEBUG")]
-    public static void ENSURE<T>(T input, Func<T, bool> condition, string? message = null)
+    public static void ENSURE(bool condition, object? debugArgs = null)
     {
-        var result = condition(input);
-
-        if (result == false)
+        if (condition == false)
         {
-            ShowError(message, input);
+            ShowError(null, debugArgs);
         }
     }
 
     /// <summary>
     /// Build a pretty error message with debug informations. Used only for DEBUG
     /// </summary>
-    private static void ShowError(string? message = null, object? input = default)
+    private static void ShowError(string? message = null, object? debugArgs = default)
     {
         var st = new StackTrace();
         var frame = st.GetFrame(2);
@@ -81,9 +77,9 @@ internal static class CodeContract
             err.Append(message + ". ");
         }
 
-        if (input is not null)
+        if (debugArgs is not null)
         {
-            err.Append(input.GetType().Name + " = " + Dump.Object(input));
+            err.Append(Dump.Object(debugArgs));
         }
 
         var msg = err.ToString().Trim();

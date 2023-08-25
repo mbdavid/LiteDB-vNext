@@ -76,7 +76,7 @@ internal partial class LogService : ILogService
         {
             var page = pages[i];
 
-            ENSURE(() => page.InCache == false);
+            ENSURE(page.InCache == false, new { page });
 
             // get next page position on log (update header PositionID too)
             page.PositionID = this.GetNextLogPositionID();
@@ -133,7 +133,7 @@ internal partial class LogService : ILogService
 
         if (logLength == 0 && !crop) return new ValueTask<int>(0);
 
-        ENSURE(logLength > 0, () => _logPositionID == _logPages.Last().PositionID, $"Last log page must be {_logPositionID}");
+        ENSURE(logLength > 0, _logPositionID == _logPages.Last().PositionID, $"Last log page must be {_logPositionID}", new { logLength, _logPositionID });
 
         // temp file start after lastPageID or last log used page
         var startTempPositionID = Math.Max(_lastPageID, _logPositionID) + 1;
@@ -246,6 +246,9 @@ internal partial class LogService : ILogService
         _logPages.Clear();
         _confirmedTransactions.Clear();
 
+        // clear all logfile pages (keeps in cache only non-changed datafile pages)
+        _cacheService.ClearLogPages();
+
         // ao terminar o checkpoint, nenhuma pagina na cache deve ser de log
         return counter;
     }
@@ -265,8 +268,6 @@ internal partial class LogService : ILogService
         page = _bufferFactory.AllocateNewPage(true);
 
         await stream.ReadPageAsync(positionID, page);
-
-
 
         return page;
     }

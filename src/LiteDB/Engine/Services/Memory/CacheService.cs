@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Collections.Generic;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// Page buffer cache. Keep a concurrent dictionary with buffers (byte[]) based on disk file position.
@@ -16,6 +18,8 @@ internal class CacheService : ICacheService
     /// </summary>
     private readonly ConcurrentDictionary<int, PageBuffer> _cache = new();
 
+    public int ItemsCount => _cache.Count;
+
     public CacheService(IBufferFactory bufferFactory)
     {
         _bufferFactory = bufferFactory;
@@ -31,6 +35,9 @@ internal class CacheService : ICacheService
             return null;
         }
 
+        ENSURE(page.Header.TransactionID == 0, new { page });
+        ENSURE(page.Header.IsConfirmed == false, new { page });
+
         // test if this page are getted from a writable collection in transaction
         writable = Array.IndexOf(writeCollections, page.Header.ColID) > -1;
 
@@ -41,7 +48,7 @@ internal class CacheService : ICacheService
             {
                 var removed = _cache.TryRemove(positionID, out _);
 
-                ENSURE(() => removed);
+                ENSURE(removed, new { removed, self = this });
 
                 this.ClearPageWhenRemoveFromCache(page);
 
@@ -62,7 +69,7 @@ internal class CacheService : ICacheService
         else
         {
             // get page for read-only
-            ENSURE(() => page.ShareCounter != NO_CACHE);
+            ENSURE(page.ShareCounter != NO_CACHE, new { page });
 
             // increment ShareCounter to be used by another transaction
             Interlocked.Increment(ref page.ShareCounter);
@@ -100,9 +107,13 @@ internal class CacheService : ICacheService
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
-        ENSURE(() => !page.IsDirty, "Page must be clean before add into cache");
-        ENSURE(() => page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache");
-        ENSURE(() => page.InCache == false, "ShareCounter must be zero before add in cache");
+        ENSURE(!page.IsDirty, "Page must be clean before add into cache", new { page });
+        ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache", new { page });
+        ENSURE(page.InCache == false, "ShareCounter must be zero before add in cache", new { page });
+
+        // clear any transaction info before add in cache
+        page.Header.TransactionID = 0;
+        page.Header.IsConfirmed = false;
 
         // before add, checks cache limit and cleanup if full
         if (_cache.Count >= CACHE_LIMIT)
@@ -127,7 +138,11 @@ internal class CacheService : ICacheService
     {
         Interlocked.Decrement(ref page.ShareCounter);
 
-        ENSURE(() => page.ShareCounter >= 0);
+        // clear header log information
+        page.Header.TransactionID = 0;
+        page.Header.IsConfirmed = false;
+
+        ENSURE(page.ShareCounter >= 0, new { page });
     }
 
     /// <summary>
@@ -136,8 +151,10 @@ internal class CacheService : ICacheService
     /// </summary>
     private void ClearPageWhenRemoveFromCache(PageBuffer page)
     {
-        ENSURE(() => page.IsDirty == false);
-        ENSURE(() => page.ShareCounter == 0, $"Page should not be in use");
+        ENSURE(page.IsDirty == false, new { page });
+        ENSURE(page.ShareCounter == 0, $"Page should not be in use", new { page });
+        ENSURE(page.Header.TransactionID == 0, new { page });
+        ENSURE(page.Header.IsConfirmed == false, new { page });
 
         page.ShareCounter = NO_CACHE;
         page.Timestamp = 0;
@@ -192,6 +209,22 @@ internal class CacheService : ICacheService
         return total;
     }
 
+    /// <summary>
+    /// Remove from cache all logfile pages. Keeps only page that are from datafile. Used after checkpoint operation
+    /// </summary>
+    public void ClearLogPages()
+    {
+        var logPositions = _cache.Values
+            .Where(x => x.IsDataFile)
+            .Select(x => x.PositionID)
+            .ToArray();
+
+        foreach( var logPosition in logPositions)
+        {
+            _cache.Remove(logPosition, out _);
+        }
+    }
+
     public override string ToString()
     {
         return $"Cached pages: {_cache.Count}";
@@ -199,7 +232,7 @@ internal class CacheService : ICacheService
 
     public void Dispose()
     {
-        ENSURE(() => _cache.Count(x => x.Value.ShareCounter != 0) == 0, "Cache must be clean before dipose");
+        ENSURE(_cache.Count(x => x.Value.ShareCounter != 0) == 0, "Cache must be clean before dipose");
 
         // deattach PageBuffers from _cache object
         _cache.Clear();

@@ -13,9 +13,9 @@ internal struct DataBlock
     public const int P_BUFFER = 6;     // 06-EOF [bytes[]]
 
     /// <summary>
-    /// Data block RowID on DataPage (not persisted)
+    /// Data block DataBlockID on DataPage (not persisted)
     /// </summary>
-    public readonly PageAddress RowID;
+    public readonly PageAddress DataBlockID;
 
     /// <summary>
     /// Indicate if this data block is first block (false) or extend block (true)
@@ -25,7 +25,7 @@ internal struct DataBlock
     /// <summary>
     /// If document need more than 1 block, use this link to next block
     /// </summary>
-    public PageAddress NextBlock;
+    public PageAddress NextBlockID;
 
     /// <summary>
     /// When datablock is first block, read DocumentLength from first 4 bytes. Otherwise, MaxValue (not persisted)
@@ -40,12 +40,12 @@ internal struct DataBlock
     /// <summary>
     /// Read new DataBlock from filled page block
     /// </summary>
-    public DataBlock(Span<byte> buffer, PageAddress rowID)
+    public DataBlock(Span<byte> buffer, PageAddress dataBlockID)
     {
-        this.RowID = rowID;
+        this.DataBlockID = dataBlockID;
 
         this.Extend = buffer[P_EXTEND] != 0;
-        this.NextBlock = buffer[P_NEXT_BLOCK..].ReadPageAddress();
+        this.NextBlockID = buffer[P_NEXT_BLOCK..].ReadPageAddress();
 
         this.DataLength = buffer.Length - DATA_BLOCK_FIXED_SIZE;
         this.DocumentLength = this.Extend ? int.MaxValue : buffer[P_BUFFER..].ReadVariantLength(out _);
@@ -54,11 +54,11 @@ internal struct DataBlock
     /// <summary>
     /// Create new DataBlock and fill into buffer
     /// </summary>
-    public DataBlock(Span<byte> buffer, PageAddress rowID, bool extend)
+    public DataBlock(Span<byte> buffer, PageAddress dataBlockID, bool extend)
     {
-        this.RowID = rowID;
+        this.DataBlockID = dataBlockID;
         this.Extend = extend;
-        this.NextBlock = PageAddress.Empty;
+        this.NextBlockID = PageAddress.Empty;
 
         buffer[P_EXTEND] = this.Extend ? (byte)1 : (byte)0;
         buffer[P_NEXT_BLOCK..].WritePageAddress(PageAddress.Empty);
@@ -70,25 +70,15 @@ internal struct DataBlock
     /// <summary>
     /// Update NextBlock pointer (update in buffer too)
     /// </summary>
-    public void SetNextBlock(Span<byte> buffer, PageAddress nextBlock)
+    public void SetNextBlockID(Span<byte> buffer, PageAddress nextBlockID)
     {
-        this.NextBlock = nextBlock;
+        this.NextBlockID = nextBlockID;
 
-        buffer[P_NEXT_BLOCK..].WritePageAddress(nextBlock);
+        buffer[P_NEXT_BLOCK..].WritePageAddress(nextBlockID);
     }
-
-    ///// <summary>
-    ///// Get span from data content inside dataBlock. Return dataLength as output parameter
-    ///// </summary>
-    //public Span<byte> GetDataSpan(PageBuffer page)
-    //{
-    //    var segment = PageSegment.GetSegment(page, this.RowID.Index, out _);
-
-    //    return page.AsSpan(segment.Location + DataBlock.P_BUFFER, this.DataLength);
-    //}
 
     public override string ToString()
     {
-        return $"{{ RowID = {RowID}, Extend = {Extend}, Next = {NextBlock} }}";
+        return $"{{ DataBlockID = {DataBlockID}, Extend = {Extend}, NextBlockID = {NextBlockID} }}";
     }
 }

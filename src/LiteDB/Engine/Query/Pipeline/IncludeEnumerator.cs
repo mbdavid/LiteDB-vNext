@@ -22,10 +22,10 @@ internal class IncludeEnumerator : IPipeEnumerator
         _masterService = masterService;
         _collation = collation;
 
-        if (_enumerator.Emit.RowID == false) throw ERR($"Include pipe enumerator requires document from last pipe");
+        if (_enumerator.Emit.DataBlockID == false) throw ERR($"Include pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(_enumerator.Emit.RowID, true);
+    public PipeEmit Emit => new(_enumerator.Emit.IndexNodeID, _enumerator.Emit.DataBlockID, true);
 
     public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
     {
@@ -82,7 +82,7 @@ internal class IncludeEnumerator : IPipeEnumerator
 
             if (!indexNode.IsEmpty)
             {
-                var refDocResult = await context.DataService.ReadDocumentAsync(indexNode.DataBlock, Array.Empty<string>());
+                var refDocResult = await context.DataService.ReadDocumentAsync(indexNode.DataBlockID, Array.Empty<string>());
 
                 if (refDocResult.Fail) throw refDocResult.Exception;
 

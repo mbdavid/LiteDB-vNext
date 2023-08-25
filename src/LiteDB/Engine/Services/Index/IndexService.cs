@@ -7,6 +7,10 @@
 [AutoInterface]
 internal class IndexService : IIndexService
 {
+    //TODO: dummy test for cache!!
+    private static ConcurrentDictionary<PageAddress, IndexNode> _globalCache = new ();  // PageAddress based on Position (after log)
+
+
     // dependency injection
     private readonly IIndexPageService _indexPageService;
     private readonly ITransaction _transaction;
@@ -41,8 +45,8 @@ internal class IndexService : IIndexService
         var tail = _indexPageService.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MaxValue, PageAddress.Empty, bytesLength);
 
         // link head-to-tail with double link list in first level
-        head.SetNext(page, 0, tail.RowID);
-        tail.SetPrev(page, 0, head.RowID);
+        head.SetNext(page, 0, tail.IndexNodeID);
+        tail.SetPrev(page, 0, head.IndexNodeID);
 
         // update allocation map if needed
         var after = page.Header.ExtendPageValue;
@@ -99,7 +103,7 @@ internal class IndexService : IIndexService
         }
 
         // now, let's link my index node on right place
-        var left = index.Head;
+        var left = index.HeadIndexNodeID;
         var leftNode = await this.GetNodeAsync(left);
 
         // for: scan from top to bottom
@@ -131,23 +135,23 @@ internal class IndexService : IIndexService
                 // node: new inserted node
                 // next: right node from prev (where left is pointing)
 
-                var prev = leftNode.Node.RowID;
+                var prev = leftNode.Node.IndexNodeID;
                 var next = leftNode.Node.Next[currentLevel];
 
                 // if next is empty, use tail (last key)
-                if (next.IsEmpty) next = index.Tail;
+                if (next.IsEmpty) next = index.TailIndexNodeID;
 
                 // set new node pointer links with current level sibling
                 node.SetNext(page, currentLevel, next);
                 node.SetPrev(page, currentLevel, prev);
                 
                 // fix sibling pointer to new node
-                leftNode.Node.SetNext(leftNode.Page, currentLevel, node.RowID);
+                leftNode.Node.SetNext(leftNode.Page, currentLevel, node.IndexNodeID);
 
                 right = node.Next[currentLevel];
 
                 var rightNode = await this.GetNodeAsync(right);
-                rightNode.Node.SetPrev(rightNode.Page, currentLevel, node.RowID);
+                rightNode.Node.SetPrev(rightNode.Page, currentLevel, node.IndexNodeID);
             }
         }
 
@@ -155,7 +159,7 @@ internal class IndexService : IIndexService
         if (!last.IsEmpty)
         {
             // set last node to link with current node
-            last.Node.SetNextNode(last.Page, node.RowID);
+            last.Node.SetNextNodeID(last.Page, node.IndexNodeID);
         }
 
         return new (node, page);
@@ -178,15 +182,17 @@ internal class IndexService : IIndexService
     }
 
     /// <summary>
-    /// Get a node/pageBuffer inside a page using PageAddress. RowID must be a valid position
+    /// Get a node/pageBuffer inside a page using PageAddress. IndexNodeID must be a valid position
     /// </summary>
-    public async ValueTask<IndexNodeResult> GetNodeAsync(PageAddress rowID)
+    public async ValueTask<IndexNodeResult> GetNodeAsync(PageAddress indexNodeID)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID);
+        var page = await _transaction.GetPageAsync(indexNodeID.PageID);
 
-        ENSURE(() => page.Header.PageType == PageType.Index);
+        ENSURE(page.Header.PageType == PageType.Index, new { indexNodeID, page });
 
-        return new(new IndexNode(page, rowID), page);
+        var indexNode = _transaction.GetIndexNode(indexNodeID);
+
+        return new(indexNode, page);
     }
 
     #region Find
@@ -198,7 +204,7 @@ internal class IndexService : IIndexService
     /// </summary>
     public async ValueTask<IndexNodeResult> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
     {
-        var left = order == Query.Ascending ? index.Head : index.Tail;
+        var left = order == Query.Ascending ? index.HeadIndexNodeID : index.TailIndexNodeID;
         var leftNode = await this.GetNodeAsync(left);
 
         for (var level = INDEX_MAX_LEVELS - 1; level >= 0; level--)
@@ -246,10 +252,10 @@ internal class IndexService : IIndexService
         {
             await this.DeleteSingleNodeAsync(nodeResult);
 
-            if (nodeResult.Node.NextNode.IsEmpty) break;
+            if (nodeResult.Node.NextNodeID.IsEmpty) break;
 
             // move to next node
-            nodeResult = await this.GetNodeAsync(nodeResult.Node.NextNode);
+            nodeResult = await this.GetNodeAsync(nodeResult.Node.NextNodeID);
         }
     }
 
@@ -282,7 +288,10 @@ internal class IndexService : IIndexService
         var before = page.Header.ExtendPageValue;
 
         // delete node segment in page
-        _indexPageService.DeleteIndexNode(page, node.RowID.Index);
+        _indexPageService.DeleteIndexNode(page, node.IndexNodeID.Index);
+
+        // delete index node reference from collection
+        _transaction.DeleteIndexNode(node.IndexNodeID);
 
         // update map page only if change page value
         var after = page.Header.ExtendPageValue;

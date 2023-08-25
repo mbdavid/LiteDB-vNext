@@ -45,8 +45,8 @@ internal class DataService : IDataService
         PageBuffer? lastPage = null;
         DataBlock? lastDataBlock = null;
 
-        // return rowID - will be update in first insert
-        var rowID = PageAddress.Empty;
+        // return dataBlockID - will be update in first insert
+        var dataBlockID = PageAddress.Empty;
 
         var bytesLeft = docLength;
         var position = 0;
@@ -74,15 +74,15 @@ internal class DataService : IDataService
             if (lastPage is not null && lastDataBlock is not null)
             {
                 // get block segment
-                var segment = PageSegment.GetSegment(page, dataBlock.RowID.Index, out var _);
+                var segment = PageSegment.GetSegment(page, dataBlock.DataBlockID.Index, out var _);
 
                 // update NextDataBlock from last page
-                lastDataBlock.Value.SetNextBlock(lastPage.AsSpan(segment), dataBlock.RowID);
+                lastDataBlock.Value.SetNextBlockID(lastPage.AsSpan(segment), dataBlock.DataBlockID);
             }
             else
             {
-                // get first dataBlock rowID
-                rowID = dataBlock.RowID;
+                // get first dataBlock dataBlockID
+                dataBlockID = dataBlock.DataBlockID;
             }
 
             bytesLeft -= bytesToCopy;
@@ -100,13 +100,13 @@ internal class DataService : IDataService
             extend = true;
         }
 
-        return rowID;
+        return dataBlockID;
     }
 
     /// <summary>
     /// Update existing document in a single or multiple pages
     /// </summary>
-    public async ValueTask UpdateDocumentAsync(PageAddress rowID, BsonDocument doc)
+    public async ValueTask UpdateDocumentAsync(PageAddress dataBlockID, BsonDocument doc)
     {
         var docLength = doc.GetBytesCount();
 
@@ -119,21 +119,21 @@ internal class DataService : IDataService
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get current datablock (for first one)
-        var page = await _transaction.GetPageAsync(rowID.PageID);
+        var page = await _transaction.GetPageAsync(dataBlockID.PageID);
 
         // get first page segment
-        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+        var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);
 
         // get first data block
-        var dataBlock = new DataBlock(page.AsSpan(segment), rowID);
+        var dataBlock = new DataBlock(page.AsSpan(segment), dataBlockID);
 
         //TODO: SOMENTE PRIMEIRA PAGINA
-        _dataPageService.UpdateDataBlock(page, rowID.Index, page.AsSpan(segment), PageAddress.Empty);
+        _dataPageService.UpdateDataBlock(page, dataBlockID.Index, page.AsSpan(segment), PageAddress.Empty);
 
         // get extend page value before page change
         var before = page.Header.ExtendPageValue;
 
-        _dataPageService.UpdateDataBlock(page, rowID.Index, page.AsSpan(segment), PageAddress.Empty);
+        _dataPageService.UpdateDataBlock(page, dataBlockID.Index, page.AsSpan(segment), PageAddress.Empty);
 
         // checks if extend page value change and update map
         var after = page.Header.ExtendPageValue;
@@ -150,16 +150,16 @@ internal class DataService : IDataService
     /// <summary>
     /// Read a single document in a single/multiple pages
     /// </summary>
-    public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress rowID, string[] fields)
+    public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress dataBlockID, string[] fields)
     {
-        var page = await _transaction.GetPageAsync(rowID.PageID);
+        var page = await _transaction.GetPageAsync(dataBlockID.PageID);
 
         // get data block segment
-        var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+        var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);
 
-        var dataBlock = new DataBlock(page.AsSpan(segment), rowID);
+        var dataBlock = new DataBlock(page.AsSpan(segment), dataBlockID);
 
-        if (dataBlock.NextBlock.IsEmpty)
+        if (dataBlock.NextBlockID.IsEmpty)
         {
             var result = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength), fields, false, out _);
 
@@ -176,15 +176,15 @@ internal class DataService : IDataService
 
             var position = dataBlock.DataLength;
 
-            ENSURE(() => dataBlock.DocumentLength != int.MaxValue);
+            ENSURE(dataBlock.DocumentLength != int.MaxValue, new { dataBlock });
 
-            while (dataBlock.NextBlock.IsEmpty)
+            while (dataBlock.NextBlockID.IsEmpty)
             {
-                page = await _transaction.GetPageAsync(dataBlock.NextBlock.PageID);
+                page = await _transaction.GetPageAsync(dataBlock.NextBlockID.PageID);
 
-                segment = PageSegment.GetSegment(page, dataBlock.NextBlock.Index, out var _);
+                segment = PageSegment.GetSegment(page, dataBlock.NextBlockID.Index, out var _);
 
-                dataBlock = new DataBlock(page.AsSpan(segment), dataBlock.NextBlock);
+                dataBlock = new DataBlock(page.AsSpan(segment), dataBlock.NextBlockID);
 
                 //dataBlock.GetDataSpan(page).CopyTo(docBuffer.AsSpan(position));
                 page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
@@ -202,23 +202,23 @@ internal class DataService : IDataService
     /// <summary>
     /// Delete a full document from a single or multiple pages
     /// </summary>
-    public async ValueTask DeleteDocumentAsync(PageAddress rowID)
+    public async ValueTask DeleteDocumentAsync(PageAddress dataBlockID)
     {
         while (true)
         {
-            // get page from rowID
-            var page = await _transaction.GetPageAsync(rowID.PageID);
+            // get page from dataBlockID
+            var page = await _transaction.GetPageAsync(dataBlockID.PageID);
 
             // get page segment
-            var segment = PageSegment.GetSegment(page, rowID.Index, out _);
+            var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);
 
             // and get dataBlock
-            var dataBlock = new DataBlock(page.AsSpan(segment), rowID);
+            var dataBlock = new DataBlock(page.AsSpan(segment), dataBlockID);
 
             var before = page.Header.ExtendPageValue;
 
             // delete dataBlock
-            _dataPageService.DeleteDataBlock(page, rowID.Index);
+            _dataPageService.DeleteDataBlock(page, dataBlockID.Index);
 
             // checks if extend pageValue changes
             var after = page.Header.ExtendPageValue;
@@ -230,10 +230,10 @@ internal class DataService : IDataService
             }
 
             // stop if there is not block to delete
-            if (dataBlock.NextBlock.IsEmpty) break;
+            if (dataBlock.NextBlockID.IsEmpty) break;
 
             // go to next block
-            rowID = dataBlock.NextBlock;
+            dataBlockID = dataBlock.NextBlockID;
         }
     }
 

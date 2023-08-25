@@ -1,159 +1,155 @@
-﻿global using static LiteDB.Constants;
-global using static LiteDB.BsonExpression;
-global using LiteDB;
+﻿global using LiteDB;
 global using LiteDB.Engine;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-//using Bogus;
-//using Bogus.DataSets;
+using Bogus;
+using Bogus.DataSets;
 
-Tokenizer T = new Tokenizer("{p t d");
-var tok = T.ReadToken();
-Console.WriteLine(tok.ToString());
-tok = T.ReadToken();
-Console.WriteLine(tok.ToString());
+// SETUP
+const string VER = "v6";
 
-Tokenizer T2 = new Tokenizer("{a b c");
-var tok2 = T2.LookAhead(true, 3);
-Console.WriteLine(tok2.ToString());
-tok2 = T2.ReadToken();
-Console.WriteLine(tok2.ToString());
-tok2 = T2.ReadToken();
-Console.WriteLine(tok2.ToString());
-tok2 = T2.ReadToken();
-Console.WriteLine(tok2.ToString());
+var INSERT_1 = new Range(1, 100_000);
+var DELETE_1 = new Range(5, 60_000);
+var INSERT_2 = new Range(500, 30_000);
+////////////////////////
 
+Bogus.Randomizer.Seed = new Random(420);
 
-/*Bogus.Randomizer.Seed = new Random(420);
-
-var filename = @"C:\temp\test-03.db";
-
-File.Delete(filename);
+var filename = @$"C:\temp\{VER}\test-{DateTime.Now.Ticks}.db";
 
 var settings = new EngineSettings
 {
     Filename = filename,
-    Timeout = TimeSpan.FromSeconds(50),
 };
 
-var db = new LiteEngine(settings);
+Console.WriteLine($"Filename: {filename} ");
 
-await db.OpenAsync();
-
-//for(var i = 0; i < 200; i++)
-{
-    await db.CreateCollectionAsync("col1");
-}
-
-var data1 = GetData(1, 100_000, 200);
-var data2 = GetData(10, 50, 6000);
-
-//Console.ReadKey();
+var data1 = GetData(INSERT_1, 200);
+var data2 = GetData(INSERT_2, 60);
 
 var initMemory = GC.GetTotalAllocatedBytes();
 var sw = Stopwatch.StartNew();
 
-// Executa operações
+// abre o banco e inicializa
+var db = await RunAsync("Create new database", async () =>
+{
+    var instance = new LiteEngine(settings);
 
-await db.InsertAsync("col1", data1, BsonAutoId.Int32);
+    await instance.OpenAsync();
 
-await db.DeleteAsync("col1", Enumerable.Range(1, 50).Select(x => new BsonInt32(x)).ToArray());
+    return instance;
+});
 
-await db.InsertAsync("col1", data2, BsonAutoId.Int32);
+await Run($"Insert {data1.Length}", async () =>
+{
+    await db.CreateCollectionAsync("col1");
 
+    await db.InsertAsync("col1", data1, BsonAutoId.Int32);
 
-//var cursor = db.Query("col1", new AggregateQuery
-//{
-//    Functions = new IAggregateFunc[] 
-//    {
-//        new CountFunc("total", "$")
-//    }
-//});
-//PrintResult(await db.FetchAsync(cursor, 100));
+//    await db.CheckpointAsync();
+});
 
-//db.DumpMemory();
+await Run($"EnsureIndex (age)", async () =>
+{
+    await db.EnsureIndexAsync("col1", "idx_age", "age", false);
 
+//    await db.CheckpointAsync();
+});
+
+await Run($"Delete ({DELETE_1})", async () =>
+{
+    await db.DeleteAsync("col1", Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(x => new BsonInt32(x)).ToArray());
+
+//    await db.CheckpointAsync();
+});
+
+await Run($"Insert {data2.Length}", async () =>
+{
+    await db.InsertAsync("col1", data2, BsonAutoId.Int32);
+
+});
+
+await Run("Shutdown", async () =>
+{
+    await db.ShutdownAsync();
+    db.Dispose();
+});
+
+Console.WriteLine($"-------------");
 var usedMemory = GC.GetTotalAllocatedBytes() - initMemory;
+var fileLength = new FileInfo(filename).Length;
+Console.WriteLine($"FileLength: {(fileLength / 1024L / 1024L):n0} MB ({fileLength:n0} bytes)");
+Console.WriteLine($"Total memory used: {usedMemory / 1024L / 1024L:n0} MB ({usedMemory:n0} bytes)");
+Console.WriteLine($"Total time: {sw.ElapsedMilliseconds:n0}ms");
+Console.WriteLine($"-------------");
 
-Console.WriteLine($"Time: {sw.Elapsed.TotalMilliseconds:n0}ms");
 
-//var cursor = db.Query("col1", new Query { Select = "{_id,name,len:length(lorem)}", OrderBy = new ("name", 1) });
-//PrintResult(await db.FetchAsync(cursor, 100));
+db.DumpMemory();
 
-
-Console.WriteLine("  > Starting shutdown()...");
-var swShutdown = Stopwatch.StartNew();
-
-await db.ShutdownAsync();
-
-Console.WriteLine($"  > Total time to shutdown: {swShutdown.Elapsed.TotalMilliseconds:n0}ms");
-
-Console.WriteLine($"Total memory used: {usedMemory} - {usedMemory / 1024:n0}K");
-Console.WriteLine($"Total time: {sw.Elapsed.TotalMilliseconds:n0}ms");
+#if DEBUG
+Console.WriteLine($"# DEBUG - {VER}");
+#else
+Console.WriteLine($"# RELEASE - {VER}");
+#endif
 
 //Console.ReadKey();
-return;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-await db.OpenAsync();
-
-
-
-//
-//var cursor = db.Query("col1", new Query { Select = "{_id,name,len:length(lorem)}" });
-//PrintResult(await db.FetchAsync(cursor, 100));
-//PrintResult(await db.FetchAsync(cursor, 100));
-//PrintResult(await db.FetchAsync(cursor, 100));
-
-//var um = await db.FindById("col1", 1, Array.Empty<string>());
-//var dois = await db.FindById("col1", 2, Array.Empty<string>());
-
-await db.Dump(0);
-
-await db.ShutdownAsync();
-
-return;
-
-await db.OpenAsync();
-
-var um = await db.FindById("col1", 1, Array.Empty<string>());
-
-//await db.InsertAsync("col1", GetData(10_000, 0), BsonAutoId.Int32);
-
-
-var cursor2 = db.Query("col1", new Query());
-PrintResult(await db.FetchAsync(cursor2, 100));
-
-
-Console.WriteLine("\n\nEnd");
-Console.ReadKey();
-
-
-BsonDocument[] GetData(int start, int end, int lorem = 5)
+BsonDocument[] GetData(Range range, int lorem = 5)
 {
-    var faker = new Faker();
-    var result = new List<BsonDocument>();
-
-    for (var i = start; i <= end; i++)
+    return RunSync($"Create dataset ({range}, {lorem})", () =>
     {
-        result.Add(new BsonDocument
-        {
-            ["_id"] = i,
-            ["name"] = faker.Name.FullName(),
-            ["age"] = faker.Random.Number(15, 80),
-            ["lorem"] = lorem == 0 ? BsonValue.Null : faker.Lorem.Sentence(lorem)
-        });
-    }
+        var faker = new Faker();
+        var result = new List<BsonDocument>();
 
-    return result.ToArray();
+        for (var i = range.Start.Value ; i <= range.End.Value; i++)
+        {
+            result.Add(new BsonDocument
+            {
+                ["_id"] = i,
+                ["name"] = faker.Name.FullName(),
+                ["age"] = faker.Random.Number(15, 80),
+                ["lorem"] = lorem == 0 ? BsonValue.Null : faker.Lorem.Sentence(lorem)
+            });
+        }
+
+        return result.ToArray();
+    });
 }
 
-void PrintResult(FetchResult result)
+async Task Run(string message, Func<Task> asyncFunc)
 {
-    Console.WriteLine("Results: " + result);
+    var sw = Stopwatch.StartNew();
 
-    foreach (var item in result.Results)
-    {
-        Console.WriteLine(item.ToString());
-    }
-}*/
+    Console.Write((" > " + message + "... ").PadRight(40, ' '));
+
+    await asyncFunc();
+
+    Console.WriteLine($": {sw.Elapsed.TotalMilliseconds:n0}ms");
+}
+
+async Task<T> RunAsync<T>(string message, Func<Task<T>> asyncFunc)
+{
+    var sw = Stopwatch.StartNew();
+
+    Console.Write((" > " + message + "... ").PadRight(40, ' '));
+
+    var result = await asyncFunc();
+
+    Console.WriteLine($": {sw.Elapsed.TotalMilliseconds:n0}ms");
+
+    return result;
+}
+
+T RunSync<T>(string message, Func<T> syncFunc)
+{
+    var sw = Stopwatch.StartNew();
+
+    Console.Write((" > " + message + "... ").PadRight(40, ' '));
+
+    var result = syncFunc();
+
+    Console.WriteLine($": {sw.Elapsed.TotalMilliseconds:n0}ms");
+
+    return result;
+}

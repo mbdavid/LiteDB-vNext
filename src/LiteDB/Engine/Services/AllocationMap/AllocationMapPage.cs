@@ -123,8 +123,8 @@ internal class AllocationMapPage
     /// </summary>
     public void UpdateExtendPageValue(int extendIndex, int pageIndex, ExtendPageValue pageValue)
     {
-        ENSURE(() => extendIndex <= 2039);
-        ENSURE(() => pageIndex <= 11);
+        ENSURE(extendIndex <= 2039);
+        ENSURE(pageIndex <= 11);
 
         // get extend value from array
         var value = _extendValues[extendIndex];
