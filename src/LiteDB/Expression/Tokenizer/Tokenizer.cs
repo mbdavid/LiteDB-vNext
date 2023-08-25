@@ -1,171 +1,4 @@
-﻿using System.Data.SqlTypes;
-
-namespace LiteDB;
-
-#region TokenType definition
-
-/// <summary>
-/// ASCII char names: https://www.ascii.cl/htmlcodes.htm
-/// </summary>
-internal enum TokenType
-{
-    /// <summary> { </summary>
-    OpenBrace,
-    /// <summary> } </summary>
-    CloseBrace,
-    /// <summary> [ </summary>
-    OpenBracket,
-    /// <summary> ] </summary>
-    CloseBracket,
-    /// <summary> ( </summary>
-    OpenParenthesis,
-    /// <summary> ) </summary>
-    CloseParenthesis,
-    /// <summary> , </summary>
-    Comma,
-    /// <summary> : </summary>
-    Colon,
-    /// <summary> ; </summary>
-    SemiColon,
-    /// <summary> =&gt; </summary>
-    Arrow,
-    /// <summary> @ </summary>
-    At,
-    /// <summary> # </summary>
-    Hashtag,
-    /// <summary> ~ </summary>
-    Til,
-    /// <summary> . </summary>
-    Period,
-    /// <summary> &amp; </summary>
-    Ampersand,
-    /// <summary> $ </summary>
-    Dollar,
-    /// <summary> ! </summary>
-    Exclamation,
-    /// <summary> != </summary>
-    NotEquals,
-    /// <summary> = </summary>
-    Equals,
-    /// <summary> &gt; </summary>
-    Greater,
-    /// <summary> &gt;= </summary>
-    GreaterOrEquals,
-    /// <summary> &lt; </summary>
-    Less,
-    /// <summary> &lt;= </summary>
-    LessOrEquals,
-    /// <summary> - </summary>
-    Minus,
-    /// <summary> + </summary>
-    Plus,
-    /// <summary> * </summary>
-    Asterisk,
-    /// <summary> / </summary>
-    Slash,
-    /// <summary> \ </summary>
-    Backslash,
-    /// <summary> % </summary>
-    Percent,
-    /// <summary> "..." or '...' </summary>
-    String,
-    /// <summary> [0-9]+ </summary>
-    Int,
-    /// <summary> [0-9]+.[0-9] </summary>
-    Double,
-    /// <summary> \n\r\t \u0032 </summary>
-    Whitespace,
-    /// <summary> [a-Z_$]+[a-Z0-9_$] </summary>
-    Word,
-    EOF,
-    Unknown
-}
-
-#endregion
-
-#region Token definition
-
-/// <summary>
-/// Represent a single string token
-/// </summary>
-internal struct Token : INullable
-{
-    public Token(TokenType tokenType, string value, long position)
-    {
-        this.Position = position;
-        this.Value = value;
-        this.Type = tokenType;
-    }
-
-    public TokenType Type { get; private set; }
-    public string Value { get; private set; }
-    public long Position { get; private set; }
-
-    public bool IsNull => this.Value==string.Empty;
-
-    /// <summary>
-    /// Expect if token is type (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type)
-    {
-        if (this.Type != type)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Expect for type1 OR type2 (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type1, TokenType type2)
-    {
-        if (this.Type != type1 && this.Type != type2)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Expect for type1 OR type2 OR type3 (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type1, TokenType type2, TokenType type3)
-    {
-        if (this.Type != type1 && this.Type != type2 && this.Type != type3)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    public Token Expect(string value, bool ignoreCase = true)
-    {
-        if (!this.Is(value, ignoreCase))
-        {
-            throw ERR_UNEXPECTED_TOKEN(this, value);
-        }
-
-        return this;
-    }
-
-    public bool Is(string value, bool ignoreCase = true)
-    {
-        return 
-            this.Type == TokenType.Word &&
-            value.Equals(this.Value, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-    }
-
-    public override string ToString()
-    {
-        return this.Value + " (" + this.Type + ")";
-    }
-}
-
-#endregion
+﻿namespace LiteDB;
 
 /// <summary>
 /// Class to tokenize TextReader input used in JsonRead/BsonExpressions
@@ -175,12 +8,12 @@ internal class Tokenizer
 {
     private string _reader;
     private char _char = '\0';
-    private Token _current = new Token(TokenType.Unknown, "", 0);
-    private Token _ahead = new Token(TokenType.Unknown, "", 0);
+    private Token _current = Token.Empty;
+    private Token _ahead = Token.Empty;
     private bool _eof = false;
     private int _position = 0;
 
-    public bool EOF => _eof && _ahead.IsNull;
+    public bool EOF => _eof && _ahead.IsEmpty;
     public long Position => _position;
     public Token Current => _current!;
 
@@ -252,7 +85,7 @@ internal class Tokenizer
             return _current;
         if(tokensCount==1)
         {
-            if (_ahead.IsNull == false)
+            if (_ahead.IsEmpty == false)
             {
                 if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
                 {
@@ -288,7 +121,7 @@ internal class Tokenizer
     /// </summary>
     public Token ReadToken(bool eatWhitespace = true)
     {
-        if (_ahead.IsNull)
+        if (_ahead.IsEmpty)
         {
             return _current = this.ReadNext(eatWhitespace);
         }
@@ -299,7 +132,7 @@ internal class Tokenizer
         }
 
         _current = _ahead;
-        _ahead = new Token(TokenType.Unknown, string.Empty, 0);
+        _ahead = Token.Empty;
         return _current;
     }
 
