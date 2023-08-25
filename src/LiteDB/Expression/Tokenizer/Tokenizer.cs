@@ -275,6 +275,7 @@ internal class Tokenizer
             }
             var tok = this.ReadNext(eatWhitespace);
             _position = keepPos;
+            _eof = false;
             this.ReadChar();
             _ahead = keepAhead;
             _current = keepCurent;
