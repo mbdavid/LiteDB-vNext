@@ -219,7 +219,12 @@ internal class Tokenizer
     /// </summary>
     private char ReadChar()
     {
-        if (_position >= _reader.Length || _eof) return '\0';
+        if (_eof) return '\0';
+        if (_position >= _reader.Length)
+        {
+            _eof = true;
+            return _char = '\0';
+        }
 
         var c = _reader[_position];
 
@@ -261,11 +266,13 @@ internal class Tokenizer
         }
         else
         {
-            var keepPos = _position;
             var keepCurent = _current;
             var keepAhead = this.ReadNext(eatWhitespace);
+            var keepPos = _position-1;
             for (int i=1; i<tokensCount-1; i++)
+            {
                 this.ReadNext(eatWhitespace);
+            }
             var tok = this.ReadNext(eatWhitespace);
             _position = keepPos;
             this.ReadChar();

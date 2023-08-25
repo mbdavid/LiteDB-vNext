@@ -10,6 +10,7 @@ public class Tokenizer_Tests
     public static IEnumerable<object[]> Get_Tokens()
     {
         yield return new object[] { "{", new Token[] { new Token(TokenType.OpenBrace, "{", 0)} };
+        yield return new object[] { "alpha", new Token[] { new Token(TokenType.Word, "alpha", 0) } };
         //yield return new object[] { "a,b,c", new Token[] { new Token(TokenType.Word, "a", 2), new Token(TokenType.Comma, ",", 2), new Token(TokenType.Word, "b", 4), new Token(TokenType.Comma, ",", 4), new Token(TokenType.Word, "c", 6) } };
     }
 
@@ -29,7 +30,7 @@ public class Tokenizer_Tests
     public static IEnumerable<object[]> Get_Tokens2()
     {
         yield return new object[] { "{a b c", new Token[] { new Token(TokenType.Word, "b", 0), new Token(TokenType.OpenBrace, "{", 0), new Token(TokenType.Word, "a", 0) }, 3 };
-        yield return new object[] { "lpha beta charlie", new Token[] { new Token(TokenType.Word, "beta", 0), new Token(TokenType.Word, "lpha", 0), new Token(TokenType.Word, "beta", 0), new Token(TokenType.Word, "charlie", 0) }, 2 };
+        yield return new object[] { "alpha beta charlie", new Token[] { new Token(TokenType.Word, "beta", 0), new Token(TokenType.Word, "alpha", 0), new Token(TokenType.Word, "beta", 0), new Token(TokenType.Word, "charlie", 0) }, 2 };
     }
 
     [Theory]
