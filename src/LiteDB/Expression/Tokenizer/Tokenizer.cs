@@ -149,7 +149,7 @@ internal class Tokenizer
             return new Token(TokenType.EOF, "", _position);
         }
 
-        Token token = new Token(TokenType.Unknown, _char.ToString(), _position);
+        Token token = Token.Empty;
 
         switch (_char)
         {
@@ -370,7 +370,7 @@ internal class Tokenizer
                 break;
         }
 
-        return token;
+        return token.IsEmpty ? new Token(TokenType.Unknown, _char.ToString(), _position) : token;
     }
 
     /// <summary>
