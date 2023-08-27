@@ -84,6 +84,10 @@ internal class LockService : ILockService
         _collections[colID].ReleaseWriterLock();
     }
 
+    public override string ToString()
+    {
+        return Dump.Object(new { TransactionsCount });
+    }
 
     public void Dispose()
     {

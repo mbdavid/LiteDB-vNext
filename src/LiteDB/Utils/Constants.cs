@@ -129,12 +129,12 @@ internal class Constants
     /// <summary>
     /// A simple memory managment - store in disk when a transaction get this counter pages
     /// </summary>
-    public const int SAFEPOINT_SIZE = 10_000;
+    public const int SAFEPOINT_SIZE = 1000_000;
 
     /// <summary>
     /// Max number to keep pages in cache. After this, a CleanUp() should be execute
     /// </summary>
-    public const int CACHE_LIMIT = 20_000;
+    public const int CACHE_LIMIT = 25_000;
 
     /// <summary>
     /// Define how many documents will be keep in memory until clear cache and remove support to orderby/groupby
@@ -145,6 +145,11 @@ internal class Constants
     /// Define how many pages each sort container should have
     /// </summary>
     public const int CONTAINER_SORT_SIZE_IN_PAGES = 100;
+
+    /// <summary>
+    /// Initial unique ID for BufferFactory allocate new pages
+    /// </summary>
+    public const int BUFFER_UNIQUE_ID = 100;
 
 
     public static long TICK_FREQUENCY = (TimeSpan.TicksPerSecond / Stopwatch.Frequency);

@@ -8,13 +8,8 @@ internal static class Dump
     public static string Object(object obj)
     {
         var type = obj.GetType();
-        var ns = type.Namespace ?? "";
 
-        if (!ns.StartsWith("LiteDB")) return obj.ToString() ?? "";
-
-        var toString = Reflection.IsOverride(type.GetMethod("ToString")!);
-
-        if (toString) return obj.ToString() ?? "";
+        //if (!ns.StartsWith("LiteDB")) return obj.ToString() ?? "";
 
         var sb = new StringBuilder();
 
@@ -22,26 +17,33 @@ internal static class Dump
         {
             if (value is null)
             {
-                sb.Append($"{name} = null");
+                sb.Append($"{name}: null");
             }
             else 
             {
                 var type = value.GetType();
 
-                if (Reflection.IsDictionary(type))
+                if (Reflection.IsCollection(type) || Reflection.IsDictionary(type))
                 {
                     if (sb.Length > 0) sb.Append(", ");
-                    sb.Append($"{name} = [{(value as IDictionary)!.Count}]");
-                }
-                else if (Reflection.IsCollection(type))
-                {
-                    if (sb.Length > 0) sb.Append(", ");
-                    sb.Append($"{name} = [{(value as ICollection)!.Count}]");
+                    var count = type.GetProperties().FirstOrDefault(x => x.Name == "Count").GetValue(value, null);
+                    sb.Append($"{name}: [{count}]");
                 }
                 else if (Reflection.IsSimpleType(type))
                 {
                     if (sb.Length > 0) sb.Append(", ");
-                    sb.Append($"{name} = {value}");
+                    sb.Append($"{name}: {value}");
+                }
+                else
+                {
+                    var toString = Reflection.IsOverride(type.GetMethods().FirstOrDefault(x => x.Name == "ToString" && x.GetParameters().Length == 0));
+                    var isLiteDB = type.Namespace.StartsWith("LiteDB");
+
+                    if (toString && isLiteDB)
+                    {
+                        if (sb.Length > 0) sb.Append(", ");
+                        sb.Append($"{name}: {value}");
+                    }
                 }
             }
         }
@@ -50,7 +52,7 @@ internal static class Dump
         {
             if (member is FieldInfo f)
             {
-                if (f.Name.EndsWith("__BackingField")) continue;
+                if (f.Name.EndsWith("__BackingField") || f.Name.EndsWith("__Field")) continue;
                 Append(f.Name, f.GetValue(obj));
             }
             else if (member is PropertyInfo p)

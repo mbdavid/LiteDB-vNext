@@ -121,6 +121,27 @@ internal struct PageHeader
 
     #endregion
 
+    #region DEBUG-Only
+
+    /// <summary>
+    /// DEBUG Only - Indicate is a empty/new instance
+    /// </summary>
+    public bool IsCleanInstance =>
+        this.PageID == int.MaxValue &&
+        this.PageType == PageType.Empty &&
+        this.PositionID == int.MaxValue &&
+        this.ColID == 0 &&
+        this.TransactionID == 0 &&
+        this.IsConfirmed == false &&
+        this.ItemsCount == 0 &&
+        this.UsedBytes == 0 &&
+        this.FragmentedBytes == 0 &&
+        this.NextFreeLocation == PAGE_HEADER_SIZE &&
+        this.HighestIndex == byte.MaxValue &&
+        this.Crc8 == 0;
+
+    #endregion
+
     /// <summary>
     /// Create a empty header (default value)
     /// </summary>
@@ -221,6 +242,9 @@ internal struct PageHeader
 
     public override string ToString()
     {
-        return $"{{ PageID = {Dump.PageID(PageID)}, PositionID = {Dump.PageID(PositionID)}, PageType = {PageType}, ColID = {ColID}, TransID = {TransactionID}, ItemsCount = {ItemsCount}, FreeBytes = {FreeBytes}, IsConfirmed = {IsConfirmed}, HIndex = {HighestIndex}, Fragments = {FragmentedBytes}, Crc8 = {Crc8} }}";
+        return Dump.Object(new { 
+            PageID = Dump.PageID(PageID), 
+            PositionID = Dump.PageID(PositionID), 
+            PageType, ColID, TransactionID, ItemsCount, FreeBytes, IsConfirmed, HighestIndex, FragmentedBytes, Crc8 });
     }
 }

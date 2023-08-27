@@ -36,7 +36,7 @@ internal class NewDatafile : INewDatafile
         await writer.CreateAsync(fileHeader);
 
         // create map page
-        var mapPage = _bufferFactory.AllocateNewPage(true);
+        var mapPage = _bufferFactory.AllocateNewPage();
 
         mapPage.Header.PageID = AM_FIRST_PAGE_ID;
         mapPage.Header.PageType = PageType.AllocationMap;
@@ -44,9 +44,10 @@ internal class NewDatafile : INewDatafile
         // mark first extend to $master and first page as data
         mapPage.AsSpan(PAGE_HEADER_SIZE)[0] = MASTER_COL_ID;
         mapPage.AsSpan(PAGE_HEADER_SIZE)[1] = (byte)(1 << 6); // set first 3 bits as "01" - data page
+        mapPage.IsDirty = true;
 
         // create $master page buffer
-        var masterPage = _bufferFactory.AllocateNewPage(true);
+        var masterPage = _bufferFactory.AllocateNewPage();
 
         // initialize page buffer as data page
         _dataPageService.InitializeDataPage(masterPage, MASTER_PAGE_ID, MASTER_COL_ID);

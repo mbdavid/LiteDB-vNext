@@ -35,8 +35,8 @@ internal class CacheService : ICacheService
             return null;
         }
 
-        ENSURE(page.Header.TransactionID == 0, new { page });
-        ENSURE(page.Header.IsConfirmed == false, new { page });
+        ENSURE(page.Header.TransactionID == 0, page);
+        ENSURE(page.Header.IsConfirmed == false, page);
 
         // test if this page are getted from a writable collection in transaction
         writable = Array.IndexOf(writeCollections, page.Header.ColID) > -1;
@@ -57,7 +57,7 @@ internal class CacheService : ICacheService
             else
             {
                 // if page is in use, create a new page
-                var newPage = _bufferFactory.AllocateNewPage(false);
+                var newPage = _bufferFactory.AllocateNewPage();
 
                 // copy all content for this new created page
                 page.CopyBufferTo(newPage);
@@ -69,7 +69,7 @@ internal class CacheService : ICacheService
         else
         {
             // get page for read-only
-            ENSURE(page.ShareCounter != NO_CACHE, new { page });
+            ENSURE(page.ShareCounter != NO_CACHE, page);
 
             // increment ShareCounter to be used by another transaction
             Interlocked.Increment(ref page.ShareCounter);
@@ -87,8 +87,10 @@ internal class CacheService : ICacheService
     /// </summary>
     public bool TryRemove(int positionID, [MaybeNullWhen(false)] out PageBuffer? page)
     {
+        // first try to remove from cache
         if (_cache.TryRemove(positionID, out PageBuffer cachePage))
         {
+            //
             this.ClearPageWhenRemoveFromCache(cachePage);
 
             page = cachePage;
@@ -107,13 +109,9 @@ internal class CacheService : ICacheService
     /// </summary>
     public bool AddPageInCache(PageBuffer page)
     {
-        ENSURE(!page.IsDirty, "Page must be clean before add into cache", new { page });
-        ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache", new { page });
-        ENSURE(page.InCache == false, "ShareCounter must be zero before add in cache", new { page });
-
-        // clear any transaction info before add in cache
-        page.Header.TransactionID = 0;
-        page.Header.IsConfirmed = false;
+        ENSURE(!page.IsDirty, "Page must be clean before add into cache", page);
+        ENSURE(page.PositionID != int.MaxValue, "PageBuffer must have a position before add in cache", page);
+        ENSURE(page.InCache == false, "ShareCounter must be zero before add in cache", page);
 
         // before add, checks cache limit and cleanup if full
         if (_cache.Count >= CACHE_LIMIT)
@@ -127,34 +125,42 @@ internal class CacheService : ICacheService
             }
         }
 
-        page.ShareCounter = 0; // initialize share counter
-
+        // try add into cache before change page
         var added = _cache.TryAdd(page.PositionID, page);
 
-        return added;
+        if (!added) return false;
+
+        // clear any transaction info before add in cache
+        page.Header.TransactionID = 0;
+        page.Header.IsConfirmed = false;
+
+        // initialize shared counter
+        page.ShareCounter = 0;
+
+        return true;
     }
 
-    public void ReturnPage(PageBuffer page)
+    public void ReturnPageToCache(PageBuffer page)
     {
         Interlocked.Decrement(ref page.ShareCounter);
+
+        ENSURE(page.ShareCounter >= 0, page);
 
         // clear header log information
         page.Header.TransactionID = 0;
         page.Header.IsConfirmed = false;
-
-        ENSURE(page.ShareCounter >= 0, new { page });
     }
 
     /// <summary>
     /// Set all variables to indicate that page are not in cache anymore 
-    /// At this point, this PageBuffer are only out of _cache
+    /// At this point, this PageBuffer are out of _cache dict
     /// </summary>
     private void ClearPageWhenRemoveFromCache(PageBuffer page)
     {
-        ENSURE(page.IsDirty == false, new { page });
-        ENSURE(page.ShareCounter == 0, $"Page should not be in use", new { page });
-        ENSURE(page.Header.TransactionID == 0, new { page });
-        ENSURE(page.Header.IsConfirmed == false, new { page });
+        ENSURE(page.IsDirty == false, page);
+        ENSURE(page.ShareCounter == 0, $"Page should not be in use", page);
+        ENSURE(page.Header.TransactionID == 0, page);
+        ENSURE(page.Header.IsConfirmed == false, page);
 
         page.ShareCounter = NO_CACHE;
         page.Timestamp = 0;
@@ -221,18 +227,31 @@ internal class CacheService : ICacheService
 
         foreach( var logPosition in logPositions)
         {
-            _cache.Remove(logPosition, out _);
+            _cache.Remove(logPosition, out var page);
+
+            this.ClearPageWhenRemoveFromCache(page);
+
+            _bufferFactory.DeallocatePage(page);
         }
     }
 
     public override string ToString()
     {
-        return $"Cached pages: {_cache.Count}";
+        return Dump.Object(new { _cache });
     }
 
     public void Dispose()
     {
         ENSURE(_cache.Count(x => x.Value.ShareCounter != 0) == 0, "Cache must be clean before dipose");
+
+#if DEBUG
+        // in DEBUG mode, let's clear all pages one-by-one
+        foreach(var page in _cache.Values)
+        {
+            this.ClearPageWhenRemoveFromCache(page);
+            _bufferFactory.DeallocatePage(page);
+        }
+#endif
 
         // deattach PageBuffers from _cache object
         _cache.Clear();

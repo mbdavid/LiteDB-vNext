@@ -8,6 +8,9 @@
 [AutoInterface(typeof(IDisposable))]
 internal class BufferFactory : IBufferFactory
 {
+    /// <summary>
+    /// All created instances 
+    /// </summary>
     private readonly ConcurrentDictionary<int, PageBuffer> _inUsePages = new();
 
     /// <summary>
@@ -21,9 +24,9 @@ internal class BufferFactory : IBufferFactory
     private int _pagesAllocated = 0;
 
     /// <summary>
-    /// Used to create unique identifier to PageBuffer (starts in 1000 just for better debug)
+    /// Used to create unique identifier to PageBuffer
     /// </summary>
-    private int _nextUniqueID = 1000;
+    private int _nextUniqueID = BUFFER_UNIQUE_ID;
 
     public BufferFactory()
     {
@@ -32,11 +35,13 @@ internal class BufferFactory : IBufferFactory
     /// <summary>
     /// Allocate, in memory, a new array with PAGE_SIZE inside a PageBuffer struct reference.
     /// </summary>
-    public PageBuffer AllocateNewPage(bool isDirty)
+    public PageBuffer AllocateNewPage()
     {
         if (_freePages.TryDequeue(out var page))
         {
             _inUsePages.TryAdd(page.UniqueID, page);
+
+            ENSURE(page.IsCleanInstance, "Page are not clean to be allocated", page);
 
             return page;
         }
@@ -45,7 +50,7 @@ internal class BufferFactory : IBufferFactory
 
         var uniqueID = Interlocked.Increment(ref _nextUniqueID);
 
-        var newPage = new PageBuffer(uniqueID) { IsDirty = isDirty };
+        var newPage = new PageBuffer(uniqueID);
 
         var added = _inUsePages.TryAdd(newPage.UniqueID, newPage);
 
@@ -54,20 +59,23 @@ internal class BufferFactory : IBufferFactory
         return newPage;
     }
 
+    /// <summary>
+    /// After use page, return to free list to be reused later
+    /// </summary>
     public void DeallocatePage(PageBuffer page)
     {
-        ENSURE(page.ShareCounter == NO_CACHE, "ShareCounter must be 0 before return page to memory", new { page });
+        ENSURE(page.ShareCounter == NO_CACHE, "ShareCounter must be 0 before return page to memory", page);
+
+        // remove from inUse pages 
+        var removed = _inUsePages.TryRemove(page.UniqueID, out _);
+
+        ENSURE(removed, new { page, _pagesAllocated, _freePages, _inUsePages });
 
         // clear buffer position/sharecounter
         page.Reset();
 
         // add used page as new free page
         _freePages.Enqueue(page);
-
-        // remove from inUse pages 
-        var removed = _inUsePages.TryRemove(page.UniqueID, out _);
-
-        ENSURE(removed, new { page, _pagesAllocated, _freePages, _inUsePages });
     }
 
     public int CleanUp()
@@ -81,12 +89,18 @@ internal class BufferFactory : IBufferFactory
 
     public override string ToString()
     {
-        return $"InUse: {_inUsePages.Count} - FreeBuffers: {_freePages.Count} - Allocated: {_pagesAllocated}";
+        return Dump.Object(new { _inUsePages, _freePages, _pagesAllocated });
     }
 
     public void Dispose()
     {
-        // diattach all PageBuffers from _freePages object
+        ENSURE(_inUsePages.Count == 0, this);
+        ENSURE(_freePages.Count == _pagesAllocated, this);
+
+        // all others PageBuffer references are done... now, let's remove last one
         _freePages.Clear();
+        _inUsePages.Clear();
+        _pagesAllocated = 0;
+        _nextUniqueID = 100;
     }
 }

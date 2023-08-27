@@ -33,7 +33,7 @@ internal class SortContainer : ISortContainer
         _order = order;
         _stream = stream;
 
-        _buffer = bufferFactory.AllocateNewPage(false);
+        _buffer = bufferFactory.AllocateNewPage();
     }
 
     /// <summary>

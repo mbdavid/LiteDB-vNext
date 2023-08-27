@@ -39,6 +39,8 @@ internal class AllocationMapPage
 
         // fill all queue as empty extends (use ExtendIndex)
         _emptyExtends = new Queue<int>(Enumerable.Range(0, AM_EXTEND_COUNT - 1));
+
+        page.IsDirty = true;
     }
 
     /// <summary>

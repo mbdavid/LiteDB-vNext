@@ -11,6 +11,8 @@ internal class IndexPageService : PageService, IIndexPageService
         page.Header.PageID = pageID;
         page.Header.PageType = PageType.Index;
         page.Header.ColID = colID;
+
+        page.IsDirty = true;
     }
 
     /// <summary>

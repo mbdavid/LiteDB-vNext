@@ -144,7 +144,7 @@ internal class Transaction : ITransaction
         // test if page are in transaction wal pages
         if (_walDirtyPages.TryGetValue(pageID, out var positionID))
         {
-            var walPage = _bufferFactory.AllocateNewPage(false);
+            var walPage = _bufferFactory.AllocateNewPage();
 
             await _reader.ReadPageAsync(positionID, walPage);
 
@@ -162,7 +162,7 @@ internal class Transaction : ITransaction
         // if page not found, allocate new page and read from disk
         if (page is null)
         {
-            page = _bufferFactory.AllocateNewPage(false);
+            page = _bufferFactory.AllocateNewPage();
 
             await _reader.ReadPageAsync(positionID, page);
 
@@ -213,7 +213,7 @@ internal class Transaction : ITransaction
 
         if (isNew)
         {
-            var page = _bufferFactory.AllocateNewPage(true);
+            var page = _bufferFactory.AllocateNewPage();
 
             // initialize empty page as data page
             _dataPageService.InitializeDataPage(page, pageID, colID);
@@ -248,7 +248,7 @@ internal class Transaction : ITransaction
 
         if (isNew)
         {
-            var page = _bufferFactory.AllocateNewPage(true);
+            var page = _bufferFactory.AllocateNewPage();
 
             // initialize empty page as index page
             _indexPageService.InitializeIndexPage(page, pageID, colID);
@@ -313,8 +313,8 @@ internal class Transaction : ITransaction
         {
             var page = dirtyPages[i];
 
-            ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", new { page });
-            ENSURE(page.Header.IsConfirmed == false, new { page });
+            ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", page);
+            ENSURE(page.Header.IsConfirmed == false, page);
 
             // update page header
             page.Header.TransactionID = this.TransactionID;
@@ -335,7 +335,7 @@ internal class Transaction : ITransaction
             if (page.ShareCounter > 0)
             {
                 // page already in cache (was not changed)
-                _cacheService.ReturnPage(page);
+                _cacheService.ReturnPageToCache(page);
             }
             else
             {
@@ -362,7 +362,7 @@ internal class Transaction : ITransaction
         {
             var page = dirtyPages[i];
 
-            ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", new { page });
+            ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", page);
 
             // update page header
             page.Header.TransactionID = this.TransactionID;
@@ -393,7 +393,7 @@ internal class Transaction : ITransaction
             // page already in cache (was not changed)
             if (page.ShareCounter > 0)
             {
-                _cacheService.ReturnPage(page);
+                _cacheService.ReturnPageToCache(page);
             }
             else
             {
@@ -428,7 +428,7 @@ internal class Transaction : ITransaction
                 if (page.ShareCounter > 0)
                 {
                     // return page to cache
-                    _cacheService.ReturnPage(page);
+                    _cacheService.ReturnPageToCache(page);
                 }
                 else
                 {
@@ -455,6 +455,11 @@ internal class Transaction : ITransaction
         }
 
         _initialExtendValues.Clear();
+    }
+
+    public override string ToString()
+    {
+        return Dump.Object(new { TransactionID, ReadVersion, _localPages, _localIndexNodes, _writeCollections, _initialExtendValues, _currentExtendLocations, _lockCounter });
     }
 
     public void Dispose()

@@ -106,7 +106,7 @@ internal class DiskStream : IDiskStream
     }
 
     /// <summary>
-    /// Read single page from disk using disk position. This position has FILE_HEADER_SIZE offset
+    /// Read single page from disk using disk position. Load header instance too. This position has FILE_HEADER_SIZE offset
     /// </summary>
     public async ValueTask<bool> ReadPageAsync(int positionID, PageBuffer page, CancellationToken ct = default)
     {
@@ -128,8 +128,9 @@ internal class DiskStream : IDiskStream
 
     public async ValueTask WritePageAsync(PageBuffer page, CancellationToken ct = default)
     {
-        ENSURE(page.IsDirty, new { page });
-        ENSURE(page.PositionID != int.MaxValue, new { page });
+        ENSURE(page.IsDirty, page);
+        ENSURE(page.ShareCounter == NO_CACHE, page);
+        ENSURE(page.PositionID != int.MaxValue, page);
 
         // update crc8 page
         page.Header.Crc8 = page.ComputeCrc8();

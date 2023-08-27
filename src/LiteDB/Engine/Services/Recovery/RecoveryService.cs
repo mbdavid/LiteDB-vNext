@@ -36,7 +36,7 @@ internal class RecoveryService : IRecoveryService
         }
 
         // re-create all allocation map pages based on page info on a second-pass on datafile
-        await this.CreateAllocationMap();
+        await this.RebuildAllocationMap();
 
     }
 
@@ -45,7 +45,7 @@ internal class RecoveryService : IRecoveryService
     /// </summary>
     private async ValueTask ReadDatafileAsync()
     {
-        var page = _bufferFactory.AllocateNewPage(true);
+        var page = _bufferFactory.AllocateNewPage();
         var writer = _diskService.GetDiskWriter();
 
         // get last position from disk
@@ -128,7 +128,7 @@ internal class RecoveryService : IRecoveryService
                 _startTempPositionID,
                 _tempPages).ToArray();
 
-        var page = _bufferFactory.AllocateNewPage(true);
+        var page = _bufferFactory.AllocateNewPage();
         var writer = _diskService.GetDiskWriter();
         var counter = 0;
 
@@ -183,10 +183,10 @@ internal class RecoveryService : IRecoveryService
     /// <summary>
     /// Create all new AllocationMap pages based on a all datafile pages read. Writes direct on disk
     /// </summary>
-    private async ValueTask CreateAllocationMap()
+    private async ValueTask RebuildAllocationMap()
     {
-        var page = _bufferFactory.AllocateNewPage(true);
-        var amPage = _bufferFactory.AllocateNewPage(true);
+        var readPage = _bufferFactory.AllocateNewPage();
+        var amPage = _bufferFactory.AllocateNewPage();
 
         var amPageID = AM_FIRST_PAGE_ID;
         var positionID = 0;
@@ -211,7 +211,7 @@ internal class RecoveryService : IRecoveryService
 
                 for(var pageIndex = 0; pageIndex < AM_EXTEND_SIZE && !eof; pageIndex++)
                 {
-                    var read = await stream.ReadPageAsync(positionID, page);
+                    var read = await stream.ReadPageAsync(positionID, readPage);
 
                     if (!read)
                     {
@@ -220,23 +220,23 @@ internal class RecoveryService : IRecoveryService
                     }
 
                     // when read first page with colID > 0, update page buffer with colID value
-                    if (colID == 0 && page.Header.ColID > 0)
+                    if (colID == 0 && readPage.Header.ColID > 0)
                     {
-                        colID = page.Header.ColID;
+                        colID = readPage.Header.ColID;
 
                         // get position, on page, where this colID must be setted in current extend
                         var colIDLocation = PAGE_HEADER_SIZE +
                             (extendIndex * AM_EXTEND_SIZE);
 
-                        page.AsSpan(colIDLocation, 1)[0] = colID;
+                        readPage.AsSpan(colIDLocation, 1)[0] = colID;
                     }
                     else
                     {
-                        ENSURE(page.Header.ColID > 0, page.Header.ColID == colID, "All pages in an extend must be from same collection", new { page, colID });
+                        ENSURE(readPage.Header.ColID > 0, readPage.Header.ColID == colID, "All pages in an extend must be from same collection", new { readPage, colID });
                     }
 
                     // get allocation value for each page
-                    var value = AllocationMapPage.GetExtendPageValue(page.Header.PageType, page.Header.FreeBytes);
+                    var value = AllocationMapPage.GetExtendPageValue(readPage.Header.PageType, readPage.Header.FreeBytes);
 
                     // update page allocation free space
                     pageMap.UpdateExtendPageValue(extendIndex, pageIndex, value);
@@ -253,7 +253,7 @@ internal class RecoveryService : IRecoveryService
             amPageID++;
         }
 
-        _bufferFactory.DeallocatePage(page);
+        _bufferFactory.DeallocatePage(readPage);
         _bufferFactory.DeallocatePage(amPage);
     }
 

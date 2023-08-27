@@ -49,13 +49,29 @@ internal class PageBuffer
     public bool IsLogFile => this.PositionID > this.Header.PageID && this.PositionID == this.Header.PositionID;
     public bool IsTempFile => this.PositionID > this.Header.PageID && this.PositionID > this.Header.PositionID;
 
+    #region DEBUG-Only
+
+    /// <summary>
+    /// DEBUG Only - Checks if page are OK to be re-used in BufferFactory
+    /// </summary>
+    public bool IsCleanInstance => 
+        //this.UniqueID never be tested because this number must be unique and re-used
+        this.PositionID == int.MaxValue &&
+        this.ShareCounter == NO_CACHE &&
+        this.Timestamp == 0 &&
+        this.IsDirty == false &&
+        this.Header.IsCleanInstance &&
+        this.Buffer.Span.IsFullZero();
+
+    #endregion
+
     public PageBuffer(int uniqueID)
     {
         this.UniqueID = uniqueID;
     }
 
     /// <summary>
-    /// Reset references (PositionID, ShareCounter, Timestamp, IsDirty, Header)
+    /// Reset references (PositionID, ShareCounter, Timestamp, IsDirty, Header, [fill buffer \0])
     /// </summary>
     public void Reset()
     {
@@ -116,7 +132,12 @@ internal class PageBuffer
 
     public override string ToString()
     {
-        return $"{{ PageID = {Dump.PageID(Header.PageID)}, PositionID = {Dump.PageID(PositionID)}, PageType = {Header.PageType}, IsDirty = {IsDirty}, SharedCounter = {ShareCounter}, InCache = {InCache} }}";
+        return Dump.Object(new { 
+            PageID = Dump.PageID(Header.PageID), 
+            PositionID = Dump.PageID(Header.PositionID),
+            ShareCounter, IsDirty, Timestamp,
+            InCache, IsDataFile, IsLogFile, IsTempFile, IsCleanInstance, 
+            Header = Dump.Object(Header) });
     }
 
     public string DumpPage()

@@ -2,7 +2,7 @@
 
 public partial class LiteEngine : ILiteEngine
 {
-    public async ValueTask Dump(int pageID)
+    public async ValueTask DumpAsync(int pageID)
     {
         var monitorService = _factory.MonitorService;
         var allocationMapService = _factory.AllocationMapService;
@@ -37,16 +37,25 @@ public partial class LiteEngine : ILiteEngine
         monitorService.ReleaseTransaction(transaction);
     }
 
-    public void DumpMemory()
+    public void DumpState(string? headerTitle = null)
     {
         var monitorService = _factory.MonitorService;
+        var allocationMapService = _factory.AllocationMapService;
         var bufferFactory = _factory.BufferFactory;
         var cacheService = _factory.CacheService;
+        var lockService = _factory.LockService;
+        var logService = _factory.LogService;
 
-        Console.WriteLine($"BufferFactory : {bufferFactory}");
-        Console.WriteLine($"CacheService  : {cacheService}");
-        Console.WriteLine($"MonitorService: {monitorService}");
 
+
+        var dump = Dump.Object(new { monitorService, bufferFactory, allocationMapService, cacheService, lockService, logService });
+
+        if (headerTitle is not null)
+        {
+            Console.WriteLine("= " + headerTitle);
+        }
+
+        Console.WriteLine(dump);
 
     }
 }

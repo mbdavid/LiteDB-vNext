@@ -6,12 +6,12 @@
 [AutoInterface(typeof(IDisposable))]
 internal partial class ServicesFactory : IServicesFactory
 {
+    #region Public Properties
+
     public IEngineSettings Settings { get; }
     public EngineState State { get; set; } = EngineState.Close;
     public FileHeader FileHeader { get; set; }
     public Exception? Exception { get; set; }
-
-    public ConcurrentDictionary<string, object> Application { get; } = new();
 
     public IBsonReader BsonReader { get; }
     public IBsonWriter BsonWriter { get; }
@@ -39,6 +39,8 @@ internal partial class ServicesFactory : IServicesFactory
     public IAutoIdService AutoIdService { get; }
     public IDataPageService DataPageService { get; }
     public IIndexPageService IndexPageService { get; }
+
+    #endregion
 
     public ServicesFactory(IEngineSettings settings)
     {
@@ -145,6 +147,8 @@ internal partial class ServicesFactory : IServicesFactory
         order,
         stream);
 
+    #endregion
+
     public void Dispose()
     {
         // dispose all instances services to keep all clean (disk/memory)
@@ -173,6 +177,4 @@ internal partial class ServicesFactory : IServicesFactory
 
 
     }
-
-    #endregion
 }

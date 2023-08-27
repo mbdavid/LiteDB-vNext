@@ -76,7 +76,8 @@ internal partial class LogService : ILogService
         {
             var page = pages[i];
 
-            ENSURE(page.InCache == false, new { page });
+            ENSURE(page.InCache == false, page);
+            ENSURE(page.PositionID == int.MaxValue, page);
 
             // get next page position on log (update header PositionID too)
             page.PositionID = this.GetNextLogPositionID();
@@ -212,7 +213,7 @@ internal partial class LogService : ILogService
                 // add this page to cache (or try it)
                 var added = _cacheService.AddPageInCache(page);
 
-                // if cache is full, deallocate page (page was
+                // if cache is full, deallocate page
                 if (!added)
                 {
                     _bufferFactory.DeallocatePage(page);
@@ -265,11 +266,16 @@ internal partial class LogService : ILogService
         }
 
         // otherwise, allocate new buffer page and read from disk
-        page = _bufferFactory.AllocateNewPage(true);
+        page = _bufferFactory.AllocateNewPage();
 
         await stream.ReadPageAsync(positionID, page);
 
         return page;
+    }
+
+    public override string ToString()
+    {
+        return Dump.Object(new { _confirmedTransactions, _logPages });
     }
 
     public void Dispose()

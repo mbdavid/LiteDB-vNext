@@ -1,15 +1,17 @@
 ﻿global using LiteDB;
 global using LiteDB.Engine;
+
 using System.Diagnostics;
+
 using Bogus;
 using Bogus.DataSets;
 
 // SETUP
 const string VER = "v6";
 
-var INSERT_1 = new Range(1, 100_000);
+var INSERT_1 = new Range(1, 300_000);
 var DELETE_1 = new Range(5, 60_000);
-var INSERT_2 = new Range(500, 30_000);
+var INSERT_2 = new Range(6, 30_000);
 ////////////////////////
 
 Bogus.Randomizer.Seed = new Random(420);
@@ -48,11 +50,12 @@ await Run($"Insert {data1.Length}", async () =>
 //    await db.CheckpointAsync();
 });
 
+
 await Run($"EnsureIndex (age)", async () =>
 {
     await db.EnsureIndexAsync("col1", "idx_age", "age", false);
 
-//    await db.CheckpointAsync();
+    //    await db.CheckpointAsync();
 });
 
 await Run($"Delete ({DELETE_1})", async () =>
@@ -71,7 +74,6 @@ await Run($"Insert {data2.Length}", async () =>
 await Run("Shutdown", async () =>
 {
     await db.ShutdownAsync();
-    db.Dispose();
 });
 
 Console.WriteLine($"-------------");
@@ -82,8 +84,6 @@ Console.WriteLine($"Total memory used: {usedMemory / 1024L / 1024L:n0} MB ({used
 Console.WriteLine($"Total time: {sw.ElapsedMilliseconds:n0}ms");
 Console.WriteLine($"-------------");
 
-
-db.DumpMemory();
 
 #if DEBUG
 Console.WriteLine($"# DEBUG - {VER}");
@@ -102,7 +102,7 @@ BsonDocument[] GetData(Range range, int lorem = 5)
         var faker = new Faker();
         var result = new List<BsonDocument>();
 
-        for (var i = range.Start.Value ; i <= range.End.Value; i++)
+        for (var i = range.Start.Value; i <= range.End.Value; i++)
         {
             result.Add(new BsonDocument
             {
@@ -126,6 +126,10 @@ async Task Run(string message, Func<Task> asyncFunc)
     await asyncFunc();
 
     Console.WriteLine($": {sw.Elapsed.TotalMilliseconds:n0}ms");
+
+    Console.ForegroundColor = ConsoleColor.Green;
+    //db.DumpState();
+    Console.ForegroundColor = ConsoleColor.Gray;
 }
 
 async Task<T> RunAsync<T>(string message, Func<Task<T>> asyncFunc)

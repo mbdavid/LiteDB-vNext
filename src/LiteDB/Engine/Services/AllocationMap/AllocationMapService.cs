@@ -50,16 +50,11 @@ internal class AllocationMapService : IAllocationMapService
 
         while (positionID <= lastPositionID)
         {
-            var page = _bufferFactory.AllocateNewPage(false);
+            var page = _bufferFactory.AllocateNewPage();
 
             await writer.ReadPageAsync(positionID, page);
 
-            //TODO: verificar se ta certo
-            if (page.IsHeaderEmpty())
-            {
-                _bufferFactory.DeallocatePage(page);
-                break;
-            }
+            ENSURE(!page.IsHeaderEmpty(), page);
 
             yield return page;
 
@@ -90,13 +85,16 @@ internal class AllocationMapService : IAllocationMapService
             var extend = new ExtendLocation(current.AllocationMapID + 1, 0);
 
             // if there is no more free extend in any AM page, let's create a new allocation map page
-            var mapPageBuffer = _bufferFactory.AllocateNewPage(true);
+            var mapPageBuffer = _bufferFactory.AllocateNewPage();
 
             // get a new PageID based on last AM page
             var nextPageID = _pages.Last().Page.Header.PageID + AM_PAGE_STEP;
 
             // create new AM page and add to list
             var newPage = new AllocationMapPage(nextPageID, mapPageBuffer);
+
+            // get allocation map position
+            mapPageBuffer.PositionID = nextPageID * AM_MAP_PAGES_COUNT;
 
             _pages.Add(newPage);
 
@@ -167,13 +165,21 @@ internal class AllocationMapService : IAllocationMapService
         }
     }
 
+    public override string ToString()
+    {
+        return Dump.Object(new { _pages });
+    }
+
     public void Dispose()
     {
-        // deallocate all amp
+
+#if DEBUG
+        // in DEBUG, let's deallocate all amp
         foreach(var page in _pages)
         {
             _bufferFactory.DeallocatePage(page.Page);
         }
+#endif
 
         // clear list to be ready to use
         _pages.Clear();

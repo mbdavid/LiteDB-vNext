@@ -7,19 +7,6 @@
 internal static class CodeContract
 {
     /// <summary>
-    /// Ensure condition is true, otherwise throw exception (check contract)
-    /// Works as ENSURE, but for non-expression/func tests (doesn't works with Span)
-    /// </summary>
-    [Conditional("DEBUG")]
-    public static void DEBUG(bool condition, string message)
-    {
-        if (condition == false)
-        {
-            ShowError(message, null);
-        }
-    }
-
-    /// <summary>
     /// If first test is true, ensure second condition to be true, otherwise throw exception (check contract)
     /// </summary>
     [Conditional("DEBUG")]

@@ -72,7 +72,7 @@ internal class MonitorService : IMonitorService
 
     public override string ToString()
     {
-        return $"Transactions: {_transactions.Count} -> ";
+        return Dump.Object(new { _transactions });
     }
 
     /// <summary>

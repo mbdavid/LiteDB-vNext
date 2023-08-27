@@ -11,6 +11,8 @@ internal class DataPageService : PageService, IDataPageService
         page.Header.PageID = pageID;
         page.Header.PageType = PageType.Data;
         page.Header.ColID = colID;
+
+        page.IsDirty = true;
     }
 
     /// <summary>
