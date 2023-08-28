@@ -34,6 +34,6 @@ internal struct ExtendLocation
 
     public override string ToString()
     {
-        return Dump.Object(new { AllocationMapID, ExtendIndex, ExtendID });
+        return Dump.Object(this);
     }
 }

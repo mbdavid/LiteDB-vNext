@@ -21,6 +21,6 @@ public struct OrderBy
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : Dump.Object(new { Expression, Order });
+        return Dump.Object(this);
     }
 }

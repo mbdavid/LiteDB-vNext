@@ -167,7 +167,7 @@ internal class AllocationMapService : IAllocationMapService
 
     public override string ToString()
     {
-        return Dump.Object(new { _pages });
+        return Dump.Object(this);
     }
 
     public void Dispose()

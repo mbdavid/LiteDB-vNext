@@ -15,6 +15,6 @@ internal readonly struct SortItemDocument
 
     public override string ToString()
     {
-        return Dump.Object(new { DataBlockID, Key, Document });
+        return Dump.Object(this);
     }
 }

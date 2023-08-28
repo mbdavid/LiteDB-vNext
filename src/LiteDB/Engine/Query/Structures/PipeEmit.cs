@@ -18,6 +18,6 @@ internal readonly struct PipeEmit
 
     public override string ToString()
     {
-        return Dump.Object(new { IndexNodeID, DataBlockID, Document });
+        return Dump.Object(this);
     }
 }

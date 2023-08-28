@@ -18,6 +18,6 @@ internal struct Sequence
 
     public override string ToString()
     {
-        return Dump.Object(new { LastInt, LastLong });
+        return Dump.Object(this);
     }
 }

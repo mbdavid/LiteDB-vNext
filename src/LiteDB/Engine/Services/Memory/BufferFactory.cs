@@ -89,7 +89,7 @@ internal class BufferFactory : IBufferFactory
 
     public override string ToString()
     {
-        return Dump.Object(new { _inUsePages, _freePages, _pagesAllocated });
+        return Dump.Object(this);
     }
 
     public void Dispose()

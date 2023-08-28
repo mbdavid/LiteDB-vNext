@@ -62,7 +62,7 @@ internal readonly struct PageSegment
 
     public override string ToString()
     {
-        return IsEmpty ? "<EMPTY>" : Dump.Object(new { Location, Length, EndLocation });
+        return Dump.Object(this);
     }
 
     /// <summary>

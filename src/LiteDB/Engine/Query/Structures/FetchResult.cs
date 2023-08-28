@@ -19,6 +19,6 @@ public struct FetchResult
 
     public override string ToString()
     {
-        return Dump.Object(new { From, To, FetchCount, HasMore, Results });
+        return Dump.Object(this);
     }
 }

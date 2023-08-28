@@ -79,6 +79,6 @@ internal struct DataBlock
 
     public override string ToString()
     {
-        return Dump.Object(new { DataBlockID, Extend, NextBlockID });
+        return Dump.Object(this);
     }
 }

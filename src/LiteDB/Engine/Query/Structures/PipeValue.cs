@@ -33,6 +33,6 @@ internal struct PipeValue
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : Dump.Object(new { IndexNodeID, DataBlockID, Document });
+        return Dump.Object(this);
     }
 }

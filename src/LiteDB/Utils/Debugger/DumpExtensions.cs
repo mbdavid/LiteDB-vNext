@@ -10,6 +10,9 @@ internal static class Dump
         var type = obj.GetType();
         var sb = new StringBuilder();
 
+        var isEmpty = type.GetProperties().FirstOrDefault(x => x.Name == "IsEmpty");
+        if (isEmpty is not null && (bool)isEmpty.GetValue(obj) == true) return "<EMPTY>";
+
         foreach (var member in type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.GetProperty))
         {
             if (member is FieldInfo f)
@@ -27,6 +30,8 @@ internal static class Dump
             else if (member is PropertyInfo p)
             {
                 var value = GetStringValue(p.GetValue(obj));
+
+                if (p.Name == "IsEmpty") continue;
 
                 if (value.Length > 0)
                 {
@@ -84,6 +89,9 @@ internal static class Dump
             {
                 var toString = Reflection.IsOverride(type.GetMethods().FirstOrDefault(x => x.Name == "ToString" && x.GetParameters().Length == 0));
                 var isLiteDB = type.Namespace.StartsWith("LiteDB");
+                var isEmpty = type.GetProperties().FirstOrDefault(x => x.Name == "IsEmpty");
+
+                if (isLiteDB && isEmpty is not null && (bool)isEmpty.GetValue(value) == true) return "<EMPTY>";
 
                 if (toString && isLiteDB)
                 {
