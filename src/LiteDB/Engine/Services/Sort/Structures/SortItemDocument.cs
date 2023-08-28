@@ -15,6 +15,6 @@ internal readonly struct SortItemDocument
 
     public override string ToString()
     {
-        return $"{{ DataBlockID = {DataBlockID}, Key = {Key}, Document = {Document} }}";
+        return Dump.Object(new { DataBlockID, Key, Document });
     }
 }

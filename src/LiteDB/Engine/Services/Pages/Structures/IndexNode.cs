@@ -284,6 +284,6 @@ internal struct IndexNode
 
     public override string ToString()
     {
-        return $"{{ IndexNodeID = {IndexNodeID}, Slot = {Slot}, Levels = {Levels}, Key = {Key}, DataBlockID = {DataBlockID}, NextNodeID = {NextNodeID} }}";
+        return Dump.Object(new { IndexNodeID, Slot, Levels, Key , DataBlockID , NextNodeID });
     }
 }

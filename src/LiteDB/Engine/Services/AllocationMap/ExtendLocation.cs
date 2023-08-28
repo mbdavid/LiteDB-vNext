@@ -34,6 +34,6 @@ internal struct ExtendLocation
 
     public override string ToString()
     {
-        return $"{{ AMP = {AllocationMapID}, ExtIndex = {ExtendIndex}, ExtID = {ExtendID} }}";
+        return Dump.Object(new { AllocationMapID, ExtendIndex, ExtendID });
     }
 }

@@ -18,6 +18,6 @@ internal struct Sequence
 
     public override string ToString()
     {
-        return $"{{ LastInt = {LastInt}, LastLong = {LastLong} }}";
+        return Dump.Object(new { LastInt, LastLong });
     }
 }

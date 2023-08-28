@@ -19,6 +19,6 @@ internal struct LogPosition : IEqualityComparer<LogPosition>
 
     public override string ToString()
     {
-        return $"{{ PhysicalID = {Dump.PageID(PhysicalID)}, PositionID = {Dump.PageID(PositionID)}, PageID = {Dump.PageID(PageID)}, IsConfirmed = {IsConfirmed} }}";
+        return Dump.Object(new { PhysicalID = Dump.PageID(PhysicalID), PositionID = Dump.PageID(PositionID), PageID = Dump.PageID(PageID), IsConfirmed });
     }
 }

@@ -53,6 +53,6 @@ internal struct PageAddress : IEquatable<PageAddress>
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : $"{PageID:0000}:{Index:00}";
+        return IsEmpty ? "<EMPTY>" : $"{PageID:0000}:{Index:00}";
     }
 }

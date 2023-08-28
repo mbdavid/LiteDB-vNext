@@ -8,60 +8,91 @@ internal static class Dump
     public static string Object(object obj)
     {
         var type = obj.GetType();
-
-        //if (!ns.StartsWith("LiteDB")) return obj.ToString() ?? "";
-
         var sb = new StringBuilder();
-
-        void Append(string name, object? value)
-        {
-            if (value is null)
-            {
-                sb.Append($"{name}: null");
-            }
-            else 
-            {
-                var type = value.GetType();
-
-                if (Reflection.IsCollection(type) || Reflection.IsDictionary(type))
-                {
-                    if (sb.Length > 0) sb.Append(", ");
-                    var count = type.GetProperties().FirstOrDefault(x => x.Name == "Count").GetValue(value, null);
-                    sb.Append($"{name}: [{count}]");
-                }
-                else if (Reflection.IsSimpleType(type))
-                {
-                    if (sb.Length > 0) sb.Append(", ");
-                    sb.Append($"{name}: {value}");
-                }
-                else
-                {
-                    var toString = Reflection.IsOverride(type.GetMethods().FirstOrDefault(x => x.Name == "ToString" && x.GetParameters().Length == 0));
-                    var isLiteDB = type.Namespace.StartsWith("LiteDB");
-
-                    if (toString && isLiteDB)
-                    {
-                        if (sb.Length > 0) sb.Append(", ");
-                        sb.Append($"{name}: {value}");
-                    }
-                }
-            }
-        }
 
         foreach (var member in type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.GetProperty))
         {
             if (member is FieldInfo f)
             {
                 if (f.Name.EndsWith("__BackingField") || f.Name.EndsWith("__Field")) continue;
-                Append(f.Name, f.GetValue(obj));
+
+                var value = GetStringValue(f.GetValue(obj));
+
+                if (value.Length > 0)
+                {
+                    if (sb.Length > 0) sb.Append(", ");
+                    sb.Append($"{f.Name}: {value}");
+                }
             }
             else if (member is PropertyInfo p)
             {
-                Append(p.Name, p.GetValue(obj));
+                var value = GetStringValue(p.GetValue(obj));
+
+                if (value.Length > 0)
+                {
+                    if (sb.Length > 0) sb.Append(", ");
+                    sb.Append($"{p.Name}: {value}");
+                }
+
             }
         }
 
         return sb.Length > 0 ? $"{{ {sb} }}" : "";
+    }
+
+    /// <summary>
+    /// Implement a simple array deserialization do better reader in debug mode
+    /// </summary>
+    public static string Array(IEnumerable enumerable)
+    {
+        var sb = new StringBuilder();
+
+        foreach(var item in enumerable)
+        {
+            var value = GetStringValue(item);
+
+            if (value.Length > 0)
+            {
+                if (sb.Length >= 0) sb.Append(", ");
+                sb.Append(value);
+            }
+        }
+
+        return sb.Length > 0 ? $"[ {sb} ]" : "";
+    }
+
+    private static string GetStringValue(object? value)
+    {
+        if (value is null)
+        {
+            return "null";
+        }
+        else
+        {
+            var type = value.GetType();
+
+            if (Reflection.IsCollection(type) || Reflection.IsDictionary(type))
+            {
+                var count = type.GetProperties().FirstOrDefault(x => x.Name == "Count").GetValue(value, null);
+                return $"[{count}]";
+            }
+            else if (Reflection.IsSimpleType(type))
+            {
+                return value.ToString();
+            }
+            else
+            {
+                var toString = Reflection.IsOverride(type.GetMethods().FirstOrDefault(x => x.Name == "ToString" && x.GetParameters().Length == 0));
+                var isLiteDB = type.Namespace.StartsWith("LiteDB");
+
+                if (toString && isLiteDB)
+                {
+                    return value.ToString();
+                }
+            }
+        }
+
+        return "";
     }
 
     public static string PageID(int id)

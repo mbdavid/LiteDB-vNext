@@ -137,7 +137,7 @@ internal class PageBuffer
             PositionID = Dump.PageID(Header.PositionID),
             ShareCounter, IsDirty, Timestamp,
             InCache, IsDataFile, IsLogFile, IsTempFile, IsCleanInstance, 
-            Header = Dump.Object(Header) });
+            Header });
     }
 
     public string DumpPage()

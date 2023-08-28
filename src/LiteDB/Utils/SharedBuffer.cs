@@ -41,6 +41,6 @@ internal readonly struct SharedBuffer : IDisposable
 
     public override string ToString()
     {
-        return $"{{ Length = {_length} }}";
+        return Dump.Object(new { _length });
     }
 }

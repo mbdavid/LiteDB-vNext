@@ -3,7 +3,7 @@
 /// <summary>
 /// Structure to define enumerators emit after pipe (dataBlockID and/or document)
 /// </summary>
-internal struct PipeEmit
+internal readonly struct PipeEmit
 {
     public readonly bool IndexNodeID;
     public readonly bool DataBlockID;
@@ -18,6 +18,6 @@ internal struct PipeEmit
 
     public override string ToString()
     {
-        return $"{{ IndexNodeID = {IndexNodeID}, DataBlockID = {DataBlockID}, Document = {Document} }}";
+        return Dump.Object(new { IndexNodeID, DataBlockID, Document });
     }
 }

@@ -36,6 +36,6 @@ internal readonly struct IndexNodeResult
 
     public override string ToString()
     {
-        return $"{{ PageID = {Page.Header.PageID}, PositionID = {Page.PositionID}, Node = {Node} }}";
+        return IsEmpty ? "<EMPTY>" : Dump.Object(new { PageID = Dump.PageID(Page.Header.PageID), PositionID = Dump.PageID(Page.PositionID), Node });
     }
 }

@@ -79,6 +79,6 @@ internal struct DataBlock
 
     public override string ToString()
     {
-        return $"{{ DataBlockID = {DataBlockID}, Extend = {Extend}, NextBlockID = {NextBlockID} }}";
+        return Dump.Object(new { DataBlockID, Extend, NextBlockID });
     }
 }

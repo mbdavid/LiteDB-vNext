@@ -19,6 +19,6 @@ public struct FetchResult
 
     public override string ToString()
     {
-        return $"{{ From = {From}, To = {To}, FetchCount = {FetchCount}, HasMore = {HasMore}, Results = [{Results.Count}] }}";
+        return Dump.Object(new { From, To, FetchCount, HasMore, Results });
     }
 }

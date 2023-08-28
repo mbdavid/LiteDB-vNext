@@ -9,6 +9,6 @@ internal struct CheckpointAction
 
     public override string ToString()
     {
-        return $"{{ Action = {Action}, PositionID = {Dump.PageID(PositionID)}, TargetPositionID = {Dump.PageID(TargetPositionID)}, MustClear = {MustClear} }}";
+        return Dump.Object(new { Action, PositionID = Dump.PageID(PositionID), TargetPositionID = Dump.PageID(TargetPositionID), MustClear });
     }
 }

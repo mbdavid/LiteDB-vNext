@@ -28,6 +28,6 @@ internal readonly struct SortItem
 
     public override string ToString()
     {
-        return this.IsEmpty ? "<EMPTY>" : Dump.Object(new { DataBlockID, Key });
+        return IsEmpty ? "<EMPTY>" : Dump.Object(new { DataBlockID, Key });
     }
 }
