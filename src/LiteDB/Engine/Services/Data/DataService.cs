@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Metrics;
 
 namespace LiteDB.Engine;
 
@@ -152,6 +153,8 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress dataBlockID, string[] fields)
     {
+        using var _h = HIT("ReadDocument");
+
         var page = await _transaction.GetPageAsync(dataBlockID.PageID);
 
         // get data block segment

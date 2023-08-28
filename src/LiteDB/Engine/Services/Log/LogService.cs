@@ -4,7 +4,7 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal partial class LogService : ILogService
+internal class LogService : ILogService
 {
     // dependency injection
     private readonly IDiskService _diskService;

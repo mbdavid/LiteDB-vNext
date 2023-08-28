@@ -7,10 +7,6 @@
 [AutoInterface]
 internal class IndexService : IIndexService
 {
-    //TODO: dummy test for cache!!
-    private static ConcurrentDictionary<PageAddress, IndexNode> _globalCache = new ();  // PageAddress based on Position (after log)
-
-
     // dependency injection
     private readonly IIndexPageService _indexPageService;
     private readonly ITransaction _transaction;
@@ -64,6 +60,8 @@ internal class IndexService : IIndexService
     /// </summary>
     public async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult last)
     {
+        using var _h = HIT("AddNode");
+
         // do not accept Min/Max value as index key (only head/tail can have this value)
         if (key.IsMaxValue || key.IsMinValue) throw ERR($"BsonValue MaxValue/MinValue are not supported as index key");
 
@@ -186,6 +184,8 @@ internal class IndexService : IIndexService
     /// </summary>
     public async ValueTask<IndexNodeResult> GetNodeAsync(PageAddress indexNodeID)
     {
+        using var _h = HIT("GetNode");
+
         var page = await _transaction.GetPageAsync(indexNodeID.PageID);
 
         ENSURE(page.Header.PageType == PageType.Index, new { indexNodeID, page });

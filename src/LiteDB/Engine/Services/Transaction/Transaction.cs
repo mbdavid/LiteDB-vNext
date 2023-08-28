@@ -37,8 +37,9 @@ internal class Transaction : ITransaction
     // all writable collections ID (must be lock on init)
     private readonly byte[] _writeCollections;
 
-    // for each writeCollection, a cursor for current extend disk position
-    private readonly ExtendLocation[] _currentExtendLocations;
+    // for each writeCollection, a cursor for current extend disk position (for data/index per collection)
+    private readonly ExtendLocation[] _currentIndexExtend;
+    private readonly ExtendLocation[] _currentDataExtend;
 
     /// <summary>
     /// Read wal version
@@ -81,7 +82,8 @@ internal class Transaction : ITransaction
         this.ReadVersion = readVersion; // -1 means not initialized
 
         _writeCollections = writeCollections;
-        _currentExtendLocations = new ExtendLocation[writeCollections.Length];
+        _currentIndexExtend = new ExtendLocation[writeCollections.Length];
+        _currentDataExtend = new ExtendLocation[writeCollections.Length];
     }
 
     /// <summary>
@@ -203,13 +205,13 @@ internal class Transaction : ITransaction
     public async ValueTask<PageBuffer> GetFreeDataPageAsync(byte colID)
     {
         var colIndex = Array.IndexOf(_writeCollections, colID);
-        var currentExtend = _currentExtendLocations[colIndex];
+        var currentExtend = _currentDataExtend[colIndex];
 
         // request for allocation map service a new PageID for this collection
         var (pageID, isNew, nextExtend) = _allocationMapService.GetFreeExtend(currentExtend, colID, PageType.Data);
 
         // update current collection extend location
-        _currentExtendLocations[colIndex] = nextExtend;
+        _currentDataExtend[colIndex] = nextExtend;
 
         if (isNew)
         {
@@ -238,13 +240,13 @@ internal class Transaction : ITransaction
     public async ValueTask<PageBuffer> GetFreeIndexPageAsync(byte colID, int indexNodeLength)
     {
         var colIndex = Array.IndexOf(_writeCollections, colID);
-        var currentExtend = _currentExtendLocations[colIndex];
+        var currentExtend = _currentIndexExtend[colIndex];
 
         // request for allocation map service a new PageID for this collection
         var (pageID, isNew, nextExtend) = _allocationMapService.GetFreeExtend(currentExtend, colID, PageType.Index);
 
         // update current collection extend location
-        _currentExtendLocations[colIndex] = nextExtend;
+        _currentIndexExtend[colIndex] = nextExtend;
 
         if (isNew)
         {
@@ -459,7 +461,7 @@ internal class Transaction : ITransaction
 
     public override string ToString()
     {
-        return Dump.Object(new { TransactionID, ReadVersion, _localPages, _localIndexNodes, _writeCollections, _initialExtendValues, _currentExtendLocations, _lockCounter });
+        return Dump.Object(new { TransactionID, ReadVersion, _localPages, _localIndexNodes, _writeCollections, _initialExtendValues, _currentIndexExtend, _currentDataExtend, _lockCounter });
     }
 
     public void Dispose()

@@ -112,6 +112,8 @@ internal class DiskStream : IDiskStream
     {
         ENSURE(positionID != int.MaxValue, "PositionID should not be empty");
 
+        using var _h = HIT("ReadPage");
+
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
@@ -134,6 +136,8 @@ internal class DiskStream : IDiskStream
 
         // update crc8 page
         page.Header.Crc8 = page.ComputeCrc8();
+
+        using var _w = HIT("WritePage");
 
         // before save on disk, update header page to buffer (first 32 bytes)
         page.Header.WriteToPage(page);
