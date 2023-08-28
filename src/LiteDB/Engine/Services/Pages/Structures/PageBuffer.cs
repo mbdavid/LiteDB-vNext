@@ -132,12 +132,11 @@ internal class PageBuffer
 
     public override string ToString()
     {
-        return Dump.Object(new { 
-            PageID = Dump.PageID(Header.PageID), 
-            PositionID = Dump.PageID(Header.PositionID),
-            ShareCounter, IsDirty, Timestamp,
-            InCache, IsDataFile, IsLogFile, IsTempFile, IsCleanInstance, 
-            Header });
+        return Dump.Object(new {
+            PositionID = Dump.PageID(PositionID),
+            ShareCounter, IsDirty,
+            Header,
+            Timestamp, InCache, IsDataFile, IsLogFile, IsTempFile, IsCleanInstance});
     }
 
     public string DumpPage()

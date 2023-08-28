@@ -45,10 +45,9 @@ public partial class LiteEngine : ILiteEngine
         var cacheService = _factory.CacheService;
         var lockService = _factory.LockService;
         var logService = _factory.LogService;
+        var diskService = _factory.DiskService;
 
-
-
-        var dump = Dump.Object(new { monitorService, bufferFactory, allocationMapService, cacheService, lockService, logService });
+        var dump = Dump.Object(new { monitorService, bufferFactory, allocationMapService, cacheService, lockService, logService, diskService });
 
         if (headerTitle is not null)
         {

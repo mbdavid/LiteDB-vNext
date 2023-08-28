@@ -27,7 +27,7 @@ internal class DiskStream : IDiskStream
     {
         // get a new FileStream connected to file
         _stream = _streamFactory.GetStream(canWrite,
-            canWrite ? FileOptions.SequentialScan : FileOptions.RandomAccess);
+            FileOptions.RandomAccess);
 
         // reading file header
         var buffer = new byte[FILE_HEADER_SIZE];

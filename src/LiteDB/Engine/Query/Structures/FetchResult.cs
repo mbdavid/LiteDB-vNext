@@ -17,8 +17,5 @@ public struct FetchResult
         this.Results = results;
     }
 
-    public override string ToString()
-    {
-        return Dump.Object(this);
-    }
+    public override string ToString() => Dump.Object(this);
 }

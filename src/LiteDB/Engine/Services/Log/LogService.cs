@@ -77,7 +77,6 @@ internal partial class LogService : ILogService
             var page = pages[i];
 
             ENSURE(page.InCache == false, page);
-            ENSURE(page.PositionID == int.MaxValue, page);
 
             // get next page position on log (update header PositionID too)
             page.PositionID = this.GetNextLogPositionID();
@@ -134,7 +133,7 @@ internal partial class LogService : ILogService
 
         if (logLength == 0 && !crop) return new ValueTask<int>(0);
 
-        ENSURE(logLength > 0, _logPositionID == _logPages.Last().PositionID, $"Last log page must be {_logPositionID}", new { logLength, _logPositionID });
+        ENSURE(logLength > 0, _logPositionID == _logPages.LastOrDefault().PositionID, $"Last log page must be {_logPositionID}", new { logLength, _logPositionID });
 
         // temp file start after lastPageID or last log used page
         var startTempPositionID = Math.Max(_lastPageID, _logPositionID) + 1;
@@ -275,7 +274,7 @@ internal partial class LogService : ILogService
 
     public override string ToString()
     {
-        return Dump.Object(new { _confirmedTransactions, _logPages });
+        return Dump.Object(new { _lastPageID, _logPositionID, _confirmedTransactions, _logPages });
     }
 
     public void Dispose()

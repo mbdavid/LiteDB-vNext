@@ -60,10 +60,7 @@ internal readonly struct PageSegment
         return segment;
     }
 
-    public override string ToString()
-    {
-        return Dump.Object(this);
-    }
+    public override string ToString() => Dump.Object(this);
 
     /// <summary>
     /// Get segment address at footer page. Returns only footer address reference (not real page segment)

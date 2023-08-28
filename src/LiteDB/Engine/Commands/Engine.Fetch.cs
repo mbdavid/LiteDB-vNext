@@ -17,9 +17,6 @@ public partial class LiteEngine : ILiteEngine
         // create a new transaction but use an "old" readVersion
         var transaction = await monitorService.CreateTransactionAsync(cursor.ReadVersion);
 
-        // read lock transaction
-        await transaction.InitializeAsync();
-
         // initialize data/index services for this transaction
         var dataService = _factory.CreateDataService(transaction);
         var indexService = _factory.CreateIndexService(transaction);

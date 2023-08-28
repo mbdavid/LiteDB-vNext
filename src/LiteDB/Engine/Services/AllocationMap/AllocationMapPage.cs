@@ -16,8 +16,6 @@ internal class AllocationMapPage
 
     private readonly uint[] _extendValues = new uint[AM_EXTEND_COUNT];
 
-    private readonly Queue<int> _emptyExtends;
-
     public int AllocationMapID => _allocationMapID;
 
     public PageBuffer Page => _page;
@@ -37,9 +35,6 @@ internal class AllocationMapPage
         // get allocationMapID
         _allocationMapID = GetAllocationMapID(pageID);
 
-        // fill all queue as empty extends (use ExtendIndex)
-        _emptyExtends = new Queue<int>(Enumerable.Range(0, AM_EXTEND_COUNT - 1));
-
         page.IsDirty = true;
     }
 
@@ -54,20 +49,12 @@ internal class AllocationMapPage
         // get allocationMapID
         _allocationMapID = GetAllocationMapID(page.Header.PageID);
 
-        // create an empty list of extends
-        _emptyExtends = new Queue<int>(AM_EXTEND_COUNT);
-
         var span = _page.AsSpan(PAGE_HEADER_SIZE);
 
         // read all page
         for(var i = 0; i < AM_EXTEND_COUNT; i++)
         {
             var value = span[(i * AM_BYTES_PER_EXTEND)..].ReadExtendValue();
-
-            if (value == 0)
-            {
-                _emptyExtends.Enqueue(i);
-            }
 
             _extendValues[i] = value;
         }
@@ -193,6 +180,11 @@ internal class AllocationMapPage
         }
 
         return true;
+    }
+
+    public override string ToString()
+    {
+        return Dump.Object(new { AllocationMapID, PositionID = Dump.PageID(_page.PositionID), PageID = Dump.PageID(_page.Header.PageID), _page.IsDirty });
     }
 
     #region Static Helpers

@@ -314,10 +314,10 @@ internal class Transaction : ITransaction
             var page = dirtyPages[i];
 
             ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", page);
-            ENSURE(page.Header.IsConfirmed == false, page);
-
+            
             // update page header
             page.Header.TransactionID = this.TransactionID;
+            page.Header.IsConfirmed = false;
         }
 
         // write pages on disk and flush data
@@ -469,6 +469,9 @@ internal class Transaction : ITransaction
         {
             _diskService.ReturnDiskReader(_reader);
         }
+
+        // Transaction = 0 means is created for first $master read. There are an ExclusiveLock befre
+        if (this.TransactionID == 0) return;
 
         while (_lockCounter > 0)
         {

@@ -282,8 +282,5 @@ internal struct IndexNode
 
     #endregion
 
-    public override string ToString()
-    {
-        return Dump.Object(new { IndexNodeID, Slot, Levels, Key, DataBlockID , NextNodeID });
-    }
+    public override string ToString() => Dump.Object(this);
 }

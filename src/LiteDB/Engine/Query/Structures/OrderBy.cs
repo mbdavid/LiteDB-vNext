@@ -19,8 +19,5 @@ public struct OrderBy
         this.Order = order;
     }
 
-    public override string ToString()
-    {
-        return Dump.Object(this);
-    }
+    public override string ToString() => Dump.Object(this);
 }

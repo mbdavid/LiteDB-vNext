@@ -58,7 +58,7 @@ internal static class Dump
 
             if (value.Length > 0)
             {
-                if (sb.Length >= 0) sb.Append(", ");
+                if (sb.Length > 0) sb.Append(", ");
                 sb.Append(value);
             }
         }

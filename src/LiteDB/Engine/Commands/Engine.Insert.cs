@@ -4,7 +4,7 @@ namespace LiteDB.Engine;
 
 public partial class LiteEngine : ILiteEngine
 {
-    public async Task<int> InsertAsync(string collectionName, BsonDocument[] documents, BsonAutoId autoId)
+    public async Task<int> InsertAsync(string collectionName, IEnumerable<BsonDocument> documents, BsonAutoId autoId)
     {
         if (_factory.State != EngineState.Open) throw new Exception("must be open");
 
@@ -42,9 +42,10 @@ public partial class LiteEngine : ILiteEngine
             await autoIdService.InitializeAsync(collection.ColID, collection.PK.TailIndexNodeID, indexService);
         }
 
-        for (var i = 0; i < documents.Length; i++)
+        //for (var i = 0; i < documents.Length; i++)
+        foreach(var doc in documents)
         {
-            var doc = documents[i];
+        //    var doc = documents[i];
 
             // get/set _id
             var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);

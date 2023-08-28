@@ -74,6 +74,11 @@ internal class DiskService : IDiskService
         _readers.Enqueue(reader);
     }
 
+    public override string ToString()
+    {
+        return Dump.Object(new { _readers });
+    }
+
     public void Dispose()
     {
         // dispose all open streams

@@ -90,15 +90,16 @@ internal class AllocationMapService : IAllocationMapService
             // get a new PageID based on last AM page
             var nextPageID = _pages.Last().Page.Header.PageID + AM_PAGE_STEP;
 
+            // get allocation map position
+            mapPageBuffer.PositionID = nextPageID;
+
             // create new AM page and add to list
             var newPage = new AllocationMapPage(nextPageID, mapPageBuffer);
 
-            // get allocation map position
-            mapPageBuffer.PositionID = nextPageID * AM_MAP_PAGES_COUNT;
-
             _pages.Add(newPage);
 
-            return (extend.FirstPageID, true, extend);
+            // call again this method with this new page
+            return this.GetFreeExtend(extend, colID, type);
         }
     }
 
@@ -167,7 +168,7 @@ internal class AllocationMapService : IAllocationMapService
 
     public override string ToString()
     {
-        return Dump.Object(this);
+        return Dump.Object(new { _pages = Dump.Array(_pages) });
     }
 
     public void Dispose()
