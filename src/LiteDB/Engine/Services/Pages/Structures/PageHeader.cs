@@ -151,6 +151,8 @@ internal struct PageHeader
 
     public void ReadFromPage(PageBuffer page)
     {
+        using var _pc = PERF_COUNTER(7, nameof(ReadFromPage), nameof(PageHeader));
+
         var span = page.AsSpan();
 
         this.PageID = span[P_PAGE_ID..].ReadInt32();

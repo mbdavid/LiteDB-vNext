@@ -151,7 +151,6 @@ internal class AllocationMapPage
 #endif
     }
 
-
     /// <summary>
     /// Get PageID from a block page based on ExtendIndex (0-2039) and PageIndex (0-11)
     /// </summary>

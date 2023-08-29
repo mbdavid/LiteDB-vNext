@@ -110,7 +110,7 @@ internal class DiskStream : IDiskStream
     /// </summary>
     public async ValueTask<bool> ReadPageAsync(int positionID, PageBuffer page, CancellationToken ct = default)
     {
-        using var _pc = PERF_COUNTER();
+        using var _pc = PERF_COUNTER(2, nameof(ReadPageAsync), nameof(DiskStream));
 
         ENSURE(positionID != int.MaxValue, "PositionID should not be empty");
 
@@ -130,7 +130,7 @@ internal class DiskStream : IDiskStream
 
     public async ValueTask WritePageAsync(PageBuffer page, CancellationToken ct = default)
     {
-        using var _pc = PERF_COUNTER();
+        using var _pc = PERF_COUNTER(3, nameof(WritePageAsync), nameof(DiskStream));
 
         ENSURE(page.IsDirty, page);
         ENSURE(page.ShareCounter == NO_CACHE, page);

@@ -79,6 +79,12 @@ internal class AllocationMapService : IAllocationMapService
 
             return (pageID, isNew, extend);
         }
+        else if (extendIndex == -1 && current.AllocationMapID < _pages.Count - 1)
+        {
+            var next = new ExtendLocation(current.AllocationMapID + 1, 0);
+
+            return this.GetFreeExtend(next, colID, type);
+        }
         else
         {
             // create new extend map page

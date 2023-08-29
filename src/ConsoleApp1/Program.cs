@@ -3,6 +3,7 @@ global using LiteDB.Engine;
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 // SETUP
 const string VER = "v6";
@@ -10,9 +11,9 @@ const string VER = "v6";
 //var INSERT_1 = new Range(1, 300_000);
 //var DELETE_1 = new Range(5, 60_000);
 //var INSERT_2 = new Range(6, 30_000);
-var INSERT_1 = new Range(1, 3_000);
-var DELETE_1 = new Range(5, 600);
-var INSERT_2 = new Range(6, 300);
+var INSERT_1 = new Range(1, 30_000);
+var DELETE_1 = new Range(5, 6_000);
+var INSERT_2 = new Range(6, 3_000);
 ////////////////////////
 
 var _random = new Random(420);
@@ -105,7 +106,9 @@ Console.WriteLine($"# DEBUG - {VER}");
 Console.WriteLine($"# RELEASE - {VER}");
 #endif
 
-Console.ReadKey();
+
+
+//Console.ReadKey();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -134,7 +137,7 @@ async Task Run(string message, Func<Task> asyncFunc)
     Console.WriteLine($"{sw.Elapsed.TotalMilliseconds:n0}ms");
 
     Console.ForegroundColor = ConsoleColor.Green;
-    db.DumpState();
+    //db.DumpState();
     Console.ForegroundColor = ConsoleColor.Gray;
 }
 

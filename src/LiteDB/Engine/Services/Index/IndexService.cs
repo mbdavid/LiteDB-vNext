@@ -60,7 +60,7 @@ internal class IndexService : IIndexService
     /// </summary>
     public async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult last)
     {
-        using var _pc = PERF_COUNTER();
+        using var _pc = PERF_COUNTER(4, nameof(AddNodeAsync), nameof(IndexService));
 
         // do not accept Min/Max value as index key (only head/tail can have this value)
         if (key.IsMaxValue || key.IsMinValue) throw ERR($"BsonValue MaxValue/MinValue are not supported as index key");
@@ -184,7 +184,7 @@ internal class IndexService : IIndexService
     /// </summary>
     public async ValueTask<IndexNodeResult> GetNodeAsync(PageAddress indexNodeID)
     {
-        using var _pc = PERF_COUNTER();
+        using var _pc = PERF_COUNTER(5, nameof(GetNodeAsync), nameof(IndexService));
 
         var page = await _transaction.GetPageAsync(indexNodeID.PageID);
 

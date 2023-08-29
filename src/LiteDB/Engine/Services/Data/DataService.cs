@@ -29,7 +29,7 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask<PageAddress> InsertDocumentAsync(byte colID, BsonDocument doc)
     {
-        using var _pc = PERF_COUNTER();
+        using var _pc = PERF_COUNTER(0, nameof(InsertDocumentAsync), nameof(DataService));
 
         var docLength = doc.GetBytesCount();
 
@@ -155,7 +155,7 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress dataBlockID, string[] fields)
     {
-        using var _pc = PERF_COUNTER();
+        using var _pc = PERF_COUNTER(1, nameof(ReadDocumentAsync), nameof(DataService));
 
         var page = await _transaction.GetPageAsync(dataBlockID.PageID);
 

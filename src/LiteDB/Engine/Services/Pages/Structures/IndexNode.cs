@@ -76,6 +76,8 @@ internal struct IndexNode
     /// </summary>
     public IndexNode(PageBuffer page, PageAddress indexNodeID)
     {
+        using var _pc = PERF_COUNTER(6, "Ctor", nameof(IndexNode));
+
         this.IndexNodeID = indexNodeID; // reference position (PageID+Index)
 
         var segment = PageSegment.GetSegment(page, indexNodeID.Index, out var _);
