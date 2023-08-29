@@ -119,6 +119,8 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetPageAsync(int pageID)
     {
+        using var _pc = PERF_COUNTER();
+
         ENSURE(pageID != int.MaxValue, "PageID must have a value");
 
         if (_localPages.TryGetValue(pageID, out var page))
@@ -141,6 +143,8 @@ internal class Transaction : ITransaction
     /// </summary>
     private async ValueTask<PageBuffer> ReadPageAsync(int pageID, int readVersion)
     {
+        using var _pc = PERF_COUNTER();
+
         _reader ??= _diskService.RentDiskReader();
 
         // test if page are in transaction wal pages
@@ -176,6 +180,8 @@ internal class Transaction : ITransaction
 
     public IndexNode GetIndexNode(PageAddress indexNodeID)
     {
+        using var _pc = PERF_COUNTER();
+
         if (_localIndexNodes.TryGetValue(indexNodeID, out var indexNode))
         {
             return indexNode;
@@ -204,6 +210,8 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetFreeDataPageAsync(byte colID)
     {
+        using var _pc = PERF_COUNTER();
+
         var colIndex = Array.IndexOf(_writeCollections, colID);
         var currentExtend = _currentDataExtend[colIndex];
 
@@ -239,6 +247,8 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask<PageBuffer> GetFreeIndexPageAsync(byte colID, int indexNodeLength)
     {
+        using var _pc = PERF_COUNTER();
+
         var colIndex = Array.IndexOf(_writeCollections, colID);
         var currentExtend = _currentIndexExtend[colIndex];
 

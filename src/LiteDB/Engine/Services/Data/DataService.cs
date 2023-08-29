@@ -29,6 +29,8 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask<PageAddress> InsertDocumentAsync(byte colID, BsonDocument doc)
     {
+        using var _pc = PERF_COUNTER();
+
         var docLength = doc.GetBytesCount();
 
         //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
@@ -153,7 +155,7 @@ internal class DataService : IDataService
     /// </summary>
     public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress dataBlockID, string[] fields)
     {
-        using var _h = HIT("ReadDocument");
+        using var _pc = PERF_COUNTER();
 
         var page = await _transaction.GetPageAsync(dataBlockID.PageID);
 

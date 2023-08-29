@@ -10,9 +10,9 @@ const string VER = "v6";
 //var INSERT_1 = new Range(1, 300_000);
 //var DELETE_1 = new Range(5, 60_000);
 //var INSERT_2 = new Range(6, 30_000);
-var INSERT_1 = new Range(1, 30_000);
-var DELETE_1 = new Range(5, 6_000);
-var INSERT_2 = new Range(6, 3_000);
+var INSERT_1 = new Range(1, 3_000);
+var DELETE_1 = new Range(5, 600);
+var INSERT_2 = new Range(6, 300);
 ////////////////////////
 
 var _random = new Random(420);
@@ -46,23 +46,30 @@ await Run($"Create Collection 'col1'", async () =>
     await db.CreateCollectionAsync("col1");
 });
 
+PerformanceCounter.Reset();
 
 await Run($"Insert {INSERT_1}", async () =>
 {
     await db.InsertAsync("col1", data1, BsonAutoId.Int32);
 });
 
+PerformanceCounter.AddResult("Insert", true);
 
 await Run($"Query full 'col1'", async () =>
 {
     await ConsumeAsync(db, db.Query("col1", new Query { }), 1_000);
 });
 
+PerformanceCounter.AddResult("Query", true);
+
 
 await Run($"EnsureIndex (age)", async () =>
 {
     await db.EnsureIndexAsync("col1", "idx_age", "age", false);
 });
+
+PerformanceCounter.AddResult("EnsureIndex", true);
+
 
 await Run($"Delete ({DELETE_1})", async () =>
 {
@@ -90,7 +97,7 @@ Console.WriteLine($"FileLength: {(fileLength / 1024L / 1024L):n0} MB ({fileLengt
 Console.WriteLine($"Total time: {sw.ElapsedMilliseconds:n0}ms");
 Console.WriteLine($"-------------");
 
-MethodCounter.PrintResults();
+PerformanceCounter.PrintResults();
 
 #if DEBUG
 Console.WriteLine($"# DEBUG - {VER}");

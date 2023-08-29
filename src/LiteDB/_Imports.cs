@@ -24,7 +24,7 @@ global using LiteDB.Engine;
 global using static LiteDB.Constants;
 global using static LiteDB.LiteException;
 global using static LiteDB.CodeContract;
-global using static LiteDB.MethodCounter;
+global using static LiteDB.PerformanceCounter;
 
 [assembly: InternalsVisibleTo("ConsoleApp1")]
 [assembly: InternalsVisibleTo("LiteDB.Tests")]
