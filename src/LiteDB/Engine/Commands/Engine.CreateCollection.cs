@@ -27,7 +27,7 @@ public partial class LiteEngine : ILiteEngine
         var indexer = _factory.CreateIndexService(transaction);
 
         // insert head/tail nodes
-        var (head, tail) = await indexer.CreateHeadTailNodesAsync(colID);
+        var (head, tail) = indexer.CreateHeadTailNodes(colID);
 
         // create new collection in $master and returns a new master document
         master.Collections.Add(collectionName, new CollectionDocument()
@@ -49,10 +49,10 @@ public partial class LiteEngine : ILiteEngine
         });
 
         // write master collection into pages
-        await masterService.WriteCollectionAsync(master, transaction);
+        masterService.WriteMasterInLog(master, transaction);
 
         // write all dirty pages into disk
-        await transaction.CommitAsync();
+        transaction.Commit();
 
         // update master document (only after commit completed)
         masterService.SetMaster(master);

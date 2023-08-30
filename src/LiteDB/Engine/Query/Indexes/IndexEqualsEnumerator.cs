@@ -25,7 +25,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
@@ -36,7 +36,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         {
             _init = true;
 
-            var (node, _) = await indexService.FindAsync(_indexDocument, _value, false, Query.Ascending);
+            var (node, _) = indexService.Find(_indexDocument, _value, false, Query.Ascending);
 
             // if node was not found, end enumerator
             if (node.IsEmpty)
@@ -63,7 +63,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         // first go forward
         if (!_prev.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_prev);
+            var (node, _) = indexService.GetNode(_prev);
 
             var isEqual = _collation.Equals(_value, node.Key);
 
@@ -82,7 +82,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
         // and than, go backward
         if (!_next.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_next);
+            var (node, _) = indexService.GetNode(_next);
 
             var isEqual = _collation.Equals(_value, node.Key);
 

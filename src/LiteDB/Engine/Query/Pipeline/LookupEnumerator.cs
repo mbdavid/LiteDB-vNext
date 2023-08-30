@@ -17,11 +17,11 @@ internal class LookupEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, true);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
-        var item = await _enumerator.MoveNextAsync(context);
+        var item = _enumerator.MoveNext(context);
 
         if (item.IsEmpty)
         {
@@ -29,7 +29,7 @@ internal class LookupEnumerator : IPipeEnumerator
             return PipeValue.Empty;
         }
 
-        var doc = await _lookup.LoadAsync(item, context);
+        var doc = _lookup.Load(item, context);
 
         return new PipeValue(item.IndexNodeID, item.DataBlockID, doc);
     }

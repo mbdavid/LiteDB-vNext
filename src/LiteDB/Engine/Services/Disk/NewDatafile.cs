@@ -27,13 +27,13 @@ internal class NewDatafile : INewDatafile
     /// Create a empty database using user-settings as default values
     /// Create FileHeader, first AllocationMap page and first $master data page
     /// </summary>
-    public async ValueTask<FileHeader> CreateAsync(IDiskStream writer)
+    public FileHeader Create(IDiskStream writer)
     {
         // initialize FileHeader with user settings
         var fileHeader = new FileHeader(_settings);
 
         // create new file and write header
-        await writer.CreateAsync(fileHeader);
+        writer.Create(fileHeader);
 
         // create map page
         var mapPage = _bufferFactory.AllocateNewPage();
@@ -68,9 +68,9 @@ internal class NewDatafile : INewDatafile
         masterPage.PositionID = 1;
 
         // write both pages in disk and flush to OS
-        await writer.WritePageAsync(mapPage);
-        await writer.WritePageAsync(masterPage);
-        await writer.FlushAsync();
+        writer.WritePage(mapPage);
+        writer.WritePage(masterPage);
+        //writer.FlushAsync();
 
         // deallocate buffers
         _bufferFactory.DeallocatePage(mapPage);

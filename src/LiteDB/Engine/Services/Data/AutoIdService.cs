@@ -68,10 +68,10 @@ internal class AutoIdService : IAutoIdService
     /// <summary>
     /// Initialize sequence based on last value on _id key.
     /// </summary>
-    public async Task InitializeAsync(byte colID, PageAddress tailIndexNodeID, IIndexService indexService)
+    public void Initialize(byte colID, PageAddress tailIndexNodeID, IIndexService indexService)
     {
-        var tail = await indexService.GetNodeAsync(tailIndexNodeID);
-        var last = await indexService.GetNodeAsync(tail.Node.Prev[0]);
+        var tail = indexService.GetNode(tailIndexNodeID);
+        var last = indexService.GetNode(tail.Node.Prev[0]);
 
         if (last.Node.Key.IsInt32)
         {

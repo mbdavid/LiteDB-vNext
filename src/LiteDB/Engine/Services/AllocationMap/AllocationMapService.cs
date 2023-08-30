@@ -25,10 +25,10 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Initialize allocation map service loading all AM pages into memory and getting
     /// </summary>
-    public async ValueTask InitializeAsync()
+    public void Initialize()
     {
         // read all allocation maps pages on disk
-        await foreach (var pageBuffer in this.ReadAllocationMapPages())
+        foreach (var pageBuffer in this.ReadAllocationMapPages())
         {
             // read all page buffer into an int array
             var page = new AllocationMapPage(pageBuffer);
@@ -41,7 +41,7 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Read all allocation map pages. Allocation map pages contains initial position and fixed interval between other pages
     /// </summary>
-    private async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
+    private IEnumerable<PageBuffer> ReadAllocationMapPages()
     {
         var positionID = AM_FIRST_PAGE_ID;
 
@@ -52,7 +52,7 @@ internal class AllocationMapService : IAllocationMapService
         {
             var page = _bufferFactory.AllocateNewPage();
 
-            await writer.ReadPageAsync(positionID, page);
+            writer.ReadPage(positionID, page);
 
             ENSURE(!page.IsHeaderEmpty(), page);
 
@@ -159,7 +159,7 @@ internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Write all dirty pages direct into disk (there is no log file to amp)
     /// </summary>
-    public async ValueTask WriteAllChangesAsync()
+    public void WriteAllChanges()
     {
         var writer = _diskService.GetDiskWriter();
 
@@ -167,7 +167,7 @@ internal class AllocationMapService : IAllocationMapService
         {
             if (page.UpdatePageBuffer())
             {
-                await writer.WritePageAsync(page.Page);
+                writer.WritePage(page.Page);
             }
         }
     }

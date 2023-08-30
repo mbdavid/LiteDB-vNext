@@ -20,7 +20,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
@@ -33,7 +33,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
         {
             _init = true;
 
-            var (node, _) = await indexService.GetNodeAsync(start);
+            var (node, _) = indexService.GetNode(start);
 
             // get pointer to first element 
             _next = node.GetNextPrev(0, _order);
@@ -50,7 +50,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
         // go forward
         if (_next != end || _next.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_next);
+            var (node, _) = indexService.GetNode(_next);
 
             _next = node.GetNextPrev(0, _order);
 

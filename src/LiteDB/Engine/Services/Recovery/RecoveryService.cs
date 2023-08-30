@@ -23,27 +23,27 @@ internal class RecoveryService : IRecoveryService
         _diskService = diskService;
     }
 
-    public async ValueTask DoRecoveryAsync()
+    public void DoRecovery()
     {
         // read all data information on disk on a first-pass (log/temp pages/crc)
-        await this.ReadDatafileAsync();
+        this.ReadDatafile();
 
         // if there is log pages to copy to data
         if (_logPages.Count + _tempPages.Count > 0)
         {
             // do checkpoint operation direct on disk
-            await this.CheckpointAsync();
+            this.Checkpoint();
         }
 
         // re-create all allocation map pages based on page info on a second-pass on datafile
-        await this.RebuildAllocationMap();
+        this.RebuildAllocationMap();
 
     }
 
     /// <summary>
     /// Read all pages from database to find log pages and temp pages
     /// </summary>
-    private async ValueTask ReadDatafileAsync()
+    private void ReadDatafile()
     {
         var page = _bufferFactory.AllocateNewPage();
         var writer = _diskService.GetDiskWriter();
@@ -58,7 +58,7 @@ internal class RecoveryService : IRecoveryService
 
         while(positionID < _lastPositionID)
         {
-            var read = await writer.ReadPageAsync(positionID, page);
+            var read = writer.ReadPage(positionID, page);
 
             // skip empty pages
             if (page.IsHeaderEmpty())
@@ -117,7 +117,7 @@ internal class RecoveryService : IRecoveryService
     /// <summary>
     /// Do a in-disk checkpoint, with no cache and single page allocation
     /// </summary>
-    private async ValueTask CheckpointAsync()
+    private async ValueTask Checkpoint()
     {
         // get all checkpoint actions based on log/temp pages
         var actions = new CheckpointActions()
@@ -137,12 +137,12 @@ internal class RecoveryService : IRecoveryService
             if (action.Action == CheckpointActionEnum.ClearPage)
             {
                 // clear page position
-                await writer.WriteEmptyAsync(action.PositionID);
+                writer.WriteEmpty(action.PositionID);
                 continue;
             }
 
             // get page from file position ID (log or data)
-            await writer.ReadPageAsync(action.PositionID, page);
+            writer.ReadPage(action.PositionID, page);
 
             if (action.Action == CheckpointActionEnum.CopyToDataFile)
             {
@@ -152,7 +152,7 @@ internal class RecoveryService : IRecoveryService
                 page.Header.IsConfirmed = false;
                 page.IsDirty = true;
 
-                await writer.WritePageAsync(page);
+                writer.WritePage(page);
 
                 // increment checkpoint counter page
                 counter++;
@@ -164,13 +164,13 @@ internal class RecoveryService : IRecoveryService
                 page.Header.IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
                 page.IsDirty = true;
 
-                await writer.WritePageAsync(page);
+                writer.WritePage(page);
             }
 
             // after copy page, checks if page need to be clean on disk
             if (action.MustClear)
             {
-                await writer.WriteEmptyAsync(action.PositionID);
+                writer.WriteEmpty(action.PositionID);
             }
         }
 
@@ -211,7 +211,7 @@ internal class RecoveryService : IRecoveryService
 
                 for(var pageIndex = 0; pageIndex < AM_EXTEND_SIZE && !eof; pageIndex++)
                 {
-                    var read = await stream.ReadPageAsync(positionID, readPage);
+                    var read = stream.ReadPage(positionID, readPage);
 
                     if (!read)
                     {
@@ -247,7 +247,7 @@ internal class RecoveryService : IRecoveryService
             }
 
             // write allocation map on disk
-            await stream.WritePageAsync(amPage);
+            stream.WritePage(amPage);
 
             // increment allocation pageID
             amPageID++;

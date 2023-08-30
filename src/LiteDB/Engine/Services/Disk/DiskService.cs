@@ -29,7 +29,7 @@ internal class DiskService : IDiskService
     /// <summary>
     /// Open (or create) datafile.
     /// </summary>
-    public async ValueTask<FileHeader> InitializeAsync()
+    public FileHeader Initialize()
     {
         // if file not exists, create empty database
         if (_streamFactory.Exists() == false)
@@ -38,12 +38,12 @@ internal class DiskService : IDiskService
             var newFile = _factory.CreateNewDatafile();
 
             // create first AM page and $master 
-            return await newFile.CreateAsync(_writer);
+            return newFile.Create(_writer);
         }
         else
         {
             // read header page buffer from start of disk
-            return await _writer.OpenAsync(true);
+            return _writer.Open(true);
         }
     }
 

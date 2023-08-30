@@ -25,13 +25,13 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Create head and tail nodes for a new index
     /// </summary>
-    public async ValueTask<(IndexNode head, IndexNode tail)> CreateHeadTailNodesAsync(byte colID)
+    public (IndexNode head, IndexNode tail) CreateHeadTailNodes(byte colID)
     {
         // get how many bytes needed for each head/tail (both has same size)
         var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, BsonValue.MinValue, out _);
 
         // get a index page for this collection
-        var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
+        var page = _transaction.GetFreeIndexPage(colID, bytesLength);
 
         // get initial pageExtend value
         var before = page.Header.ExtendPageValue;
@@ -58,9 +58,9 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult last)
+    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult last)
     {
-        using var _pc = PERF_COUNTER(4, nameof(AddNodeAsync), nameof(IndexService));
+        using var _pc = PERF_COUNTER(4, nameof(AddNode), nameof(IndexService));
 
         // do not accept Min/Max value as index key (only head/tail can have this value)
         if (key.IsMaxValue || key.IsMinValue) throw ERR($"BsonValue MaxValue/MinValue are not supported as index key");
@@ -69,13 +69,13 @@ internal class IndexService : IIndexService
         var levels = this.Flip();
 
         // call AddNode with key value
-        return await this.AddNodeAsync(colID, index, key, dataBlock, levels, last);
+        return this.AddNode(colID, index, key, dataBlock, levels, last);
     }
 
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeResult last)
+    private IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeResult last)
     {
         // get a free index page for head note
         var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, key, out var keyLength);
@@ -84,7 +84,7 @@ internal class IndexService : IIndexService
         if (keyLength > INDEX_MAX_KEY_LENGTH) throw ERR($"Index key must be less than {INDEX_MAX_KEY_LENGTH} bytes.");
 
         // get an index page with avaliable space to add this node
-        var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
+        var page = _transaction.GetFreeIndexPage(colID, bytesLength);
 
         // get initial pageValue
         var before = page.Header.ExtendPageValue;
@@ -102,7 +102,7 @@ internal class IndexService : IIndexService
 
         // now, let's link my index node on right place
         var left = index.HeadIndexNodeID;
-        var leftNode = await this.GetNodeAsync(left);
+        var leftNode = this.GetNode(left);
 
         // for: scan from top to bottom
         for (int i = INDEX_MAX_LEVELS - 1; i >= 0; i--)
@@ -113,7 +113,7 @@ internal class IndexService : IIndexService
             // while: scan from left to right
             while (right.IsEmpty == false)
             {
-                var rightNode = await this.GetNodeAsync(right);
+                var rightNode = this.GetNode(right);
 
                 // read next node to compare
                 var diff = rightNode.Node.Key.CompareTo(key, _collation);
@@ -148,7 +148,7 @@ internal class IndexService : IIndexService
 
                 right = node.Next[currentLevel];
 
-                var rightNode = await this.GetNodeAsync(right);
+                var rightNode = this.GetNode(right);
                 rightNode.Node.SetPrev(rightNode.Page, currentLevel, node.IndexNodeID);
             }
         }
@@ -182,11 +182,11 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Get a node/pageBuffer inside a page using PageAddress. IndexNodeID must be a valid position
     /// </summary>
-    public async ValueTask<IndexNodeResult> GetNodeAsync(PageAddress indexNodeID)
+    public IndexNodeResult GetNode(PageAddress indexNodeID)
     {
-        using var _pc = PERF_COUNTER(5, nameof(GetNodeAsync), nameof(IndexService));
+        using var _pc = PERF_COUNTER(5, nameof(GetNode), nameof(IndexService));
 
-        var page = await _transaction.GetPageAsync(indexNodeID.PageID);
+        var page = _transaction.GetPage(indexNodeID.PageID);
 
         ENSURE(page.Header.PageType == PageType.Index, new { indexNodeID, page });
 
@@ -202,10 +202,10 @@ internal class IndexService : IIndexService
     /// If index are unique, return unique value - if index are not unique, return first found (can start, middle or end)
     /// If not found but sibling = true and key are not found, returns next value index node (if order = Asc) or prev node (if order = Desc)
     /// </summary>
-    public async ValueTask<IndexNodeResult> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
+    public IndexNodeResult Find(IndexDocument index, BsonValue key, bool sibling, int order)
     {
         var left = order == Query.Ascending ? index.HeadIndexNodeID : index.TailIndexNodeID;
-        var leftNode = await this.GetNodeAsync(left);
+        var leftNode = this.GetNode(left);
 
         for (var level = INDEX_MAX_LEVELS - 1; level >= 0; level--)
         {
@@ -213,7 +213,7 @@ internal class IndexService : IIndexService
 
             while (right.IsEmpty == false)
             {
-                var rightNode = await this.GetNodeAsync(right);
+                var rightNode = this.GetNode(right);
 
                 var diff = rightNode.Node.Key.CompareTo(key, _collation);
                 
@@ -245,24 +245,24 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Deletes all indexes nodes from pkNode
     /// </summary>
-    public async ValueTask DeleteAllAsync(IndexNodeResult nodeResult)
+    public void DeleteAll(IndexNodeResult nodeResult)
     {
         // all indexes nodes from a document are connected by nextNode
         while (!nodeResult.IsEmpty)
         {
-            await this.DeleteSingleNodeAsync(nodeResult);
+            this.DeleteSingleNode(nodeResult);
 
             if (nodeResult.Node.NextNodeID.IsEmpty) break;
 
             // move to next node
-            nodeResult = await this.GetNodeAsync(nodeResult.Node.NextNodeID);
+            nodeResult = this.GetNode(nodeResult.Node.NextNodeID);
         }
     }
 
     /// <summary>
     /// Delete a single node fixing all next/prev levels pointers
     /// </summary>
-    private async ValueTask DeleteSingleNodeAsync(IndexNodeResult nodeResult)
+    private void DeleteSingleNode(IndexNodeResult nodeResult)
     {
         var (node, page) = nodeResult;
 
@@ -270,8 +270,8 @@ internal class IndexService : IIndexService
         for (int i = node.Levels - 1; i >= 0; i--)
         {
             // get previous and next nodes (between my deleted node)
-            var (prevNode, prevPage) = await this.GetNodeAsync(node.Prev[i]);
-            var (nextNode, nextPage) = await this.GetNodeAsync(node.Next[i]);
+            var (prevNode, prevPage) = this.GetNode(node.Prev[i]);
+            var (nextNode, nextPage) = this.GetNode(node.Next[i]);
 
             if (!prevNode.IsEmpty)
             {

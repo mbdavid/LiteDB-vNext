@@ -25,12 +25,12 @@ public partial class LiteEngine : ILiteEngine
         var indexService = _factory.CreateIndexService(transaction);
 
         // find indexNode based on PK index
-        var (node, _) = await indexService.FindAsync(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
+        var (node, _) = indexService.Find(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
 
         if (node.IsEmpty) return null;
 
         // read full document based on first dataBlockID
-        var result = await dataService.ReadDocumentAsync(node.DataBlockID, fields);
+        var result = dataService.ReadDocument(node.DataBlockID, fields);
 
         // rollback transaction to release pages back to cache
         transaction.Rollback();

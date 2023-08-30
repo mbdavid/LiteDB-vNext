@@ -25,7 +25,7 @@ internal class IndexInEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
@@ -46,11 +46,11 @@ internal class IndexInEnumerator : IPipeEnumerator
 
             _currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation);
 
-            return await _currentIndex.MoveNextAsync(context);
+            return _currentIndex.MoveNext(context);
         }
         else
         {
-            var pipeValue = await _currentIndex!.MoveNextAsync(context);
+            var pipeValue = _currentIndex!.MoveNext(context);
 
             if (pipeValue.IsEmpty) _init = false;
 

@@ -24,7 +24,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
@@ -37,7 +37,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
             var start = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
 
-            var nodeRef = await indexService.GetNodeAsync(start);
+            var nodeRef = indexService.GetNode(start);
 
             // get pointer to next at level 0
             _next = nodeRef.Node.GetNextPrev(0, _order);
@@ -53,7 +53,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
         {
             do
             {
-                var nodeRef = await indexService.GetNodeAsync(_next);
+                var nodeRef = indexService.GetNode(_next);
                 var node = nodeRef.Node;
 
                 _next = nodeRef.Node.GetNextPrev(0, _order);

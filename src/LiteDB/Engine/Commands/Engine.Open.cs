@@ -26,7 +26,7 @@ public partial class LiteEngine : ILiteEngine
             var stream = diskService.GetDiskWriter();
 
             // open/create data file and returns file header
-            _factory.FileHeader = await diskService.InitializeAsync();
+            _factory.FileHeader = diskService.Initialize();
 
             // checks if datafile was finish correctly
             if (_factory.FileHeader.IsDirty)
@@ -34,7 +34,7 @@ public partial class LiteEngine : ILiteEngine
                 _factory.State = EngineState.Recovery;
 
                 // do a database recovery
-                await recoveryService.DoRecoveryAsync();
+                recoveryService.DoRecovery();
 
                 stream.WriteFlag(FileHeader.P_IS_DIRTY, 0);
 
@@ -45,10 +45,10 @@ public partial class LiteEngine : ILiteEngine
             logService.Initialize();
 
             // initialize AM service
-            await allocationMapService.InitializeAsync();
+            allocationMapService.Initialize();
 
             // read $master
-            await masterService.InitializeAsync();
+            masterService.Initialize();
 
             // update header/state
             _factory.State = EngineState.Open;

@@ -33,27 +33,27 @@ public partial class LiteEngine : ILiteEngine
             // there is no PK with this values
             if (id.IsNull || id.IsMinValue || id.IsMaxValue) continue;
 
-            var result = await indexService.FindAsync(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
+            var result = indexService.Find(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
 
             if (result.IsEmpty) continue;
 
             // delete all index nodes starting from PK
-            await indexService.DeleteAllAsync(result);
+            indexService.DeleteAll(result);
 
             // delete document
-            await dataService.DeleteDocumentAsync(result.Node.DataBlockID);
+            dataService.DeleteDocument(result.Node.DataBlockID);
 
             count++;
 
             // do a safepoint after insert each document
             if (monitorService.Safepoint(transaction))
             {
-                await transaction.SafepointAsync();
+                transaction.Safepoint();
             }
         }
 
         // write all dirty pages into disk
-        await transaction.CommitAsync();
+        transaction.Commit();
 
         // release transaction
         monitorService.ReleaseTransaction(transaction);

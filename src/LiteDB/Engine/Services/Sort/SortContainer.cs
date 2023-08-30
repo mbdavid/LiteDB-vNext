@@ -117,7 +117,7 @@ internal class SortContainer : ISortContainer
     /// <summary>
     /// Move "Current" to next item on this container. Returns false if eof
     /// </summary>
-    public async ValueTask<bool> MoveNextAsync()
+    public bool MoveNext()
     {
         if (_containerRemaining == 0) return false;
 
@@ -126,7 +126,7 @@ internal class SortContainer : ISortContainer
             // set stream position to page position (increment pageIndex before)
             _stream.Position = (_containerID * (CONTAINER_SORT_SIZE_IN_PAGES * PAGE_SIZE)) + (++_pageIndex * PAGE_SIZE);
 
-            await _stream.ReadAsync(_buffer.Buffer);
+            _stream.ReadAsync(_buffer.Buffer);
 
             // set position and read remaining page items
             _position = 2; // for int16

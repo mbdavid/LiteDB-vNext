@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics.Metrics;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 [AutoInterface]
 internal class DataService : IDataService
@@ -27,9 +24,9 @@ internal class DataService : IDataService
     /// <summary>
     /// Insert BsonDocument into new data pages
     /// </summary>
-    public async ValueTask<PageAddress> InsertDocumentAsync(byte colID, BsonDocument doc)
+    public PageAddress InsertDocument(byte colID, BsonDocument doc)
     {
-        using var _pc = PERF_COUNTER(0, nameof(InsertDocumentAsync), nameof(DataService));
+        using var _pc = PERF_COUNTER(0, nameof(InsertDocument), nameof(DataService));
 
         var docLength = doc.GetBytesCount();
 
@@ -42,7 +39,7 @@ internal class DataService : IDataService
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get first page
-        var page = await _transaction.GetFreeDataPageAsync(colID);
+        var page = _transaction.GetFreeDataPage(colID);
 
         // keep last instance to update nextBlock
         PageBuffer? lastPage = null;
@@ -97,7 +94,7 @@ internal class DataService : IDataService
             lastPage = page;
             lastDataBlock = dataBlock;
 
-            page = await _transaction.GetFreeDataPageAsync(colID);
+            page = _transaction.GetFreeDataPage(colID);
 
             // mark next data block as extend
             extend = true;
@@ -109,7 +106,7 @@ internal class DataService : IDataService
     /// <summary>
     /// Update existing document in a single or multiple pages
     /// </summary>
-    public async ValueTask UpdateDocumentAsync(PageAddress dataBlockID, BsonDocument doc)
+    public void UpdateDocument(PageAddress dataBlockID, BsonDocument doc)
     {
         var docLength = doc.GetBytesCount();
 
@@ -122,7 +119,7 @@ internal class DataService : IDataService
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get current datablock (for first one)
-        var page = await _transaction.GetPageAsync(dataBlockID.PageID);
+        var page = _transaction.GetPage(dataBlockID.PageID);
 
         // get first page segment
         var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);
@@ -153,11 +150,11 @@ internal class DataService : IDataService
     /// <summary>
     /// Read a single document in a single/multiple pages
     /// </summary>
-    public async ValueTask<BsonReadResult> ReadDocumentAsync(PageAddress dataBlockID, string[] fields)
+    public BsonReadResult ReadDocument(PageAddress dataBlockID, string[] fields)
     {
-        using var _pc = PERF_COUNTER(1, nameof(ReadDocumentAsync), nameof(DataService));
+        using var _pc = PERF_COUNTER(1, nameof(ReadDocument), nameof(DataService));
 
-        var page = await _transaction.GetPageAsync(dataBlockID.PageID);
+        var page = _transaction.GetPage(dataBlockID.PageID);
 
         // get data block segment
         var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);
@@ -185,7 +182,7 @@ internal class DataService : IDataService
 
             while (dataBlock.NextBlockID.IsEmpty)
             {
-                page = await _transaction.GetPageAsync(dataBlock.NextBlockID.PageID);
+                page = _transaction.GetPage(dataBlock.NextBlockID.PageID);
 
                 segment = PageSegment.GetSegment(page, dataBlock.NextBlockID.Index, out var _);
 
@@ -207,12 +204,12 @@ internal class DataService : IDataService
     /// <summary>
     /// Delete a full document from a single or multiple pages
     /// </summary>
-    public async ValueTask DeleteDocumentAsync(PageAddress dataBlockID)
+    public void DeleteDocument(PageAddress dataBlockID)
     {
         while (true)
         {
             // get page from dataBlockID
-            var page = await _transaction.GetPageAsync(dataBlockID.PageID);
+            var page = _transaction.GetPage(dataBlockID.PageID);
 
             // get page segment
             var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);

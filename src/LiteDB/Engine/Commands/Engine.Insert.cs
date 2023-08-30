@@ -39,7 +39,7 @@ public partial class LiteEngine : ILiteEngine
         // initialize autoId if needed
         if (autoIdService.NeedInitialize(collection.ColID, autoId))
         {
-            await autoIdService.InitializeAsync(collection.ColID, collection.PK.TailIndexNodeID, indexService);
+            autoIdService.Initialize(collection.ColID, collection.PK.TailIndexNodeID, indexService);
         }
 
         //for (var i = 0; i < documents.Length; i++)
@@ -51,10 +51,10 @@ public partial class LiteEngine : ILiteEngine
             var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);
 
             // insert document and get position address
-            var dataBlockID = await dataService.InsertDocumentAsync(collection.ColID, doc);
+            var dataBlockID = dataService.InsertDocument(collection.ColID, doc);
 
             // insert _id as PK and get node to be used 
-            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, dataBlockID, IndexNodeResult.Empty);
+            var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, IndexNodeResult.Empty);
 
             if (collection.Indexes.Count > 1)
             {
@@ -67,7 +67,7 @@ public partial class LiteEngine : ILiteEngine
 
                     foreach (var key in keys)
                     {
-                        var node = await indexService.AddNodeAsync(collection.ColID, index, key, dataBlockID, last);
+                        var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, last);
 
                         last = node;
                     }
@@ -77,12 +77,12 @@ public partial class LiteEngine : ILiteEngine
             // do a safepoint after insert each document
             if (monitorService.Safepoint(transaction))
             {
-                await transaction.SafepointAsync();
+                transaction.Safepoint();
             }
         }
 
         // write all dirty pages into disk
-        await transaction.CommitAsync();
+        transaction.Commit();
 
         // release transaction
         monitorService.ReleaseTransaction(transaction);

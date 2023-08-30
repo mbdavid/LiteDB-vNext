@@ -27,7 +27,7 @@ public partial class LiteEngine : ILiteEngine
         var indexService = _factory.CreateIndexService(transaction);
 
         // create new index (head/tail)
-        var (head, tail) = await indexService.CreateHeadTailNodesAsync(collection.ColID);
+        var (head, tail) = indexService.CreateHeadTailNodes(collection.ColID);
 
         // get a free index slot
         var freeIndexSlot = (byte)Enumerable.Range(1, INDEX_MAX_LEVELS)
@@ -49,7 +49,7 @@ public partial class LiteEngine : ILiteEngine
         collection.Indexes.Add(indexName, indexDocument);
         
         // write master collection into pages inside transaction
-        await masterService.WriteCollectionAsync(master, transaction);
+        masterService.WriteMasterInLog(master, transaction);
 
         // create pipe context
         var pipeContext = new PipeContext(dataService, indexService, BsonDocument.Empty);
@@ -63,12 +63,12 @@ public partial class LiteEngine : ILiteEngine
         // read all documents based on a full PK scan
         using (var enumerator = new IndexAllEnumerator(collection.PK, LiteDB.Engine.Query.Ascending))
         {
-            var result = await enumerator.MoveNextAsync(pipeContext);
+            var result = enumerator.MoveNext(pipeContext);
 
             while(!result.IsEmpty)
             {
                 // read document fields
-                var docResult = await dataService.ReadDocumentAsync(result.DataBlockID, fields);
+                var docResult = dataService.ReadDocument(result.DataBlockID, fields);
 
                 if (docResult.Fail) throw docResult.Exception;
 
@@ -76,7 +76,7 @@ public partial class LiteEngine : ILiteEngine
                 var keys = expression.GetIndexKeys(docResult.Value.AsDocument, collation);
 
                 // get PK indexNode and Page 
-                var pkPage = await transaction.GetPageAsync(result.IndexNodeID.PageID);
+                var pkPage = transaction.GetPage(result.IndexNodeID.PageID);
                 var pkIndexNode = transaction.GetIndexNode(result.IndexNodeID);
                 var pkNextNodeID = pkIndexNode.NextNodeID;
 
@@ -86,7 +86,7 @@ public partial class LiteEngine : ILiteEngine
 
                 foreach (var key in keys)
                 {
-                    var nodeResult = await indexService.AddNodeAsync(collection.ColID, indexDocument, key, result.DataBlockID, last);
+                    var nodeResult = indexService.AddNode(collection.ColID, indexDocument, key, result.DataBlockID, last);
 
                     // keep first node to add in NextNode list (after pk)
                     if (first.IsEmpty) first = nodeResult;
@@ -104,16 +104,16 @@ public partial class LiteEngine : ILiteEngine
                 // do a safepoint after insert each document
                 if (monitorService.Safepoint(transaction))
                 {
-                    await transaction.SafepointAsync();
+                    transaction.Safepoint();
                 }
 
                 // go to next result
-                result = await enumerator.MoveNextAsync(pipeContext);
+                result = enumerator.MoveNext(pipeContext);
             }
         }
 
         // write all dirty pages into disk
-        await transaction.CommitAsync();
+        transaction.Commit();
 
         // release transaction
         monitorService.ReleaseTransaction(transaction);

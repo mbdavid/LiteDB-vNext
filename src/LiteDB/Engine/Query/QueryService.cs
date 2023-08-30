@@ -32,7 +32,7 @@ internal class QueryService : IQueryService
 
     public bool TryGetCursor(Guid cursorID, out Cursor cursor) => _openCursors.TryGetValue(cursorID, out cursor);
 
-    public async ValueTask<FetchResult> FetchAsync(Cursor cursor, int fetchSize, PipeContext context)
+    public FetchResult Fetch(Cursor cursor, int fetchSize, PipeContext context)
     {
         var count = 0;
         var eof = false;
@@ -64,7 +64,7 @@ internal class QueryService : IQueryService
 
         while (count < fetchSizeNext)
         {
-            var item = await enumerator.MoveNextAsync(context);
+            var item = enumerator.MoveNext(context);
 
             if (item.IsEmpty)
             {

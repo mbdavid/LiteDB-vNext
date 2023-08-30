@@ -13,7 +13,7 @@ public partial class LiteEngine : ILiteEngine
         await lockService.EnterExclusiveAsync();
 
         // do checkpoint and returns how many pages was overrided
-        var result = await logService.CheckpointAsync(false);
+        var result = logService.Checkpoint(false);
 
         // release exclusive
         lockService.ExitExclusive();

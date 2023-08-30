@@ -9,10 +9,10 @@ internal class IndexServiceLookup : IDocumentLookup
         _field = field;
     }
 
-    public ValueTask<BsonDocument> LoadAsync(PipeValue key, PipeContext context)
+    public BsonDocument Load(PipeValue key, PipeContext context)
     {
         var doc = new BsonDocument { [_field] = key.Document! };
 
-        return new ValueTask<BsonDocument>(doc);
+        return new BsonDocument(doc);
     }
 }

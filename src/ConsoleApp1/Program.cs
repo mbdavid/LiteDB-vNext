@@ -11,9 +11,9 @@ const string VER = "v6";
 //var INSERT_1 = new Range(1, 300_000);
 //var DELETE_1 = new Range(5, 60_000);
 //var INSERT_2 = new Range(6, 30_000);
-var INSERT_1 = new Range(1, 30_000);
-var DELETE_1 = new Range(5, 6_000);
-var INSERT_2 = new Range(6, 3_000);
+var INSERT_1 = new Range(1, 300_000);
+var DELETE_1 = new Range(5, 60_000);
+var INSERT_2 = new Range(6, 30_000);
 ////////////////////////
 
 var _random = new Random(420);

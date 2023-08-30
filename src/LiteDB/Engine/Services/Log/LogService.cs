@@ -60,7 +60,7 @@ internal class LogService : ILogService
 
     /// <summary>
     /// </summary>
-    public async ValueTask WriteLogPagesAsync(PageBuffer[] pages)
+    public void WriteLogPages(PageBuffer[] pages)
     {
         var writer = _diskService.GetDiskWriter();
 
@@ -83,14 +83,14 @@ internal class LogService : ILogService
             page.Header.PositionID = page.PositionID;
 
             // write page to writer stream
-            await writer.WritePageAsync(page);
+            writer.WritePage(page);
 
             // add page header only into log memory list
             this.AddLogPage(page.Header);
         }
 
         // flush to disk
-        await writer.FlushAsync();
+        // await writer.FlushAsync();
     }
 
     /// <summary>
@@ -127,11 +127,11 @@ internal class LogService : ILogService
         _logPages.Add(header);
     }
 
-    public ValueTask<int> CheckpointAsync(bool crop)
+    public int Checkpoint(bool crop)
     {
         var logLength = _logPages.Count;
 
-        if (logLength == 0 && !crop) return new ValueTask<int>(0);
+        if (logLength == 0 && !crop) return 0;
 
         ENSURE(logLength > 0, _logPositionID == _logPages.LastOrDefault().PositionID, $"Last log page must be {_logPositionID}", new { logLength, _logPositionID });
 
@@ -139,10 +139,10 @@ internal class LogService : ILogService
         var startTempPositionID = Math.Max(_lastPageID, _logPositionID) + 1;
         var tempPages = Array.Empty<PageHeader>();
 
-        return this.CheckpointAsync(startTempPositionID, tempPages, crop);
+        return this.Checkpoint(startTempPositionID, tempPages, crop);
     }
 
-    private async ValueTask<int> CheckpointAsync(int startTempPositionID, IList<PageHeader> tempPages, bool crop)
+    private int Checkpoint(int startTempPositionID, IList<PageHeader> tempPages, bool crop)
     {
         // get all actions that checkpoint must do with all pages
         var actions = new CheckpointActions().GetActions(
@@ -167,12 +167,12 @@ internal class LogService : ILogService
                 }
 
                 // write an empty page at position
-                await writer.WriteEmptyAsync(action.PositionID);
+                writer.WriteEmpty(action.PositionID);
             }
             else
             {
                 // get page from file position ID (log or data)
-                var page = await this.GetLogPageAsync(writer, action.PositionID);
+                var page = this.GetLogPage(writer, action.PositionID);
 
                 if (action.Action == CheckpointActionEnum.CopyToDataFile)
                 {
@@ -182,7 +182,7 @@ internal class LogService : ILogService
                     page.Header.IsConfirmed = false;
                     page.IsDirty = true;
 
-                    await writer.WritePageAsync(page);
+                    writer.WritePage(page);
 
                     // increment checkpoint counter page
                     counter++;
@@ -194,13 +194,13 @@ internal class LogService : ILogService
                     page.Header.IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
                     page.IsDirty = true;
 
-                    await writer.WritePageAsync(page);
+                    writer.WritePage(page);
                 }
 
                 // after copy page, checks if page need to be clean on disk
                 if (action.MustClear)
                 {
-                    await writer.WriteEmptyAsync(action.PositionID);
+                    writer.WriteEmpty(action.PositionID);
                 }
 
                 // if cache contains this position (old data version) must be removed from cache and deallocate
@@ -233,7 +233,7 @@ internal class LogService : ILogService
                 startTempPositionID * tempPages.Count :
                 _logPositionID;
 
-            await writer.WriteEmptyAsync(_lastPageID + 1, lastFilePositionID);
+            writer.WriteEmpty(_lastPageID + 1, lastFilePositionID);
         }
 
         // reset initial log position
@@ -256,7 +256,7 @@ internal class LogService : ILogService
     /// <summary>
     /// Get page from cache (remove if found) or create a new from page factory
     /// </summary>
-    private async ValueTask<PageBuffer> GetLogPageAsync(IDiskStream stream, int positionID)
+    private PageBuffer GetLogPage(IDiskStream stream, int positionID)
     {
         // try get page from cache
         if (_cacheService.TryRemove(positionID, out var page))
@@ -267,7 +267,7 @@ internal class LogService : ILogService
         // otherwise, allocate new buffer page and read from disk
         page = _bufferFactory.AllocateNewPage();
 
-        await stream.ReadPageAsync(positionID, page);
+        stream.ReadPage(positionID, page);
 
         return page;
     }

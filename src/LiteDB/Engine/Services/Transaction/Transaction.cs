@@ -117,9 +117,9 @@ internal class Transaction : ITransaction
     /// Get a existing page on database based on ReadVersion. Try get first from localPages,
     /// cache and in last case read from disk (and add to localPages)
     /// </summary>
-    public async ValueTask<PageBuffer> GetPageAsync(int pageID)
+    public PageBuffer GetPage(int pageID)
     {
-        using var _pc = PERF_COUNTER(8, nameof(GetPageAsync), nameof(Transaction));
+        using var _pc = PERF_COUNTER(8, nameof(GetPage), nameof(Transaction));
 
         ENSURE(pageID != int.MaxValue, "PageID must have a value");
 
@@ -131,7 +131,7 @@ internal class Transaction : ITransaction
             return page;
         }
 
-        page = await this.ReadPageAsync(pageID, this.ReadVersion);
+        page = this.ReadPage(pageID, this.ReadVersion);
 
         _localPages.Add(pageID, page);
 
@@ -141,9 +141,9 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Read a data/index page from disk (data or log). Can return page from global cache
     /// </summary>
-    private async ValueTask<PageBuffer> ReadPageAsync(int pageID, int readVersion)
+    private PageBuffer ReadPage(int pageID, int readVersion)
     {
-        using var _pc = PERF_COUNTER(9, nameof(ReadPageAsync), nameof(Transaction));
+        using var _pc = PERF_COUNTER(9, nameof(ReadPage), nameof(Transaction));
 
         _reader ??= _diskService.RentDiskReader();
 
@@ -152,7 +152,7 @@ internal class Transaction : ITransaction
         {
             var walPage = _bufferFactory.AllocateNewPage();
 
-            await _reader.ReadPageAsync(positionID, walPage);
+            _reader.ReadPage(positionID, walPage);
 
             ENSURE(walPage.Header.PageType == PageType.Data || walPage.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {walPage}", new { walPage });
 
@@ -170,7 +170,7 @@ internal class Transaction : ITransaction
         {
             page = _bufferFactory.AllocateNewPage();
 
-            await _reader.ReadPageAsync(positionID, page);
+            _reader.ReadPage(positionID, page);
 
             ENSURE(page.Header.PageType == PageType.Data || page.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {page}");
         }
@@ -208,9 +208,9 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Get a Data Page with, at least, 30% free space
     /// </summary>
-    public async ValueTask<PageBuffer> GetFreeDataPageAsync(byte colID)
+    public PageBuffer GetFreeDataPage(byte colID)
     {
-        using var _pc = PERF_COUNTER(11, nameof(GetFreeDataPageAsync), nameof(Transaction));
+        using var _pc = PERF_COUNTER(11, nameof(GetFreeDataPage), nameof(Transaction));
 
         var colIndex = Array.IndexOf(_writeCollections, colID);
         var currentExtend = _currentDataExtend[colIndex];
@@ -236,7 +236,7 @@ internal class Transaction : ITransaction
         else
         {
             // if page already exists, just get page
-            var page = await this.GetPageAsync(pageID);
+            var page = this.GetPage(pageID);
 
             return page;
         }
@@ -245,9 +245,9 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Get a Index Page with space enougth for index node
     /// </summary>
-    public async ValueTask<PageBuffer> GetFreeIndexPageAsync(byte colID, int indexNodeLength)
+    public PageBuffer GetFreeIndexPage(byte colID, int indexNodeLength)
     {
-        using var _pc = PERF_COUNTER(12, nameof(GetFreeIndexPageAsync), nameof(Transaction));
+        using var _pc = PERF_COUNTER(12, nameof(GetFreeIndexPage), nameof(Transaction));
 
         var colIndex = Array.IndexOf(_writeCollections, colID);
         var currentExtend = _currentIndexExtend[colIndex];
@@ -272,7 +272,7 @@ internal class Transaction : ITransaction
         }
         else
         {
-            var page = await this.GetPageAsync(pageID);
+            var page = this.GetPage(pageID);
 
             // if current page has no avaiable space (super rare cases), get another page
             if (page.Header.FreeBytes < indexNodeLength)
@@ -281,7 +281,7 @@ internal class Transaction : ITransaction
                 this.UpdatePageMap(page.Header.PageID, ExtendPageValue.Full);
 
                 // call recursive to get another page
-                return await this.GetFreeIndexPageAsync(colID, indexNodeLength);
+                return this.GetFreeIndexPage(colID, indexNodeLength);
             }
 
             return page;
@@ -314,7 +314,7 @@ internal class Transaction : ITransaction
     /// Persist current pages changes and discard all local pages. Works as a Commit, but without
     /// marking last page as confirmed
     /// </summary>
-    public async Task SafepointAsync()
+    public void Safepoint()
     {
         // get dirty pages only //TODO: can be re-used array?
         var dirtyPages = _localPages.Values
@@ -333,7 +333,7 @@ internal class Transaction : ITransaction
         }
 
         // write pages on disk and flush data
-        await _logService.WriteLogPagesAsync(dirtyPages);
+        _logService.WriteLogPages(dirtyPages);
 
         // update local transaction wal index
         foreach (var page in dirtyPages)
@@ -363,7 +363,7 @@ internal class Transaction : ITransaction
 
     /// <summary>
     /// </summary>
-    public async ValueTask CommitAsync()
+    public void Commit()
     {
         // get dirty pages only //TODO: can be re-used array?
         var dirtyPages = _localPages.Values
@@ -382,7 +382,7 @@ internal class Transaction : ITransaction
         }
 
         // write pages on disk and flush data
-        await _logService.WriteLogPagesAsync(dirtyPages);
+        _logService.WriteLogPages(dirtyPages);
 
         // update wal index with this new version
         IEnumerable<(int pageID, int positionID)> changedPages()

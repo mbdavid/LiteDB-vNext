@@ -30,7 +30,7 @@ internal class MasterService : IMasterService
     /// Initialize (when database open) reading first extend pages. Database should have no log data to read this
     /// Initialize _master document instance
     /// </summary>
-    public async ValueTask InitializeAsync()
+    public void Initialize()
     {
         // create a a local transaction (not from monitor)
         using var transaction = _factory.CreateTransaction(0, new byte[MASTER_COL_ID], 0);
@@ -39,7 +39,7 @@ internal class MasterService : IMasterService
         var dataService = _factory.CreateDataService(transaction);
 
         // read $master document
-        var docResult = await dataService.ReadDocumentAsync(MASTER_ROW_ID, Array.Empty<string>());
+        var docResult = dataService.ReadDocument(MASTER_ROW_ID, Array.Empty<string>());
 
         // rollback transaction to release used pages (no changes here)
         transaction.Rollback();
@@ -70,13 +70,13 @@ internal class MasterService : IMasterService
     /// Write all master document into page buffer and write on this. Must use a real transaction
     /// to store all pages into log
     /// </summary>
-    public async ValueTask WriteCollectionAsync(MasterDocument master, ITransaction transaction)
+    public void WriteMasterInLog(MasterDocument master, ITransaction transaction)
     {
         var dataService = _factory.CreateDataService(transaction);
 
         var doc = _mapper.MapToDocument(master);
 
-        await dataService.UpdateDocumentAsync(MASTER_ROW_ID, doc);
+        dataService.UpdateDocument(MASTER_ROW_ID, doc);
     }
 
     #endregion
