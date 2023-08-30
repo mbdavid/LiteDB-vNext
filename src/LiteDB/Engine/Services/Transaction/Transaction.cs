@@ -365,6 +365,8 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask CommitAsync()
     {
+        using var _pc = PERF_COUNTER(59, nameof(CommitAsync), nameof(Transaction));
+
         // get dirty pages only //TODO: can be re-used array?
         var dirtyPages = _localPages.Values
             .Where(x => x.IsDirty)
@@ -427,6 +429,8 @@ internal class Transaction : ITransaction
 
     public void Rollback()
     {
+        using var _pc = PERF_COUNTER(48, nameof(Rollback), nameof(Transaction));
+
         // add pages to cache or decrement sharecount
         foreach (var page in _localPages.Values)
         {

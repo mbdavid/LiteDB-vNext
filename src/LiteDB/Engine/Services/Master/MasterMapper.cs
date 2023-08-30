@@ -45,14 +45,14 @@ internal class MasterMapper : IMasterMapper
             ["collections"] = new BsonDocument(master.Collections.ToDictionary(x => x.Key, x => (BsonValue)new BsonDocument
             {
                 ["colID"] = x.Value.ColID,
-                ["indexes"] = new BsonDocument(x.Value.Indexes.ToDictionary(i => i.Key, i => (BsonValue)new BsonDocument
+                ["indexes"] = new BsonArray(x.Value.Indexes.Select(i => new BsonDocument
                 {
-                    ["slot"] = (int)i.Value.Slot,
-                    ["name"] = i.Value.Name,
-                    ["expr"] = i.Value.Expression.ToString(),
-                    ["unique"] = i.Value.Unique,
-                    ["head"] = new BsonArray(new BsonValue[] { i.Value.HeadIndexNodeID.PageID, i.Value.HeadIndexNodeID.Index }),
-                    ["tail"] = new BsonArray(new BsonValue[] { i.Value.TailIndexNodeID.PageID, i.Value.TailIndexNodeID.Index }),
+                    ["slot"] = (int)i.Slot,
+                    ["name"] = i.Name,
+                    ["expr"] = i.Expression.ToString(),
+                    ["unique"] = i.Unique,
+                    ["head"] = new BsonArray(new BsonValue[] { i.HeadIndexNodeID.PageID, i.HeadIndexNodeID.Index }),
+                    ["tail"] = new BsonArray(new BsonValue[] { i.TailIndexNodeID.PageID, i.TailIndexNodeID.Index }),
                 }))
             })),
             ["pragmas"] = new BsonDocument
@@ -74,15 +74,15 @@ internal class MasterMapper : IMasterMapper
             {
                 ColID = (byte)c.Value["colID"],
                 Name = c.Key,
-                Indexes = c.Value["indexes"].AsDocument.ToDictionary(i => i.Key, i => new IndexDocument
+                Indexes = c.Value["indexes"].AsArray.Select(i => new IndexDocument
                 {
-                    Slot = (byte)i.Value["slot"],
-                    Name = i.Key,
-                    Expression = BsonExpression.Create(i.Value["expr"]),
-                    Unique = i.Value["unique"],
-                    HeadIndexNodeID = new(i.Value["head"][0], (byte)i.Value["head"][1]),
-                    TailIndexNodeID = new(i.Value["tail"][0], (byte)i.Value["tail"][1])
-                })
+                    Slot = (byte)i["slot"],
+                    Name = i["name"],
+                    Expression = BsonExpression.Create(i["expr"]),
+                    Unique = i["unique"],
+                    HeadIndexNodeID = new(i["head"][0], (byte)i["head"][1]),
+                    TailIndexNodeID = new(i["tail"][0], (byte)i["tail"][1])
+                }).ToList()
             }),
             Pragmas = new PragmaDocument
             {

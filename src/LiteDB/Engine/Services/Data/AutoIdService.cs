@@ -32,11 +32,15 @@ internal class AutoIdService : IAutoIdService
             }
             else if (autoId == BsonAutoId.Int32)
             {
-                document["_id"] = id = ++_sequences[colID].LastInt;
+                var next = Interlocked.Increment(ref _sequences[colID].LastInt);
+
+                document["_id"] = id = next;
             }
             else if (autoId == BsonAutoId.Int64)
             {
-                document["_id"] = id = ++_sequences[colID].LastLong;
+                var next = Interlocked.Increment(ref _sequences[colID].LastLong);
+
+                document["_id"] = id = next;
             }
         }
         else
@@ -70,6 +74,8 @@ internal class AutoIdService : IAutoIdService
     /// </summary>
     public async Task InitializeAsync(byte colID, PageAddress tailIndexNodeID, IIndexService indexService)
     {
+        using var _pc = PERF_COUNTER(44, nameof(InitializeAsync), nameof(AutoIdService));
+
         var tail = await indexService.GetNodeAsync(tailIndexNodeID);
         var last = await indexService.GetNodeAsync(tail.Node.Prev[0]);
 

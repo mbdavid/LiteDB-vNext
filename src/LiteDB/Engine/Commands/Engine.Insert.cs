@@ -6,6 +6,8 @@ public partial class LiteEngine : ILiteEngine
 {
     public async Task<int> InsertAsync(string collectionName, IEnumerable<BsonDocument> documents, BsonAutoId autoId)
     {
+        using var _pc = PERF_COUNTER(29, nameof(InsertAsync), nameof(LiteEngine));
+
         if (_factory.State != EngineState.Open) throw new Exception("must be open");
 
         // dependency injection
@@ -42,10 +44,20 @@ public partial class LiteEngine : ILiteEngine
             await autoIdService.InitializeAsync(collection.ColID, collection.PK.TailIndexNodeID, indexService);
         }
 
-        //for (var i = 0; i < documents.Length; i++)
-        foreach(var doc in documents)
+        // getting headerNodeResult (node+page) for all indexes
+        var headResults = new IndexNodeResult[collection.Indexes.Count];
+
+        for(var i = 0; i < collection.Indexes.Count; i++)
         {
-        //    var doc = documents[i];
+            var index = collection.Indexes[i];
+            headResults[i] = await indexService.GetNodeAsync(index.HeadIndexNodeID);
+        }
+
+        //for (var i = 0; i < documents.Length; i++)
+        foreach (var doc in documents)
+        {
+            //    var doc = documents[i];
+            using var _p2 = PERF_COUNTER(35, "InsertSingle", nameof(LiteEngine));
 
             // get/set _id
             var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);
@@ -54,20 +66,20 @@ public partial class LiteEngine : ILiteEngine
             var dataBlockID = await dataService.InsertDocumentAsync(collection.ColID, doc);
 
             // insert _id as PK and get node to be used 
-            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, dataBlockID, IndexNodeResult.Empty);
+            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, dataBlockID, headResults[0], IndexNodeResult.Empty);
 
             if (collection.Indexes.Count > 1)
             {
-                foreach (var index in collection.Indexes.Values)
+                for(var i = 1; i < collection.Indexes.Count; i++)
                 {
-                    if (index.Name == "_id") continue; // avoid use in linq expression
+                    var index = collection.Indexes[i];
 
                     // get a single or multiple (distinct) values
                     var keys = index.Expression.GetIndexKeys(doc, collation);
 
                     foreach (var key in keys)
                     {
-                        var node = await indexService.AddNodeAsync(collection.ColID, index, key, dataBlockID, last);
+                        var node = await indexService.AddNodeAsync(collection.ColID, index, key, dataBlockID, headResults[i], last);
 
                         last = node;
                     }
@@ -78,6 +90,14 @@ public partial class LiteEngine : ILiteEngine
             if (monitorService.Safepoint(transaction))
             {
                 await transaction.SafepointAsync();
+
+                // after safepoint, reload headResult (can change page)
+                for (var i = 0; i < collection.Indexes.Count; i++)
+                {
+                    var index = collection.Indexes[i];
+
+                    headResults[i] = await indexService.GetNodeAsync(index.HeadIndexNodeID);
+                }
             }
         }
 

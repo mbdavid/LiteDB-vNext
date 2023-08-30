@@ -2,12 +2,12 @@
 
 internal class IndexDocument
 {
-    public byte Slot { get; init; }
+    public required byte Slot { get; init; }
     public required string Name { get; init; }
     public required BsonExpression Expression { get; init; }
-    public bool Unique { get; init; }
-    public PageAddress HeadIndexNodeID { get; init; }
-    public PageAddress TailIndexNodeID { get; init; }
+    public required bool Unique { get; init; }
+    public required PageAddress HeadIndexNodeID { get; init; }
+    public required PageAddress TailIndexNodeID { get; init; }
 
     public IndexDocument()
     {

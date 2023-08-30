@@ -58,7 +58,7 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult last)
+    public async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult head, IndexNodeResult last)
     {
         using var _pc = PERF_COUNTER(4, nameof(AddNodeAsync), nameof(IndexService));
 
@@ -69,13 +69,13 @@ internal class IndexService : IIndexService
         var levels = this.Flip();
 
         // call AddNode with key value
-        return await this.AddNodeAsync(colID, index, key, dataBlock, levels, last);
+        return await this.AddNodeAsync(colID, index, key, dataBlock, levels, head, last);
     }
 
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeResult last)
+    private async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeResult head, IndexNodeResult last)
     {
         // get a free index page for head note
         var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, key, out var keyLength);
@@ -101,8 +101,7 @@ internal class IndexService : IIndexService
         }
 
         // now, let's link my index node on right place
-        var left = index.HeadIndexNodeID;
-        var leftNode = await this.GetNodeAsync(left);
+        var leftNode = head;
 
         // for: scan from top to bottom
         for (int i = INDEX_MAX_LEVELS - 1; i >= 0; i--)
@@ -111,7 +110,7 @@ internal class IndexService : IIndexService
             var right = leftNode.Node.Next[currentLevel];
 
             // while: scan from left to right
-            while (right.IsEmpty == false)
+            while (right.IsEmpty == false && right != index.TailIndexNodeID)
             {
                 var rightNode = await this.GetNodeAsync(right);
 
@@ -191,6 +190,7 @@ internal class IndexService : IIndexService
         ENSURE(page.Header.PageType == PageType.Index, new { indexNodeID, page });
 
         var indexNode = _transaction.GetIndexNode(indexNodeID);
+        //var indexNode = new IndexNode(page, indexNodeID);
 
         return new(indexNode, page);
     }

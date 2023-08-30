@@ -59,7 +59,7 @@ internal class PipelineBuilder
         else
         {
             // full index scan eg: "$._id"
-            var indexDocument = _collection.Indexes.Values.FirstOrDefault(x => x.Expression == expr) ??
+            var indexDocument = _collection.Indexes.FirstOrDefault(x => x.Expression == expr) ??
                 throw ERR($"No index found for this expression: {expr}");
 
             _enumerator = new IndexAllEnumerator(indexDocument, order);
@@ -74,7 +74,7 @@ internal class PipelineBuilder
     private void AddIndexPredicate(BinaryBsonExpression predicate, int order)
     {
         // try get index from left
-        var indexDocument = _collection.Indexes.Values.FirstOrDefault(x => x.Expression == predicate.Left);
+        var indexDocument = _collection.Indexes.FirstOrDefault(x => x.Expression == predicate.Left);
 
         if (indexDocument is not null)
         {
@@ -85,7 +85,7 @@ internal class PipelineBuilder
         else
         {
             // try get index from right
-            indexDocument = _collection.Indexes.Values.FirstOrDefault(x => x.Expression == predicate.Right) ??
+            indexDocument = _collection.Indexes.FirstOrDefault(x => x.Expression == predicate.Right) ??
                 throw ERR($"No index found for this expression: {predicate}");
 
             // invert expression

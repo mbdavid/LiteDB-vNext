@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace LiteDB.Engine;
 
@@ -31,7 +32,7 @@ public partial class LiteEngine : ILiteEngine
 
         // get a free index slot
         var freeIndexSlot = (byte)Enumerable.Range(1, INDEX_MAX_LEVELS)
-            .Where(x => collection.Indexes.Values.Any(y => y.Slot == x) == false)
+            .Where(x => collection.Indexes.Any(y => y.Slot == x) == false)
             .FirstOrDefault();
 
         // create new collection in $master and returns a new master document
@@ -46,7 +47,7 @@ public partial class LiteEngine : ILiteEngine
         };
         
         // add new index into master model
-        collection.Indexes.Add(indexName, indexDocument);
+        collection.Indexes.Add(indexDocument);
         
         // write master collection into pages inside transaction
         await masterService.WriteCollectionAsync(master, transaction);
@@ -59,6 +60,9 @@ public partial class LiteEngine : ILiteEngine
 
         // get index nodes created
         var counter = 0;
+
+        // getting headerNodeResult (node+page) for new index
+        var headResult = await indexService.GetNodeAsync(indexDocument.HeadIndexNodeID);
 
         // read all documents based on a full PK scan
         using (var enumerator = new IndexAllEnumerator(collection.PK, LiteDB.Engine.Query.Ascending))
@@ -86,7 +90,7 @@ public partial class LiteEngine : ILiteEngine
 
                 foreach (var key in keys)
                 {
-                    var nodeResult = await indexService.AddNodeAsync(collection.ColID, indexDocument, key, result.DataBlockID, last);
+                    var nodeResult = await indexService.AddNodeAsync(collection.ColID, indexDocument, key, result.DataBlockID, headResult, last);
 
                     // keep first node to add in NextNode list (after pk)
                     if (first.IsEmpty) first = nodeResult;
@@ -105,6 +109,9 @@ public partial class LiteEngine : ILiteEngine
                 if (monitorService.Safepoint(transaction))
                 {
                     await transaction.SafepointAsync();
+
+                    // after safepoint, reload headResult (can change page)
+                    headResult = await indexService.GetNodeAsync(indexDocument.HeadIndexNodeID);
                 }
 
                 // go to next result

@@ -34,9 +34,9 @@ public partial class LiteEngine : ILiteEngine
         {
             ColID = colID,
             Name = collectionName,
-            Indexes = new Dictionary<string, IndexDocument>(StringComparer.OrdinalIgnoreCase)
+            Indexes = new List<IndexDocument>
             {
-                ["_id"] = new IndexDocument
+                new IndexDocument
                 {
                     Slot = 0,
                     Name = "_id",

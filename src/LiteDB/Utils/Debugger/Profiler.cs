@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-internal static class PerformanceCounter
+internal static class Profiler
 {
     private const int COUNTERS = 100;
 
@@ -19,7 +19,7 @@ internal static class PerformanceCounter
             _counters[index] = counter;
         }
 
-        return new PerfHit(counter);
+        return new ProfileHit(counter);
     }
 
     public static void Reset()
@@ -65,7 +65,7 @@ internal static class PerformanceCounter
             var hit = $"{item.Hits:n0}";
             var perc = $"{wait:n3}";
 
-            _results.AppendLine($"{item.Name.PadRight(name_width, '.')}: {elapsed,10} - {perc,7}% = {hit,10} hits");
+            _results.AppendLine($"{("- " + item.Name).PadRight(name_width, '.')}: {elapsed,10} - {perc,7}% = {hit,10} hits");
         }
 
         if (reset) Reset();
@@ -84,18 +84,18 @@ internal static class PerformanceCounter
         Console.ForegroundColor = ConsoleColor.Gray;
     }
 
-    internal readonly struct PerfHit : IDisposable
+    internal struct ProfileHit : IDisposable
     {
         private readonly long _start;
-        private readonly Counter? _counter;
+        private Counter? _counter;
 
-        public PerfHit(Counter counter)
+        public ProfileHit(Counter counter)
         {
             _start = Stopwatch.GetTimestamp();
             _counter = counter;
         }
 
-        public PerfHit()
+        public ProfileHit()
         {
             _counter = null;
         }
@@ -108,6 +108,8 @@ internal static class PerformanceCounter
 
             _counter.Elapsed += elapsed;
             _counter.Hits++;
+
+            _counter = null;
         }
     }
 
