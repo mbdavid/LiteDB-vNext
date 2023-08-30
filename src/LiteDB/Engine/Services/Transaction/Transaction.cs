@@ -173,6 +173,15 @@ internal class Transaction : ITransaction
             _reader.ReadPage(positionID, page);
 
             ENSURE(page.Header.PageType == PageType.Data || page.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {page}");
+
+            // if page are readonly, add into cache
+            if (!writable)
+            {
+                _cacheService.AddPageInCache(page);
+
+                page.ShareCounter = 1;
+            }
+
         }
 
         return page;

@@ -42,10 +42,15 @@ public partial class LiteEngine : ILiteEngine
             autoIdService.Initialize(collection.ColID, collection.PK.TailIndexNodeID, indexService);
         }
 
+        // getting header for all indexes
+        var headResults = collection.Indexes
+            .Select(x => indexService.GetNode(x.HeadIndexNodeID))
+            .ToArray();
+
         //for (var i = 0; i < documents.Length; i++)
-        foreach(var doc in documents)
+        foreach (var doc in documents)
         {
-        //    var doc = documents[i];
+            //    var doc = documents[i];
 
             // get/set _id
             var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);
@@ -54,20 +59,19 @@ public partial class LiteEngine : ILiteEngine
             var dataBlockID = dataService.InsertDocument(collection.ColID, doc);
 
             // insert _id as PK and get node to be used 
-            var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, IndexNodeResult.Empty);
+            var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, headResults[0], IndexNodeResult.Empty);
 
             if (collection.Indexes.Count > 1)
             {
-                foreach (var index in collection.Indexes.Values)
+                for(var i = 1; i < collection.Indexes.Count; i++)
                 {
-                    if (index.Name == "_id") continue; // avoid use in linq expression
-
                     // get a single or multiple (distinct) values
+                    var index = collection.Indexes[i];
                     var keys = index.Expression.GetIndexKeys(doc, collation);
 
                     foreach (var key in keys)
                     {
-                        var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, last);
+                        var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, headResults[i], last);
 
                         last = node;
                     }
@@ -78,6 +82,11 @@ public partial class LiteEngine : ILiteEngine
             if (monitorService.Safepoint(transaction))
             {
                 transaction.Safepoint();
+
+                for (var i = 0; i < headResults.Length; i++)
+                {
+                    headResults[i] = indexService.GetNode(collection.Indexes[i].HeadIndexNodeID);
+                }
             }
         }
 

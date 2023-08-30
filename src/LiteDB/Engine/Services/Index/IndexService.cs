@@ -58,7 +58,7 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult last)
+    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, IndexNodeResult head, IndexNodeResult last)
     {
         using var _pc = PERF_COUNTER(4, nameof(AddNode), nameof(IndexService));
 
@@ -69,13 +69,13 @@ internal class IndexService : IIndexService
         var levels = this.Flip();
 
         // call AddNode with key value
-        return this.AddNode(colID, index, key, dataBlock, levels, last);
+        return this.AddNode(colID, index, key, dataBlock, levels, head, last);
     }
 
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeResult last)
+    private IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeResult head, IndexNodeResult last)
     {
         // get a free index page for head note
         var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, key, out var keyLength);
@@ -101,19 +101,21 @@ internal class IndexService : IIndexService
         }
 
         // now, let's link my index node on right place
-        var left = index.HeadIndexNodeID;
-        var leftNode = this.GetNode(left);
+        // getting from parameter to re-use (be aware with Safepoint reset instances)
+        var leftNode = head;
 
         // for: scan from top to bottom
         for (int i = INDEX_MAX_LEVELS - 1; i >= 0; i--)
         {
             var currentLevel = (byte)i;
             var right = leftNode.Node.Next[currentLevel];
+            var rightNode = IndexNodeResult.Empty;
 
             // while: scan from left to right
             while (right.IsEmpty == false)
             {
-                var rightNode = this.GetNode(right);
+                // do cache??
+                rightNode = rightNode.Node.IndexNodeID == right ? rightNode : this.GetNode(right);
 
                 // read next node to compare
                 var diff = rightNode.Node.Key.CompareTo(key, _collation);
@@ -148,7 +150,10 @@ internal class IndexService : IIndexService
 
                 right = node.Next[currentLevel];
 
-                var rightNode = this.GetNode(right);
+                // doing cache??
+                rightNode = rightNode.Node.IndexNodeID == right ? rightNode : this.GetNode(right);
+
+                //var rightNode = this.GetNode(right);
                 rightNode.Node.SetPrev(rightNode.Page, currentLevel, node.IndexNodeID);
             }
         }

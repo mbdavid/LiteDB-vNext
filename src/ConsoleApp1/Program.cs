@@ -137,7 +137,7 @@ async Task Run(string message, Func<Task> asyncFunc)
     Console.WriteLine($"{sw.Elapsed.TotalMilliseconds:n0}ms");
 
     Console.ForegroundColor = ConsoleColor.Green;
-    //db.DumpState();
+    db.DumpState();
     Console.ForegroundColor = ConsoleColor.Gray;
 }
 

@@ -106,7 +106,7 @@ internal class QueryOptimization : IQueryOptimization
         if (lower is null)
         {
             // if there is no index, let's from order by (if exists) or get PK
-            var allIndexes = _collection.Indexes.Values;
+            var allIndexes = _collection.Indexes;
 
             var selectedIndex = 
                 (orderBy.IsEmpty ? null : allIndexes.FirstOrDefault(x => x.Expression == orderBy.Expression)) ??
@@ -134,8 +134,8 @@ internal class QueryOptimization : IQueryOptimization
         foreach (var term in _terms) 
         {
             var indexDocument =
-                _collection.Indexes.Values.FirstOrDefault(x => x.Expression == term.Left) ??
-                _collection.Indexes.Values.FirstOrDefault(x => x.Expression == term.Right);
+                _collection.Indexes.FirstOrDefault(x => x.Expression == term.Left) ??
+                _collection.Indexes.FirstOrDefault(x => x.Expression == term.Right);
 
             if (indexDocument is not null)
             {
