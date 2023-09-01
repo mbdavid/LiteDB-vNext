@@ -13,7 +13,11 @@ internal static class Dump
         var isEmpty = type.GetProperties().FirstOrDefault(x => x.Name == "IsEmpty");
         if (isEmpty is not null && (bool)isEmpty.GetValue(obj) == true) return "<EMPTY>";
 
-        foreach (var member in type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.GetProperty))
+        var members = type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.GetProperty)
+            .OrderBy(x => x.MemberType == MemberTypes.Field ? 0 : 1)
+            .ToArray();
+
+        foreach (var member in members)
         {
             if (member is FieldInfo f)
             {

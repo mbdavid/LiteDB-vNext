@@ -3,17 +3,17 @@
 /// <summary>
 /// Represent a single page segment with Location (position) and Length
 /// </summary>
-internal readonly struct PageSegment
+internal struct PageSegment
 {
     /// <summary>
     /// Segment location on page buffer
     /// </summary>
-    public readonly ushort Location;
+    public ushort Location;
 
     /// <summary>
     /// Segment length
     /// </summary>
-    public readonly ushort Length;
+    public ushort Length;
 
     /// <summary>
     /// Get final location (Location + Length)
@@ -27,8 +27,6 @@ internal readonly struct PageSegment
 
     public PageSegment()
     {
-        this.Location = 0;
-        this.Length = 0;
     }
 
     public PageSegment(ushort location, ushort length)
