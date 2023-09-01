@@ -31,6 +31,5 @@ internal struct ExtendLocation
         this.ExtendIndex = extendID % AM_EXTEND_COUNT;
     }
 
-
     public override string ToString() => Dump.Object(this);
 }

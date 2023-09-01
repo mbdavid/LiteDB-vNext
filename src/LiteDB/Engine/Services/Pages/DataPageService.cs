@@ -52,6 +52,8 @@ internal class DataPageService : PageService, IDataPageService
         // get required bytes this update
         var bytesLength = (ushort)(content.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
 
+        page.IsDirty = true;
+
         // get page segment to update this buffer
         var segment = base.Update(page, index, bytesLength);
 

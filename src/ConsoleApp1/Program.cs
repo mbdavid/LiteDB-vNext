@@ -8,17 +8,18 @@ using System.Runtime.InteropServices;
 // SETUP
 const string VER = "v6";
 
+
 //var INSERT_1 = new Range(1, 300_000);
 //var DELETE_1 = new Range(5, 60_000);
 //var INSERT_2 = new Range(6, 30_000);
-var INSERT_1 = new Range(1, 300_000);
-var DELETE_1 = new Range(5, 60_000);
-var INSERT_2 = new Range(6, 30_000);
+var INSERT_1 = new Range(1, 3_000);
+var DELETE_1 = new Range(5, 600);
+var INSERT_2 = new Range(6, 300);
 ////////////////////////
 
 var _random = new Random(420);
 
-var filename = @$"C:\temp\{VER}\test-{DateTime.Now.Ticks}.db";
+var filename = @$"C:\LiteDB\temp\{VER}\test-{DateTime.Now.Ticks}.db";
 
 var settings = new EngineSettings
 {
@@ -55,6 +56,23 @@ await Run($"Insert {INSERT_1}", async () =>
 });
 
 Profiler.AddResult("Insert", true);
+
+await Run("Checkpoint", async () =>
+{
+    await db.CheckpointAsync();
+});
+
+await Run("Shutdown", async () =>
+{
+    await db.ShutdownAsync();
+});
+
+await Run("Re-open database", async () =>
+{
+    await db.OpenAsync();
+});
+
+Profiler.Reset();
 
 await Run($"Query full 'col1'", async () =>
 {
@@ -146,7 +164,7 @@ async Task ConsumeAsync(ILiteEngine db, Guid cursorID, int fetchSize)
     var result = await db.FetchAsync(cursorID, fetchSize);
     var total = result.FetchCount;
 
-    while(result.HasMore)
+    while (result.HasMore)
     {
         result = await db.FetchAsync(cursorID, fetchSize);
         total += result.FetchCount;

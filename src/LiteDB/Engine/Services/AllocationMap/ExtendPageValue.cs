@@ -2,8 +2,9 @@
 
 internal enum ExtendPageValue : byte
 {
-    Empty = 0, // 00
-    Data = 1,  // 01
-    Index = 2, // 10
-    Full = 3,  // 11
+    Empty = 0, // 000
+    Data = 1,  // 001
+    Index = 2, // 010
+    // 3-6 reserved
+    Full = 7,  // 111
 }

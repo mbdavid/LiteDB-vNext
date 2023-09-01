@@ -1,12 +1,11 @@
 namespace LiteDB.Engine;
 
 /// <summary>
-/// Represent a single allocation map page with 2040 extends and 24.480 pages pointer
-/// Each extend represent 12 pages at same collection. Each extend use 4 bytes (UInt32)
+/// Represent a single allocation map page with 2040 extends and 16.320 pages pointer
+/// Each extend represent 8 pages at same collection. Each extend use 4 bytes (UInt32)
 /// 
-///  01234567 [         ] [         ] [         ]
-///  00000000_00_00_00_00_00_00_00_00_00_00_00_00
-///     ColID  0  1  2  3  4  5  6  7  8  9 10 11  -- Pages
+///  00000000  000_000_000_000_000_000_000_000
+///     ColID    0   1   2   3   4   5   6   7 -- PagesIndex
 /// </summary>
 internal class AllocationMapPage
 {
@@ -108,31 +107,27 @@ internal class AllocationMapPage
     }
 
     /// <summary>
-    /// Update extend value based on extendIndex (0-2039) and pageIndex (0-11)
+    /// Update extend value based on extendIndex (0-2039) and pageIndex (0-7)
     /// </summary>
     public void UpdateExtendPageValue(int extendIndex, int pageIndex, ExtendPageValue pageValue)
     {
         ENSURE(extendIndex <= 2039);
-        ENSURE(pageIndex <= 11);
+        ENSURE(pageIndex <= 7);
 
         // get extend value from array
         var value = _extendValues[extendIndex];
 
-        // update value (2 bits) according pageIndex
+        // update value (3 bits) according pageIndex
         var extendValue = pageIndex switch
         {
-            0 => (value & 0b11111111_00_11_11_11_11_11_11_11_11_11_11_11) | ((uint)pageValue << 22),
-            1 => (value & 0b11111111_11_00_11_11_11_11_11_11_11_11_11_11) | ((uint)pageValue << 20),
-            2 => (value & 0b11111111_11_11_00_11_11_11_11_11_11_11_11_11) | ((uint)pageValue << 18),
-            3 => (value & 0b11111111_11_11_11_00_11_11_11_11_11_11_11_11) | ((uint)pageValue << 16),
-            4 => (value & 0b11111111_11_11_11_11_00_11_11_11_11_11_11_11) | ((uint)pageValue << 14),
-            5 => (value & 0b11111111_11_11_11_11_11_00_11_11_11_11_11_11) | ((uint)pageValue << 12),
-            6 => (value & 0b11111111_11_11_11_11_11_11_00_11_11_11_11_11) | ((uint)pageValue << 10),
-            7 => (value & 0b11111111_11_11_11_11_11_11_11_00_11_11_11_11) | ((uint)pageValue << 8),
-            8 => (value & 0b11111111_11_11_11_11_11_11_11_11_00_11_11_11) | ((uint)pageValue << 6),
-            9 => (value & 0b11111111_11_11_11_11_11_11_11_11_11_00_11_11) | ((uint)pageValue << 4),
-            10 => (value & 0b11111111_11_11_11_11_11_11_11_11_11_11_00_11) | ((uint)pageValue << 2),
-            11 => (value & 0b11111111_11_11_11_11_11_11_11_11_11_11_11_00) | (uint)pageValue,
+            0 => (value & 0b11111111_000_111_111_111_111_111_111_111) | ((uint)pageValue << 21),
+            1 => (value & 0b11111111_111_000_111_111_111_111_111_111) | ((uint)pageValue << 18),
+            2 => (value & 0b11111111_111_111_000_111_111_111_111_111) | ((uint)pageValue << 15),
+            3 => (value & 0b11111111_111_111_111_000_111_111_111_111) | ((uint)pageValue << 12),
+            4 => (value & 0b11111111_111_111_111_111_000_111_111_111) | ((uint)pageValue << 9),
+            5 => (value & 0b11111111_111_111_111_111_111_000_111_111) | ((uint)pageValue << 6),
+            6 => (value & 0b11111111_111_111_111_111_111_111_000_111) | ((uint)pageValue << 3),
+            7 => (value & 0b11111111_111_111_111_111_111_111_111_000) | ((uint)pageValue),
             _ => throw new InvalidOperationException()
         };
 
@@ -152,7 +147,7 @@ internal class AllocationMapPage
     }
 
     /// <summary>
-    /// Get PageID from a block page based on ExtendIndex (0-2039) and PageIndex (0-11)
+    /// Get PageID from a block page based on ExtendIndex (0-2039) and PageIndex (0-7)
     /// </summary>
     public int GetBlockPageID(int extendIndex, int pageIndex)
     {
@@ -199,12 +194,16 @@ internal class AllocationMapPage
 
         //  01234567   01234567   01234567   01234567
         // [________] [________] [________] [________]
-        //  ColID       0 1 2 3    4 5 6 7    8 91011
+        //  ColID      00011122   23334445   55666777
 
-        // 00 - empty
-        // 01 - data 
-        // 10 - index 
-        // 11 - full
+        // 000 - empty
+        // 001 - data 
+        // 010 - index 
+        // 011 - reserved
+        // 100 - reserved
+        // 101 - reserved
+        // 110 - reserved
+        // 111 - full
 
         // check for same colID
         if (colID != extendValue >> 24) return (-1, false);
@@ -213,23 +212,27 @@ internal class AllocationMapPage
 
         if (type == PageType.Data)
         {
-            // 00 - empty
-            // 01 - data
+            // 000 - empty
+            // 001 - data
 
-            var notA = (extendValue & 0b00000000_10_10_10_10_10_10_10_10_10_10_10_10) ^ 0b00000000_10_10_10_10_10_10_10_10_10_10_10_10;
-
-            result = notA;
-        }
-        else if (type == PageType.Index)
-        {
-            // 00 - empty
-            // 10 - index
-
-            var notB = (extendValue & 0b00000000_01_01_01_01_01_01_01_01_01_01_01_01) ^ 0b00000000_01_01_01_01_01_01_01_01_01_01_01_01;
+            var notA = (extendValue & 0b00000000_100_100_100_100_100_100_100_100) ^ 0b00000000_100_100_100_100_100_100_100_100;
+            var notB = (extendValue & 0b00000000_010_010_010_010_010_010_010_010) ^ 0b00000000_010_010_010_010_010_010_010_010;
 
             notB <<= 1;
 
-            result = notB;
+            result = notA & notB;
+        }
+        else if (type == PageType.Index)
+        {
+            // 000 - empty
+            // 010 - index
+
+            var notA = (extendValue & 0b00000000_100_100_100_100_100_100_100_100) ^ 0b00000000_100_100_100_100_100_100_100_100;
+            var notC = (extendValue & 0b00000000_001_001_001_001_001_001_001_001) ^ 0b00000000_001_001_001_001_001_001_001_001;
+
+            notC <<= 2;
+
+            result = notA & notC;
         }
         else
         {
@@ -240,22 +243,18 @@ internal class AllocationMapPage
         {
             var pageIndex = result switch
             {
-                <= 7 => 11,        // =2^(2+1)-1
-                <= 31 => 10,       // =2^(4+1)-1
-                <= 127 => 9,       // =2^(6+1)-1
-                <= 511 => 8,       // =2^(8+1)-1
-                <= 2047 => 7,      // =2^(10+1)-1
-                <= 8191 => 6,      // =2^(12+1)-1
-                <= 32767 => 5,     // =2^(14+1)-1
-                <= 131071 => 4,    // =2^(16+1)-1
-                <= 524287 => 3,    // =2^(18+1)-1
-                <= 2097151 => 2,   // =2^(20+1)-1
-                <= 8388607 => 1,   // =2^(22+1)-1
-                <= 33554431 => 0,  // =2^(24+1)-1
+                <= 31 => 7,       // 2^(3+2)-1
+                <= 255 => 6,      // 2^(6+2)-1
+                <= 2047 => 5,     // 2^(9+2)-1
+                <= 16383 => 4,    // 2^(12+2)-1
+                <= 131071 => 3,   // 2^(15+2)-1
+                <= 1048575 => 2,  // 2^(18+2)-1
+                <= 8388607 => 1,  // 2^(21+2)-1
+                <= 67108863 => 0, // 2^(24+2)-1
                 _ => throw new NotSupportedException()
             };
 
-            var isEmpty = (extendValue & (0b11 << ((11 - pageIndex) * 2))) == 0;
+            var isEmpty = (extendValue & (0b111 << ((7 - pageIndex) * 3))) == 0;
 
             return (pageIndex, isEmpty);
         }

@@ -113,31 +113,26 @@ internal static class Dump
         var str = Convert.ToString(value, 2).PadLeft(32, '0');
 
         return str[..8] + '-' +
-            str[8..10] + '-' +
-            str[10..12] + '-' +
-            str[12..14] + '-' +
-            str[14..16] + '-' +
-            str[16..18] + '-' +
-            str[18..20] + '-' +
-            str[20..22] + '-' +
-            str[22..24] + '-' +
-            str[24..26] + '-' +
-            str[26..28] + '-' +
-            str[28..30] + '-' +
-            str[30..] + " (" +
-            label(str[8..10]) + label(str[10..12]) + label(str[12..14]) + label(str[14..16]) +
-            label(str[16..18]) + label(str[18..20]) + label(str[20..22]) + label(str[22..24]) +
-            label(str[24..26]) + label(str[26..28]) + label(str[28..30]) + label(str[30..]) + ")";
+            str[8..11] + '-' +
+            str[11..14] + '-' +
+            str[14..17] + '-' +
+            str[17..20] + '-' +
+            str[20..23] + '-' +
+            str[23..26] + '-' +
+            str[26..29] + '-' +
+            str[29..] + " (" +
+            label(str[8..11]) + label(str[11..14]) + label(str[14..17]) + label(str[17..20]) +
+            label(str[20..23]) + label(str[23..26]) + label(str[26..29]) + label(str[29..]) + ")";
 
         static string label(string str)
         {
             return str switch
             {
-                "00" => "e", // empty
-                "01" => "d", // data page
-                "10" => "i", // index page
-                "11" => "f", // page full
-                _ => throw new NotSupportedException()
+                "000" => "e", // empty
+                "001" => "d", // data
+                "010" => "i", // index
+                "111" => "f", // full
+                _ => "*"
             };
         }
     }

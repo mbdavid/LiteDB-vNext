@@ -33,7 +33,7 @@ internal class MasterService : IMasterService
     public async ValueTask InitializeAsync()
     {
         // create a a local transaction (not from monitor)
-        using var transaction = _factory.CreateTransaction(0, new byte[MASTER_COL_ID], 0);
+        using var transaction = _factory.CreateTransaction(0, Array.Empty<byte>(), 0);
 
         // initialize data service with new transaction
         var dataService = _factory.CreateDataService(transaction);

@@ -131,7 +131,6 @@ internal class DataService : IDataService
         var dataBlock = new DataBlock(page.AsSpan(segment), dataBlockID);
 
         //TODO: SOMENTE PRIMEIRA PAGINA
-        _dataPageService.UpdateDataBlock(page, dataBlockID.Index, page.AsSpan(segment), PageAddress.Empty);
 
         // get extend page value before page change
         var before = page.Header.ExtendPageValue;
@@ -145,9 +144,6 @@ internal class DataService : IDataService
         {
             _transaction.UpdatePageMap(page.Header.PageID, after);
         }
-
-
-
     }
 
     /// <summary>
