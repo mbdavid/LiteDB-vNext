@@ -36,11 +36,12 @@ unsafe internal class IndexPageService : PageService, IIndexPageService
 
         // get index key pointer
         var keyOffset = levelsOffset + (levels * sizeof(IndexNodeLevel));
-        var keyPtr = &pagePtr->Buffer[keyOffset];
+        var keyPtr = (IndexKey*)&pagePtr->Buffer[keyOffset];
 
-        //var indexKey = ""
+        // get new indexKey and copy to memory
+        var indexKey = new IndexKey(key);
 
-        //TODO: armazenar um struct IndexKey
+        keyPtr->CopyFrom(indexKey);
 
         return new InsertNodeResult { IndexNodeID = indexNodeID, LevelsPtr = levelsPtr };
     }

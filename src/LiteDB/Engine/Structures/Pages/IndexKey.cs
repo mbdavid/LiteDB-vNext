@@ -1,12 +1,13 @@
 ﻿namespace LiteDB.Engine;
 
+[StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
 unsafe internal struct IndexKey 
 {
-    public BsonType DataType; // 1
-    public byte Length;       // 1
+    [FieldOffset(0)] public BsonType DataType; // 1
+    [FieldOffset(1)] public byte Length;       // 1
 
-    public int ValueInt32;
-    public long ValueInt64;
+    [FieldOffset(2)] public int ValueInt32;
+    [FieldOffset(2)] public long ValueInt64;
 
     public IndexKey()
     {
@@ -16,7 +17,9 @@ unsafe internal struct IndexKey
     {
         this.DataType = value.Type;
 
-        switch(value.Type)
+        //var xx = Marshal.PtrToStringAnsi((nint)myStructPtr + 2, 4);
+
+        switch (value.Type)
         {
             case BsonType.Int32: this.ValueInt32 = value.AsInt32; break;
             case BsonType.Int64: this.ValueInt64 = value.AsInt64; break;
@@ -25,8 +28,25 @@ unsafe internal struct IndexKey
         }
     }
 
-    public static int Compare(IndexKey left, IndexKey right)
+    public void CopyFrom(IndexKey indexKey)
     {
+        this.DataType = indexKey.DataType;
+        this.Length = indexKey.Length;
+
+        switch(indexKey.DataType)
+        {
+            case BsonType.Int32: this.ValueInt32 = indexKey.ValueInt32; break;
+            case BsonType.Int64: this.ValueInt64 = indexKey.ValueInt64; break;
+
+            default: throw new NotSupportedException();
+        }
+
+
+    }
+
+    public static int Compare(IndexKey left, IndexKey right, Collation collation)
+    {
+
         if (left.DataType == BsonType.Int32 &&  right.DataType == BsonType.Int32)
         {
             return left.ValueInt32 - right.ValueInt32;
@@ -36,7 +56,7 @@ unsafe internal struct IndexKey
         return 0;
     }
 
-    public static int Compare(IndexKey* left, IndexKey* right)
+    public static int Compare(IndexKey* left, IndexKey* right, Collation collation)
     {
         if (left->DataType == BsonType.Int32 && right->DataType == BsonType.Int32)
         {
