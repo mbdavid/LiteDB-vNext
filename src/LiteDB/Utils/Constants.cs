@@ -114,7 +114,7 @@ internal class Constants
     /// <summary>
     /// Define when ShareCounter (on PageBuffer) are in cache or not
     /// </summary>
-    public const int NO_CACHE = -1;
+    public const byte NO_CACHE = byte.MaxValue;
 
     /// <summary>
     /// Initial seed for Random

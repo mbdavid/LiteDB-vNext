@@ -40,14 +40,9 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
         _compareInfo = this.Culture.CompareInfo;
     }
 
-    internal Collation(CollationInfo collationInfo)
-        : this(collationInfo.LCID, collationInfo.CompareOptions)
-    {
-    }
+    public static Collation Default = new (CultureInfo.CurrentCulture.LCID, CompareOptions.IgnoreCase);
 
-    public static Collation Default = new Collation(CultureInfo.CurrentCulture.LCID, CompareOptions.IgnoreCase);
-
-    public static Collation Binary = new Collation(CultureInfo.InvariantCulture.LCID, CompareOptions.None);
+    public static Collation Binary = new (CultureInfo.InvariantCulture.LCID, CompareOptions.None);
 
     /// <summary>
     /// Get database language culture

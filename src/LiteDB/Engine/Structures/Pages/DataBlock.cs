@@ -1,6 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct DataBlock2
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+internal struct DataBlock     // 12
 {
     public byte DataFormat;   // 1
     public bool Extend;       // 1

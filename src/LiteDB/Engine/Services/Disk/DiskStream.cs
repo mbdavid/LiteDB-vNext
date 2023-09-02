@@ -23,7 +23,7 @@ internal class DiskStream : IDiskStream
     /// Initialize disk opening already exist datafile and return file header structure.
     /// Can open file as read or write
     /// </summary>
-    public async ValueTask<FileHeader> OpenAsync(bool canWrite, CancellationToken ct = default)
+    public async ValueTask<__FileHeader> OpenAsync(bool canWrite, CancellationToken ct = default)
     {
         // get a new FileStream connected to file
         _stream = _streamFactory.GetStream(canWrite,
@@ -38,7 +38,7 @@ internal class DiskStream : IDiskStream
 
         ENSURE(read != PAGE_HEADER_SIZE, new { read });
 
-        var header = new FileHeader(buffer);
+        var header = new __FileHeader(buffer);
 
         // for content stream, use AesStream (for encrypted file) or same _stream
         _contentStream = header.Encrypted ?
@@ -51,7 +51,7 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Open stream with no FileHeader read
     /// </summary>
-    public void Open(FileHeader header)
+    public void Open(__FileHeader header)
     {
         // get a new FileStream connected to file
         _stream = _streamFactory.GetStream(false, FileOptions.RandomAccess);
@@ -65,7 +65,7 @@ internal class DiskStream : IDiskStream
     /// <summary>
     /// Initialize disk creating a new datafile and writing file header
     /// </summary>
-    public async ValueTask CreateAsync(FileHeader fileHeader, CancellationToken ct = default)
+    public async ValueTask CreateAsync(__FileHeader fileHeader, CancellationToken ct = default)
     {
         // create new data file
         _stream = _streamFactory.GetStream(true, FileOptions.SequentialScan);

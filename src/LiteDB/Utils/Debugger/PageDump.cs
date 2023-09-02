@@ -75,9 +75,9 @@ internal static class PageDump
 
             if (!segment.IsEmpty)
             {
-                var dataBlock = new DataBlock(page.AsSpan(segment), new PageAddress(page.Header.PageID, (byte)i));
+                var dataBlock = new __DataBlock(page.AsSpan(segment), new PageAddress(page.Header.PageID, (byte)i));
 
-                var result = reader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength), Array.Empty<string>(), false, out _);
+                var result = reader.ReadDocument(page.AsSpan(segment.Location + __DataBlock.P_BUFFER, dataBlock.DataLength), Array.Empty<string>(), false, out _);
 
                 var content = result.Value.ToString() +
                     (result.Fail ? "..." : "");
@@ -109,7 +109,7 @@ internal static class PageDump
 
             if (!segment.IsEmpty)
             {
-                var indexNode = new IndexNode(page, new PageAddress(page.Header.PageID, i));
+                var indexNode = new __IndexNode(page, new PageAddress(page.Header.PageID, i));
 
                 sb.AppendLine($"[{index}] = {segment} => {indexNode}");
             }

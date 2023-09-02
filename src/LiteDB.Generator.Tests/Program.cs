@@ -9,8 +9,9 @@ public class Program
 }
 
 
+
 [AutoInterface(typeof(IDisposable))]
-public class DiskService : IDiskService
+public unsafe class DiskService : IDiskService
 {
     public DiskService()
     {

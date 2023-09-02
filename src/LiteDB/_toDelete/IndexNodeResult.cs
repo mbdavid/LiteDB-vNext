@@ -7,10 +7,10 @@ internal readonly struct IndexNodeResult
 {
     public static readonly IndexNodeResult Empty = new();
 
-    private readonly IndexNode _node;
+    private readonly __IndexNode _node;
     private readonly PageBuffer? _page;
 
-    public IndexNode Node => _node;
+    public __IndexNode Node => _node;
 
     public PageBuffer Page => _page!;
 
@@ -18,17 +18,17 @@ internal readonly struct IndexNodeResult
 
     public IndexNodeResult()
     {
-        _node = IndexNode.Empty;
+        _node = __IndexNode.Empty;
         _page = null;
     }
 
-    public IndexNodeResult(IndexNode node, PageBuffer page)
+    public IndexNodeResult(__IndexNode node, PageBuffer page)
     {
         _node = node;
         _page = page;
     }
 
-    public void Deconstruct(out IndexNode node, out PageBuffer page)
+    public void Deconstruct(out __IndexNode node, out PageBuffer page)
     {
         node = _node;
         page = _page!;

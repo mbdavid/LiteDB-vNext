@@ -3,17 +3,17 @@
 /// <summary>
 /// Represent a index node inside a Index Page
 /// </summary>
-internal struct IndexNode
+internal struct __IndexNode
 {
-    public static readonly IndexNode Empty = new();
+    public static readonly __IndexNode Empty = new();
 
     /// <summary>
-    /// Fixed length of IndexNode (13 bytes)
+    /// Fixed length of __IndexNode (13 bytes)
     /// </summary>
     private const int INDEX_NODE_FIXED_SIZE = 1 + // Slot (1 byte)
                                               1 + // Index type (1 byte)
                                               1 + // Levels (1 byte)
-                                              PageAddress.SIZE + // DataBlock (5 bytes)
+                                              PageAddress.SIZE + // __DataBlock (5 bytes)
                                               PageAddress.SIZE;  // NextNode (5 bytes)
 
     private const int P_SLOT = 0; // 00-00 [byte]
@@ -74,9 +74,9 @@ internal struct IndexNode
     /// <summary>
     /// Read index node from page block
     /// </summary>
-    public IndexNode(PageBuffer page, PageAddress indexNodeID)
+    public __IndexNode(PageBuffer page, PageAddress indexNodeID)
     {
-        using var _pc = PERF_COUNTER(6, "Ctor", nameof(IndexNode));
+        using var _pc = PERF_COUNTER(6, "Ctor", nameof(__IndexNode));
 
         this.IndexNodeID = indexNodeID; // reference position (PageID+Index)
 
@@ -110,7 +110,7 @@ internal struct IndexNode
     /// <summary>
     /// Create new index node and persist into page block
     /// </summary>
-    public IndexNode(PageBuffer page, PageAddress indexNodeID, byte slot, int levels, BsonValue key, PageAddress dataBlock)
+    public __IndexNode(PageBuffer page, PageAddress indexNodeID, byte slot, int levels, BsonValue key, PageAddress dataBlock)
     {
         page.IsDirty = true;
 
@@ -155,7 +155,7 @@ internal struct IndexNode
     /// <summary>
     /// Create a fake index node used only in Virtual Index runner
     /// </summary>
-    public IndexNode(BsonDocument doc)
+    public __IndexNode(BsonDocument doc)
     {
         this.IndexNodeID = new PageAddress(0, 0);
         this.Slot = 0;
@@ -170,9 +170,9 @@ internal struct IndexNode
     }
 
     /// <summary>
-    /// Empty IndexNode singleton instance
+    /// Empty __IndexNode singleton instance
     /// </summary>
-    public IndexNode()
+    public __IndexNode()
     {
         this.IndexNodeID = PageAddress.Empty;
         this.Key = BsonValue.Null;

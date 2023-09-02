@@ -69,7 +69,7 @@ internal class LogService : ILogService
         {
             _factory.FileHeader.IsDirty = true;
 
-            writer.WriteFlag(FileHeader.P_IS_DIRTY, 1);
+            writer.WriteFlag(__FileHeader.P_IS_DIRTY, 1);
         }
 
         for (var i = 0; i < pages.Length; i++)

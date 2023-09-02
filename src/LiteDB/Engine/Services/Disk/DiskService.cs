@@ -29,7 +29,7 @@ internal class DiskService : IDiskService
     /// <summary>
     /// Open (or create) datafile.
     /// </summary>
-    public async ValueTask<FileHeader> InitializeAsync()
+    public async ValueTask<__FileHeader> InitializeAsync()
     {
         // if file not exists, create empty database
         if (_streamFactory.Exists() == false)

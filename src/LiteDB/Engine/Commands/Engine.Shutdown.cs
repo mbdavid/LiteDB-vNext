@@ -27,7 +27,7 @@ public partial class LiteEngine : ILiteEngine
         // if file was changed, update file header check byte
         if (_factory.FileHeader.IsDirty)
         {
-            stream.WriteFlag(FileHeader.P_IS_DIRTY, 0);
+            stream.WriteFlag(__FileHeader.P_IS_DIRTY, 0);
 
             _factory.FileHeader.IsDirty = false;
         }

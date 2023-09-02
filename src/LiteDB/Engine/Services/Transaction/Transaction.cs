@@ -26,7 +26,7 @@ internal class Transaction : ITransaction
     private readonly Dictionary<int, PageBuffer> _localPages = new();
 
     // local index cache nodes
-    private readonly Dictionary<PageAddress, IndexNode> _localIndexNodes = new();
+    private readonly Dictionary<PageAddress, __IndexNode> _localIndexNodes = new();
 
     // when safepoint occurs, save reference for changed pages on log (PageID, PositionID)
     private readonly Dictionary<int, int> _walDirtyPages = new();
@@ -178,7 +178,7 @@ internal class Transaction : ITransaction
         return page;
     }
 
-    public IndexNode GetIndexNode(PageAddress indexNodeID)
+    public __IndexNode GetIndexNode(PageAddress indexNodeID)
     {
         using var _pc = PERF_COUNTER(10, nameof(GetIndexNode), nameof(Transaction));
 
@@ -191,7 +191,7 @@ internal class Transaction : ITransaction
 
         ENSURE(page is not null, "Page not found for this index", new { indexNodeID });
 
-        indexNode = new IndexNode(page!, indexNodeID);
+        indexNode = new __IndexNode(page!, indexNodeID);
 
         _localIndexNodes.Add(indexNodeID, indexNode);
 
@@ -202,7 +202,7 @@ internal class Transaction : ITransaction
     {
         var deleted = _localIndexNodes.Remove(indexNodeID);
 
-        ENSURE(deleted, "IndexNode not found in transaction local index cache", new { indexNodeID, _localIndexNodes });
+        ENSURE(deleted, "__IndexNode not found in transaction local index cache", new { indexNodeID, _localIndexNodes });
     }
 
     /// <summary>

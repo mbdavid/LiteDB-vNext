@@ -27,10 +27,10 @@ internal class NewDatafile : INewDatafile
     /// Create a empty database using user-settings as default values
     /// Create FileHeader, first AllocationMap page and first $master data page
     /// </summary>
-    public async ValueTask<FileHeader> CreateAsync(IDiskStream writer)
+    public async ValueTask<__FileHeader> CreateAsync(IDiskStream writer)
     {
         // initialize FileHeader with user settings
-        var fileHeader = new FileHeader(_settings);
+        var fileHeader = new __FileHeader(_settings);
 
         // create new file and write header
         await writer.CreateAsync(fileHeader);

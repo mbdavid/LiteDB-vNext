@@ -23,7 +23,7 @@ internal readonly struct SortItem
 
     public int GetBytesCount()
     {
-        return IndexNode.GetKeyLength(this.Key) + PageAddress.SIZE;
+        return __IndexNode.GetKeyLength(this.Key) + PageAddress.SIZE;
     }
 
     public override string ToString() => Dump.Object(this);

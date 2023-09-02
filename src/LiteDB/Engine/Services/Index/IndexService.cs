@@ -25,10 +25,10 @@ internal class IndexService : IIndexService
     /// <summary>
     /// Create head and tail nodes for a new index
     /// </summary>
-    public async ValueTask<(IndexNode head, IndexNode tail)> CreateHeadTailNodesAsync(byte colID)
+    public async ValueTask<(__IndexNode head, __IndexNode tail)> CreateHeadTailNodesAsync(byte colID)
     {
         // get how many bytes needed for each head/tail (both has same size)
-        var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, BsonValue.MinValue, out _);
+        var bytesLength = (ushort)__IndexNode.GetNodeLength(INDEX_MAX_LEVELS, BsonValue.MinValue, out _);
 
         // get a index page for this collection
         var page = await _transaction.GetFreeIndexPageAsync(colID, bytesLength);
@@ -78,7 +78,7 @@ internal class IndexService : IIndexService
     private async ValueTask<IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, IndexNodeResult head, IndexNodeResult last)
     {
         // get a free index page for head note
-        var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, key, out var keyLength);
+        var bytesLength = (ushort)__IndexNode.GetNodeLength(insertLevels, key, out var keyLength);
 
         // test for index key maxlength
         if (keyLength > INDEX_MAX_KEY_LENGTH) throw ERR($"Index key must be less than {INDEX_MAX_KEY_LENGTH} bytes.");
@@ -190,7 +190,7 @@ internal class IndexService : IIndexService
         ENSURE(page.Header.PageType == PageType.Index, new { indexNodeID, page });
 
         var indexNode = _transaction.GetIndexNode(indexNodeID);
-        //var indexNode = new IndexNode(page, indexNodeID);
+        //var indexNode = new __IndexNode(page, indexNodeID);
 
         return new(indexNode, page);
     }

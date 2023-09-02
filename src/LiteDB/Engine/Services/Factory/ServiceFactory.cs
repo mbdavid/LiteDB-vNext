@@ -10,7 +10,7 @@ internal partial class ServicesFactory : IServicesFactory
 
     public IEngineSettings Settings { get; }
     public EngineState State { get; set; } = EngineState.Close;
-    public FileHeader FileHeader { get; set; }
+    public __FileHeader FileHeader { get; set; }
     public Exception? Exception { get; set; }
 
     public IBsonReader BsonReader { get; }

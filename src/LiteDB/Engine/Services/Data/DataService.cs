@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics.Metrics;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 [AutoInterface]
 internal class DataService : IDataService
@@ -46,7 +43,7 @@ internal class DataService : IDataService
 
         // keep last instance to update nextBlock
         PageBuffer? lastPage = null;
-        DataBlock? lastDataBlock = null;
+        __DataBlock? lastDataBlock = null;
 
         // return dataBlockID - will be update in first insert
         var dataBlockID = PageAddress.Empty;
@@ -58,7 +55,7 @@ internal class DataService : IDataService
         while (true)
         {
             // get how many bytes must be copied in this page (should consider data block and new footer item)
-            var pageFreeSpace = page.Header.FreeBytes - DataBlock.DATA_BLOCK_FIXED_SIZE - 4; // -4 for a possible new record (4 footer bytes)
+            var pageFreeSpace = page.Header.FreeBytes - __DataBlock.DATA_BLOCK_FIXED_SIZE - 4; // -4 for a possible new record (4 footer bytes)
             var bytesToCopy = Math.Min(pageFreeSpace, bytesLeft);
 
             // get extend page value before page change
@@ -128,7 +125,7 @@ internal class DataService : IDataService
         var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);
 
         // get first data block
-        var dataBlock = new DataBlock(page.AsSpan(segment), dataBlockID);
+        var dataBlock = new __DataBlock(page.AsSpan(segment), dataBlockID);
 
         //TODO: SOMENTE PRIMEIRA PAGINA
 
@@ -158,11 +155,11 @@ internal class DataService : IDataService
         // get data block segment
         var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);
 
-        var dataBlock = new DataBlock(page.AsSpan(segment), dataBlockID);
+        var dataBlock = new __DataBlock(page.AsSpan(segment), dataBlockID);
 
         if (dataBlock.NextBlockID.IsEmpty)
         {
-            var result = _bsonReader.ReadDocument(page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength), fields, false, out _);
+            var result = _bsonReader.ReadDocument(page.AsSpan(segment.Location + __DataBlock.P_BUFFER, dataBlock.DataLength), fields, false, out _);
 
             return result;
         }
@@ -172,7 +169,7 @@ internal class DataService : IDataService
             using var docBuffer = SharedBuffer.Rent(dataBlock.DocumentLength);
 
             // copy first page into full buffer
-            page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
+            page.AsSpan(segment.Location + __DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
                 .CopyTo(docBuffer.AsSpan()); // and copy to docBuffer byte[]
 
             var position = dataBlock.DataLength;
@@ -185,10 +182,10 @@ internal class DataService : IDataService
 
                 segment = PageSegment.GetSegment(page, dataBlock.NextBlockID.Index, out var _);
 
-                dataBlock = new DataBlock(page.AsSpan(segment), dataBlock.NextBlockID);
+                dataBlock = new __DataBlock(page.AsSpan(segment), dataBlock.NextBlockID);
 
                 //dataBlock.GetDataSpan(page).CopyTo(docBuffer.AsSpan(position));
-                page.AsSpan(segment.Location + DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
+                page.AsSpan(segment.Location + __DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
                     .CopyTo(docBuffer.AsSpan()); // and copy to docBuffer byte[]
 
                 position += dataBlock.DataLength;
@@ -214,7 +211,7 @@ internal class DataService : IDataService
             var segment = PageSegment.GetSegment(page, dataBlockID.Index, out _);
 
             // and get dataBlock
-            var dataBlock = new DataBlock(page.AsSpan(segment), dataBlockID);
+            var dataBlock = new __DataBlock(page.AsSpan(segment), dataBlockID);
 
             var before = page.Header.ExtendPageValue;
 
@@ -249,7 +246,7 @@ internal class DataService : IDataService
 
             if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
-            DataBlock lastBlock = null;
+            __DataBlock lastBlock = null;
             var updateAddress = blockAddress;
 
             IEnumerable <BufferSlice> source()
@@ -281,7 +278,7 @@ internal class DataService : IDataService
                     else
                     {
                         bytesToCopy = Math.Min(bytesLeft, MAX_DATA_BYTES_PER_PAGE);
-                        var dataPage = _snapshot.GetFreeDataPage(bytesToCopy + DataBlock.DATA_BLOCK_FIXED_SIZE);
+                        var dataPage = _snapshot.GetFreeDataPage(bytesToCopy + __DataBlock.DATA_BLOCK_FIXED_SIZE);
                         var insertBlock = dataPage.InsertBlock(bytesToCopy, true);
 
                         if (lastBlock != null)

@@ -1,9 +1,9 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct DataBlock
+internal struct __DataBlock
 {
     /// <summary>
-    /// Get fixed part of DataBlock (5 bytes)
+    /// Get fixed part of __DataBlock (5 bytes)
     /// </summary>
     public const int DATA_BLOCK_FIXED_SIZE = 1 + // data block type (reserved)
                                              PageAddress.SIZE; // NextBlock
@@ -38,9 +38,9 @@ internal struct DataBlock
     public readonly int DataLength;
 
     /// <summary>
-    /// Read new DataBlock from filled page block
+    /// Read new __DataBlock from filled page block
     /// </summary>
-    public DataBlock(Span<byte> buffer, PageAddress dataBlockID)
+    public __DataBlock(Span<byte> buffer, PageAddress dataBlockID)
     {
         this.DataBlockID = dataBlockID;
 
@@ -52,9 +52,9 @@ internal struct DataBlock
     }
 
     /// <summary>
-    /// Create new DataBlock and fill into buffer
+    /// Create new __DataBlock and fill into buffer
     /// </summary>
-    public DataBlock(Span<byte> buffer, PageAddress dataBlockID, bool extend)
+    public __DataBlock(Span<byte> buffer, PageAddress dataBlockID, bool extend)
     {
         this.DataBlockID = dataBlockID;
         this.Extend = extend;

@@ -5,15 +5,8 @@
 /// </summary>
 internal struct PageSegment
 {
-    /// <summary>
-    /// Segment location on page buffer
-    /// </summary>
-    public ushort Location;
-
-    /// <summary>
-    /// Segment length
-    /// </summary>
-    public ushort Length;
+    public ushort Location;  // 2
+    public ushort Length;    // 2
 
     /// <summary>
     /// Get final location (Location + Length)

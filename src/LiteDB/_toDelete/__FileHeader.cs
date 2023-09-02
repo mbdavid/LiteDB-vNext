@@ -4,7 +4,7 @@ namespace LiteDB.Engine;
 /// First initial data structure at start of disk. 
 /// All information data here are immutable. Only flag controls are changed (IsDisposed)
 /// </summary>
-internal class FileHeader
+internal class __FileHeader
 {
     /// <summary>
     /// Header info the validate that datafile is a LiteDB file (27 bytes)
@@ -54,7 +54,7 @@ internal class FileHeader
     /// <summary>
     /// Create empty version of file header
     /// </summary>
-    public FileHeader()
+    public __FileHeader()
     {
         _headerInfo = "";
         _fileVersion = 0;
@@ -71,7 +71,7 @@ internal class FileHeader
     /// <summary>
     /// Read file header from a existing buffer data
     /// </summary>
-    public FileHeader(Span<byte> buffer)
+    public __FileHeader(Span<byte> buffer)
     {
         _headerInfo = buffer[P_HEADER_INFO..(P_HEADER_INFO + HEADER_INFO.Length)].ReadString();
         _fileVersion = buffer[P_FILE_VERSION];
@@ -99,7 +99,7 @@ internal class FileHeader
     /// <summary>
     /// Create a new file header structure and write direct on buffer
     /// </summary>
-    public FileHeader(IEngineSettings settings)
+    public __FileHeader(IEngineSettings settings)
     {
         _headerInfo = HEADER_INFO;
         _fileVersion = FILE_VERSION;

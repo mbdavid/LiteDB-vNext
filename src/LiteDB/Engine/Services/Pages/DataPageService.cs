@@ -16,12 +16,12 @@ internal class DataPageService : PageService, IDataPageService
     }
 
     /// <summary>
-    /// Write a new document (or document fragment) into a DataPage and returns new DataBlock
+    /// Write a new document (or document fragment) into a DataPage and returns new __DataBlock
     /// </summary>
-    public DataBlock InsertDataBlock(PageBuffer page, Span<byte> content, bool extend)
+    public __DataBlock InsertDataBlock(PageBuffer page, Span<byte> content, bool extend)
     {
         // get required bytes this insert
-        var bytesLength = (ushort)(content.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
+        var bytesLength = (ushort)(content.Length + __DataBlock.DATA_BLOCK_FIXED_SIZE);
 
         // get a new index block
         var newIndex = page.Header.GetFreeIndex(page);
@@ -36,10 +36,10 @@ internal class DataPageService : PageService, IDataPageService
         var buffer = page.AsSpan(segment);
 
         // create new datablock
-        var dataBlock = new DataBlock(buffer, dataBlockID, extend);
+        var dataBlock = new __DataBlock(buffer, dataBlockID, extend);
 
         // copy content from span source to data block content area 
-        content.CopyTo(buffer[DataBlock.P_BUFFER..]);
+        content.CopyTo(buffer[__DataBlock.P_BUFFER..]);
 
         return dataBlock;
     }
@@ -47,10 +47,10 @@ internal class DataPageService : PageService, IDataPageService
     /// <summary>
     /// Update an existing document inside a single page. This new document must fit on this page
     /// </summary>
-    public DataBlock UpdateDataBlock(PageBuffer page, byte index, Span<byte> content, PageAddress nextBlock)
+    public __DataBlock UpdateDataBlock(PageBuffer page, byte index, Span<byte> content, PageAddress nextBlock)
     {
         // get required bytes this update
-        var bytesLength = (ushort)(content.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
+        var bytesLength = (ushort)(content.Length + __DataBlock.DATA_BLOCK_FIXED_SIZE);
 
         page.IsDirty = true;
 
@@ -62,12 +62,12 @@ internal class DataPageService : PageService, IDataPageService
 
         var dataBlockID = new PageAddress(page.Header.PageID, index);
 
-        var dataBlock = new DataBlock(buffer, dataBlockID);
+        var dataBlock = new __DataBlock(buffer, dataBlockID);
 
         dataBlock.SetNextBlockID(buffer, nextBlock);
 
         // copy content from span source to data block content area 
-        content.CopyTo(buffer[DataBlock.P_BUFFER..]);
+        content.CopyTo(buffer[__DataBlock.P_BUFFER..]);
 
         // return updated data block
         return dataBlock;
