@@ -36,7 +36,7 @@ unsafe internal class MemoryFactory : IMemoryFactory
         Interlocked.Increment(ref _nextUniqueID);
         Interlocked.Increment(ref _pagesAllocated);
 
-        PageMemory.Initialize(memPrt, _nextUniqueID);
+        memPrt->Initialize(_nextUniqueID);
 
         _inUsePages.TryAdd(memPrt->UniqueID, (nint)memPrt);
 
@@ -53,7 +53,7 @@ unsafe internal class MemoryFactory : IMemoryFactory
         ENSURE(removed, new { _pagesAllocated, _freePages, _inUsePages });
 
         // clear page
-        PageMemory.Initialize(pagePrt, pagePrt->UniqueID);
+        pagePrt->Initialize(pagePrt->UniqueID);
 
         // add used page as new free page
         _freePages.Enqueue((nint)pagePrt);

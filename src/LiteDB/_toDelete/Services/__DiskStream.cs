@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IDisposable))]
-unsafe internal class DiskStream : IDiskStream
+internal class __DiskStream : I__DiskStream
 {
     private readonly IEngineSettings _settings;
     private readonly IStreamFactory _streamFactory;
@@ -11,7 +11,7 @@ unsafe internal class DiskStream : IDiskStream
 
     public string Name => Path.GetFileName(_settings.Filename);
 
-    public DiskStream(
+    public __DiskStream(
         IEngineSettings settings, 
         IStreamFactory streamFactory)
     {
@@ -23,22 +23,22 @@ unsafe internal class DiskStream : IDiskStream
     /// Initialize disk opening already exist datafile and return file header structure.
     /// Can open file as read or write
     /// </summary>
-    public FileHeader OpenFile(bool canWrite)
+    public async ValueTask<FileHeader> OpenAsync(bool canWrite, CancellationToken ct = default)
     {
         // get a new FileStream connected to file
         _stream = _streamFactory.GetStream(canWrite,
             FileOptions.RandomAccess);
 
         // reading file header
-        using var buffer = SharedBuffer.Rent(FILE_HEADER_SIZE);
+        var buffer = new byte[FILE_HEADER_SIZE];
 
         _stream.Position = 0;
 
-        var read = _stream.Read(buffer.AsSpan());
+        var read = await _stream.ReadAsync(buffer, ct);
 
         ENSURE(read != PAGE_HEADER_SIZE, new { read });
 
-        var header = new FileHeader(buffer.AsSpan());
+        var header = new FileHeader(buffer);
 
         // for content stream, use AesStream (for encrypted file) or same _stream
         _contentStream = header.Encrypted ?
@@ -49,9 +49,9 @@ unsafe internal class DiskStream : IDiskStream
     }
 
     /// <summary>
-    /// Open stream with no FileHeader read (need FileHeader instance)
+    /// Open stream with no FileHeader read
     /// </summary>
-    public void OpenFile(FileHeader header)
+    public void Open(FileHeader header)
     {
         // get a new FileStream connected to file
         _stream = _streamFactory.GetStream(false, FileOptions.RandomAccess);
@@ -65,7 +65,7 @@ unsafe internal class DiskStream : IDiskStream
     /// <summary>
     /// Initialize disk creating a new datafile and writing file header
     /// </summary>
-    public void CreateNewFile(FileHeader fileHeader)
+    public async ValueTask CreateAsync(FileHeader fileHeader, CancellationToken ct = default)
     {
         // create new data file
         _stream = _streamFactory.GetStream(true, FileOptions.SequentialScan);
@@ -73,7 +73,7 @@ unsafe internal class DiskStream : IDiskStream
         // writing file header
         _stream.Position = 0;
 
-        _stream.Write(fileHeader.ToArray());
+        await _stream.WriteAsync(fileHeader.ToArray(), ct);
 
         // for content stream, use AesStream (for encrypted file) or same _stream
         _contentStream = fileHeader.Encrypted ?
@@ -108,73 +108,71 @@ unsafe internal class DiskStream : IDiskStream
     /// <summary>
     /// Read single page from disk using disk position. Load header instance too. This position has FILE_HEADER_SIZE offset
     /// </summary>
-    public bool ReadPage(PageMemory* pagePtr, uint positionID)
+    public async ValueTask<bool> ReadPageAsync(int positionID, PageBuffer page, CancellationToken ct = default)
     {
-        using var _pc = PERF_COUNTER(2, nameof(ReadPage), nameof(DiskStream));
+        using var _pc = PERF_COUNTER(2, nameof(ReadPageAsync), nameof(__DiskStream));
 
-        ENSURE(positionID != uint.MaxValue, "PositionID should not be empty");
+        ENSURE(positionID != int.MaxValue, "PositionID should not be empty");
 
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
-        var span = new Span<byte>(pagePtr, PAGE_SIZE);
+        var read = await _contentStream.ReadAsync(page.Buffer, ct);
 
-        // read uniqueID to restore after read from disk
-        var uniqueID = pagePtr->UniqueID;
+        // after read content from file, update header info in page
+        page.Header.ReadFromPage(page);
 
-        var read = _contentStream.Read(span);
-
-        pagePtr->UniqueID = uniqueID;
-
-        ENSURE(pagePtr->PositionID == positionID, "is temp page?");
+        // update page position
+        page.PositionID = positionID;
 
         return read == PAGE_SIZE;
     }
 
-    public void WritePage(PageMemory* pagePtr)
+    public async ValueTask WritePageAsync(PageBuffer page, CancellationToken ct = default)
     {
-        using var _pc = PERF_COUNTER(3, nameof(WritePage), nameof(DiskStream));
+        using var _pc = PERF_COUNTER(3, nameof(WritePageAsync), nameof(__DiskStream));
 
-        ENSURE(pagePtr->IsDirty);
-        ENSURE(pagePtr->ShareCounter == NO_CACHE);
-        ENSURE(pagePtr->PositionID != int.MaxValue);
+        ENSURE(page.IsDirty, page);
+        ENSURE(page.ShareCounter == NO_CACHE, page);
+        ENSURE(page.PositionID != int.MaxValue, page);
 
         // update crc8 page
-        pagePtr->Crc8 = 0; // pagePtr->ComputeCrc8();
+        page.Header.Crc8 = page.ComputeCrc8();
+
+        // before save on disk, update header page to buffer (first 32 bytes)
+        page.Header.WriteToPage(page);
 
         // set real position on stream
-        _contentStream!.Position = FILE_HEADER_SIZE + (pagePtr->PositionID * PAGE_SIZE);
+        _contentStream!.Position = FILE_HEADER_SIZE + (page.PositionID * PAGE_SIZE);
 
-        var span = new Span<byte>(pagePtr, PAGE_SIZE);
-
-        _contentStream.Write(span);
+        await _contentStream.WriteAsync(page.Buffer, ct);
 
         // clear isDirty flag
-        pagePtr->IsDirty = false;
+        page.IsDirty = false;
     }
 
     /// <summary>
     /// Write an empty (full \0) PAGE_SIZE using positionID
     /// </summary>
-    public void WriteEmptyPage(int positionID)
+    public async ValueTask WriteEmptyAsync(int positionID, CancellationToken ct = default)
     {
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
-        _contentStream.Write(PAGE_EMPTY);
+        await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, ct);
     }
 
     /// <summary>
     /// Write an empty (full \0) PAGE_SIZE using from/to (inclusive)
     /// </summary>
-    public void WriteEmptyPages(int fromPositionID, int toPositionID, CancellationToken token = default)
+    public async ValueTask WriteEmptyAsync(int fromPositionID, int toPositionID, CancellationToken ct = default)
     {
-        for (var i = fromPositionID; i <= toPositionID && token.IsCancellationRequested; i++)
+        for (var i = fromPositionID; i <= toPositionID; i++)
         {
             // set real position on stream
             _contentStream!.Position = FILE_HEADER_SIZE + (i * PAGE_SIZE);
 
-            _contentStream.Write(PAGE_EMPTY);
+            await _contentStream.WriteAsync(PAGE_EMPTY_BUFFER, ct);
         }
     }
 
@@ -195,7 +193,7 @@ unsafe internal class DiskStream : IDiskStream
     /// </summary>
     public void WriteFlag(int headerPosition, byte flag)
     {
-        _stream!.Position = FileHeader.P_IS_DIRTY;
+        _stream!.Position = headerPosition;
         _stream.WriteByte(flag);
 
         _stream.Flush();

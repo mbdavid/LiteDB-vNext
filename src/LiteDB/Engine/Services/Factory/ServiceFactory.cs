@@ -10,13 +10,14 @@ internal partial class ServicesFactory : IServicesFactory
 
     public IEngineSettings Settings { get; }
     public EngineState State { get; set; } = EngineState.Close;
-    public __FileHeader FileHeader { get; set; }
+    public FileHeader FileHeader { get; set; }
     public Exception? Exception { get; set; }
 
     public IBsonReader BsonReader { get; }
     public IBsonWriter BsonWriter { get; }
 
     public IBufferFactory BufferFactory { get; }
+    public IMemoryFactory MemoryFactory { get; }
     public IStreamFactory StreamFactory { get; }
     public IStreamFactory SortStreamFactory { get; }
 
@@ -30,15 +31,15 @@ internal partial class ServicesFactory : IServicesFactory
     public IQueryService QueryService { get; }
 
     public ILockService LockService { get; }
-    public IDiskService DiskService { get; }
+    public I__DiskService DiskService { get; }
     public IRecoveryService RecoveryService { get; }
     public IAllocationMapService AllocationMapService { get; }
     public IMasterMapper MasterMapper { get; }
     public IMasterService MasterService { get; }
     public IMonitorService MonitorService { get; }
     public IAutoIdService AutoIdService { get; }
-    public IDataPageService DataPageService { get; }
-    public IIndexPageService IndexPageService { get; }
+    public I__DataPageService DataPageService { get; }
+    public I__IndexPageService IndexPageService { get; }
 
     #endregion
 
@@ -56,9 +57,10 @@ internal partial class ServicesFactory : IServicesFactory
         this.BsonReader = new BsonReader();
         this.BsonWriter = new BsonWriter();
         this.WalIndexService = new WalIndexService();
+        this.MemoryFactory = new MemoryFactory();
         this.BufferFactory = new BufferFactory();
-        this.DataPageService = new DataPageService();
-        this.IndexPageService = new IndexPageService();
+        this.DataPageService = new __DataPageService();
+        this.IndexPageService = new __IndexPageService();
         this.MasterMapper = new MasterMapper();
         this.AutoIdService = new AutoIdService();
 
@@ -74,7 +76,7 @@ internal partial class ServicesFactory : IServicesFactory
 
         // other services dependencies
         this.CacheService = new CacheService(this.BufferFactory);
-        this.DiskService = new DiskService(this.StreamFactory, this);
+        this.DiskService = new __DiskService(this.StreamFactory, this);
         this.LogService = new LogService(this.DiskService, this.CacheService, this.BufferFactory, this.WalIndexService, this);
         this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);
         this.MasterService = new MasterService(this);
@@ -89,13 +91,23 @@ internal partial class ServicesFactory : IServicesFactory
     public IEngineContext CreateEngineContext() 
         => new EngineContext();
 
+    public I__DiskStream __CreateDiskStream()
+        => new __DiskStream(this.Settings, this.StreamFactory);
+
+    public I__NewDatafile __CreateNewDatafile() => new __NewDatafile(
+        this.BufferFactory,
+        this.MasterMapper,
+        this.BsonWriter,
+        this.DataPageService,
+        this.Settings);
+
     public IDiskStream CreateDiskStream()
         => new DiskStream(this.Settings, this.StreamFactory);
 
-    public INewDatafile CreateNewDatafile() => new NewDatafile(
-        this.BufferFactory, 
+    public NewDatafile CreateNewDatafile() => new NewDatafile(
+        this.MemoryFactory,
         this.MasterMapper,
-        this.BsonWriter, 
+        this.BsonWriter,
         this.DataPageService,
         this.Settings);
 

@@ -28,6 +28,11 @@ internal class Constants
     /// <summary>
     /// Get a full empty array with PAGE_SIZE (do not change any value - shared instance)
     /// </summary>
+    public static readonly byte[] PAGE_EMPTY = new byte[PAGE_SIZE];
+
+    /// <summary>
+    /// Get a full empty array with PAGE_SIZE (do not change any value - shared instance)
+    /// </summary>
     public static readonly Memory<byte> PAGE_EMPTY_BUFFER = new byte[PAGE_SIZE];
 
     /// <summary>

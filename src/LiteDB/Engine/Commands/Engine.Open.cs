@@ -36,7 +36,7 @@ public partial class LiteEngine : ILiteEngine
                 // do a database recovery
                 await recoveryService.DoRecoveryAsync();
 
-                stream.WriteFlag(__FileHeader.P_IS_DIRTY, 0);
+                stream.WriteFlag(FileHeader.P_IS_DIRTY, 0);
 
                 _factory.FileHeader.IsDirty = false;
             }

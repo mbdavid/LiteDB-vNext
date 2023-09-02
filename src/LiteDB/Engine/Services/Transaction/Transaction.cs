@@ -6,12 +6,12 @@
 internal class Transaction : ITransaction
 {
     // dependency injection
-    private readonly IDiskService _diskService;
+    private readonly I__DiskService _diskService;
     private readonly ILogService _logService;
     private readonly IWalIndexService _walIndexService;
     private readonly IAllocationMapService _allocationMapService;
-    private readonly IIndexPageService _indexPageService;
-    private readonly IDataPageService _dataPageService;
+    private readonly I__IndexPageService _indexPageService;
+    private readonly I__DataPageService _dataPageService;
     private readonly IBufferFactory _bufferFactory;
     private readonly ICacheService _cacheService;
     private readonly ILockService _lockService;
@@ -20,7 +20,7 @@ internal class Transaction : ITransaction
     private int _lockCounter = 0;
 
     // rented reader stream
-    private IDiskStream? _reader;
+    private I__DiskStream? _reader;
 
     // local page cache - contains only data/index pages about this collection
     private readonly Dictionary<int, PageBuffer> _localPages = new();
@@ -57,14 +57,14 @@ internal class Transaction : ITransaction
     public int PagesUsed => _localPages.Count;
 
     public Transaction(
-        IDiskService diskService,
+        I__DiskService diskService,
         ILogService logService,
         IBufferFactory bufferFactory,
         ICacheService cacheService,
         IWalIndexService walIndexService,
         IAllocationMapService allocationMapService,
-        IIndexPageService indexPageService,
-        IDataPageService dataPageService,
+        I__IndexPageService indexPageService,
+        I__DataPageService dataPageService,
         ILockService lockService,
         int transactionID, byte[] writeCollections, int readVersion)
     {

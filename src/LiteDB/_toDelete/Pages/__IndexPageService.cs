@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class IndexPageService : PageService, IIndexPageService
+internal class __IndexPageService : __PageService, I__IndexPageService
 {
     /// <summary>
     /// Initialize an empty PageBuffer as IndexPage

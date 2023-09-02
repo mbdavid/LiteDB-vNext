@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class DataPageService : PageService, IDataPageService
+internal class __DataPageService : __PageService, I__DataPageService
 {
     /// <summary>
     /// Initialize an empty PageBuffer as DataPage

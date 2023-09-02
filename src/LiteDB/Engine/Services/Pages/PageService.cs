@@ -1,11 +1,9 @@
-﻿using System;
-using System.Reflection;
+﻿namespace LiteDB.Engine;
 
-namespace LiteDB.Engine;
-
-unsafe internal static class BasePage
+[AutoInterface]
+unsafe internal class PageService : IPageService
 {
-    public static PageSegment* Insert(PageMemory* pagePtr, ushort bytesLength, ushort index, bool isNewInsert)
+    protected PageSegment* Insert(PageMemory* pagePtr, ushort bytesLength, ushort index, bool isNewInsert)
     {
         ENSURE(index != ushort.MaxValue, new { bytesLength, index, isNewInsert });
 
@@ -61,11 +59,10 @@ unsafe internal static class BasePage
         return segmentPtr;
     }
 
-
     /// <summary>
     /// Remove index slot about this page segment. Returns deleted page segment
     /// </summary>
-    public static void Delete(PageMemory* pagePtr, ushort index)
+    public void Delete(PageMemory* pagePtr, ushort index)
     {
         // mark page as dirty
         pagePtr->IsDirty = true;
@@ -121,7 +118,7 @@ unsafe internal static class BasePage
 
     /// <summary>
     /// </summary>
-    public static PageSegment* Update(PageMemory* pagePtr, byte index, ushort bytesLength)
+    protected PageSegment* Update(PageMemory* pagePtr, ushort index, ushort bytesLength)
     {
         ENSURE(bytesLength > 0, "Must update more than 0 bytes", new { bytesLength });
 
@@ -205,7 +202,7 @@ unsafe internal static class BasePage
     /// Defrag method re-organize all byte data content removing all fragmented data. This will move all page blocks
     /// to create a single continuous content area (just after header area). No index block will be changed (only positions)
     /// </summary>
-    private static void Defrag(PageMemory* pagePtr)
+    private void Defrag(PageMemory* pagePtr)
     {
         ENSURE(pagePtr->FragmentedBytes > 0, "do not call this when page has no fragmentation");
         ENSURE(pagePtr->HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
@@ -272,11 +269,35 @@ unsafe internal static class BasePage
         pagePtr->NextFreeLocation = next;
     }
 
+
+    /// <summary>
+    /// Get a free index slot in this page
+    /// </summary>
+    public ushort GetFreeIndex(PageMemory* pagePtr)
+    {
+        // get first pointer do 0 index segment
+        var segmentPtr = PageSegment.GetSegment(pagePtr, 0);
+
+        // check for all slot area to get first empty slot [safe for byte loop]
+        for (var index = 0; index <= pagePtr->HighestIndex; index++)
+        {
+            if (segmentPtr->Location == 0)
+            {
+                return (ushort)index;
+            }
+
+            segmentPtr--;
+        }
+
+        return (byte)(pagePtr->HighestIndex + 1);
+    }
+
+
     /// <summary>
     /// Update HighestIndex based on current HighestIndex (step back looking for next used slot)
     /// * Used only in Delete() operation *
     /// </summary>
-    private static void UpdateHighestIndex(PageMemory* pagePtr)
+    private void UpdateHighestIndex(PageMemory* pagePtr)
     {
         // if current index is 0, clear index
         if (pagePtr->HighestIndex == 0)

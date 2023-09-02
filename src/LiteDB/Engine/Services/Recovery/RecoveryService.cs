@@ -5,7 +5,7 @@ internal class RecoveryService : IRecoveryService
 {
     // dependency injections
     private readonly IBufferFactory _bufferFactory;
-    private readonly IDiskService _diskService;
+    private readonly I__DiskService _diskService;
 
     private readonly List<PageHeader> _logPages = new();
     private readonly List<PageHeader> _tempPages = new();
@@ -17,7 +17,7 @@ internal class RecoveryService : IRecoveryService
 
     public RecoveryService(
         IBufferFactory bufferFactory, 
-        IDiskService diskService)
+        I__DiskService diskService)
     {
         _bufferFactory = bufferFactory;
         _diskService = diskService;

@@ -8,12 +8,12 @@
 internal class IndexService : IIndexService
 {
     // dependency injection
-    private readonly IIndexPageService _indexPageService;
+    private readonly I__IndexPageService _indexPageService;
     private readonly ITransaction _transaction;
     private readonly Collation _collation;
 
     public IndexService(
-        IIndexPageService indexPageService,
+        I__IndexPageService indexPageService,
         Collation collation,
         ITransaction transaction)
     {

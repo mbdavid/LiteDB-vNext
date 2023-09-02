@@ -6,7 +6,7 @@
 [AutoInterface(typeof(IDisposable))]
 internal class AllocationMapService : IAllocationMapService
 {
-    private readonly IDiskService _diskService;
+    private readonly I__DiskService _diskService;
     private readonly IBufferFactory _bufferFactory;
 
     /// <summary>
@@ -15,7 +15,7 @@ internal class AllocationMapService : IAllocationMapService
     private readonly List<AllocationMapPage> _pages = new();
 
     public AllocationMapService(
-        IDiskService diskService, 
+        I__DiskService diskService, 
         IBufferFactory bufferFactory)
     {
         _diskService = diskService;

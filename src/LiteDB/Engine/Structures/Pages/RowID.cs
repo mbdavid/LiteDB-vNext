@@ -14,6 +14,12 @@ internal unsafe struct RowID : IEquatable<RowID>
     {
     }
 
+    public RowID(uint pageID, ushort index)
+    {
+        this.PageID = pageID;
+        this.Index = index;
+    }
+
     public bool Equals(RowID other)
     {
         return this.PageID == other.PageID && this.Index == other.Index;

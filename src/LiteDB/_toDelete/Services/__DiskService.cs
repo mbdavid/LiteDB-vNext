@@ -4,26 +4,26 @@
 /// Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class DiskService : IDiskService
+internal class __DiskService : I__DiskService
 {
     // dependency injection
     private readonly IStreamFactory _streamFactory;
     private readonly IServicesFactory _factory;
 
-    private readonly IDiskStream _writer;
+    private readonly I__DiskStream _writer;
 
-    private readonly ConcurrentQueue<IDiskStream> _readers = new ();
+    private readonly ConcurrentQueue<I__DiskStream> _readers = new ();
 
-    public IDiskStream GetDiskWriter() => _writer;
+    public I__DiskStream GetDiskWriter() => _writer;
 
-    public DiskService(
+    public __DiskService(
         IStreamFactory streamFactory,
         IServicesFactory factory)
     {
         _streamFactory = streamFactory;
         _factory = factory;
 
-        _writer = factory.CreateDiskStream();
+        _writer = factory.__CreateDiskStream();
     }
 
     /// <summary>
@@ -35,22 +35,22 @@ internal class DiskService : IDiskService
         if (_streamFactory.Exists() == false)
         {
             // intialize new database class factory
-            var newFile = _factory.CreateNewDatafile();
+            var newFile = _factory.__CreateNewDatafile();
 
             // create first AM page and $master 
-            return await newFile.CreateNewAsync(_writer);
+            return await newFile.CreateAsync(_writer);
         }
         else
         {
             // read header page buffer from start of disk
-            return _writer.OpenFile(true);
+            return await _writer.OpenAsync(true);
         }
     }
 
     /// <summary>
     /// Rent a disk reader from pool. Must return after use
     /// </summary>
-    public IDiskStream RentDiskReader()
+    public I__DiskStream RentDiskReader()
     {
         if (_readers.TryDequeue(out var reader))
         {
@@ -58,10 +58,10 @@ internal class DiskService : IDiskService
         }
 
         // create new diskstream
-        reader = _factory.CreateDiskStream();
+        reader = _factory.__CreateDiskStream();
 
         // and open to read-only (use saved header)
-        reader.OpenFile(_factory.FileHeader);
+        reader.Open(_factory.FileHeader);
 
         return reader;
     }
@@ -69,7 +69,7 @@ internal class DiskService : IDiskService
     /// <summary>
     /// Return a rented reader and add to pool
     /// </summary>
-    public void ReturnDiskReader(IDiskStream reader)
+    public void ReturnDiskReader(I__DiskStream reader)
     {
         _readers.Enqueue(reader);
     }

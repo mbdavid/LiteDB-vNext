@@ -4,13 +4,13 @@
 internal class DataService : IDataService
 {
     // dependency injection
-    private readonly IDataPageService _dataPageService;
+    private readonly I__DataPageService _dataPageService;
     private readonly IBsonReader _bsonReader;
     private readonly IBsonWriter _bsonWriter;
     private readonly ITransaction _transaction;
 
     public DataService(
-        IDataPageService dataPageService,
+        I__DataPageService dataPageService,
         IBsonReader bsonReader,
         IBsonWriter bsonWriter,
         ITransaction transaction)

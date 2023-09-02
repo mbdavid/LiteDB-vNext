@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-internal class PageService : IPageService
+internal class __PageService : I__PageService
 {
     /// <summary>
     /// Get a new page segment for this length content using fixed index

@@ -7,7 +7,7 @@
 internal class LogService : ILogService
 {
     // dependency injection
-    private readonly IDiskService _diskService;
+    private readonly I__DiskService _diskService;
     private readonly ICacheService _cacheService;
     private readonly IBufferFactory _bufferFactory;
     private readonly IWalIndexService _walIndexService;
@@ -20,7 +20,7 @@ internal class LogService : ILogService
     private readonly HashSet<int> _confirmedTransactions = new();
 
     public LogService(
-        IDiskService diskService,
+        I__DiskService diskService,
         ICacheService cacheService,
         IBufferFactory bufferFactory,
         IWalIndexService walIndexService,
@@ -69,7 +69,7 @@ internal class LogService : ILogService
         {
             _factory.FileHeader.IsDirty = true;
 
-            writer.WriteFlag(__FileHeader.P_IS_DIRTY, 1);
+            writer.WriteFlag(FileHeader.P_IS_DIRTY, 1);
         }
 
         for (var i = 0; i < pages.Length; i++)
@@ -256,7 +256,7 @@ internal class LogService : ILogService
     /// <summary>
     /// Get page from cache (remove if found) or create a new from page factory
     /// </summary>
-    private async ValueTask<PageBuffer> GetLogPageAsync(IDiskStream stream, int positionID)
+    private async ValueTask<PageBuffer> GetLogPageAsync(I__DiskStream stream, int positionID)
     {
         // try get page from cache
         if (_cacheService.TryRemove(positionID, out var page))

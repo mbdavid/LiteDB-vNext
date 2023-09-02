@@ -23,6 +23,7 @@ internal unsafe struct PageMemory   // 8192
     public byte Crc8;               // 1
 
     public fixed byte Buffer[PAGE_CONTENT_SIZE]; // 8160
+    public fixed uint Extends[PAGE_CONTENT_SIZE]; // 8160
 
 
     /// <summary>
@@ -50,33 +51,32 @@ internal unsafe struct PageMemory   // 8192
     {
     }
 
-    public static void Initialize(PageMemory* pageMemoryPtr, int uniqueID)
+    public void Initialize(int uniqueID)
     {
-        pageMemoryPtr->PositionID = uint.MaxValue;
-        pageMemoryPtr->PageID = uint.MaxValue;
+        this.PositionID = uint.MaxValue;
+        this.PageID = uint.MaxValue;
 
-        pageMemoryPtr->PageType = PageType.Empty;
-        pageMemoryPtr->ColID = 0;
-        pageMemoryPtr->ShareCounter = byte.MaxValue;
-        pageMemoryPtr->IsDirty = false;
+        this.PageType = PageType.Empty;
+        this.ColID = 0;
+        this.ShareCounter = byte.MaxValue;
+        this.IsDirty = false;
 
-        pageMemoryPtr->UniqueID = uniqueID;
-        pageMemoryPtr->TransactionID = 0;
+        this.UniqueID = uniqueID;
+        this.TransactionID = 0;
 
-        pageMemoryPtr->ItemsCount = 0;
-        pageMemoryPtr->UsedBytes = 0;
-        pageMemoryPtr->FragmentedBytes = 0;
-        pageMemoryPtr->NextFreeLocation = PAGE_HEADER_SIZE; // first location
-        pageMemoryPtr->HighestIndex = ushort.MaxValue;
+        this.ItemsCount = 0;
+        this.UsedBytes = 0;
+        this.FragmentedBytes = 0;
+        this.NextFreeLocation = PAGE_HEADER_SIZE; // first location
+        this.HighestIndex = ushort.MaxValue;
 
-        pageMemoryPtr->IsConfirmed = false;
-        pageMemoryPtr->Crc8 = 0;
-
-        // get content pointer
-        var contentPtr = (byte*)(((nint)pageMemoryPtr) + PAGE_HEADER_SIZE);
+        this.IsConfirmed = false;
+        this.Crc8 = 0;
 
         // clear full content area
-        var content = new Span<byte>(contentPtr, PAGE_CONTENT_SIZE);
-        content.Fill(0);
+        fixed(byte* bufferPtr = this.Buffer)
+        {
+            MarshalEx.FillZero(bufferPtr, PAGE_CONTENT_SIZE);
+        }
     }
 }
