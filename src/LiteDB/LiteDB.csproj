@@ -38,9 +38,5 @@
   <ItemGroup>
     <ProjectReference Include="..\LiteDB.Generator\LiteDB.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
-	
-  <ItemGroup>
-    <Folder Include="Engine\Services\Pages\Structures\" />
-  </ItemGroup>
 		
 </Project>

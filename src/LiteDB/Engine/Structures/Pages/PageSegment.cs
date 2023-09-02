@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a single page segment with Location (position) and Length
 /// </summary>
-internal struct PageSegment
+unsafe internal struct PageSegment
 {
     public ushort Location;  // 2
     public ushort Length;    // 2
@@ -31,37 +31,38 @@ internal struct PageSegment
     /// <summary>
     /// Get a page segment location/length using index
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static PageSegment* GetSegment(PageMemory* pagePtr, ushort index)
+    {
+        var segmentOffset = PAGE_SIZE - (index * sizeof(PageSegment));
+
+        var segmentPtr = (PageSegment*)((nint)pagePtr + segmentOffset);
+
+        return segmentPtr;
+    }
+
+
+    [Obsolete]
     public static PageSegment GetSegment(PageBuffer page, byte index, out PageSegment segmentAddr)
     {
-        // get read
         var span = page.AsSpan();
-
-        // read slot address
         segmentAddr = GetSegmentAddr(index);
-
-        // read segment position/length
         var location = span[segmentAddr.Location..].ReadUInt16();
         var length = span[segmentAddr.Length..].ReadUInt16();
-
-        // create new segment based on location and length from page footer
         var segment = new PageSegment(location, length);
-
-        ENSURE(page.Header.IsValidSegment(segment), $"Invalid segment", new { segment, page });
-
         return segment;
     }
 
-    public override string ToString() => Dump.Object(this);
 
-    /// <summary>
-    /// Get segment address at footer page. Returns only footer address reference (not real page segment)
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [Obsolete]
     public static PageSegment GetSegmentAddr(byte index)
     {
         var locationAddr = PAGE_SIZE - ((index + 1) * PageHeader.SLOT_SIZE) + 2;
         var lengthAddr = PAGE_SIZE - ((index + 1) * PageHeader.SLOT_SIZE);
-
         return new((ushort)locationAddr, (ushort)lengthAddr);
     }
+
+
+    public override string ToString() => Dump.Object(this);
+
 }

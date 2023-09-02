@@ -19,7 +19,7 @@ internal class PageService : IPageService
         //TODO: converter em um ensure
         if (!(header.FreeBytes >= bytesLength + (isNewInsert ? PageHeader.SLOT_SIZE : 0)))
         {
-            throw ERR_INVALID_FREE_SPACE_PAGE(header.PageID, header.FreeBytes, bytesLength + (isNewInsert ? PageHeader.SLOT_SIZE : 0));
+            //throw ERR_INVALID_FREE_SPACE_PAGE(header.PageID, header.FreeBytes, bytesLength + (isNewInsert ? PageHeader.SLOT_SIZE : 0));
         }
 
         // calculate how many continuous bytes are available in this page

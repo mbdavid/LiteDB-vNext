@@ -52,8 +52,8 @@ internal unsafe struct PageMemory   // 8192
 
     public static void Initialize(PageMemory* pageMemoryPtr, int uniqueID)
     {
-        pageMemoryPtr->PositionID = int.MaxValue;
-        pageMemoryPtr->PageID = int.MaxValue;
+        pageMemoryPtr->PositionID = uint.MaxValue;
+        pageMemoryPtr->PageID = uint.MaxValue;
 
         pageMemoryPtr->PageType = PageType.Empty;
         pageMemoryPtr->ColID = 0;
