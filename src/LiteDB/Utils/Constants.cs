@@ -36,6 +36,21 @@ internal class Constants
     public const int ENCRYPTION_SALT_SIZE = 16;
 
     /// <summary>
+    /// File header info (27 bytes length)
+    /// </summary>
+    public const string FILE_HEADER_INFO = "** This is a LiteDB file **";
+
+    /// <summary>
+    /// File header info length
+    /// </summary>
+    public const int FILE_HEADER_INFO_SIZE = 27;
+
+    /// <summary>
+    /// Current file version
+    /// </summary>
+    public const byte FILE_VERSION = 9;
+
+    /// <summary>
     /// Represent pageID of first AllocationMapPage (#0)
     /// </summary>
     public const int AM_FIRST_PAGE_ID = 0;
