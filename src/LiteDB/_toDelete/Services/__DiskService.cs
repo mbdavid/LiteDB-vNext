@@ -9,7 +9,7 @@ internal class __DiskService : I__DiskService
 {
     // dependency injection
     private readonly IStreamFactory _streamFactory;
-    private readonly IServicesFactory _factory;
+    private readonly I__ServicesFactory _factory;
 
     private readonly I__DiskStream _writer;
 
@@ -19,7 +19,7 @@ internal class __DiskService : I__DiskService
 
     public __DiskService(
         IStreamFactory streamFactory,
-        IServicesFactory factory)
+        I__ServicesFactory factory)
     {
         _streamFactory = streamFactory;
         _factory = factory;

@@ -1,17 +1,17 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IDisposable))]
-internal class QueryService : IQueryService
+internal class __QueryService : I__QueryService
 {
     // dependency injections
-    private readonly IWalIndexService _walIndexService;
-    private readonly IServicesFactory _factory;
+    private readonly I__WalIndexService _walIndexService;
+    private readonly I__ServicesFactory _factory;
 
     private readonly ConcurrentDictionary<Guid, Cursor> _openCursors = new();
 
-    public QueryService(
-        IWalIndexService walIndexService,
-        IServicesFactory factory)
+    public __QueryService(
+        I__WalIndexService walIndexService,
+        I__ServicesFactory factory)
     {
         _walIndexService = walIndexService;
         _factory = factory;

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 public partial class LiteEngine : ILiteEngine
 {
@@ -57,7 +55,7 @@ public partial class LiteEngine : ILiteEngine
         foreach (var doc in documents)
         {
             //    var doc = documents[i];
-            using var _p2 = PERF_COUNTER(35, "InsertSingle", nameof(LiteEngine));
+            using var _p2 = PERF_COUNTER(35, "InsertSingle", nameof(__LiteEngine));
 
             // get/set _id
             var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);

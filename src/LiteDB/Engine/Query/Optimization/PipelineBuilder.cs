@@ -3,8 +3,8 @@
 internal class PipelineBuilder
 {
     // dependency injections
-    private IMasterService _masterService;
-    private ISortService _sortService;
+    private I__MasterService _masterService;
+    private I__SortService _sortService;
     private Collation _collation;
 
     private CollectionDocument _collection;
@@ -12,8 +12,8 @@ internal class PipelineBuilder
     private IPipeEnumerator? _enumerator;
 
     public PipelineBuilder(
-        IMasterService masterService,
-        ISortService sortService,
+        I__MasterService masterService,
+        I__SortService sortService,
         Collation collation,
         string collectionName, 
         BsonDocument queryParameters)
@@ -104,7 +104,7 @@ internal class PipelineBuilder
         }
     }
 
-    public IPipeEnumerator CreateIndex(IndexDocument indexDocument, BsonValue value, BsonExpressionType exprType, int order)
+    public IPipeEnumerator CreateIndex(__IndexDocument indexDocument, BsonValue value, BsonExpressionType exprType, int order)
     {
         return (exprType, value.Type) switch
         {

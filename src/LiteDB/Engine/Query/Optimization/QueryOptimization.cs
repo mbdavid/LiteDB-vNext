@@ -3,7 +3,7 @@
 internal class QueryOptimization : IQueryOptimization
 {
     // dependency injections
-    private readonly IServicesFactory _factory;
+    private readonly I__ServicesFactory _factory;
 
     // ctor 
     private readonly CollectionDocument _collection;
@@ -31,7 +31,7 @@ internal class QueryOptimization : IQueryOptimization
     private IDocumentLookup? _orderByLookup;
 
     public QueryOptimization(
-        IServicesFactory factory,
+        I__ServicesFactory factory,
         CollectionDocument collection)
     {
         _factory = factory;

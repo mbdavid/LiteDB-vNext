@@ -4,7 +4,7 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal partial class ServicesFactory : IServicesFactory
+internal partial class __ServicesFactory : I__ServicesFactory
 {
     #region Public Properties
 
@@ -22,30 +22,28 @@ internal partial class ServicesFactory : IServicesFactory
     public IStreamFactory SortStreamFactory { get; }
 
 
-    public IMemoryCache MemoryCache { get; }
+    public I__CacheService CacheService { get; }
 
-    public ILogService LogService { get; }
-    public IWalIndexService WalIndexService { get; }
+    public I__LogService LogService { get; }
+    public I__WalIndexService WalIndexService { get; }
 
-    public ISortService SortService { get; }
-    public IQueryService QueryService { get; }
+    public I__SortService SortService { get; }
+    public I__QueryService QueryService { get; }
 
     public ILockService LockService { get; }
-    public IDiskService DiskService { get; }
-    public IRecoveryService RecoveryService { get; }
-    public IAllocationMapService AllocationMapService { get; }
+    public I__DiskService DiskService { get; }
+    public I__RecoveryService RecoveryService { get; }
+    public I__AllocationMapService AllocationMapService { get; }
     public IMasterMapper MasterMapper { get; }
-    public IMasterService MasterService { get; }
-    public IMonitorService MonitorService { get; }
+    public I__MasterService MasterService { get; }
+    public I__MonitorService MonitorService { get; }
     public IAutoIdService AutoIdService { get; }
-
-    public IDataPageModifier DataPageModifier { get; }
-    public IIndexPageModifier IndexPageModifier { get; }
-    public IAllocationMapPageModifier AllocationMapPageModifier { get; }
+    public I__DataPageService DataPageService { get; }
+    public I__IndexPageService IndexPageService { get; }
 
     #endregion
 
-    public ServicesFactory(IEngineSettings settings)
+    public __ServicesFactory(IEngineSettings settings)
     {
         // get settings instance
         this.Settings = settings;
@@ -58,11 +56,11 @@ internal partial class ServicesFactory : IServicesFactory
         // no dependencies
         this.BsonReader = new BsonReader();
         this.BsonWriter = new BsonWriter();
-        this.WalIndexService = new WalIndexService();
+        this.WalIndexService = new __WalIndexService();
         this.MemoryFactory = new MemoryFactory();
-        this.DataPageModifier = new DataPageModifier();
-        this.IndexPageModifier = new IndexPageModifier();
-        this.AllocationMapPageModifier = new AllocationMapPageModifier();
+        this.BufferFactory = new BufferFactory();
+        this.DataPageService = new __DataPageService();
+        this.IndexPageService = new __IndexPageService();
         this.MasterMapper = new MasterMapper();
         this.AutoIdService = new AutoIdService();
 
@@ -77,15 +75,15 @@ internal partial class ServicesFactory : IServicesFactory
             new FileStreamFactory("implementar MemoryStream", false);
 
         // other services dependencies
-        this.MemoryCache = new MemoryCache(this.MemoryFactory);
-        this.DiskService = new DiskService(this.StreamFactory, this);
-        this.LogService = new LogService(this.DiskService, this.MemoryCache, this.MemoryFactory, this.WalIndexService, this);
-        this.AllocationMapService = new AllocationMapService(this.AllocationMapPageModifier, this.DiskService, this.MemoryFactory);
-        this.MasterService = new MasterService(this);
-        this.MonitorService = new MonitorService(this);
-        this.RecoveryService = new RecoveryService(this.MemoryFactory, this.DiskService);
-        this.SortService = new SortService(this.SortStreamFactory, this);
-        this.QueryService = new QueryService(this.WalIndexService, this);
+        this.CacheService = new __CacheService(this.BufferFactory);
+        this.DiskService = new __DiskService(this.StreamFactory, this);
+        this.LogService = new __LogService(this.DiskService, this.CacheService, this.BufferFactory, this.WalIndexService, this);
+        this.AllocationMapService = new __AllocationMapService(this.DiskService, this.BufferFactory);
+        this.MasterService = new __MasterService(this);
+        this.MonitorService = new __MonitorService(this);
+        this.RecoveryService = new __RecoveryService(this.BufferFactory, this.DiskService);
+        this.SortService = new __SortService(this.SortStreamFactory, this);
+        this.QueryService = new __QueryService(this.WalIndexService, this);
     }
 
     #region Transient instances ("Create" prefix)
@@ -93,59 +91,56 @@ internal partial class ServicesFactory : IServicesFactory
     public IEngineContext CreateEngineContext() 
         => new EngineContext();
 
-    public IDiskStream CreateDiskStream()
-        => new DiskStream(this.Settings, this.StreamFactory);
+    public I__DiskStream __CreateDiskStream()
+        => new __DiskStream(this.Settings, this.StreamFactory);
 
-    public NewDatafile CreateNewDatafile() => new NewDatafile(
-        this.MemoryFactory,
+    public I__NewDatafile __CreateNewDatafile() => new __NewDatafile(
+        this.BufferFactory,
         this.MasterMapper,
         this.BsonWriter,
-        this.DataPageModifier,
+        this.DataPageService,
         this.Settings);
 
-    public ITransaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) => new Transaction(
+    public I__Transaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) => new __Transaction(
         this.DiskService,
         this.LogService,
-        this.MemoryFactory,
-        this.MemoryCache,
+        this.BufferFactory,
+        this.CacheService,
         this.WalIndexService,
         this.AllocationMapService,
-        this.IndexPageModifier,
-        this.DataPageModifier,
+        this.IndexPageService,
+        this.DataPageService,
         this.LockService,
         transactionID, writeCollections, readVersion);
 
-    public IDataService CreateDataService(ITransaction transaction) => new DataService(
-        this.DataPageModifier, 
+    public I__DataService CreateDataService(I__Transaction transaction) => new __DataService(
+        this.DataPageService, 
         this.BsonReader, 
         this.BsonWriter, 
         transaction);
 
-    public IIndexService CreateIndexService(ITransaction transaction) => new IndexService(
-        this.IndexPageModifier,
+    public I__IndexService CreateIndexService(I__Transaction transaction) => new __IndexService(
+        this.IndexPageService,
         this.FileHeader.Collation,
         transaction);
 
-    public PipelineBuilder CreatePipelineBuilder(string collectionName, BsonDocument queryParameters) =>
-        throw new NotImplementedException();
-    //        new PipelineBuilder(
-    //        this.MasterService,
-    //        this.SortService,
-    //        this.FileHeader.Collation,
-    //        collectionName,
-    //        queryParameters);
-
-    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, IQuery query) =>
-        throw new NotImplementedException();
-//        query is Query ? new QueryOptimization(this, collection) :
-//        query is AggregateQuery ? new AggregateQueryOptimization(this, collection) :
-//        throw new NotSupportedException();
-
-    public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(
+    public PipelineBuilder CreatePipelineBuilder(string collectionName, BsonDocument queryParameters) => new PipelineBuilder(
+        this.MasterService,
         this.SortService,
         this.FileHeader.Collation,
-        this,
-        orderBy);
+        collectionName,
+        queryParameters);
+
+    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, IQuery query) =>
+        query is Query ? new QueryOptimization(this, collection) :
+        query is AggregateQuery ? new AggregateQueryOptimization(this, collection) :
+        throw new NotSupportedException();
+
+    public ISortOperation CreateSortOperation(OrderBy orderBy) => throw new NotImplementedException(); //new SortOperation(
+//        this.SortService,
+//        this.FileHeader.Collation,
+//        this,
+//        orderBy);
 
     public ISortContainer CreateSortContainer(int containerID, int order, Stream stream) => new SortContainer(
         this.BufferFactory,
@@ -166,7 +161,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.RecoveryService.Dispose();
 
         // pageBuffer dependencies
-        this.MemoryCache.Dispose();
+        this.CacheService.Dispose();
         this.LogService.Dispose();
         this.AllocationMapService.Dispose();
         this.MasterService.Dispose();

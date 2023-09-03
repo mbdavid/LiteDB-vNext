@@ -12,7 +12,7 @@ internal class __LogService : I__LogService
     private readonly I__CacheService _cacheService;
     private readonly IBufferFactory _bufferFactory;
     private readonly I__WalIndexService _walIndexService;
-    private readonly IServicesFactory _factory;
+    private readonly I__ServicesFactory _factory;
 
     private int _lastPageID;
     private int _logPositionID;
@@ -25,7 +25,7 @@ internal class __LogService : I__LogService
         I__CacheService cacheService,
         IBufferFactory bufferFactory,
         I__WalIndexService walIndexService,
-        IServicesFactory factory)
+        I__ServicesFactory factory)
     {
         _diskService = diskService;
         _cacheService = cacheService;

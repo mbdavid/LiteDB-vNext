@@ -1,22 +1,22 @@
 ﻿namespace LiteDB.Engine;
 
-internal class IndexDocument
+internal class __IndexDocument
 {
     public required byte Slot { get; init; }
     public required string Name { get; init; }
     public required BsonExpression Expression { get; init; }
     public required bool Unique { get; init; }
-    public required RowID HeadIndexNodeID { get; init; }
-    public required RowID TailIndexNodeID { get; init; }
+    public required PageAddress HeadIndexNodeID { get; init; }
+    public required PageAddress TailIndexNodeID { get; init; }
 
-    public IndexDocument()
+    public __IndexDocument()
     {
     }
 
     /// <summary>
     /// Clone object instance constructor
     /// </summary>
-    public IndexDocument(IndexDocument other)
+    public __IndexDocument(__IndexDocument other)
     {
         this.Slot = other.Slot;
         this.Name = other.Name;

@@ -4,7 +4,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
-    private readonly IndexDocument _indexDocument;
+    private readonly __IndexDocument _indexDocument;
     private readonly BsonValue _value;
 
     private bool _init = false;
@@ -15,7 +15,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
 
     public IndexEqualsEnumerator(
         BsonValue value, 
-        IndexDocument indexDocument, 
+        __IndexDocument indexDocument, 
         Collation collation)
     {
         _value = value;

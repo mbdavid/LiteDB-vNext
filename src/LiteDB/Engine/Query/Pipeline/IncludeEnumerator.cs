@@ -3,7 +3,7 @@
 internal class IncludeEnumerator : IPipeEnumerator
 {
     // dependency injections
-    private readonly IMasterService _masterService;
+    private readonly I__MasterService _masterService;
     private readonly Collation _collation;
 
     private readonly BsonExpression _pathExpr;
@@ -14,7 +14,7 @@ internal class IncludeEnumerator : IPipeEnumerator
     public IncludeEnumerator(
         BsonExpression pathExpr, 
         IPipeEnumerator enumerator, 
-        IMasterService masterService, 
+        I__MasterService masterService, 
         Collation collation)
     {
         _pathExpr = pathExpr;

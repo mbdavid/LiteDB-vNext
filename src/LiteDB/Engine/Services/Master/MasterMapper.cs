@@ -12,17 +12,14 @@ internal class MasterMapper : IMasterMapper
             "<col-name>": {
                 "colID": 1,
                 "meta": { ... },
-                "indexes": {
-                    "<index-name>": {
+                "indexes": [{
                         "slot": 0,
                         "expr": "$._id",
                         "unique": true,
-                        "headPageID": 8,
-                        "headIndex": 0,
-                        "tailPageID": 8,
-                        "tailIndex": 1,
+                        "head": [8,0]
+                        "tail": [8,1]
                         "meta": { ... }
-                    },
+                    }, { ... }],
                     //...
                 }
             },
@@ -74,7 +71,7 @@ internal class MasterMapper : IMasterMapper
             {
                 ColID = (byte)c.Value["colID"],
                 Name = c.Key,
-                Indexes = c.Value["indexes"].AsArray.Select(i => new IndexDocument
+                Indexes = c.Value["indexes"].AsArray.Select(i => new __IndexDocument
                 {
                     Slot = (byte)i["slot"],
                     Name = i["name"],

@@ -6,9 +6,9 @@
 /// [ThreadSafe]
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-public partial class LiteEngine : ILiteEngine
+public partial class __LiteEngine : I__LiteEngine
 {
-    private readonly IServicesFactory _factory;
+    private readonly I__ServicesFactory _factory;
 
     public EngineState State => _factory.State;
 
@@ -17,7 +17,7 @@ public partial class LiteEngine : ILiteEngine
     /// <summary>
     /// Initialize LiteEngine using in-memory database
     /// </summary>
-    public LiteEngine()
+    public __LiteEngine()
         : this(new EngineSettings { DataStream = new MemoryStream() })
     {
     }
@@ -25,7 +25,7 @@ public partial class LiteEngine : ILiteEngine
     /// <summary>
     /// Initialize LiteEngine using file system
     /// </summary>
-    public LiteEngine(string filename)
+    public __LiteEngine(string filename)
         : this (new EngineSettings { Filename = filename })
     {
     }
@@ -33,8 +33,8 @@ public partial class LiteEngine : ILiteEngine
     /// <summary>
     /// Initialize LiteEngine using all engine settings
     /// </summary>
-    public LiteEngine(EngineSettings settings)
-        : this  (new ServicesFactory(settings))
+    public __LiteEngine(EngineSettings settings)
+        : this  (new __ServicesFactory(settings))
     {
     }
 
@@ -42,7 +42,7 @@ public partial class LiteEngine : ILiteEngine
     /// To initialize LiteEngine we need classes factory and engine settings
     /// Current version still using IServiceFactory as internal...
     /// </summary>
-    internal LiteEngine(IServicesFactory factory)
+    internal __LiteEngine(I__ServicesFactory factory)
     {
         _factory = factory;
     }
@@ -57,7 +57,7 @@ public partial class LiteEngine : ILiteEngine
         GC.SuppressFinalize(this);
     }
 
-    ~LiteEngine()
+    ~__LiteEngine()
     {
         this.Dispose(false);
     }

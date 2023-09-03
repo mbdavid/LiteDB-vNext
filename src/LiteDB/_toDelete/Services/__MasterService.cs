@@ -4,10 +4,10 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class MasterService : IMasterService
+internal class __MasterService : I__MasterService
 {
     // dependency injection
-    private readonly IServicesFactory _factory;
+    private readonly I__ServicesFactory _factory;
 
     /// <summary>
     /// $master document object model in memory
@@ -16,7 +16,7 @@ internal class MasterService : IMasterService
 
     private readonly IMasterMapper _mapper;
 
-    public MasterService(IServicesFactory factory)
+    public __MasterService(I__ServicesFactory factory)
     {
         _factory = factory;
         _master = new();
@@ -30,7 +30,7 @@ internal class MasterService : IMasterService
     /// Initialize (when database open) reading first extend pages. Database should have no log data to read this
     /// Initialize _master document instance
     /// </summary>
-    public void Initialize()
+    public async ValueTask InitializeAsync()
     {
         // create a a local transaction (not from monitor)
         using var transaction = _factory.CreateTransaction(0, Array.Empty<byte>(), 0);
@@ -39,7 +39,7 @@ internal class MasterService : IMasterService
         var dataService = _factory.CreateDataService(transaction);
 
         // read $master document
-        var docResult = dataService.ReadDocument(MASTER_ROW_ID, Array.Empty<string>());
+        var docResult = await dataService.ReadDocumentAsync(__MASTER_ROW_ID, Array.Empty<string>());
 
         // rollback transaction to release used pages (no changes here)
         transaction.Rollback();
@@ -70,13 +70,13 @@ internal class MasterService : IMasterService
     /// Write all master document into page buffer and write on this. Must use a real transaction
     /// to store all pages into log
     /// </summary>
-    public void WriteCollection(MasterDocument master, ITransaction transaction)
+    public async ValueTask WriteCollectionAsync(MasterDocument master, I__Transaction transaction)
     {
         var dataService = _factory.CreateDataService(transaction);
 
         var doc = _mapper.MapToDocument(master);
 
-        dataService.UpdateDocumentAsync(MASTER_ROW_ID, doc);
+        await dataService.UpdateDocumentAsync(__MASTER_ROW_ID, doc);
     }
 
     #endregion

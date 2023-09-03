@@ -20,12 +20,12 @@ public partial class SqlParser
         // possivel cache de input?
     }
 
-    //private readonly ILiteEngine _engine;
+    //private readonly I__LiteEngine _engine;
     //private readonly Tokenizer _tokenizer;
     //private readonly BsonDocument _parameters;
     //private readonly Lazy<Collation> _collation;
 
-    //public SqlParser(ILiteEngine engine, Tokenizer tokenizer, BsonDocument parameters)
+    //public SqlParser(I__LiteEngine engine, Tokenizer tokenizer, BsonDocument parameters)
     //{
     //    _engine = engine;
     //    _tokenizer = tokenizer;

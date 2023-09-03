@@ -4,7 +4,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
-    private readonly IndexDocument _indexDocument;
+    private readonly __IndexDocument _indexDocument;
     private readonly BsonValue _start;
     private readonly BsonValue _end;
 
@@ -23,7 +23,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         bool startEquals,
         bool endEquals,
         int order,
-        IndexDocument indexDocument,
+        __IndexDocument indexDocument,
         Collation collation)
     {
         // if order are desc, swap start/end values

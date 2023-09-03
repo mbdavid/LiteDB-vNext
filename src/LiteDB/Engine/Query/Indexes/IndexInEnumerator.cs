@@ -3,7 +3,7 @@
 internal class IndexInEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
-    private readonly IndexDocument _indexDocument;
+    private readonly __IndexDocument _indexDocument;
     private readonly BsonArray _values;
 
     private bool _init = false;
@@ -15,7 +15,7 @@ internal class IndexInEnumerator : IPipeEnumerator
 
     public IndexInEnumerator(
         BsonArray values,
-        IndexDocument indexDocument,
+        __IndexDocument indexDocument,
         Collation collation)
     {
         _values = values;

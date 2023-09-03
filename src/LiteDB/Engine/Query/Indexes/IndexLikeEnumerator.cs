@@ -4,7 +4,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
-    private readonly IndexDocument _indexDocument;
+    private readonly __IndexDocument _indexDocument;
     private readonly BsonValue _value;
     private readonly string _startsWith;
     private readonly bool _hasMore;
@@ -18,7 +18,7 @@ internal class IndexLikeEnumerator : IPipeEnumerator
 
     public IndexLikeEnumerator(
         BsonValue value, 
-        IndexDocument indexDocument, 
+        __IndexDocument indexDocument, 
         Collation collation,
         int order)
     {

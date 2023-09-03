@@ -5,27 +5,27 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class MonitorService : IMonitorService
+internal class __MonitorService : I__MonitorService
 {
     // dependency injection
-    private readonly IServicesFactory _factory;
+    private readonly I__ServicesFactory _factory;
 
     // concurrent data-structures
-    private readonly ConcurrentDictionary<int, ITransaction> _transactions = new();
+    private readonly ConcurrentDictionary<int, I__Transaction> _transactions = new();
 
     //private readonly ConcurrentDictionary<int, object> _openCursors = new();
 
     private int _lastTransactionID = 0;
 
     // expose open transactions
-    public ICollection<ITransaction> Transactions => _transactions.Values;
+    public ICollection<I__Transaction> Transactions => _transactions.Values;
 
-    public MonitorService(IServicesFactory factory)
+    public __MonitorService(I__ServicesFactory factory)
     {
         _factory = factory;
     }
 
-    public async ValueTask<ITransaction> CreateTransactionAsync(int readVersion)
+    public async ValueTask<I__Transaction> CreateTransactionAsync(int readVersion)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
         var transaction = _factory.CreateTransaction(transactionID, Array.Empty<byte>(), readVersion);
@@ -37,7 +37,7 @@ internal class MonitorService : IMonitorService
         return transaction;
     }
 
-    public async ValueTask<ITransaction> CreateTransactionAsync(byte[] writeCollections)
+    public async ValueTask<I__Transaction> CreateTransactionAsync(byte[] writeCollections)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
         var transaction = _factory.CreateTransaction(transactionID, writeCollections, -1);

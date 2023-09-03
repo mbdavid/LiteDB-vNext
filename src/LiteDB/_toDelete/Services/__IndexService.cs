@@ -58,7 +58,7 @@ internal class __IndexService : I__IndexService
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public async ValueTask<__IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, __IndexNodeResult head, __IndexNodeResult last)
+    public async ValueTask<__IndexNodeResult> AddNodeAsync(byte colID, __IndexDocument index, BsonValue key, PageAddress dataBlock, __IndexNodeResult head, __IndexNodeResult last)
     {
         using var _pc = PERF_COUNTER(4, nameof(AddNodeAsync), nameof(__IndexService));
 
@@ -75,7 +75,7 @@ internal class __IndexService : I__IndexService
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private async ValueTask<__IndexNodeResult> AddNodeAsync(byte colID, IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, __IndexNodeResult head, __IndexNodeResult last)
+    private async ValueTask<__IndexNodeResult> AddNodeAsync(byte colID, __IndexDocument index, BsonValue key, PageAddress dataBlock, int insertLevels, __IndexNodeResult head, __IndexNodeResult last)
     {
         // get a free index page for head note
         var bytesLength = (ushort)__IndexNode.GetNodeLength(insertLevels, key, out var keyLength);
@@ -202,7 +202,7 @@ internal class __IndexService : I__IndexService
     /// If index are unique, return unique value - if index are not unique, return first found (can start, middle or end)
     /// If not found but sibling = true and key are not found, returns next value index node (if order = Asc) or prev node (if order = Desc)
     /// </summary>
-    public async ValueTask<__IndexNodeResult> FindAsync(IndexDocument index, BsonValue key, bool sibling, int order)
+    public async ValueTask<__IndexNodeResult> FindAsync(__IndexDocument index, BsonValue key, bool sibling, int order)
     {
         var left = order == Query.Ascending ? index.HeadIndexNodeID : index.TailIndexNodeID;
         var leftNode = await this.GetNodeAsync(left);

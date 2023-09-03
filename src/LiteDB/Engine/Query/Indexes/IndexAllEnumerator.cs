@@ -2,7 +2,7 @@
 
 internal class IndexAllEnumerator : IPipeEnumerator
 {
-    private readonly IndexDocument _indexDocument;
+    private readonly __IndexDocument _indexDocument;
     private readonly int _order;
 
     private bool _init = false;
@@ -11,7 +11,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
     private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
 
     public IndexAllEnumerator(
-        IndexDocument indexDocument, 
+        __IndexDocument indexDocument, 
         int order)
     {
         _indexDocument = indexDocument;

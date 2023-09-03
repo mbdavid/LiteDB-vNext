@@ -34,9 +34,9 @@ public partial class LiteEngine : ILiteEngine
         {
             ColID = colID,
             Name = collectionName,
-            Indexes = new List<IndexDocument>
+            Indexes = new List<__IndexDocument>
             {
-                new IndexDocument
+                new __IndexDocument
                 {
                     Slot = 0,
                     Name = "_id",

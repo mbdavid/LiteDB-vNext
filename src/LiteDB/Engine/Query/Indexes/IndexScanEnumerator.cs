@@ -3,7 +3,7 @@
 internal class IndexScanEnumerator : IPipeEnumerator
 {
 
-    private readonly IndexDocument _indexDocument;
+    private readonly __IndexDocument _indexDocument;
     private readonly Func<BsonValue, bool> _func;
     private readonly int _order;
 
@@ -13,7 +13,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
     private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
 
     public IndexScanEnumerator(
-        IndexDocument indexDocument,
+        __IndexDocument indexDocument,
         Func<BsonValue, bool> func,
         int order)
     {

@@ -159,7 +159,7 @@
 //    Console.ForegroundColor = ConsoleColor.Gray;
 //}
 
-//async Task ConsumeAsync(ILiteEngine db, Guid cursorID, int fetchSize)
+//async Task ConsumeAsync(I__LiteEngine db, Guid cursorID, int fetchSize)
 //{
 //    var result = await db.FetchAsync(cursorID, fetchSize);
 //    var total = result.FetchCount;

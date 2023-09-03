@@ -36,7 +36,7 @@ public partial class LiteEngine : ILiteEngine
             .FirstOrDefault();
 
         // create new collection in $master and returns a new master document
-        var indexDocument = new IndexDocument()
+        var indexDocument = new __IndexDocument()
         {
             Slot = freeIndexSlot,
             Name = indexName,

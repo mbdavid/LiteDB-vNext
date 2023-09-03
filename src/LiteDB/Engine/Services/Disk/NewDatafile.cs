@@ -6,20 +6,20 @@ internal class NewDatafile : INewDatafile
     private readonly IMemoryFactory _memoryFactory;
     private readonly IMasterMapper _masterMapper;
     private readonly IBsonWriter _bsonWriter;
-    private readonly I__DataPageService _dataPageService;
+    private readonly IDataPageModifier _dataPageModifier;
     private readonly IEngineSettings _settings;
 
     public NewDatafile(
         IMemoryFactory memoryFactory,
         IMasterMapper masterMapper,
         IBsonWriter bsonWriter,
-        I__DataPageService dataPageService,
+        IDataPageModifier dataPageModifier,
         IEngineSettings settings)
     {
         _memoryFactory = memoryFactory;
         _masterMapper = masterMapper;
         _bsonWriter = bsonWriter;
-        _dataPageService = dataPageService;
+        _dataPageModifier = dataPageModifier;
         _settings = settings;
     }
 
@@ -40,7 +40,7 @@ internal class NewDatafile : INewDatafile
             // create map page
             var mapPagePtr = _memoryFactory.AllocateNewPage();
 
-            mapPagePtr->PageID = __AM_FIRST_PAGE_ID;
+            mapPagePtr->PageID = AM_FIRST_PAGE_ID;
             mapPagePtr->PageType = PageType.AllocationMap;
 
             // mark first extend to $master and first page as data
@@ -64,7 +64,7 @@ internal class NewDatafile : INewDatafile
             _bsonWriter.WriteDocument(masterBuffer.AsSpan(), masterDoc, out _);
 
             // insert $master document into master page
-            // _dataPageService.InsertDataBlock(masterPagePtr, masterBuffer.AsSpan(), false);
+            _dataPageModifier.InsertDataBlock(masterPagePtr, masterBuffer.AsSpan(), false, out _);
 
             // initialize fixed position id 
             mapPagePtr->PositionID = 0;

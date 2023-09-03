@@ -11,7 +11,7 @@ internal class OrderByEnumerator : IPipeEnumerator
     public OrderByEnumerator(
         OrderBy orderBy,
         IPipeEnumerator enumerator,
-        ISortService sortService)
+        I__SortService sortService)
     {
         _enumerator = enumerator;
 

@@ -52,7 +52,8 @@ unsafe internal class IndexService : IIndexService
             _transaction.UpdatePageMap(pagePtr->PageID, after);
         }
 
-        return (head, tail);
+        throw new NotImplementedException();
+        //return (head, tail);
     }
 
     /// <summary>
