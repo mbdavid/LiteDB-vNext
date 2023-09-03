@@ -4,7 +4,7 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-unsafe internal class CacheService : ICacheService
+unsafe internal class MemoryCache : IMemoryCache
 {
     // dependency injection
     private readonly IMemoryFactory _memoryFactory;
@@ -16,7 +16,7 @@ unsafe internal class CacheService : ICacheService
 
     public int ItemsCount => _cache.Count;
 
-    public CacheService(IMemoryFactory memoryFactory)
+    public MemoryCache(IMemoryFactory memoryFactory)
     {
         _memoryFactory = memoryFactory;
     }
@@ -81,25 +81,25 @@ unsafe internal class CacheService : ICacheService
         throw new NotSupportedException();
     }
 
-    /// <summary>
-    /// Remove page from cache. Must not be in use
-    /// </summary>
-    public bool TryRemove(uint positionID, [MaybeNullWhen(false)] out PageMemory* pagePtr)
-    {
-        // first try to remove from cache
-        if (_cache.TryRemove(positionID, out var ptr))
-        {
-            pagePtr = (PageMemory*)ptr;
+    ///// <summary>
+    ///// Remove page from cache. Must not be in use
+    ///// </summary>
+    //public bool TryRemove(uint positionID, [MaybeNullWhen(false)] out PageMemory* pagePtr)
+    //{
+    //    // first try to remove from cache
+    //    if (_cache.TryRemove(positionID, out var ptr))
+    //    {
+    //        pagePtr = (PageMemory*)ptr;
 
-            pagePtr->ShareCounter = NO_CACHE;
+    //        pagePtr->ShareCounter = NO_CACHE;
 
-            return true;
-        }
+    //        return true;
+    //    }
 
-        pagePtr = default;
+    //    pagePtr = default;
 
-        return false;
-    }
+    //    return false;
+    //}
 
     /// <summary>
     /// Add a new page to cache. Returns true if page was added. If returns false,
@@ -108,8 +108,9 @@ unsafe internal class CacheService : ICacheService
     public bool AddPageInCache(PageMemory* pagePtr)
     {
         ENSURE(!pagePtr->IsDirty, "PageMemory must be clean before add into cache");
-        ENSURE(pagePtr->PositionID != int.MaxValue, "PageMemory must have a position before add in cache");
+        ENSURE(pagePtr->PositionID != uint.MaxValue, "PageMemory must have a position before add in cache");
         ENSURE(pagePtr->ShareCounter != NO_CACHE);
+        ENSURE(pagePtr->PageType == PageType.Data || pagePtr->PageType == PageType.Index);
 
         // before add, checks cache limit and cleanup if full
         if (_cache.Count >= CACHE_LIMIT)
@@ -140,6 +141,9 @@ unsafe internal class CacheService : ICacheService
 
     public void ReturnPageToCache(PageMemory* pagePtr)
     {
+        ENSURE(!pagePtr->IsDirty);
+        ENSURE(pagePtr->ShareCounter > 0 && pagePtr->ShareCounter < byte.MaxValue);
+
         //Interlocked.Decrement(ref page.ShareCounter);
         pagePtr->ShareCounter--;
 
@@ -175,11 +179,13 @@ unsafe internal class CacheService : ICacheService
 
             var pagePtr = (PageMemory*)ptr;
 
-            // 
+            // double check
             if (pagePtr->ShareCounter == 0)
             {
                 // set page out of cache
                 pagePtr->ShareCounter = NO_CACHE;
+                pagePtr->TransactionID = 0;
+                pagePtr->IsConfirmed = false;
 
                 // deallocate page
                 _memoryFactory.DeallocatePage(pagePtr);
