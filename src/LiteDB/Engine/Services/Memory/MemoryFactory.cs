@@ -31,16 +31,16 @@ unsafe internal class MemoryFactory : IMemoryFactory
         }
 
         // get memory pointer from unmanaged memory
-        var memPrt = (PageMemory*)Marshal.AllocHGlobal(sizeof(PageMemory));
+        var pagePtr = (PageMemory*)Marshal.AllocHGlobal(sizeof(PageMemory));
 
         Interlocked.Increment(ref _nextUniqueID);
         Interlocked.Increment(ref _pagesAllocated);
 
-        memPrt->Initialize(_nextUniqueID);
+        pagePtr->Initialize(_nextUniqueID);
 
-        _inUsePages.TryAdd(memPrt->UniqueID, (nint)memPrt);
+        _inUsePages.TryAdd(pagePtr->UniqueID, (nint)pagePtr);
 
-        return memPrt;
+        return pagePtr;
     }
 
     public void DeallocatePage(PageMemory* pagePrt)
@@ -67,5 +67,19 @@ unsafe internal class MemoryFactory : IMemoryFactory
 
     public void Dispose()
     {
+        ENSURE(_pagesAllocated == (_inUsePages.Count + _freePages.Count));
+
+        // release unmanaged memory
+        foreach (var ptr in _inUsePages.Values)
+        {
+            Marshal.FreeHGlobal(ptr);
+        }
+        foreach (var ptr in _freePages)
+        {
+            Marshal.FreeHGlobal(ptr);
+        }
+
+        _inUsePages.Clear();
+        _freePages.Clear();
     }
 }

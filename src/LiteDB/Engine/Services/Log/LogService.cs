@@ -8,7 +8,7 @@ internal class LogService : ILogService
 {
     // dependency injection
     private readonly I__DiskService _diskService;
-    private readonly ICacheService _cacheService;
+    private readonly I__CacheService _cacheService;
     private readonly IBufferFactory _bufferFactory;
     private readonly IWalIndexService _walIndexService;
     private readonly IServicesFactory _factory;
@@ -21,7 +21,7 @@ internal class LogService : ILogService
 
     public LogService(
         I__DiskService diskService,
-        ICacheService cacheService,
+        I__CacheService cacheService,
         IBufferFactory bufferFactory,
         IWalIndexService walIndexService,
         IServicesFactory factory)

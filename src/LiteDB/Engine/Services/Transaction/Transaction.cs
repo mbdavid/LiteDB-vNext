@@ -13,7 +13,7 @@ internal class Transaction : ITransaction
     private readonly I__IndexPageService _indexPageService;
     private readonly I__DataPageService _dataPageService;
     private readonly IBufferFactory _bufferFactory;
-    private readonly ICacheService _cacheService;
+    private readonly I__CacheService _cacheService;
     private readonly ILockService _lockService;
 
     // count how many locks this transaction contains
@@ -60,7 +60,7 @@ internal class Transaction : ITransaction
         I__DiskService diskService,
         ILogService logService,
         IBufferFactory bufferFactory,
-        ICacheService cacheService,
+        I__CacheService cacheService,
         IWalIndexService walIndexService,
         IAllocationMapService allocationMapService,
         I__IndexPageService indexPageService,

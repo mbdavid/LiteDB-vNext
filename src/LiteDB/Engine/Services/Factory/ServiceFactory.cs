@@ -22,7 +22,7 @@ internal partial class ServicesFactory : IServicesFactory
     public IStreamFactory SortStreamFactory { get; }
 
 
-    public ICacheService CacheService { get; }
+    public I__CacheService CacheService { get; }
 
     public ILogService LogService { get; }
     public IWalIndexService WalIndexService { get; }
@@ -75,7 +75,7 @@ internal partial class ServicesFactory : IServicesFactory
             new FileStreamFactory("implementar MemoryStream", false);
 
         // other services dependencies
-        this.CacheService = new CacheService(this.BufferFactory);
+        this.CacheService = new __CacheService(this.BufferFactory);
         this.DiskService = new __DiskService(this.StreamFactory, this);
         this.LogService = new LogService(this.DiskService, this.CacheService, this.BufferFactory, this.WalIndexService, this);
         this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);

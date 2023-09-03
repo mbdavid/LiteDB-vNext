@@ -1,29 +1,30 @@
 ﻿namespace LiteDB.Engine;
 
+[StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
 internal unsafe struct PageMemory   // 8192
 {
-    public uint PositionID;         // 4
-    public uint PageID;             // 4
+    [FieldOffset(00)] public uint PositionID;         // 4
+    [FieldOffset(04)] public uint PageID;             // 4
 
-    public PageType PageType;       // 1
-    public byte ColID;              // 1
-    public byte ShareCounter;       // 1
-    public bool IsDirty;            // 1
+    [FieldOffset(08)] public PageType PageType;       // 1
+    [FieldOffset(09)] public byte ColID;              // 1
+    [FieldOffset(10)] public byte ShareCounter;       // 1
+    [FieldOffset(11)] public bool IsDirty;            // 1
 
-    public int UniqueID;            // 4
-    public int TransactionID;       // 4 
+    [FieldOffset(12)] public int UniqueID;            // 4
+    [FieldOffset(16)] public int TransactionID;       // 4 
 
-    public ushort ItemsCount;       // 2
-    public ushort UsedBytes;        // 2
-    public ushort FragmentedBytes;  // 2
-    public ushort NextFreeLocation; // 2
-    public ushort HighestIndex;     // 2
+    [FieldOffset(20)] public ushort ItemsCount;       // 2
+    [FieldOffset(22)] public ushort UsedBytes;        // 2
+    [FieldOffset(24)] public ushort FragmentedBytes;  // 2
+    [FieldOffset(26)] public ushort NextFreeLocation; // 2
+    [FieldOffset(28)] public ushort HighestIndex;     // 2
 
-    public bool IsConfirmed;        // 1
-    public byte Crc8;               // 1
+    [FieldOffset(30)] public bool IsConfirmed;        // 1
+    [FieldOffset(31)] public byte Crc8;               // 1
 
-    public fixed byte Buffer[PAGE_CONTENT_SIZE]; // 8160
-    public fixed uint Extends[PAGE_CONTENT_SIZE]; // 8160
+    [FieldOffset(32)] public fixed byte Buffer[PAGE_CONTENT_SIZE];   // 8160
+    [FieldOffset(32)] public fixed uint Extends[PAGE_CONTENT_SIZE];  // 8160
 
 
     /// <summary>
@@ -78,5 +79,18 @@ internal unsafe struct PageMemory   // 8192
         {
             MarshalEx.FillZero(bufferPtr, PAGE_CONTENT_SIZE);
         }
+    }
+
+    public static void CopyPageContent(PageMemory* fromPtr, PageMemory* toPtr)
+    {
+        var uniqueID = toPtr->UniqueID;
+
+        MarshalEx.Copy((byte*)fromPtr, (byte*)toPtr, PAGE_SIZE);
+
+        // clean page when copy
+        toPtr->UniqueID = uniqueID;
+        toPtr->ShareCounter = NO_CACHE;
+        toPtr->IsDirty = false;
+
     }
 }
