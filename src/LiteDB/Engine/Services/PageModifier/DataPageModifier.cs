@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.IO.Pipes;
+
+namespace LiteDB.Engine;
 
 [AutoInterface]
 unsafe internal class DataPageModifier : BasePageModifier, IDataPageModifier
@@ -12,7 +14,18 @@ unsafe internal class DataPageModifier : BasePageModifier, IDataPageModifier
         pagePtr->IsDirty = true;
     }
 
-    public InsertResult InsertDataBlock(PageMemory* pagePtr, Span<byte> content, bool extend)
+    public DataBlock* GetDataBlock(PageMemory* pagePtr, ushort index, out int dataBlockLength)
+    {
+        var segmentPtr = PageSegment.GetSegment(pagePtr, index);
+
+        var dataBlock = (DataBlock*)(pagePtr + segmentPtr->Location);
+
+        dataBlockLength = segmentPtr->Length;
+
+        return dataBlock;
+    }
+
+    public DataBlock* InsertDataBlock(PageMemory* pagePtr, Span<byte> content, bool extend, out RowID dataBlockID)
     {
         // get required bytes this insert
         var bytesLength = (ushort)(content.Length + sizeof(DataBlock));
@@ -21,7 +34,7 @@ unsafe internal class DataPageModifier : BasePageModifier, IDataPageModifier
         var newIndex = base.GetFreeIndex(pagePtr);
 
         // get new rowid
-        var dataBlockID = new RowID(pagePtr->PageID, newIndex);
+        dataBlockID = new RowID(pagePtr->PageID, newIndex);
 
         // get page segment for this data block
         var segmentPtr = base.Insert(pagePtr, bytesLength, newIndex, true);
@@ -40,7 +53,7 @@ unsafe internal class DataPageModifier : BasePageModifier, IDataPageModifier
 
         content.CopyTo(dataBlockSpan);
 
-        return new InsertResult() { DataBlockID = dataBlockID, DataBlockPtr = dataBlockPtr };
+        return dataBlockPtr;
     }
 
 
@@ -71,5 +84,7 @@ unsafe internal class DataPageModifier : BasePageModifier, IDataPageModifier
 
         content.CopyTo(dataBlockSpan);
     }
+
+    public void DeleteDataBlock(PageMemory* pagePtr, ushort index) => base.Delete(pagePtr, index);
 
 }

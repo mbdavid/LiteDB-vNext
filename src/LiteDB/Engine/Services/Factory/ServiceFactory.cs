@@ -123,7 +123,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.LockService,
         transactionID, writeCollections, readVersion);
 
-    public IDataService CreateDataService(I__Transaction transaction) => new DataService(
+    public I__DataService CreateDataService(I__Transaction transaction) => new __DataService(
         this.DataPageService, 
         this.BsonReader, 
         this.BsonWriter, 
