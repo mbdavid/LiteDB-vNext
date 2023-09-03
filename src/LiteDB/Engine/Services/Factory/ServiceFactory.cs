@@ -24,8 +24,8 @@ internal partial class ServicesFactory : IServicesFactory
 
     public I__CacheService CacheService { get; }
 
-    public ILogService LogService { get; }
-    public IWalIndexService WalIndexService { get; }
+    public I__LogService LogService { get; }
+    public I__WalIndexService WalIndexService { get; }
 
     public ISortService SortService { get; }
     public IQueryService QueryService { get; }
@@ -56,7 +56,7 @@ internal partial class ServicesFactory : IServicesFactory
         // no dependencies
         this.BsonReader = new BsonReader();
         this.BsonWriter = new BsonWriter();
-        this.WalIndexService = new WalIndexService();
+        this.WalIndexService = new __WalIndexService();
         this.MemoryFactory = new MemoryFactory();
         this.BufferFactory = new BufferFactory();
         this.DataPageService = new __DataPageService();
@@ -77,7 +77,7 @@ internal partial class ServicesFactory : IServicesFactory
         // other services dependencies
         this.CacheService = new __CacheService(this.BufferFactory);
         this.DiskService = new __DiskService(this.StreamFactory, this);
-        this.LogService = new LogService(this.DiskService, this.CacheService, this.BufferFactory, this.WalIndexService, this);
+        this.LogService = new __LogService(this.DiskService, this.CacheService, this.BufferFactory, this.WalIndexService, this);
         this.AllocationMapService = new __AllocationMapService(this.DiskService, this.BufferFactory);
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
@@ -111,7 +111,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.DataPageService,
         this.Settings);
 
-    public ITransaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) => new Transaction(
+    public I__Transaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) => new __Transaction(
         this.DiskService,
         this.LogService,
         this.BufferFactory,
@@ -123,13 +123,13 @@ internal partial class ServicesFactory : IServicesFactory
         this.LockService,
         transactionID, writeCollections, readVersion);
 
-    public IDataService CreateDataService(ITransaction transaction) => new DataService(
+    public IDataService CreateDataService(I__Transaction transaction) => new DataService(
         this.DataPageService, 
         this.BsonReader, 
         this.BsonWriter, 
         transaction);
 
-    public IIndexService CreateIndexService(ITransaction transaction) => new IndexService(
+    public IIndexService CreateIndexService(I__Transaction transaction) => new IndexService(
         this.IndexPageService,
         this.FileHeader.Collation,
         transaction);

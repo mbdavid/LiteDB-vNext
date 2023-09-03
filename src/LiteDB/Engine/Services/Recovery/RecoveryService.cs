@@ -120,7 +120,7 @@ internal class RecoveryService : IRecoveryService
     private async ValueTask CheckpointAsync()
     {
         // get all checkpoint actions based on log/temp pages
-        var actions = new CheckpointActions()
+        var actions = new __CheckpointActions()
             .GetActions(
                 _logPages,
                 _confirmedTransactions,
@@ -134,7 +134,7 @@ internal class RecoveryService : IRecoveryService
 
         foreach (var action in actions)
         {
-            if (action.Action == CheckpointActionEnum.ClearPage)
+            if (action.Action == CheckpointActionType.ClearPage)
             {
                 // clear page position
                 await writer.WriteEmptyAsync(action.PositionID);
@@ -144,7 +144,7 @@ internal class RecoveryService : IRecoveryService
             // get page from file position ID (log or data)
             await writer.ReadPageAsync(action.PositionID, page);
 
-            if (action.Action == CheckpointActionEnum.CopyToDataFile)
+            if (action.Action == CheckpointActionType.CopyToDataFile)
             {
                 // transform this page into a data file page
                 page.PositionID = page.Header.PositionID = page.Header.PageID = action.TargetPositionID;
@@ -157,7 +157,7 @@ internal class RecoveryService : IRecoveryService
                 // increment checkpoint counter page
                 counter++;
             }
-            else if (action.Action == CheckpointActionEnum.CopyToTempFile)
+            else if (action.Action == CheckpointActionType.CopyToTempFile)
             {
                 // transform this page into a log temp file (keeps Header.PositionID in original value)
                 page.PositionID = action.TargetPositionID;

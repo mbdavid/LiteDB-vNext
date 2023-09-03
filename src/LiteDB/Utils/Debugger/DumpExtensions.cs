@@ -107,9 +107,15 @@ internal static class Dump
         return "";
     }
 
+    [Obsolete]
     public static string PageID(int id)
     {
         return id == int.MaxValue ? "<EMPTY>" : id.ToString().PadLeft(4, '0');
+    }
+
+    public static string PageID(uint id)
+    {
+        return id == uint.MaxValue ? "<EMPTY>" : id.ToString().PadLeft(4, '0');
     }
 
     public static string ExtendValue(uint value)

@@ -70,7 +70,7 @@ internal class MasterService : IMasterService
     /// Write all master document into page buffer and write on this. Must use a real transaction
     /// to store all pages into log
     /// </summary>
-    public async ValueTask WriteCollectionAsync(MasterDocument master, ITransaction transaction)
+    public async ValueTask WriteCollectionAsync(MasterDocument master, I__Transaction transaction)
     {
         var dataService = _factory.CreateDataService(transaction);
 

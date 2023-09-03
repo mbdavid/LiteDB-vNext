@@ -4,13 +4,13 @@
 internal class QueryService : IQueryService
 {
     // dependency injections
-    private readonly IWalIndexService _walIndexService;
+    private readonly I__WalIndexService _walIndexService;
     private readonly IServicesFactory _factory;
 
     private readonly ConcurrentDictionary<Guid, Cursor> _openCursors = new();
 
     public QueryService(
-        IWalIndexService walIndexService,
+        I__WalIndexService walIndexService,
         IServicesFactory factory)
     {
         _walIndexService = walIndexService;

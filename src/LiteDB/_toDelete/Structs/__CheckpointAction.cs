@@ -1,8 +1,8 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct CheckpointAction
+internal struct __CheckpointAction
 {
-    public CheckpointActionEnum Action;
+    public CheckpointActionType Action;
     public int PositionID;
     public int TargetPositionID; // used only in CopyToDataFile and CopyToTemp (MaxValue for ClearPage)
     public bool MustClear; // clear page PositionID

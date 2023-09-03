@@ -3,32 +3,35 @@
 /// <summary>
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class Transaction : ITransaction
+internal class __Transaction : I__Transaction
 {
     // dependency injection
-    private readonly IDiskService _diskService;
-    private readonly ILogService _logService;
-    private readonly IWalIndexService _walIndexService;
-    private readonly IAllocationMapService _allocationMapService;
-    private readonly IIndexPageModifier _indexPageModifier;
-    private readonly IDataPageModifier _dataPageModifier;
-    private readonly IMemoryFactory _memoryFactory;
-    private readonly IMemoryCache _memoryCache;
+    private readonly I__DiskService _diskService;
+    private readonly I__LogService _logService;
+    private readonly I__WalIndexService _walIndexService;
+    private readonly I__AllocationMapService _allocationMapService;
+    private readonly I__IndexPageService _indexPageService;
+    private readonly I__DataPageService _dataPageService;
+    private readonly IBufferFactory _bufferFactory;
+    private readonly I__CacheService _cacheService;
     private readonly ILockService _lockService;
 
     // count how many locks this transaction contains
     private int _lockCounter = 0;
 
     // rented reader stream
-    private IDiskStream? _reader;
+    private I__DiskStream? _reader;
 
     // local page cache - contains only data/index pages about this collection
-    private readonly Dictionary<uint, nint> _localPages = new();
+    private readonly Dictionary<int, PageBuffer> _localPages = new();
+
+    // local index cache nodes
+    private readonly Dictionary<PageAddress, __IndexNode> _localIndexNodes = new();
 
     // when safepoint occurs, save reference for changed pages on log (PageID, PositionID)
-    private readonly Dictionary<uint, uint> _walDirtyPages = new();
+    private readonly Dictionary<int, int> _walDirtyPages = new();
 
-    // original extend values from all requested writable pages (ExtendID, ExtendValue)
+    // original extend values from all requested writable pages
     private readonly Dictionary<int, uint> _initialExtendValues = new();
 
     // all writable collections ID (must be lock on init)
@@ -53,26 +56,26 @@ internal class Transaction : ITransaction
     /// </summary>
     public int PagesUsed => _localPages.Count;
 
-    public Transaction(
-        IDiskService diskService,
-        ILogService logService,
-        IMemoryFactory memoryFactory,
-        IMemoryCache memoryCache,
-        IWalIndexService walIndexService,
-        IAllocationMapService allocationMapService,
-        IIndexPageModifier indexPageModifier,
-        IDataPageModifier dataPageModifier,
+    public __Transaction(
+        I__DiskService diskService,
+        I__LogService logService,
+        IBufferFactory bufferFactory,
+        I__CacheService cacheService,
+        I__WalIndexService walIndexService,
+        I__AllocationMapService allocationMapService,
+        I__IndexPageService indexPageService,
+        I__DataPageService dataPageService,
         ILockService lockService,
         int transactionID, byte[] writeCollections, int readVersion)
     {
         _diskService = diskService;
         _logService = logService;
-        _memoryFactory = memoryFactory;
-        _memoryCache = memoryCache;
+        _bufferFactory = bufferFactory;
+        _cacheService = cacheService;
         _walIndexService = walIndexService;
         _allocationMapService = allocationMapService;
-        _indexPageModifier = indexPageModifier;
-        _dataPageModifier = dataPageModifier;
+        _indexPageService = indexPageService;
+        _dataPageService = dataPageService;
         _lockService = lockService;
 
         this.TransactionID = transactionID;
@@ -114,75 +117,100 @@ internal class Transaction : ITransaction
     /// Get a existing page on database based on ReadVersion. Try get first from localPages,
     /// cache and in last case read from disk (and add to localPages)
     /// </summary>
-    public unsafe PageMemory* GetPage(uint pageID)
+    public async ValueTask<PageBuffer> GetPageAsync(int pageID)
     {
-        using var _pc = PERF_COUNTER(8, nameof(GetPage), nameof(Transaction));
+        using var _pc = PERF_COUNTER(8, nameof(GetPageAsync), nameof(__Transaction));
 
         ENSURE(pageID != int.MaxValue, "PageID must have a value");
 
-        if (_localPages.TryGetValue(pageID, out var ptr))
+        if (_localPages.TryGetValue(pageID, out var page))
         {
-            var pagePtr = (PageMemory*)ptr;
-
             // if writable, page should not be in cache
-            ENSURE(Array.IndexOf(_writeCollections, pagePtr->ColID) > -1, pagePtr->ShareCounter == NO_CACHE, "Page should not be in cache", new { _writeCollections });
+            ENSURE(Array.IndexOf(_writeCollections, page.Header.ColID) > -1, page.ShareCounter == NO_CACHE, "Page should not be in cache", new { _writeCollections, page });
 
-            return pagePtr;
+            return page;
         }
 
-        var newPage = this.ReadPage(pageID, this.ReadVersion);
+        page = await this.ReadPageAsync(pageID, this.ReadVersion);
 
-        _localPages.Add(pageID, (nint)newPage);
+        _localPages.Add(pageID, page);
 
-        return newPage;
+        return page;
     }
 
     /// <summary>
     /// Read a data/index page from disk (data or log). Can return page from global cache
     /// </summary>
-    private unsafe PageMemory* ReadPage(uint pageID, int readVersion)
+    private async ValueTask<PageBuffer> ReadPageAsync(int pageID, int readVersion)
     {
-        using var _pc = PERF_COUNTER(9, nameof(ReadPage), nameof(Transaction));
+        using var _pc = PERF_COUNTER(9, nameof(ReadPageAsync), nameof(__Transaction));
 
         _reader ??= _diskService.RentDiskReader();
 
         // test if page are in transaction wal pages
         if (_walDirtyPages.TryGetValue(pageID, out var positionID))
         {
-            var walPagePtr = _memoryFactory.AllocateNewPage();
+            var walPage = _bufferFactory.AllocateNewPage();
 
-            _reader.ReadPage(walPagePtr, positionID);
+            await _reader.ReadPageAsync(positionID, walPage);
 
-            ENSURE(walPagePtr->PageType == PageType.Data || walPagePtr->PageType == PageType.Index, $"Only data/index page on transaction read page: {walPagePtr->PageID}");
+            ENSURE(walPage.Header.PageType == PageType.Data || walPage.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {walPage}", new { walPage });
 
-            return walPagePtr;
+            return walPage;
         }
 
         // get disk position (data/log)
         positionID = _walIndexService.GetPagePositionID(pageID, readVersion, out _);
 
         // get a page from cache (if writable, this page are not linked to cache anymore)
-        var pagePtr = _memoryCache.GetPageReadWrite(positionID, _writeCollections, out var writable, out var found);
+        var page = _cacheService.GetPageReadWrite(positionID, _writeCollections, out var writable);
 
         // if page not found, allocate new page and read from disk
-        if (found == false)
+        if (page is null)
         {
-            pagePtr = _memoryFactory.AllocateNewPage();
+            page = _bufferFactory.AllocateNewPage();
 
-            _reader.ReadPage(pagePtr, positionID);
+            await _reader.ReadPageAsync(positionID, page);
 
-            ENSURE(pagePtr->PageType == PageType.Data || pagePtr->PageType == PageType.Index, $"Only data/index page on transaction read page: {pagePtr->PageID}");
+            ENSURE(page.Header.PageType == PageType.Data || page.Header.PageType == PageType.Index, $"Only data/index page on transaction read page: {page}");
         }
 
-        return pagePtr;
+        return page;
+    }
+
+    public __IndexNode GetIndexNode(PageAddress indexNodeID)
+    {
+        using var _pc = PERF_COUNTER(10, nameof(GetIndexNode), nameof(__Transaction));
+
+        if (_localIndexNodes.TryGetValue(indexNodeID, out var indexNode))
+        {
+            return indexNode;
+        }
+
+        _localPages.TryGetValue(indexNodeID.PageID, out var page);
+
+        ENSURE(page is not null, "Page not found for this index", new { indexNodeID });
+
+        indexNode = new __IndexNode(page!, indexNodeID);
+
+        _localIndexNodes.Add(indexNodeID, indexNode);
+
+        return indexNode;
+    }
+
+    public void DeleteIndexNode(PageAddress indexNodeID)
+    {
+        var deleted = _localIndexNodes.Remove(indexNodeID);
+
+        ENSURE(deleted, "__IndexNode not found in transaction local index cache", new { indexNodeID, _localIndexNodes });
     }
 
     /// <summary>
     /// Get a Data Page with, at least, 30% free space
     /// </summary>
-    public unsafe PageMemory* GetFreeDataPage(byte colID)
+    public async ValueTask<PageBuffer> GetFreeDataPageAsync(byte colID)
     {
-        using var _pc = PERF_COUNTER(11, nameof(GetFreeDataPage), nameof(Transaction));
+        using var _pc = PERF_COUNTER(11, nameof(GetFreeDataPageAsync), nameof(__Transaction));
 
         var colIndex = Array.IndexOf(_writeCollections, colID);
         var currentExtend = _currentDataExtend[colIndex];
@@ -195,20 +223,20 @@ internal class Transaction : ITransaction
 
         if (isNew)
         {
-            var pagePtr = _memoryFactory.AllocateNewPage();
+            var page = _bufferFactory.AllocateNewPage();
 
             // initialize empty page as data page
-            _dataPageModifier.Initialize(pagePtr, pageID, colID);
+            _dataPageService.InitializeDataPage(page, pageID, colID);
 
             // add in local cache
-            _localPages.Add(pageID, (nint)pagePtr);
+            _localPages.Add(pageID, page);
 
-            return pagePtr;
+            return page;
         }
         else
         {
             // if page already exists, just get page
-            var page = this.GetPage(pageID);
+            var page = await this.GetPageAsync(pageID);
 
             return page;
         }
@@ -217,9 +245,9 @@ internal class Transaction : ITransaction
     /// <summary>
     /// Get a Index Page with space enougth for index node
     /// </summary>
-    public unsafe PageMemory* GetFreeIndexPage(byte colID, int indexNodeLength)
+    public async ValueTask<PageBuffer> GetFreeIndexPageAsync(byte colID, int indexNodeLength)
     {
-        using var _pc = PERF_COUNTER(12, nameof(GetFreeIndexPage), nameof(Transaction));
+        using var _pc = PERF_COUNTER(12, nameof(GetFreeIndexPageAsync), nameof(__Transaction));
 
         var colIndex = Array.IndexOf(_writeCollections, colID);
         var currentExtend = _currentIndexExtend[colIndex];
@@ -232,31 +260,31 @@ internal class Transaction : ITransaction
 
         if (isNew)
         {
-            var pagePtr = _memoryFactory.AllocateNewPage();
+            var page = _bufferFactory.AllocateNewPage();
 
             // initialize empty page as index page
-            _indexPageModifier.Initialize(pagePtr, pageID, colID);
+            _indexPageService.InitializeIndexPage(page, pageID, colID);
 
             // add in local cache
-            _localPages.Add(pageID, (nint)pagePtr);
+            _localPages.Add(pageID, page);
 
-            return pagePtr;
+            return page;
         }
         else
         {
-            var pagePtr = this.GetPage(pageID);
+            var page = await this.GetPageAsync(pageID);
 
             // if current page has no avaiable space (super rare cases), get another page
-            if (pagePtr->FreeBytes < indexNodeLength)
+            if (page.Header.FreeBytes < indexNodeLength)
             {
                 // set this page as full before get next page
-                this.UpdatePageMap(pagePtr->PageID, ExtendPageValue.Full);
+                this.UpdatePageMap(page.Header.PageID, ExtendPageValue.Full);
 
                 // call recursive to get another page
-                return this.GetFreeIndexPage(colID, indexNodeLength);
+                return await this.GetFreeIndexPageAsync(colID, indexNodeLength);
             }
 
-            return pagePtr;
+            return page;
         }
     }
 
@@ -264,12 +292,12 @@ internal class Transaction : ITransaction
     /// Update allocation page map according with header page type and used bytes but keeps a copy
     /// of original extend value (if need rollback)
     /// </summary>
-    public void UpdatePageMap(uint pageID, ExtendPageValue value)
+    public void UpdatePageMap(int pageID, ExtendPageValue value)
     {
         var allocationMapID = (int)(pageID / AM_PAGE_STEP);
         var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
 
-        var extendLocation = new ExtendLocation(allocationMapID, (int)extendIndex);
+        var extendLocation = new ExtendLocation(allocationMapID, extendIndex);
         var extendID = extendLocation.ExtendID;
 
         if (!_initialExtendValues.ContainsKey(extendID))
@@ -288,162 +316,144 @@ internal class Transaction : ITransaction
     /// </summary>
     public async Task SafepointAsync()
     {
-        using var _pc = PERF_COUNTER(59, nameof(SafepointAsync), nameof(Transaction));
-
-        this.SafepointInternal();
-
-        await _diskService.GetDiskWriter().FlushAsync();
-    }
-
-    private unsafe void SafepointInternal()
-    {
         // get dirty pages only //TODO: can be re-used array?
         var dirtyPages = _localPages.Values
-            .Where(x => ((PageMemory*)x)->IsDirty)
+            .Where(x => x.IsDirty)
             .ToArray();
 
         for (var i = 0; i < dirtyPages.Length; i++)
         {
-            var pagePtr = (PageMemory*)dirtyPages[i];
+            var page = dirtyPages[i];
 
-            ENSURE(pagePtr->ShareCounter == NO_CACHE, "Page should not be on cache when saving");
-
+            ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", page);
+            
             // update page header
-            pagePtr->TransactionID = this.TransactionID;
-            pagePtr->IsConfirmed = false;
+            page.Header.TransactionID = this.TransactionID;
+            page.Header.IsConfirmed = false;
         }
 
         // write pages on disk and flush data
-        _logService.WriteLogPages(dirtyPages);
+        await _logService.WriteLogPagesAsync(dirtyPages);
 
         // update local transaction wal index
-        for (var i = 0; i < dirtyPages.Length; i++)
+        foreach (var page in dirtyPages)
         {
-            var pagePtr = (PageMemory*)dirtyPages[i];
-
-            _walDirtyPages[pagePtr->PageID] = pagePtr->PositionID;
+            _walDirtyPages[page.Header.PageID] = page.PositionID;
         }
 
         // add pages to cache or decrement sharecount
-        foreach (var ptr in _localPages.Values)
+        foreach (var page in _localPages.Values)
         {
-            var pagePtr = (PageMemory*)ptr;
-
-            if (pagePtr->ShareCounter > 0)
+            if (page.ShareCounter > 0)
             {
                 // page already in cache (was not changed)
-                _memoryCache.ReturnPageToCache(pagePtr);
+                _cacheService.ReturnPageToCache(page);
             }
             else
             {
                 // all other pages are not came from cache, must be deallocated
-                _memoryFactory.DeallocatePage(pagePtr);
+                _bufferFactory.DeallocatePage(page);
             }
         }
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
     }
 
     /// <summary>
     /// </summary>
     public async ValueTask CommitAsync()
     {
-        using var _pc = PERF_COUNTER(59, nameof(CommitAsync), nameof(Transaction));
+        using var _pc = PERF_COUNTER(59, nameof(CommitAsync), nameof(__Transaction));
 
-        this.CommitInternal();
-
-        await _diskService.GetDiskWriter().FlushAsync();
-    }
-
-    private unsafe void CommitInternal()
-    {
         // get dirty pages only //TODO: can be re-used array?
         var dirtyPages = _localPages.Values
-            .Where(x => ((PageMemory*)x)->IsDirty)
+            .Where(x => x.IsDirty)
             .ToArray();
 
         for (var i = 0; i < dirtyPages.Length; i++)
         {
-            var pagePtr = (PageMemory*)dirtyPages[i];
+            var page = dirtyPages[i];
 
-            ENSURE(pagePtr->ShareCounter == NO_CACHE, "Page should not be on cache when saving");
+            ENSURE(page.ShareCounter == NO_CACHE, "Page should not be on cache when saving", page);
 
             // update page header
-            pagePtr->TransactionID = this.TransactionID;
-            pagePtr->IsConfirmed = i == (dirtyPages.Length - 1);
+            page.Header.TransactionID = this.TransactionID;
+            page.Header.IsConfirmed = i == (dirtyPages.Length - 1);
         }
 
         // write pages on disk and flush data
-        _logService.WriteLogPages(dirtyPages);
+        await _logService.WriteLogPagesAsync(dirtyPages);
 
         // update wal index with this new version
-        for (var i = 0; i < dirtyPages.Length; i++)
+        IEnumerable<(int pageID, int positionID)> changedPages()
         {
-            var pagePtr = (PageMemory*)dirtyPages[i];
-
-            _walDirtyPages[pagePtr->PageID] = pagePtr->PositionID;
+            foreach (var pageRef in _walDirtyPages)
+            {
+                yield return (pageRef.Key, pageRef.Value);
+            }
+            foreach (var page in dirtyPages)
+            {
+                yield return (page.Header.PageID, page.PositionID);
+            }
         }
 
-        _walIndexService.AddVersion(this.ReadVersion, _walDirtyPages.Select(x => (x.Key, x.Value)));
+        _walIndexService.AddVersion(this.ReadVersion, changedPages());
 
         // add pages to cache or decrement sharecount
-        foreach (var ptr in _localPages.Values)
+        foreach (var page in _localPages.Values)
         {
-            var pagePtr = (PageMemory*)(ptr);
-
             // page already in cache (was not changed)
-            if (pagePtr->ShareCounter > 0)
+            if (page.ShareCounter > 0)
             {
-                _memoryCache.ReturnPageToCache(pagePtr);
+                _cacheService.ReturnPageToCache(page);
             }
             else
             {
                 // try add this page in cache
-                var added = _memoryCache.AddPageInCache(pagePtr);
+                var added = _cacheService.AddPageInCache(page);
 
                 if (!added)
                 {
-                    _memoryFactory.DeallocatePage(pagePtr);
+                    _bufferFactory.DeallocatePage(page);
                 }
             }
         }
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
         _walDirtyPages.Clear();
-
     }
 
-    public unsafe void Rollback()
+    public void Rollback()
     {
         using var _pc = PERF_COUNTER(48, nameof(Rollback), nameof(__Transaction));
 
         // add pages to cache or decrement sharecount
-        foreach (var ptr in _localPages.Values)
+        foreach (var page in _localPages.Values)
         {
-            var pagePtr = (PageMemory*)ptr;
-
-            if (pagePtr->IsDirty)
+            if (page.IsDirty)
             {
-                _memoryFactory.DeallocatePage(pagePtr);
+                _bufferFactory.DeallocatePage(page);
             }
             else
             {
                 // test if page is came from the cache
-                if (pagePtr->ShareCounter > 0)
+                if (page.ShareCounter > 0)
                 {
                     // return page to cache
-                    _memoryCache.ReturnPageToCache(pagePtr);
+                    _cacheService.ReturnPageToCache(page);
                 }
                 else
                 {
                     // try add this page in cache
-                    var added = _memoryCache.AddPageInCache(pagePtr);
+                    var added = _cacheService.AddPageInCache(page);
 
                     if (!added)
                     {
-                        _memoryFactory.DeallocatePage(pagePtr);
+                        _bufferFactory.DeallocatePage(page);
                     }
                 }
             }
@@ -451,6 +461,7 @@ internal class Transaction : ITransaction
 
         // clear page buffer references
         _localPages.Clear();
+        _localIndexNodes.Clear();
         _walDirtyPages.Clear();
 
         // restore initial values in allocation map to return original state before any change
@@ -464,7 +475,7 @@ internal class Transaction : ITransaction
 
     public override string ToString()
     {
-        return Dump.Object(new { TransactionID, ReadVersion, _localPages, _writeCollections, _initialExtendValues, _currentIndexExtend, _currentDataExtend, _lockCounter });
+        return Dump.Object(new { TransactionID, ReadVersion, _localPages, _localIndexNodes, _writeCollections, _initialExtendValues, _currentIndexExtend, _currentDataExtend, _lockCounter });
     }
 
     public void Dispose()

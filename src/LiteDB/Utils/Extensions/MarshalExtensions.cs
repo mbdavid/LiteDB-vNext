@@ -19,7 +19,7 @@ internal unsafe static class MarshalEx
 
     public static uint IncrementUInt(ref uint value)
     {
-        return value++;
+        return ++value;
     }
 
     public static void FillZero(byte* ptr, int length)

@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal enum CheckpointActionEnum : byte
+internal enum CheckpointActionType : byte
 {
     CopyToDataFile = 0,
     CopyToTempFile = 1,

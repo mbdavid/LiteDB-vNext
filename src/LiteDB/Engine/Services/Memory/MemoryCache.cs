@@ -21,9 +21,9 @@ unsafe internal class MemoryCache : IMemoryCache
         _memoryFactory = memoryFactory;
     }
 
-    public PageMemory* GetPageReadWrite(uint positionID, byte[] writeCollections, out bool writable)
+    public PageMemory* GetPageReadWrite(uint positionID, byte[] writeCollections, out bool writable, out bool found)
     {
-        var found = _cache.TryGetValue(positionID, out var ptr);
+        found = _cache.TryGetValue(positionID, out var ptr);
 
         if (!found)
         {
@@ -81,25 +81,25 @@ unsafe internal class MemoryCache : IMemoryCache
         throw new NotSupportedException();
     }
 
-    ///// <summary>
-    ///// Remove page from cache. Must not be in use
-    ///// </summary>
-    //public bool TryRemove(uint positionID, [MaybeNullWhen(false)] out PageMemory* pagePtr)
-    //{
-    //    // first try to remove from cache
-    //    if (_cache.TryRemove(positionID, out var ptr))
-    //    {
-    //        pagePtr = (PageMemory*)ptr;
+    /// <summary>
+    /// Remove page from cache. Must not be in use
+    /// </summary>
+    public bool TryRemove(uint positionID, [MaybeNullWhen(false)] out PageMemory* pagePtr)
+    {
+        // first try to remove from cache
+        if (_cache.TryRemove(positionID, out var ptr))
+        {
+            pagePtr = (PageMemory*)ptr;
 
-    //        pagePtr->ShareCounter = NO_CACHE;
+            pagePtr->ShareCounter = NO_CACHE;
 
-    //        return true;
-    //    }
+            return true;
+        }
 
-    //    pagePtr = default;
+        pagePtr = default;
 
-    //    return false;
-    //}
+        return false;
+    }
 
     /// <summary>
     /// Add a new page to cache. Returns true if page was added. If returns false,

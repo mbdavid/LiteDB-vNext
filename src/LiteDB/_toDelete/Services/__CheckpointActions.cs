@@ -1,13 +1,14 @@
 ﻿namespace LiteDB.Engine;
 
-internal class CheckpointActions
+[Obsolete]
+internal class __CheckpointActions
 {
-    public IEnumerable<CheckpointAction> GetActions(
-        IReadOnlyList<LogPageHeader> logPages,
+    public IEnumerable<__CheckpointAction> GetActions(
+        IReadOnlyList<PageHeader> logPages,
         HashSet<int> confirmedTransactions,
-        uint lastPageID,
-        uint startTempPositionID,
-        IList<LogPageHeader> tempPages)
+        int lastPageID,
+        int startTempPositionID,
+        IList<PageHeader> tempPages)
     {
         if (logPages.Count == 0) yield break;
 
@@ -21,18 +22,18 @@ internal class CheckpointActions
             tempPages.Count > 0 ? tempPages.Select(x => x.PositionID).Min() : logPages[0].PositionID);
 
         var lastPositionID = logPages[^1].PositionID;
-        var lastTempPositionID = (uint)(startTempPositionID + (tempPages.Count - 1));
+        var lastTempPositionID = startTempPositionID + (tempPages.Count - 1);
 
         // get all log pages and temp pages order by PositionID
         var logPositions = logPages
-            .Select(x => new LogPosition
+            .Select(x => new __LogPosition
             {
                 PositionID = x.PositionID,
                 PageID = x.PageID,
                 PhysicalID = x.PositionID, // in log pages, physical positionID == position ID
                 IsConfirmed = confirmedTransactions.Contains(x.TransactionID)
             })
-            .Union(tempPages.Select(t => new LogPosition
+            .Union(tempPages.Select(t => new __LogPosition
             {
                 PageID = t.PageID,
                 PositionID = t.PositionID,
@@ -41,7 +42,7 @@ internal class CheckpointActions
             }))
             .OrderByDescending(x => x.PhysicalID)
             .OrderBy(x => x.PositionID)
-            .DistinctBy(x => x.PositionID, EqualityComparer<uint>.Default)
+            .DistinctBy(x => x.PositionID, EqualityComparer<int>.Default)
             .ToArray();
 
         // create dict with all duplicates pageID getting last positionID
@@ -70,7 +71,7 @@ internal class CheckpointActions
                 // if page is inside datafile must be clear
                 if (logPage.PositionID <= lastPageID)
                 {
-                    yield return new CheckpointAction
+                    yield return new __CheckpointAction
                     {
                         Action = CheckpointActionType.ClearPage,
                         PositionID = logPage.PositionID
@@ -81,7 +82,7 @@ internal class CheckpointActions
             // if page can be copied directly to datafile (with no temp)
             else if (logPage.PageID <= logPage.PositionID || logPage.PageID > lastPositionID)
             {
-                yield return new CheckpointAction
+                yield return new __CheckpointAction
                 {
                     Action = CheckpointActionType.CopyToDataFile,
                     PositionID = logPage.PhysicalID,
@@ -99,7 +100,7 @@ internal class CheckpointActions
                 if (targetIndex == -1)
                 {
                     // target not found, can copy directly to datafile
-                    yield return new CheckpointAction
+                    yield return new __CheckpointAction
                     {
                         Action = CheckpointActionType.CopyToDataFile,
                         PositionID = logPage.PhysicalID,
@@ -113,7 +114,7 @@ internal class CheckpointActions
                     var nextPositionID = ++lastTempPositionID;
 
                     // copy target page to temp
-                    yield return new CheckpointAction
+                    yield return new __CheckpointAction
                     {
                         Action = CheckpointActionType.CopyToTempFile,
                         PositionID = logPositions[targetIndex].PositionID,
@@ -124,7 +125,7 @@ internal class CheckpointActions
                     logPositions[targetIndex].PhysicalID = nextPositionID;
 
                     // copy page to target
-                    yield return new CheckpointAction
+                    yield return new __CheckpointAction
                     {
                         Action = CheckpointActionType.CopyToDataFile,
                         PositionID = logPage.PhysicalID,

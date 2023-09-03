@@ -11,21 +11,21 @@ internal class MonitorService : IMonitorService
     private readonly IServicesFactory _factory;
 
     // concurrent data-structures
-    private readonly ConcurrentDictionary<int, ITransaction> _transactions = new();
+    private readonly ConcurrentDictionary<int, I__Transaction> _transactions = new();
 
     //private readonly ConcurrentDictionary<int, object> _openCursors = new();
 
     private int _lastTransactionID = 0;
 
     // expose open transactions
-    public ICollection<ITransaction> Transactions => _transactions.Values;
+    public ICollection<I__Transaction> Transactions => _transactions.Values;
 
     public MonitorService(IServicesFactory factory)
     {
         _factory = factory;
     }
 
-    public async ValueTask<ITransaction> CreateTransactionAsync(int readVersion)
+    public async ValueTask<I__Transaction> CreateTransactionAsync(int readVersion)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
         var transaction = _factory.CreateTransaction(transactionID, Array.Empty<byte>(), readVersion);
@@ -37,7 +37,7 @@ internal class MonitorService : IMonitorService
         return transaction;
     }
 
-    public async ValueTask<ITransaction> CreateTransactionAsync(byte[] writeCollections)
+    public async ValueTask<I__Transaction> CreateTransactionAsync(byte[] writeCollections)
     {
         var transactionID = Interlocked.Increment(ref _lastTransactionID);
         var transaction = _factory.CreateTransaction(transactionID, writeCollections, -1);
@@ -51,7 +51,7 @@ internal class MonitorService : IMonitorService
 
     /// <summary>
     /// </summary>
-    public void ReleaseTransaction(ITransaction transaction)
+    public void ReleaseTransaction(I__Transaction transaction)
     {
         // dispose current transaction
         transaction.Dispose();
@@ -63,7 +63,7 @@ internal class MonitorService : IMonitorService
     /// <summary>
     /// Check if transaction size reach limit AND check if is possible extend this limit
     /// </summary>
-    public bool Safepoint(ITransaction transaction)
+    public bool Safepoint(I__Transaction transaction)
     {
         return transaction.PagesUsed > SAFEPOINT_SIZE; //TODO: implementar o momento de fazer safepoint
 //            trans.Pages.TransactionSize >= trans.MaxTransactionSize &&

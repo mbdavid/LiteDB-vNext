@@ -2,9 +2,9 @@
 
 internal struct LogPosition : IEqualityComparer<LogPosition>
 {
-    public int PositionID;
-    public int PageID;
-    public int PhysicalID;
+    public uint PositionID;
+    public uint PageID;
+    public uint PhysicalID;
     public bool IsConfirmed;
 
     public bool Equals(LogPosition x, LogPosition y)
@@ -12,10 +12,7 @@ internal struct LogPosition : IEqualityComparer<LogPosition>
         return x.PositionID == y.PositionID;
     }
 
-    public int GetHashCode(LogPosition obj)
-    {
-        return obj.PositionID;
-    }
+    public int GetHashCode(LogPosition obj) => HashCode.Combine(PositionID, PageID, PhysicalID, IsConfirmed);
 
     public override string ToString()
     {

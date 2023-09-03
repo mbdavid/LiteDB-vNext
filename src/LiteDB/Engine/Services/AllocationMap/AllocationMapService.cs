@@ -51,7 +51,7 @@ unsafe internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Get a free PageID based on colID/type. Create extend or new am page if needed. Return isNew if page are empty (must be initialized)
     /// </summary>
-    public (int pageID, bool isNew, ExtendLocation next) GetFreeExtend(ExtendLocation current, byte colID, PageType type)
+    public (uint pageID, bool isNew, ExtendLocation next) GetFreeExtend(ExtendLocation current, byte colID, PageType type)
     {
         var pagePtr = (PageMemory*)_pages[current.AllocationMapID];
 
@@ -61,7 +61,7 @@ unsafe internal class AllocationMapService : IAllocationMapService
         {
             var extend = new ExtendLocation(current.AllocationMapID, extendIndex);
 
-            var pageID = current.AllocationMapID * AM_PAGE_STEP + extendIndex * AM_EXTEND_SIZE + 1 + pageIndex;
+            var pageID = (uint)(current.AllocationMapID * AM_PAGE_STEP + extendIndex * AM_EXTEND_SIZE + 1 + pageIndex);
 
             return (pageID, isNew, extend);
         }
@@ -120,11 +120,11 @@ unsafe internal class AllocationMapService : IAllocationMapService
     /// <summary>
     /// Update allocation page map according with header page type and used bytes
     /// </summary>
-    public void UpdatePageMap(int pageID, ExtendPageValue pageValue)
+    public void UpdatePageMap(uint pageID, ExtendPageValue pageValue)
     {
         var allocationMapID = (int)(pageID / AM_PAGE_STEP);
-        var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
-        var pageIndex = pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE;
+        var extendIndex = (int)((pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE);
+        var pageIndex = (int)pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE;
 
         var pagePtr = (PageMemory*)_pages[allocationMapID];
 

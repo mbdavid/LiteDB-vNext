@@ -89,7 +89,7 @@ unsafe internal class DiskStream : IDiskStream
     /// <summary>
     /// Calculate, using disk file length, last PositionID. Should considering FILE_HEADER_SIZE and celling pages.
     /// </summary>
-    public int GetLastFilePositionID()
+    public uint GetLastFilePositionID()
     {
         var fileLength = _streamFactory.GetLength();
 
@@ -102,7 +102,7 @@ unsafe internal class DiskStream : IDiskStream
 
         // if last page was not completed written, add missing bytes to complete
 
-        return (int)(result + celling - 1);
+        return (uint)(result + celling - 1);
     }
 
     /// <summary>
@@ -156,7 +156,7 @@ unsafe internal class DiskStream : IDiskStream
     /// <summary>
     /// Write an empty (full \0) PAGE_SIZE using positionID
     /// </summary>
-    public void WriteEmptyPage(int positionID)
+    public void WriteEmptyPage(uint positionID)
     {
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
@@ -167,7 +167,7 @@ unsafe internal class DiskStream : IDiskStream
     /// <summary>
     /// Write an empty (full \0) PAGE_SIZE using from/to (inclusive)
     /// </summary>
-    public void WriteEmptyPages(int fromPositionID, int toPositionID, CancellationToken token = default)
+    public void WriteEmptyPages(uint fromPositionID, uint toPositionID, CancellationToken token = default)
     {
         for (var i = fromPositionID; i <= toPositionID && token.IsCancellationRequested; i++)
         {
@@ -182,7 +182,7 @@ unsafe internal class DiskStream : IDiskStream
     /// Set new file length using lastPageID as end of file.
     /// 0 = 8k, 1 = 16k, ...
     /// </summary>
-    public void SetSize(int lastPageID)
+    public void SetSize(uint lastPageID)
     {
         var fileLength = FILE_HEADER_SIZE +
             ((lastPageID + 1) * PAGE_SIZE);

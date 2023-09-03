@@ -6,12 +6,13 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-internal class WalIndexService : IWalIndexService
+[Obsolete]
+internal class __WalIndexService : I__WalIndexService
 {
     /// <summary>
     /// A indexed dictionary by PageID where each item are a sort list of read version and disk log position
     /// </summary>
-    private readonly ConcurrentDictionary<uint, List<(int version, uint positionID)>> _index = new();
+    private readonly ConcurrentDictionary<int, List<(int version, int positionID)>> _index = new();
 
     /// <summary>
     /// Current read version
@@ -23,7 +24,7 @@ internal class WalIndexService : IWalIndexService
     /// </summary>
     public int MinReadVersion { get; private set; } = 1;
 
-    public WalIndexService()
+    public __WalIndexService()
     {
     }
 
@@ -39,7 +40,7 @@ internal class WalIndexService : IWalIndexService
     /// Get a page positionID (in disk) for a page that are inside WAL. 
     /// If page is not in WAL index, return positionID on datafile
     /// </summary>
-    public uint GetPagePositionID(uint pageID, int version, out int walVersion)
+    public int GetPagePositionID(int pageID, int version, out int walVersion)
     {
         // initial value
         walVersion = 0;
@@ -76,7 +77,7 @@ internal class WalIndexService : IWalIndexService
         return positionID;
     }
 
-    public void AddVersion(int version, IEnumerable<(uint pageID, uint positionID)> pagePositions)
+    public void AddVersion(int version, IEnumerable<(int pageID, int positionID)> pagePositions)
     {
         foreach (var (pageID, positionID) in pagePositions)
         {

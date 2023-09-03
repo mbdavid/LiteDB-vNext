@@ -7,13 +7,13 @@ internal class DataService : IDataService
     private readonly I__DataPageService _dataPageService;
     private readonly IBsonReader _bsonReader;
     private readonly IBsonWriter _bsonWriter;
-    private readonly ITransaction _transaction;
+    private readonly I__Transaction _transaction;
 
     public DataService(
         I__DataPageService dataPageService,
         IBsonReader bsonReader,
         IBsonWriter bsonWriter,
-        ITransaction transaction)
+        I__Transaction transaction)
     {
         _dataPageService = dataPageService;
         _bsonReader = bsonReader;
