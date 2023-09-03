@@ -42,7 +42,8 @@ unsafe internal class DataService : IDataService
         var pagePtr = _transaction.GetFreeDataPage(colID);
 
         // keep last instance to update nextBlock
-        var lastDataBlockPtr = (DataBlock*)default;
+        var lastPagePtr = (PageMemory*)default;
+        var lastDataBlockIndex = ushort.MaxValue;
 
         // return dataBlockID - will be update in first insert
         var firstDataBlockID = RowID.Empty;
@@ -70,8 +71,10 @@ unsafe internal class DataService : IDataService
                 _transaction.UpdatePageMap(pagePtr->PageID, after);
             }
 
-            if (lastDataBlockPtr is not null)
+            if (lastDataBlockIndex != ushort.MaxValue)
             {
+                var lastDataBlockPtr = _dataPageModifier.GetDataBlock(lastPagePtr, lastDataBlockIndex, out _);
+
                 // update NextDataBlock from last page
                 lastDataBlockPtr->NextBlockID = dataBlockID;
             }
@@ -87,7 +90,8 @@ unsafe internal class DataService : IDataService
             if (bytesLeft == 0) break;
 
             // keep last instance
-            lastDataBlockPtr = dataBlockPtr;
+            lastPagePtr = pagePtr;
+            lastDataBlockIndex = dataBlockID.Index;
 
             pagePtr = _transaction.GetFreeDataPage(colID);
 

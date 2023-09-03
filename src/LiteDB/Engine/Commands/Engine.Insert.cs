@@ -45,7 +45,7 @@ public partial class LiteEngine : ILiteEngine
         }
 
         // getting headerNodeResult (node+page) for all indexes
-        var headResults = new IndexNodeResult[collection.Indexes.Count];
+        var headResults = new __IndexNodeResult[collection.Indexes.Count];
 
         for(var i = 0; i < collection.Indexes.Count; i++)
         {
@@ -66,7 +66,7 @@ public partial class LiteEngine : ILiteEngine
             var dataBlockID = await dataService.InsertDocumentAsync(collection.ColID, doc);
 
             // insert _id as PK and get node to be used 
-            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, dataBlockID, headResults[0], IndexNodeResult.Empty);
+            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, dataBlockID, headResults[0], __IndexNodeResult.Empty);
 
             if (collection.Indexes.Count > 1)
             {

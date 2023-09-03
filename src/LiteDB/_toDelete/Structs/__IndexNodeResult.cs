@@ -4,9 +4,9 @@
 /// Transport strcut
 /// </summary>
 [Obsolete]
-internal readonly struct IndexNodeResult
+internal readonly struct __IndexNodeResult
 {
-    public static readonly IndexNodeResult Empty = new();
+    public static readonly __IndexNodeResult Empty = new();
 
     private readonly __IndexNode _node;
     private readonly PageBuffer? _page;
@@ -17,13 +17,13 @@ internal readonly struct IndexNodeResult
 
     public bool IsEmpty => _node.IsEmpty;
 
-    public IndexNodeResult()
+    public __IndexNodeResult()
     {
         _node = __IndexNode.Empty;
         _page = null;
     }
 
-    public IndexNodeResult(__IndexNode node, PageBuffer page)
+    public __IndexNodeResult(__IndexNode node, PageBuffer page)
     {
         _node = node;
         _page = page;

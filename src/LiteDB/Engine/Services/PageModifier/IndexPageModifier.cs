@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+
+namespace LiteDB.Engine;
 
 [AutoInterface]
 unsafe internal class IndexPageModifier : BasePageModifier, IIndexPageModifier
@@ -12,7 +14,26 @@ unsafe internal class IndexPageModifier : BasePageModifier, IIndexPageModifier
         pagePtr->IsDirty = true;
     }
 
-    public InsertNodeResult InsertIndexNode(PageMemory* pagePtr, byte slot, byte levels, BsonValue key, RowID dataBlockID, ushort bytesLength)
+    public IndexNodeResult GetIndexNode(PageMemory* pagePtr, ushort index)
+    {
+        var segmentPtr = PageSegment.GetSegment(pagePtr, index);
+
+        var indexNodePtr = (IndexNode*)(pagePtr + segmentPtr->Location);
+
+        // get first levels pointer
+        var levelsOffset = segmentPtr->Location + sizeof(IndexNode);
+        var levelsPtr = (IndexNodeLevel*)&pagePtr->Buffer[levelsOffset];
+
+        // get index key pointer
+        var keyOffset = levelsOffset + (indexNodePtr->Levels * sizeof(IndexNodeLevel));
+        var keyPtr = (IndexKey*)&pagePtr->Buffer[keyOffset];
+
+        var indexNodeID = new RowID(pagePtr->PageID, index);
+
+        return new IndexNodeResult(indexNodeID, pagePtr, indexNodePtr, levelsPtr, keyPtr);
+    }
+
+    public IndexNodeResult InsertIndexNode(PageMemory* pagePtr, byte slot, byte levels, IndexKey indexKey, RowID dataBlockID, ushort bytesLength)
     {
         // get a new index block
         var newIndex = base.GetFreeIndex(pagePtr);
@@ -39,11 +60,11 @@ unsafe internal class IndexPageModifier : BasePageModifier, IIndexPageModifier
         var keyPtr = (IndexKey*)&pagePtr->Buffer[keyOffset];
 
         // get new indexKey and copy to memory
-        var indexKey = new IndexKey(key);
-
         keyPtr->CopyFrom(indexKey);
 
-        return new InsertNodeResult { IndexNodeID = indexNodeID, LevelsPtr = levelsPtr };
+        return new IndexNodeResult(indexNodeID, pagePtr, indexNodePtr, levelsPtr, keyPtr);
     }
+
+    public void DeleteIndexNode(PageMemory* pagePtr, ushort index) => base.Delete(pagePtr, index);
 }
 

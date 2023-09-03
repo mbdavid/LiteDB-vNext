@@ -129,7 +129,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.BsonWriter, 
         transaction);
 
-    public IIndexService CreateIndexService(I__Transaction transaction) => new IndexService(
+    public I__IndexService CreateIndexService(I__Transaction transaction) => new __IndexService(
         this.IndexPageService,
         this.FileHeader.Collation,
         transaction);

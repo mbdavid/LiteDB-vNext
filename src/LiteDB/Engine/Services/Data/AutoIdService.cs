@@ -72,7 +72,7 @@ internal class AutoIdService : IAutoIdService
     /// <summary>
     /// Initialize sequence based on last value on _id key.
     /// </summary>
-    public async Task InitializeAsync(byte colID, PageAddress tailIndexNodeID, IIndexService indexService)
+    public async Task InitializeAsync(byte colID, PageAddress tailIndexNodeID, I__IndexService indexService)
     {
         using var _pc = PERF_COUNTER(44, nameof(InitializeAsync), nameof(AutoIdService));
 

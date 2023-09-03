@@ -9,6 +9,12 @@ unsafe internal struct IndexKey
     [FieldOffset(2)] public int ValueInt32;
     [FieldOffset(2)] public long ValueInt64;
 
+    public static IndexKey MinValue = new() { DataType = BsonType.MinValue, Length = 0 };
+    public static IndexKey MaxValue = new() { DataType = BsonType.MinValue, Length = 0 };
+
+    public bool IsMinValue => this.DataType == BsonType.MinValue;
+    public bool IsMaxValue => this.DataType == BsonType.MaxValue;
+
     public IndexKey()
     {
     }

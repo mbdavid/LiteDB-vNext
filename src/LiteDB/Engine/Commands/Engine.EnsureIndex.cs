@@ -85,8 +85,8 @@ public partial class LiteEngine : ILiteEngine
                 var pkNextNodeID = pkIndexNode.NextNodeID;
 
                 // and set as start to NextNode
-                var first = IndexNodeResult.Empty;
-                var last = new IndexNodeResult(pkIndexNode, pkPage);
+                var first = __IndexNodeResult.Empty;
+                var last = new __IndexNodeResult(pkIndexNode, pkPage);
 
                 foreach (var key in keys)
                 {
