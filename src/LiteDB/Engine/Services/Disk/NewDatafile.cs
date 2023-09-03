@@ -40,7 +40,7 @@ internal class NewDatafile : INewDatafile
             // create map page
             var mapPagePtr = _memoryFactory.AllocateNewPage();
 
-            mapPagePtr->PageID = AM_FIRST_PAGE_ID;
+            mapPagePtr->PageID = __AM_FIRST_PAGE_ID;
             mapPagePtr->PageType = PageType.AllocationMap;
 
             // mark first extend to $master and first page as data

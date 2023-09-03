@@ -1,5 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
+[Obsolete]
 internal struct __DataBlock
 {
     /// <summary>

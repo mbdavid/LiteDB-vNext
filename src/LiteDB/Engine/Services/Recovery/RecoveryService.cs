@@ -188,7 +188,7 @@ internal class RecoveryService : IRecoveryService
         var readPage = _bufferFactory.AllocateNewPage();
         var amPage = _bufferFactory.AllocateNewPage();
 
-        var amPageID = AM_FIRST_PAGE_ID;
+        var amPageID = __AM_FIRST_PAGE_ID;
         var positionID = 0;
         var eof = false;
 
@@ -196,7 +196,7 @@ internal class RecoveryService : IRecoveryService
 
         while (!eof)
         {
-            var pageMap = new AllocationMapPage(amPageID, amPage);
+            var pageMap = new __AllocationMapPage(amPageID, amPage);
 
             // update buffer with current positionID
             amPage.PositionID = positionID;
@@ -236,7 +236,7 @@ internal class RecoveryService : IRecoveryService
                     }
 
                     // get allocation value for each page
-                    var value = AllocationMapPage.GetExtendPageValue(readPage.Header.PageType, readPage.Header.FreeBytes);
+                    var value = __AllocationMapPage.GetExtendPageValue(readPage.Header.PageType, readPage.Header.FreeBytes);
 
                     // update page allocation free space
                     pageMap.UpdateExtendPageValue(extendIndex, pageIndex, value);

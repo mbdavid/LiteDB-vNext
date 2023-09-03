@@ -37,7 +37,7 @@ internal static class PageDump
 
     private static void RenderAllocationMapPage(PageBuffer page, StringBuilder sb)
     {
-        var allocationMapID = AllocationMapPage.GetAllocationMapID(page.Header.PageID);
+        var allocationMapID = __AllocationMapPage.GetAllocationMapID(page.Header.PageID);
 
         for(var i = 0; i < AM_EXTEND_COUNT; i++)
         {

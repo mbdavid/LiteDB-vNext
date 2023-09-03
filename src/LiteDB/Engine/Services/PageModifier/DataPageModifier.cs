@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-unsafe internal class DataPageService : PageService, IDataPageService
+unsafe internal class DataPageModifier : BasePageModifier, IDataPageModifier
 {
     public void Initialize(PageMemory* pagePtr, uint pageID, byte colID)
     {

@@ -1,13 +1,87 @@
-﻿namespace LiteDB.Engine;
+namespace LiteDB.Engine;
 
-unsafe internal class AllocationMapPage2
+/// <summary>
+/// Represent a single allocation map page with 2040 extends and 16.320 pages pointer
+/// Each extend represent 8 pages at same collection. Each extend use 4 bytes (UInt32)
+/// 
+///  00000000  000_000_000_000_000_000_000_000
+///     ColID    0   1   2   3   4   5   6   7 -- PagesIndex
+/// </summary>
+[Obsolete]
+internal class __AllocationMapPage
 {
-    public static (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(PageMemory* pagePtr, int currentExtendIndex, byte colID, PageType type)
+    private readonly int _allocationMapID;
+
+    private readonly PageBuffer _page;
+
+    private readonly uint[] _extendValues = new uint[AM_EXTEND_COUNT];
+
+    public int AllocationMapID => _allocationMapID;
+
+    public PageBuffer Page => _page;
+
+    /// <summary>
+    /// Create a new AllocationMapPage
+    /// </summary>
+    public __AllocationMapPage(int pageID, PageBuffer page)
     {
-        while (currentExtendIndex < AM_EXTEND_COUNT)
+        // keep pageBuffer instance
+        _page = page;
+
+        // update page header
+        _page.Header.PageID = pageID;
+        _page.Header.PageType = PageType.AllocationMap;
+
+        // get allocationMapID
+        _allocationMapID = GetAllocationMapID(pageID);
+
+        page.IsDirty = true;
+    }
+
+    /// <summary>
+    /// Load AllocationMap from buffer memory
+    /// </summary>
+    public __AllocationMapPage(PageBuffer page)
+    {
+        // keep pageBuffer instance
+        _page = page;
+
+        // get allocationMapID
+        _allocationMapID = GetAllocationMapID(page.Header.PageID);
+
+        var span = _page.AsSpan(PAGE_HEADER_SIZE);
+
+        // read all page
+        for(var i = 0; i < AM_EXTEND_COUNT; i++)
+        {
+            var value = span[(i * AM_BYTES_PER_EXTEND)..].ReadExtendValue();
+
+            _extendValues[i] = value;
+        }
+    }
+
+    /// <summary>
+    /// Get a extend value from this page based on extend index
+    /// </summary>
+    public uint GetExtendValue(int extendIndex) => _extendValues[extendIndex];
+
+    public void RestoreExtendValue(int extendIndex, uint value)
+    {
+        _page.IsDirty = true;
+
+        _extendValues[extendIndex] = value;
+    }
+
+    /// <summary>
+    /// Read all extendValues to return the first extendIndex with avaliable space. Returns pageIndex for this pag
+    /// Returns -1 if has no extend with this condition.
+    /// </summary>
+    public (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(int currentExtendIndex, byte colID, PageType type)
+    {
+        while(currentExtendIndex < AM_EXTEND_COUNT)
         {
             // get extend value as uint
-            var extendValue = pagePtr->Extends[currentExtendIndex];
+            var extendValue = _extendValues[currentExtendIndex];
 
             var (pageIndex, isNew) = HasFreeSpaceInExtend(extendValue, colID, type);
 
@@ -21,7 +95,7 @@ unsafe internal class AllocationMapPage2
             if (extendValue == 0)
             {
                 // update extend value with only colID value in first 1 byte (shift 3 bytes)
-                pagePtr->Extends[currentExtendIndex] = (uint)(colID << 24);
+                _extendValues[currentExtendIndex] = (uint)(colID << 24);
 
                 return (currentExtendIndex, 0, true);
             }
@@ -36,13 +110,13 @@ unsafe internal class AllocationMapPage2
     /// <summary>
     /// Update extend value based on extendIndex (0-2039) and pageIndex (0-7)
     /// </summary>
-    public static void UpdateExtendPageValue(PageMemory* pagePtr, int extendIndex, int pageIndex, ExtendPageValue pageValue)
+    public void UpdateExtendPageValue(int extendIndex, int pageIndex, ExtendPageValue pageValue)
     {
         ENSURE(extendIndex <= 2039);
         ENSURE(pageIndex <= 7);
 
         // get extend value from array
-        var value = pagePtr->Extends[extendIndex];
+        var value = _extendValues[extendIndex];
 
         // update value (3 bits) according pageIndex
         var extendValue = pageIndex switch
@@ -59,13 +133,54 @@ unsafe internal class AllocationMapPage2
         };
 
         // update extend array value
-        pagePtr->Extends[extendIndex] = extendValue;
+        _extendValues[extendIndex] = extendValue;
 
         // mark page as dirty (in map page this should be manual)
-        pagePtr->IsDirty = true;
+        _page.IsDirty = true;
 
+#if DEBUG
+        // in debug mode, I will update not only _extendValues array, but also PageBuffer array
+        // in release mode, this update will occurs only in UpdatePageBuffer(), on Shutdown process
+        var pos = extendIndex * AM_BYTES_PER_EXTEND;
+        var span = _page.AsSpan(PAGE_HEADER_SIZE);
+        span[pos..].WriteExtendValue(extendValue);
+#endif
     }
 
+    /// <summary>
+    /// Get PageID from a block page based on ExtendIndex (0-2039) and PageIndex (0-7)
+    /// </summary>
+    public int GetBlockPageID(int extendIndex, int pageIndex)
+    {
+        return (_allocationMapID * AM_PAGE_STEP +
+             extendIndex * AM_EXTEND_SIZE +
+             pageIndex + 1);
+    }
+
+    /// <summary>
+    /// Update PageBuffer instance with changed arrays. Returns false if there is no changes
+    /// </summary>
+    public bool UpdatePageBuffer()
+    {
+        if (!_page.IsDirty) return false;
+
+        var span = _page.AsSpan(PAGE_HEADER_SIZE);
+        var pos = 0;
+
+        for(var i = 0; i < AM_EXTEND_COUNT; i++)
+        {
+            span[pos..].WriteExtendValue(_extendValues[i]);
+
+            pos += AM_BYTES_PER_EXTEND;
+        }
+
+        return true;
+    }
+
+    public override string ToString()
+    {
+        return Dump.Object(new { AllocationMapID, PositionID = Dump.PageID(_page.PositionID), PageID = Dump.PageID(_page.Header.PageID), _page.IsDirty });
+    }
 
     #region Static Helpers
 
@@ -156,7 +271,7 @@ unsafe internal class AllocationMapPage2
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetAllocationMapID(int pageID)
     {
-        return (pageID - AM_FIRST_PAGE_ID) % AM_EXTEND_COUNT;
+        return (pageID - __AM_FIRST_PAGE_ID) % AM_EXTEND_COUNT;
     }
 
     /// <summary>

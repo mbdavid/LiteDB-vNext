@@ -1,6 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
+[Obsolete]
 internal class __NewDatafile : I__NewDatafile
 {
     private readonly IBufferFactory _bufferFactory;
@@ -38,7 +39,7 @@ internal class __NewDatafile : I__NewDatafile
         // create map page
         var mapPage = _bufferFactory.AllocateNewPage();
 
-        mapPage.Header.PageID = AM_FIRST_PAGE_ID;
+        mapPage.Header.PageID = __AM_FIRST_PAGE_ID;
         mapPage.Header.PageType = PageType.AllocationMap;
 
         // mark first extend to $master and first page as data

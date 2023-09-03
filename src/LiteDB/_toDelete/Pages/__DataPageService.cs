@@ -1,6 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
+[Obsolete]
 internal class __DataPageService : __PageService, I__DataPageService
 {
     /// <summary>

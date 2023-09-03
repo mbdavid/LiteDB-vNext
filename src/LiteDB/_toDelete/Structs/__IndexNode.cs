@@ -3,6 +3,7 @@
 /// <summary>
 /// Represent a index node inside a Index Page
 /// </summary>
+[Obsolete]
 internal struct __IndexNode
 {
     public static readonly __IndexNode Empty = new();

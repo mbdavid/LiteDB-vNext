@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface]
-unsafe internal class PageService : IPageService
+unsafe internal class BasePageModifier : IBasePageModifier
 {
     protected PageSegment* Insert(PageMemory* pagePtr, ushort bytesLength, ushort index, bool isNewInsert)
     {

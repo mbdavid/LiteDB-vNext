@@ -58,7 +58,8 @@ internal class Constants
     /// <summary>
     /// Represent pageID of first AllocationMapPage (#0)
     /// </summary>
-    public const int AM_FIRST_PAGE_ID = 0;
+    public const uint AM_FIRST_PAGE_ID = 0;
+    [Obsolete] public const int __AM_FIRST_PAGE_ID = 0;
 
     /// <summary>
     /// Represent how many pages each extend will allocate in AllocationMapPage
@@ -109,7 +110,8 @@ internal class Constants
     /// <summary>
     /// Get colID for $master document
     /// </summary>
-    public static PageAddress MASTER_ROW_ID = new (MASTER_PAGE_ID, 0);
+    public static RowID MASTER_ROW_ID = new(MASTER_PAGE_ID, 0);
+    [Obsolete] public static PageAddress __MASTER_ROW_ID = new(MASTER_PAGE_ID, 0);
 
     /// <summary>
     /// Get max colID for collections to be used by user (1..LIMIT)

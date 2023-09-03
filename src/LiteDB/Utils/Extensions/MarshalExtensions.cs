@@ -11,6 +11,9 @@ internal unsafe static class MarshalEx
 
     public static string ReadStrUtf8(byte* strPtr, int bytesCount)
     {
+        //    var xx = Marshal.PtrToStringAnsi((nint)strPtr, bytesCount);
+
+
         return Encoding.UTF8.GetString(strPtr, bytesCount);
     }
 

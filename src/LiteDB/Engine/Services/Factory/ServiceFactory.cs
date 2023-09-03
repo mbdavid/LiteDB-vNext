@@ -33,7 +33,7 @@ internal partial class ServicesFactory : IServicesFactory
     public ILockService LockService { get; }
     public I__DiskService DiskService { get; }
     public IRecoveryService RecoveryService { get; }
-    public IAllocationMapService AllocationMapService { get; }
+    public I__AllocationMapService AllocationMapService { get; }
     public IMasterMapper MasterMapper { get; }
     public IMasterService MasterService { get; }
     public IMonitorService MonitorService { get; }
@@ -78,7 +78,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.CacheService = new __CacheService(this.BufferFactory);
         this.DiskService = new __DiskService(this.StreamFactory, this);
         this.LogService = new LogService(this.DiskService, this.CacheService, this.BufferFactory, this.WalIndexService, this);
-        this.AllocationMapService = new AllocationMapService(this.DiskService, this.BufferFactory);
+        this.AllocationMapService = new __AllocationMapService(this.DiskService, this.BufferFactory);
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
         this.RecoveryService = new RecoveryService(this.BufferFactory, this.DiskService);

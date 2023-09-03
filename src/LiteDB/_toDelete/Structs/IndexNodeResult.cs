@@ -3,6 +3,7 @@
 /// <summary>
 /// Transport strcut
 /// </summary>
+[Obsolete]
 internal readonly struct IndexNodeResult
 {
     public static readonly IndexNodeResult Empty = new();

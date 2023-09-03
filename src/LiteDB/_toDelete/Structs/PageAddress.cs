@@ -5,6 +5,7 @@
 /// * Immutable (thread safe)
 /// </summary>
 [DebuggerStepThrough]
+[Obsolete]
 internal struct PageAddress : IEquatable<PageAddress>
 {
     public const int SIZE = 5;

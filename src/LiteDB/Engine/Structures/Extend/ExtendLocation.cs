@@ -2,8 +2,8 @@
 
 internal struct ExtendLocation
 {
-    public readonly int AllocationMapID;
-    public readonly int ExtendIndex;
+    public readonly int AllocationMapID; // 4
+    public readonly int ExtendIndex;     // 4
 
     public bool IsEmpty => this.AllocationMapID == -1 && this.ExtendIndex == -1;
 

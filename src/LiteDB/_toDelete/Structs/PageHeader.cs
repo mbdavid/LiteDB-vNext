@@ -3,6 +3,7 @@ namespace LiteDB.Engine;
 /// <summary>
 /// Represent a custom header for block pages
 /// </summary>
+[Obsolete]
 internal struct PageHeader
 {
     #region Buffer Field Positions
@@ -117,7 +118,7 @@ internal struct PageHeader
     /// <summary>
     /// Get current extend page value based on PageType and FreeSpace
     /// </summary>
-    public ExtendPageValue ExtendPageValue => AllocationMapPage.GetExtendPageValue(this.PageType, this.FreeBytes);
+    public ExtendPageValue ExtendPageValue => __AllocationMapPage.GetExtendPageValue(this.PageType, this.FreeBytes);
 
     #endregion
 

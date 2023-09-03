@@ -19,7 +19,7 @@ public partial class LiteEngine : ILiteEngine
         // when looking for an AMP, get from AllocationMapService current instance
         if (pageID % AM_MAP_PAGES_COUNT == 0)
         {
-            var allocationMapID = AllocationMapPage.GetAllocationMapID(pageID);
+            var allocationMapID = __AllocationMapPage.GetAllocationMapID(pageID);
 
             page = allocationMapService.GetPageBuffer(allocationMapID);
         }

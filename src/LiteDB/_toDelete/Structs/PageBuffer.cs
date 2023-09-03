@@ -4,6 +4,7 @@
 /// Should be a class to be used in heap
 /// * Shared (thread safe)
 /// </summary>
+[Obsolete]
 internal class PageBuffer
 {
     /// <summary>

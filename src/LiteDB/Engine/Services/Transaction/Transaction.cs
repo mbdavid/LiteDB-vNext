@@ -9,7 +9,7 @@ internal class Transaction : ITransaction
     private readonly I__DiskService _diskService;
     private readonly ILogService _logService;
     private readonly IWalIndexService _walIndexService;
-    private readonly IAllocationMapService _allocationMapService;
+    private readonly I__AllocationMapService _allocationMapService;
     private readonly I__IndexPageService _indexPageService;
     private readonly I__DataPageService _dataPageService;
     private readonly IBufferFactory _bufferFactory;
@@ -62,7 +62,7 @@ internal class Transaction : ITransaction
         IBufferFactory bufferFactory,
         I__CacheService cacheService,
         IWalIndexService walIndexService,
-        IAllocationMapService allocationMapService,
+        I__AllocationMapService allocationMapService,
         I__IndexPageService indexPageService,
         I__DataPageService dataPageService,
         ILockService lockService,

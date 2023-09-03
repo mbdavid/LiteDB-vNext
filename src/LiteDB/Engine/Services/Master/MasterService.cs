@@ -39,7 +39,7 @@ internal class MasterService : IMasterService
         var dataService = _factory.CreateDataService(transaction);
 
         // read $master document
-        var docResult = await dataService.ReadDocumentAsync(MASTER_ROW_ID, Array.Empty<string>());
+        var docResult = await dataService.ReadDocumentAsync(__MASTER_ROW_ID, Array.Empty<string>());
 
         // rollback transaction to release used pages (no changes here)
         transaction.Rollback();
@@ -76,7 +76,7 @@ internal class MasterService : IMasterService
 
         var doc = _mapper.MapToDocument(master);
 
-        await dataService.UpdateDocumentAsync(MASTER_ROW_ID, doc);
+        await dataService.UpdateDocumentAsync(__MASTER_ROW_ID, doc);
     }
 
     #endregion

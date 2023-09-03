@@ -1,6 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IDisposable))]
+[Obsolete]
 internal class __DiskStream : I__DiskStream
 {
     private readonly IEngineSettings _settings;

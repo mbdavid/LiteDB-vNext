@@ -4,6 +4,7 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
+[Obsolete]
 internal class BufferFactory : IBufferFactory
 {
     /// <summary>

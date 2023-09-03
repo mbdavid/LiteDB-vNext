@@ -4,45 +4,60 @@
 /// * Singleton (thread safe)
 /// </summary>
 [AutoInterface(typeof(IDisposable))]
-unsafe internal class AllocationMapService : IAllocationMapService
+[Obsolete]
+internal class __AllocationMapService : I__AllocationMapService
 {
-    private readonly IAllocationMapPageModifier _pageModifier;
-    private readonly IDiskService _diskService;
-    private readonly IMemoryFactory _memoryFactory;
+    private readonly I__DiskService _diskService;
+    private readonly IBufferFactory _bufferFactory;
 
     /// <summary>
     /// List of all allocation map pages, in pageID order
     /// </summary>
-    private readonly List<nint> _pages = new();
+    private readonly List<__AllocationMapPage> _pages = new();
 
-    public AllocationMapService(
-        IAllocationMapPageModifier pageModifier,
-        IDiskService diskService, 
-        IMemoryFactory memoryFactory)
+    public __AllocationMapService(
+        I__DiskService diskService, 
+        IBufferFactory bufferFactory)
     {
-        _pageModifier = pageModifier;
         _diskService = diskService;
-        _memoryFactory = memoryFactory;
+        _bufferFactory = bufferFactory;
     }
 
     /// <summary>
     /// Initialize allocation map service loading all AM pages into memory and getting
     /// </summary>
-    public void Initialize()
+    public async ValueTask InitializeAsync()
     {
         // read all allocation maps pages on disk
-        var positionID = AM_FIRST_PAGE_ID;
+        await foreach (var pageBuffer in this.ReadAllocationMapPages())
+        {
+            // read all page buffer into an int array
+            var page = new __AllocationMapPage(pageBuffer);
+
+            // add AM page to instance
+            _pages.Add(page);
+        }
+    }
+
+    /// <summary>
+    /// Read all allocation map pages. Allocation map pages contains initial position and fixed interval between other pages
+    /// </summary>
+    private async IAsyncEnumerable<PageBuffer> ReadAllocationMapPages()
+    {
+        var positionID = __AM_FIRST_PAGE_ID;
 
         var writer = _diskService.GetDiskWriter();
         var lastPositionID = writer.GetLastFilePositionID();
 
         while (positionID <= lastPositionID)
         {
-            var pagePtr = _memoryFactory.AllocateNewPage();
+            var page = _bufferFactory.AllocateNewPage();
 
-            writer.ReadPage(pagePtr, positionID);
+            await writer.ReadPageAsync(positionID, page);
 
-            _pages.Add((nint)pagePtr);
+            ENSURE(!page.IsHeaderEmpty(), page);
+
+            yield return page;
 
             positionID += AM_PAGE_STEP;
         }
@@ -53,15 +68,15 @@ unsafe internal class AllocationMapService : IAllocationMapService
     /// </summary>
     public (int pageID, bool isNew, ExtendLocation next) GetFreeExtend(ExtendLocation current, byte colID, PageType type)
     {
-        var pagePtr = (PageMemory*)_pages[current.AllocationMapID];
+        var page = _pages[current.AllocationMapID];
 
-        var (extendIndex, pageIndex, isNew) = _pageModifier.GetFreeExtend(pagePtr, current.ExtendIndex, colID, type);
+        var (extendIndex, pageIndex, isNew) = page.GetFreeExtend(current.ExtendIndex, colID, type);
 
         if (extendIndex >= 0)
         {
             var extend = new ExtendLocation(current.AllocationMapID, extendIndex);
 
-            var pageID = current.AllocationMapID * AM_PAGE_STEP + extendIndex * AM_EXTEND_SIZE + 1 + pageIndex;
+            var pageID = page.AllocationMapID * AM_PAGE_STEP + extendIndex * AM_EXTEND_SIZE + 1 + pageIndex;
 
             return (pageID, isNew, extend);
         }
@@ -77,22 +92,18 @@ unsafe internal class AllocationMapService : IAllocationMapService
             var extend = new ExtendLocation(current.AllocationMapID + 1, 0);
 
             // if there is no more free extend in any AM page, let's create a new allocation map page
-            var newPagePtr = _memoryFactory.AllocateNewPage();
-
-            ENSURE(_pages.Count > 0);
-
-            var lastPagePtr = (PageMemory*)_pages.Last();
+            var mapPageBuffer = _bufferFactory.AllocateNewPage();
 
             // get a new PageID based on last AM page
-            var nextPageID = lastPagePtr->PageID + AM_PAGE_STEP;
+            var nextPageID = _pages.Last().Page.Header.PageID + AM_PAGE_STEP;
 
             // get allocation map position
-            newPagePtr->PositionID = nextPageID;
-            newPagePtr->PageID = nextPageID;
-            newPagePtr->PageType = PageType.AllocationMap;
-            newPagePtr->IsDirty = true;
+            mapPageBuffer.PositionID = nextPageID;
 
-            _pages.Add((nint)newPagePtr);
+            // create new AM page and add to list
+            var newPage = new __AllocationMapPage(nextPageID, mapPageBuffer);
+
+            _pages.Add(newPage);
 
             // call again this method with this new page
             return this.GetFreeExtend(extend, colID, type);
@@ -104,17 +115,17 @@ unsafe internal class AllocationMapService : IAllocationMapService
     /// </summary>
     public uint GetExtendValue(ExtendLocation extend)
     {
-        var pagePtr = (PageMemory*)_pages[extend.AllocationMapID];
+        var page = _pages[extend.AllocationMapID];
 
-        return pagePtr->Extends[extend.ExtendIndex];
+        return page.GetExtendValue(extend.ExtendIndex);
     }
 
     /// <summary>
-    /// Get PageMemory instance for a specific allocationMapID
+    /// Get PageBuffer instance for a specific allocationMapID
     /// </summary>
-    public PageMemory* GetPageMemory(int allocationMapID)
+    public PageBuffer GetPageBuffer(int allocationMapID)
     {
-        return (PageMemory*)_pages[allocationMapID];
+        return _pages[allocationMapID].Page;
     }
 
     /// <summary>
@@ -126,9 +137,9 @@ unsafe internal class AllocationMapService : IAllocationMapService
         var extendIndex = (pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE;
         var pageIndex = pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE;
 
-        var pagePtr = (PageMemory*)_pages[allocationMapID];
+        var page = _pages[allocationMapID];
 
-        _pageModifier.UpdateExtendPageValue(pagePtr, extendIndex, pageIndex, pageValue);
+        page.UpdateExtendPageValue(extendIndex, pageIndex, pageValue);
     }
 
     /// <summary>
@@ -140,26 +151,24 @@ unsafe internal class AllocationMapService : IAllocationMapService
         {
             var extendLocation = new ExtendLocation(extendValue.Key);
 
-            var pagePtr = (PageMemory*)_pages[extendLocation.AllocationMapID];
+            var page = _pages[extendLocation.AllocationMapID];
 
-            pagePtr->Extends[extendLocation.ExtendIndex] = extendValue.Value;
+            page.RestoreExtendValue(extendLocation.ExtendIndex, extendValue.Value);
         }
     }
 
     /// <summary>
     /// Write all dirty pages direct into disk (there is no log file to amp)
     /// </summary>
-    public void WriteAllChanges()
+    public async ValueTask WriteAllChangesAsync()
     {
         var writer = _diskService.GetDiskWriter();
 
-        foreach(var ptr in _pages)
+        foreach(var page in _pages)
         {
-            var pagePtr = (PageMemory*)ptr;
-
-            if (pagePtr->IsDirty)
+            if (page.UpdatePageBuffer())
             {
-                writer.WritePage(pagePtr);
+                await writer.WritePageAsync(page.Page);
             }
         }
     }
@@ -174,9 +183,9 @@ unsafe internal class AllocationMapService : IAllocationMapService
 
 #if DEBUG
         // in DEBUG, let's deallocate all amp
-        foreach(var ptr in _pages)
+        foreach(var page in _pages)
         {
-            _memoryFactory.DeallocatePage((PageMemory*)ptr);
+            _bufferFactory.DeallocatePage(page.Page);
         }
 #endif
 
