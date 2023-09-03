@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [AutoInterface(typeof(IDisposable))]
-internal class AutoIdService : IAutoIdService
+unsafe internal class AutoIdService : IAutoIdService
 {
     // dependency injection
 
@@ -72,20 +72,18 @@ internal class AutoIdService : IAutoIdService
     /// <summary>
     /// Initialize sequence based on last value on _id key.
     /// </summary>
-    public async Task InitializeAsync(byte colID, PageAddress tailIndexNodeID, I__IndexService indexService)
+    public void Initialize(byte colID, RowID tailIndexNodeID, IIndexService indexService)
     {
-        using var _pc = PERF_COUNTER(44, nameof(InitializeAsync), nameof(AutoIdService));
+        var tail = indexService.GetNode(tailIndexNodeID);
+        var last = indexService.GetNode(tail[0]->PrevID);
 
-        var tail = await indexService.GetNodeAsync(tailIndexNodeID);
-        var last = await indexService.GetNodeAsync(tail.Node.Prev[0]);
-
-        if (last.Node.Key.IsInt32)
+        if (last.Key->IsInt32)
         {
-            _sequences[colID].LastInt = last.Node.Key.AsInt32;
+            _sequences[colID].LastInt = last.Key->ValueInt32;
         }
-        else if (last.Node.Key.IsInt64)
+        else if (last.Key->IsInt64)
         {
-            _sequences[colID].LastLong = last.Node.Key.AsInt64;
+            _sequences[colID].LastLong = last.Key->ValueInt64;
         }
         else
         {

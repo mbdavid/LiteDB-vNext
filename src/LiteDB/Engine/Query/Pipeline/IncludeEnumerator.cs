@@ -3,7 +3,7 @@
 internal class IncludeEnumerator : IPipeEnumerator
 {
     // dependency injections
-    private readonly I__MasterService _masterService;
+    private readonly IMasterService _masterService;
     private readonly Collation _collation;
 
     private readonly BsonExpression _pathExpr;
@@ -14,7 +14,7 @@ internal class IncludeEnumerator : IPipeEnumerator
     public IncludeEnumerator(
         BsonExpression pathExpr, 
         IPipeEnumerator enumerator, 
-        I__MasterService masterService, 
+        IMasterService masterService, 
         Collation collation)
     {
         _pathExpr = pathExpr;
@@ -27,11 +27,11 @@ internal class IncludeEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(_enumerator.Emit.IndexNodeID, _enumerator.Emit.DataBlockID, true);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
-        var item = await _enumerator.MoveNextAsync(context);
+        var item = _enumerator.MoveNext(context);
 
         if (item.IsEmpty)
         {
@@ -44,7 +44,7 @@ internal class IncludeEnumerator : IPipeEnumerator
 
         if (value.IsDocument)
         {
-            await this.DoIncludeAsync(value.AsDocument, context);
+            this.DoInclude(value.AsDocument, context);
         }
         else if (value.IsArray)
         {
@@ -54,7 +54,7 @@ internal class IncludeEnumerator : IPipeEnumerator
             {
                 if (!elem.IsDocument) continue;
 
-                await this.DoIncludeAsync(elem.AsDocument, context);
+                this.DoInclude(elem.AsDocument, context);
             }
         }
 
@@ -64,7 +64,7 @@ internal class IncludeEnumerator : IPipeEnumerator
     /// <summary>
     /// Do include changes inner document instance to add all fields from that collection using _id
     /// </summary>
-    private async ValueTask DoIncludeAsync(BsonDocument value, PipeContext context)
+    private void DoInclude(BsonDocument value, PipeContext context)
     {
         // works only if is a document
         var refId = value["$id"];
@@ -78,11 +78,11 @@ internal class IncludeEnumerator : IPipeEnumerator
 
         if (master.Collections.TryGetValue(refCol.AsString, out var collection))
         {
-            var (indexNode, _) = await context.IndexService.FindAsync(collection.PK, refId, false, Query.Ascending);
+            var node = context.IndexService.Find(collection.PK, refId, false, Query.Ascending);
 
-            if (!indexNode.IsEmpty)
+            if (!node.IsEmpty)
             {
-                var refDocResult = await context.DataService.ReadDocumentAsync(indexNode.DataBlockID, Array.Empty<string>());
+                var refDocResult = context.DataService.ReadDocument(node.DataBlockID, Array.Empty<string>());
 
                 if (refDocResult.Fail) throw refDocResult.Exception;
 

@@ -52,7 +52,7 @@ unsafe internal class BasePageModifier : IBasePageModifier
         pagePtr->UsedBytes += bytesLength;
         pagePtr->NextFreeLocation += bytesLength;
 
-        ENSURE(location + bytesLength <= (PAGE_SIZE - (pagePtr->HighestIndex + 1) * PageHeader.SLOT_SIZE), "New buffer slice could not override footer area",
+        ENSURE(location + bytesLength <= (PAGE_SIZE - (pagePtr->HighestIndex + 1) * sizeof(PageSegment)), "New buffer slice could not override footer area",
             new { location, bytesLength});
 
         // create page segment based new inserted segment

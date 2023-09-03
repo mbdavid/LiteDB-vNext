@@ -417,7 +417,7 @@ internal class Transaction : ITransaction
 
     public unsafe void Rollback()
     {
-        using var _pc = PERF_COUNTER(48, nameof(Rollback), nameof(__Transaction));
+        using var _pc = PERF_COUNTER(48, nameof(Rollback), nameof(Transaction));
 
         // add pages to cache or decrement sharecount
         foreach (var ptr in _localPages.Values)

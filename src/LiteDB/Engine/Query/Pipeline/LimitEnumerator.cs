@@ -17,11 +17,11 @@ internal class LimitEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => _enumerator.Emit;
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
-        var item = await _enumerator.MoveNextAsync(context);
+        var item = _enumerator.MoveNext(context);
 
         if (item.IsEmpty)
         {

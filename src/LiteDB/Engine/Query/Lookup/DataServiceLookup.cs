@@ -9,9 +9,9 @@ internal class DataServiceLookup : IDocumentLookup
         _fields = fields;
     }
 
-    public async ValueTask<BsonDocument> LoadAsync(PipeValue key, PipeContext context)
+    public BsonDocument Load(PipeValue key, PipeContext context)
     {
-        var result = await context.DataService.ReadDocumentAsync(key.DataBlockID, _fields);
+        var result = context.DataService.ReadDocument(key.DataBlockID, _fields);
 
         if (result.Fail) throw result.Exception;
 

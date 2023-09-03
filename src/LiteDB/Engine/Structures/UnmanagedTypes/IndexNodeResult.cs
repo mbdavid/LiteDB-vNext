@@ -6,6 +6,7 @@ namespace LiteDB.Engine;
 unsafe internal struct IndexNodeResult
 {
     public RowID IndexNodeID;
+    public RowID DataBlockID;
     public PageMemory* Page;
     public IndexNode* Node;
     public IndexNodeLevel* Levels;
@@ -15,9 +16,10 @@ unsafe internal struct IndexNodeResult
 
     public bool IsEmpty => this.IndexNodeID.IsEmpty;
 
-    public IndexNodeResult(RowID indexNodeID, PageMemory* page, IndexNode* node, IndexNodeLevel* levels, IndexKey* key)
+    public IndexNodeResult(RowID indexNodeID, RowID dataBlockID, PageMemory* page, IndexNode* node, IndexNodeLevel* levels, IndexKey* key)
     {
         this.IndexNodeID = indexNodeID;
+        this.DataBlockID = dataBlockID;
         this.Page = page;
         this.Node = node;
         this.Levels = levels;
@@ -34,6 +36,11 @@ unsafe internal struct IndexNodeResult
 
             return ptr;
         }
+    }
+
+    public void SetNextNodeID(RowID nextNodeID)
+    {
+        this.Node->NextNodeID = nextNodeID;
     }
 
     public void Deconstruct(out RowID indexNodeID, out PageMemory* pagePtr, out IndexNode* indexNodePtr, out IndexNodeLevel* levelsPtr, out IndexKey* indexKeyPtr)

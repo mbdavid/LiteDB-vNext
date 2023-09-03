@@ -2,16 +2,16 @@
 
 internal class IndexAllEnumerator : IPipeEnumerator
 {
-    private readonly __IndexDocument _indexDocument;
+    private readonly IndexDocument _indexDocument;
     private readonly int _order;
 
     private bool _init = false;
     private bool _eof = false;
 
-    private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
+    private RowID _next = RowID.Empty; // all nodes from right of first node found
 
     public IndexAllEnumerator(
-        __IndexDocument indexDocument, 
+        IndexDocument indexDocument, 
         int order)
     {
         _indexDocument = indexDocument;
@@ -20,7 +20,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public unsafe PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
@@ -33,10 +33,10 @@ internal class IndexAllEnumerator : IPipeEnumerator
         {
             _init = true;
 
-            var (node, _) = await indexService.GetNodeAsync(start);
+            var node = indexService.GetNode(start);
 
             // get pointer to first element 
-            _next = node.GetNextPrev(0, _order);
+            _next = node[0]->GetNextPrev(_order);
 
             // check if not empty
             if (_next == end)
@@ -50,9 +50,9 @@ internal class IndexAllEnumerator : IPipeEnumerator
         // go forward
         if (_next != end || _next.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_next);
+            var node = indexService.GetNode(_next);
 
-            _next = node.GetNextPrev(0, _order);
+            _next = node[0]->GetNextPrev(_order);
 
             return new PipeValue(node.IndexNodeID, node.DataBlockID);
         }

@@ -22,7 +22,7 @@ public partial class LiteEngine : ILiteEngine
         await logService.CheckpointAsync(true);
 
         // persist all dirty amp into disk
-        await allocationMapService.WriteAllChangesAsync();
+        allocationMapService.WriteAllChanges();
 
         // if file was changed, update file header check byte
         if (_factory.FileHeader.IsDirty)

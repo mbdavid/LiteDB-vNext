@@ -111,7 +111,6 @@ internal class Constants
     /// Get colID for $master document
     /// </summary>
     public static RowID MASTER_ROW_ID = new(MASTER_PAGE_ID, 0);
-    [Obsolete] public static PageAddress __MASTER_ROW_ID = new(MASTER_PAGE_ID, 0);
 
     /// <summary>
     /// Get max colID for collections to be used by user (1..LIMIT)

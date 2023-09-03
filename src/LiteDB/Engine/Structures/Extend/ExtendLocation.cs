@@ -9,7 +9,7 @@ internal struct ExtendLocation
 
     public int ExtendID => this.IsEmpty ? -1 : (this.AllocationMapID * AM_EXTEND_COUNT) + this.ExtendIndex;
 
-    public int FirstPageID => this.AllocationMapID * AM_PAGE_STEP + this.ExtendIndex * AM_EXTEND_SIZE + 1;
+    public uint FirstPageID => (uint)(this.AllocationMapID * AM_PAGE_STEP + this.ExtendIndex * AM_EXTEND_SIZE + 1);
 
     public ExtendLocation()
     {

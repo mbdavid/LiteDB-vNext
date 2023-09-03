@@ -24,7 +24,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(false, _enumerator.Emit.DataBlockID, true);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_sortedItems is null)
         {
@@ -32,7 +32,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
 
             while (true)
             {
-                var item = await _enumerator.MoveNextAsync(context);
+                var item = _enumerator.MoveNext(context);
 
                 if (item.IsEmpty) break;
 
@@ -53,7 +53,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
         {
             var item = _sortedItems.Dequeue();
 
-            return new PipeValue(PageAddress.Empty, item.DataBlockID, item.Document);
+            return new PipeValue(RowID.Empty, item.DataBlockID, item.Document);
         }
 
         return PipeValue.Empty;

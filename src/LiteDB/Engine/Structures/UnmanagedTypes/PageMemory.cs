@@ -46,7 +46,7 @@ internal unsafe struct PageMemory   // 8192
     /// <summary>
     /// Get current extend page value based on PageType and FreeSpace
     /// </summary>
-    public ExtendPageValue ExtendPageValue => __AllocationMapPage.GetExtendPageValue(this.PageType, this.FreeBytes);
+    public ExtendPageValue ExtendPageValue => AllocationMapPageModifier.GetExtendPageValue(this.PageType, this.FreeBytes);
 
     public PageMemory()
     {

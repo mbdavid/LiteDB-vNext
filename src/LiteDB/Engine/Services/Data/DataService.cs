@@ -105,7 +105,7 @@ unsafe internal class DataService : IDataService
     /// <summary>
     /// Update existing document in a single or multiple pages
     /// </summary>
-    public void UpdateDocumentAsync(RowID dataBlockID, BsonDocument doc)
+    public void UpdateDocument(RowID dataBlockID, BsonDocument doc)
     {
         var docLength = doc.GetBytesCount();
 

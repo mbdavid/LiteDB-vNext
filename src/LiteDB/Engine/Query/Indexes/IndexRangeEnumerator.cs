@@ -4,9 +4,9 @@ internal class IndexRangeEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
-    private readonly __IndexDocument _indexDocument;
-    private readonly BsonValue _start;
-    private readonly BsonValue _end;
+    private readonly IndexDocument _indexDocument;
+    private readonly IndexKey _start;
+    private readonly IndexKey _end;
 
     private readonly bool _startEquals;
     private readonly bool _endEquals;
@@ -14,16 +14,16 @@ internal class IndexRangeEnumerator : IPipeEnumerator
     private bool _init = false;
     private bool _eof = false;
 
-    private PageAddress _prev = PageAddress.Empty; // all nodes from left of first node found
-    private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
+    private RowID _prev = RowID.Empty; // all nodes from left of first node found
+    private RowID _next = RowID.Empty; // all nodes from right of first node found
 
     public IndexRangeEnumerator(
-        BsonValue start,
-        BsonValue end,
+        IndexKey start,
+        IndexKey end,
         bool startEquals,
         bool endEquals,
         int order,
-        __IndexDocument indexDocument,
+        IndexDocument indexDocument,
         Collation collation)
     {
         // if order are desc, swap start/end values
@@ -38,7 +38,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public unsafe PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
@@ -50,18 +50,18 @@ internal class IndexRangeEnumerator : IPipeEnumerator
             _init = true;
 
             // find first indexNode (or get from head/tail if Min/Max value)
-            var (first, _) =
-                _start.IsMinValue ? await indexService.GetNodeAsync(_indexDocument.HeadIndexNodeID) :
-                _start.IsMaxValue ? await indexService.GetNodeAsync(_indexDocument.TailIndexNodeID) :
-                await indexService.FindAsync(_indexDocument, _start, true, _order);
+            var first =
+                _start.IsMinValue ? indexService.GetNode(_indexDocument.HeadIndexNodeID) :
+                _start.IsMaxValue ? indexService.GetNode(_indexDocument.TailIndexNodeID) :
+                indexService.Find(_indexDocument, _start, true, _order);
 
             // get pointer to next/prev at level 0
-            _prev = first.Prev[0];
-            _next = first.Next[0];
+            _prev = first[0]->PrevID;
+            _next = first[0]->NextID;
 
             if (_startEquals && !first.IsEmpty)
             {
-                if (!first.Key.IsMinValue && !first.Key.IsMaxValue)
+                if (!first.Key->IsMinValue && !first.Key->IsMaxValue)
                 { 
                     return new PipeValue(first.IndexNodeID, first.DataBlockID);
                 }
@@ -71,26 +71,27 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         // first go forward
         if (!_prev.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_prev);
+            var node = indexService.GetNode(_prev);
 
             // check for Min/Max bson values index node key
-            if (node.Key.IsMaxValue || node.Key.IsMinValue)
+            if (node.Key->IsMaxValue || node.Key->IsMinValue)
             {
-                _prev = PageAddress.Empty;
+                _prev = RowID.Empty;
             }
             else
             {
-                var diff = _collation.Compare(_start, node.Key);
+                //***var diff = _collation.Compare(_start, node.Key);
+                var diff = IndexKey.Compare(_start, node.Key, _collation);
 
                 if (diff == (_order /* 1 */) || (diff == 0 && _startEquals))
                 {
-                    _prev = node.Prev[0];
+                    _prev = node[0]->PrevID;
 
                     return new PipeValue(node.IndexNodeID, node.DataBlockID);
                 }
                 else
                 {
-                    _prev = PageAddress.Empty;
+                    _prev = RowID.Empty;
                 }
             }
         }
@@ -98,28 +99,29 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         // and than, go backward
         if (!_next.IsEmpty)
         {
-            var (node, _) = await indexService.GetNodeAsync(_next);
+            var node = indexService.GetNode(_next);
 
             // check for Min/Max bson values index node key
-            if (node.Key.IsMaxValue || node.Key.IsMinValue)
+            if (node.Key->IsMaxValue || node.Key->IsMinValue)
             {
                 _eof = true;
 
                 return PipeValue.Empty;
             }
 
-            var diff = _collation.Compare(_end, node.Key);
+            //***var diff = _collation.Compare(_end, node.Key);
+            var diff = IndexKey.Compare(_end, node.Key, _collation);
 
             if (diff == (_order * -1 /* -1 */) || (diff == 0 && _endEquals))
             {
-                _next = node.Next[0];
+                _next = node[0]->NextID;
 
                 return new PipeValue(node.IndexNodeID, node.DataBlockID);
             }
             else
             {
                 _eof = true;
-                _next = PageAddress.Empty;
+                _next = RowID.Empty;
             }
         }
 

@@ -30,7 +30,7 @@ unsafe internal class IndexPageModifier : BasePageModifier, IIndexPageModifier
 
         var indexNodeID = new RowID(pagePtr->PageID, index);
 
-        return new IndexNodeResult(indexNodeID, pagePtr, indexNodePtr, levelsPtr, keyPtr);
+        return new IndexNodeResult(indexNodeID, indexNodePtr->DataBlockID, pagePtr, indexNodePtr, levelsPtr, keyPtr);
     }
 
     public IndexNodeResult InsertIndexNode(PageMemory* pagePtr, byte slot, byte levels, IndexKey indexKey, RowID dataBlockID, ushort bytesLength)
@@ -62,7 +62,7 @@ unsafe internal class IndexPageModifier : BasePageModifier, IIndexPageModifier
         // get new indexKey and copy to memory
         keyPtr->CopyFrom(indexKey);
 
-        return new IndexNodeResult(indexNodeID, pagePtr, indexNodePtr, levelsPtr, keyPtr);
+        return new IndexNodeResult(indexNodeID, dataBlockID, pagePtr, indexNodePtr, levelsPtr, keyPtr);
     }
 
     public void DeleteIndexNode(PageMemory* pagePtr, ushort index) => base.Delete(pagePtr, index);

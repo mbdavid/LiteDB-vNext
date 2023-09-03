@@ -25,7 +25,7 @@ public partial class LiteEngine : ILiteEngine
         var pipeContext = new PipeContext(dataService, indexService, cursor.Parameters);
 
         // fetch next results (closes cursor when eof)
-        var result = await queryService.FetchAsync(cursor, fetchSize, pipeContext);
+        var result = queryService.FetchAsync(cursor, fetchSize, pipeContext);
 
         // rollback transaction to release pages back to cache
         transaction.Rollback();

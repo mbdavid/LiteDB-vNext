@@ -7,5 +7,5 @@ internal interface IPipeEnumerator : IDisposable
 {
     PipeEmit Emit { get; }
 
-    ValueTask<PipeValue> MoveNextAsync(PipeContext context);
+    PipeValue MoveNext(PipeContext context);
 }

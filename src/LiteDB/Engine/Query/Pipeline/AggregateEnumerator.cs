@@ -30,13 +30,13 @@ internal class AggregateEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(false, false, true);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
         while (!_eof)
         {
-            var item = await _enumerator.MoveNextAsync(context);
+            var item = _enumerator.MoveNext(context);
 
             if (item.IsEmpty)
             {
@@ -87,7 +87,7 @@ internal class AggregateEnumerator : IPipeEnumerator
             func.Reset();
         }
 
-        return new PipeValue(PageAddress.Empty, PageAddress.Empty, doc);
+        return new PipeValue(RowID.Empty, RowID.Empty, doc);
     }
 
     public void Dispose()

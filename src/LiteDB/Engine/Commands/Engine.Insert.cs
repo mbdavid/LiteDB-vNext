@@ -39,32 +39,32 @@ public partial class LiteEngine : ILiteEngine
         // initialize autoId if needed
         if (autoIdService.NeedInitialize(collection.ColID, autoId))
         {
-            await autoIdService.InitializeAsync(collection.ColID, collection.PK.TailIndexNodeID, indexService);
+            autoIdService.Initialize(collection.ColID, collection.PK.TailIndexNodeID, indexService);
         }
 
         // getting headerNodeResult (node+page) for all indexes
-        var headResults = new __IndexNodeResult[collection.Indexes.Count];
+        var headResults = new IndexNodeResult[collection.Indexes.Count];
 
         for(var i = 0; i < collection.Indexes.Count; i++)
         {
             var index = collection.Indexes[i];
-            headResults[i] = await indexService.GetNodeAsync(index.HeadIndexNodeID);
+            headResults[i] = indexService.GetNode(index.HeadIndexNodeID);
         }
 
         //for (var i = 0; i < documents.Length; i++)
         foreach (var doc in documents)
         {
             //    var doc = documents[i];
-            using var _p2 = PERF_COUNTER(35, "InsertSingle", nameof(__LiteEngine));
+            using var _p2 = PERF_COUNTER(35, "InsertSingle", nameof(LiteEngine));
 
             // get/set _id
             var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);
 
             // insert document and get position address
-            var dataBlockID = await dataService.InsertDocumentAsync(collection.ColID, doc);
+            var dataBlockID = dataService.InsertDocument(collection.ColID, doc);
 
             // insert _id as PK and get node to be used 
-            var last = await indexService.AddNodeAsync(collection.ColID, collection.PK, id, dataBlockID, headResults[0], __IndexNodeResult.Empty);
+            var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, headResults[0], IndexNodeResult.Empty);
 
             if (collection.Indexes.Count > 1)
             {
@@ -77,7 +77,7 @@ public partial class LiteEngine : ILiteEngine
 
                     foreach (var key in keys)
                     {
-                        var node = await indexService.AddNodeAsync(collection.ColID, index, key, dataBlockID, headResults[i], last);
+                        var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, headResults[i], last);
 
                         last = node;
                     }
@@ -94,7 +94,7 @@ public partial class LiteEngine : ILiteEngine
                 {
                     var index = collection.Indexes[i];
 
-                    headResults[i] = await indexService.GetNodeAsync(index.HeadIndexNodeID);
+                    headResults[i] = indexService.GetNode(index.HeadIndexNodeID);
                 }
             }
         }

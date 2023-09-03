@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
-unsafe internal struct IndexKey 
+unsafe internal struct IndexKey : IComparable<IndexKey>, IEquatable<IndexKey>
 {
     [FieldOffset(0)] public BsonType DataType; // 1
     [FieldOffset(1)] public byte Length;       // 1
@@ -14,6 +14,8 @@ unsafe internal struct IndexKey
 
     public bool IsMinValue => this.DataType == BsonType.MinValue;
     public bool IsMaxValue => this.DataType == BsonType.MaxValue;
+    public bool IsInt32 => this.DataType == BsonType.Int32;
+    public bool IsInt64 => this.DataType == BsonType.Int64;
 
     public IndexKey()
     {
@@ -33,6 +35,10 @@ unsafe internal struct IndexKey
             default: throw ERR($"BsonValue not supported for index key: {value}");
         }
     }
+
+    public static implicit operator BsonValue(IndexKey value) => throw new NotImplementedException();
+
+    public static implicit operator IndexKey(BsonValue value) => new IndexKey(value);
 
     public void CopyFrom(IndexKey indexKey)
     {
@@ -72,4 +78,31 @@ unsafe internal struct IndexKey
 
         return 0;
     }
+
+    public static int Compare(IndexKey left, IndexKey* right, Collation collation)
+    {
+        if (left.DataType == BsonType.Int32 && right->DataType == BsonType.Int32)
+        {
+            return left.ValueInt32 - right->ValueInt32;
+        }
+
+
+        return 0;
+    }
+
+    public static int Compare(IndexKey* left, IndexKey right, Collation collation)
+    {
+        if (left->DataType == BsonType.Int32 && right.DataType == BsonType.Int32)
+        {
+            return left->ValueInt32 - right.ValueInt32;
+        }
+
+
+        return 0;
+    }
+
+    public bool Equals(IndexKey other) => Compare(this, other, Collation.Default) == 0;
+
+    public int CompareTo(IndexKey other) => Compare(this, other, Collation.Default);
+    public int CompareTo(IndexKey other, Collation collation) => Compare(this, other, collation);
 }

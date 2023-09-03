@@ -4,50 +4,50 @@ public partial class LiteEngine : ILiteEngine
 {
     public async ValueTask DumpAsync(int pageID)
     {
-        var monitorService = _factory.MonitorService;
-        var allocationMapService = _factory.AllocationMapService;
+        //var monitorService = _factory.MonitorService;
+        //var allocationMapService = _factory.AllocationMapService;
 
-        if (_factory.State != EngineState.Open) throw ERR("must be closed");
+        //if (_factory.State != EngineState.Open) throw ERR("must be closed");
 
-        // create a new transaction with no collection lock
-        var transaction = await monitorService.CreateTransactionAsync(Array.Empty<byte>());
+        //// create a new transaction with no collection lock
+        //var transaction = await monitorService.CreateTransactionAsync(Array.Empty<byte>());
 
-        await transaction.InitializeAsync();
+        //await transaction.InitializeAsync();
 
-        PageBuffer page;
+        //PageBuffer page;
 
-        // when looking for an AMP, get from AllocationMapService current instance
-        if (pageID % AM_MAP_PAGES_COUNT == 0)
-        {
-            var allocationMapID = __AllocationMapPage.GetAllocationMapID(pageID);
+        //// when looking for an AMP, get from AllocationMapService current instance
+        //if (pageID % AM_MAP_PAGES_COUNT == 0)
+        //{
+        //    var allocationMapID = __AllocationMapPage.GetAllocationMapID(pageID);
 
-            page = allocationMapService.GetPageBuffer(allocationMapID);
-        }
-        else
-        {
-            page = await transaction.GetPageAsync(pageID);
-        }
+        //    page = allocationMapService.GetPageBuffer(allocationMapID);
+        //}
+        //else
+        //{
+        //    page = await transaction.GetPageAsync(pageID);
+        //}
 
-        var dump = page.DumpPage();
+        //var dump = page.DumpPage();
 
-        Console.WriteLine(dump);
+        //Console.WriteLine(dump);
 
-        transaction.Rollback();
+        //transaction.Rollback();
 
-        monitorService.ReleaseTransaction(transaction);
+        //monitorService.ReleaseTransaction(transaction);
     }
 
     public void DumpState(string? headerTitle = null)
     {
         var monitorService = _factory.MonitorService;
         var allocationMapService = _factory.AllocationMapService;
-        var bufferFactory = _factory.BufferFactory;
-        var cacheService = _factory.CacheService;
+        var memoryFactory = _factory.MemoryFactory;
+        var memoryCache = _factory.MemoryCache;
         var lockService = _factory.LockService;
         var logService = _factory.LogService;
         var diskService = _factory.DiskService;
 
-        var dump = Dump.Object(new { monitorService, bufferFactory, allocationMapService, cacheService, lockService, logService, diskService });
+        var dump = Dump.Object(new { monitorService, memoryFactory, allocationMapService, memoryCache, lockService, logService, diskService });
 
         if (headerTitle is not null)
         {

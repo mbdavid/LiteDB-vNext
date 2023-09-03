@@ -51,7 +51,7 @@ internal class MonitorService : IMonitorService
 
     /// <summary>
     /// </summary>
-    public void ReleaseTransaction(I__Transaction transaction)
+    public void ReleaseTransaction(ITransaction transaction)
     {
         // dispose current transaction
         transaction.Dispose();
@@ -63,7 +63,7 @@ internal class MonitorService : IMonitorService
     /// <summary>
     /// Check if transaction size reach limit AND check if is possible extend this limit
     /// </summary>
-    public bool Safepoint(I__Transaction transaction)
+    public bool Safepoint(ITransaction transaction)
     {
         return transaction.PagesUsed > SAFEPOINT_SIZE; //TODO: implementar o momento de fazer safepoint
 //            trans.Pages.TransactionSize >= trans.MaxTransactionSize &&

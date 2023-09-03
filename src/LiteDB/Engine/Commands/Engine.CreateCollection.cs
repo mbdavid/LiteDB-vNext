@@ -27,29 +27,29 @@ public partial class LiteEngine : ILiteEngine
         var indexer = _factory.CreateIndexService(transaction);
 
         // insert head/tail nodes
-        var (head, tail) = await indexer.CreateHeadTailNodesAsync(colID);
+        var (head, tail) = indexer.CreateHeadTailNodes(colID);
 
         // create new collection in $master and returns a new master document
         master.Collections.Add(collectionName, new CollectionDocument()
         {
             ColID = colID,
             Name = collectionName,
-            Indexes = new List<__IndexDocument>
+            Indexes = new List<IndexDocument>
             {
-                new __IndexDocument
+                new IndexDocument
                 {
                     Slot = 0,
                     Name = "_id",
                     Expression = "$._id",
                     Unique = true,
-                    HeadIndexNodeID = head.IndexNodeID,
-                    TailIndexNodeID = tail.IndexNodeID
+                    HeadIndexNodeID = head,
+                    TailIndexNodeID = tail
                 }
             }
         });
 
         // write master collection into pages
-        await masterService.WriteCollectionAsync(master, transaction);
+        masterService.WriteCollection(master, transaction);
 
         // write all dirty pages into disk
         await transaction.CommitAsync();

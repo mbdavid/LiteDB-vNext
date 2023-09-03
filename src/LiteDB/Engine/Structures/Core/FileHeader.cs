@@ -110,7 +110,7 @@ internal class FileHeader
         this.InstanceID = Guid.NewGuid();
         this.CreationTime = DateTime.UtcNow;
         this.Collation = settings.Collation;
-        this.EngineVersion = typeof(__LiteEngine).Assembly.GetName().Version;
+        this.EngineVersion = typeof(LiteEngine).Assembly.GetName().Version;
 
         this.IsDirty = false;
     }

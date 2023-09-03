@@ -16,7 +16,6 @@ internal partial class ServicesFactory : IServicesFactory
     public IBsonReader BsonReader { get; }
     public IBsonWriter BsonWriter { get; }
 
-    public IBufferFactory BufferFactory { get; }
     public IMemoryFactory MemoryFactory { get; }
     public IStreamFactory StreamFactory { get; }
     public IStreamFactory SortStreamFactory { get; }
@@ -148,7 +147,7 @@ internal partial class ServicesFactory : IServicesFactory
         orderBy);
 
     public ISortContainer CreateSortContainer(int containerID, int order, Stream stream) => new SortContainer(
-        this.BufferFactory,
+        this.MemoryFactory,
         this.FileHeader.Collation,
         containerID,
         order,
@@ -174,7 +173,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.DiskService.Dispose();
 
         // dispose buffer pages
-        this.BufferFactory.Dispose();
+        this.MemoryFactory.Dispose();
 
         this.State = EngineState.Close;
 

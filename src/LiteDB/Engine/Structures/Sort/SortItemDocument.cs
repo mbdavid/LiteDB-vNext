@@ -2,11 +2,11 @@
 
 internal readonly struct SortItemDocument
 {
-    public readonly PageAddress DataBlockID;
-    public readonly BsonValue Key;
+    public readonly RowID DataBlockID;
+    public readonly IndexKey Key;
     public readonly BsonDocument Document;
 
-    public SortItemDocument(PageAddress dataBlockID, BsonValue key, BsonDocument document)
+    public SortItemDocument(RowID dataBlockID, IndexKey key, BsonDocument document)
     {
         this.DataBlockID = dataBlockID;
         this.Key = key;

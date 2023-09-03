@@ -41,28 +41,6 @@ unsafe internal struct PageSegment
         return segmentPtr;
     }
 
-
-    [Obsolete]
-    public static PageSegment GetSegment(PageBuffer page, byte index, out PageSegment segmentAddr)
-    {
-        var span = page.AsSpan();
-        segmentAddr = GetSegmentAddr(index);
-        var location = span[segmentAddr.Location..].ReadUInt16();
-        var length = span[segmentAddr.Length..].ReadUInt16();
-        var segment = new PageSegment(location, length);
-        return segment;
-    }
-
-
-    [Obsolete]
-    public static PageSegment GetSegmentAddr(byte index)
-    {
-        var locationAddr = PAGE_SIZE - ((index + 1) * PageHeader.SLOT_SIZE) + 2;
-        var lengthAddr = PAGE_SIZE - ((index + 1) * PageHeader.SLOT_SIZE);
-        return new((ushort)locationAddr, (ushort)lengthAddr);
-    }
-
-
     public override string ToString() => Dump.Object(this);
 
 }

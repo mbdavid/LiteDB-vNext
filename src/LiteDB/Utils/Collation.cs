@@ -4,7 +4,7 @@
 /// Implement how database will compare to order by/find strings according defined culture/compare options
 /// If not set, default is CurrentCulture with IgnoreCase
 /// </summary>
-public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityComparer<BsonValue>
+public class Collation : IComparer<BsonValue>, IComparer<IndexKey>, IComparer<string>, IEqualityComparer<BsonValue>
 {
     private const string BINARY = "binary";
 
@@ -100,5 +100,10 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
 
         return name + 
             (this.CompareOptions == CompareOptions.None ? "" : "/" + this.CompareOptions.ToString());
+    }
+
+    int IComparer<IndexKey>.Compare(IndexKey left, IndexKey right)
+    {
+        return IndexKey.Compare(left, right, this);
     }
 }

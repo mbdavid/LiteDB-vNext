@@ -28,7 +28,7 @@ public partial class LiteEngine : ILiteEngine
         var indexService = _factory.CreateIndexService(transaction);
 
         // create new index (head/tail)
-        var (head, tail) = await indexService.CreateHeadTailNodesAsync(collection.ColID);
+        var (head, tail) = indexService.CreateHeadTailNodes(collection.ColID);
 
         // get a free index slot
         var freeIndexSlot = (byte)Enumerable.Range(1, INDEX_MAX_LEVELS)
@@ -36,21 +36,21 @@ public partial class LiteEngine : ILiteEngine
             .FirstOrDefault();
 
         // create new collection in $master and returns a new master document
-        var indexDocument = new __IndexDocument()
+        var indexDocument = new IndexDocument()
         {
             Slot = freeIndexSlot,
             Name = indexName,
             Expression = expression,
             Unique = unique,
-            HeadIndexNodeID = head.IndexNodeID,
-            TailIndexNodeID = tail.IndexNodeID
+            HeadIndexNodeID = head,
+            TailIndexNodeID = tail
         };
         
         // add new index into master model
         collection.Indexes.Add(indexDocument);
         
         // write master collection into pages inside transaction
-        await masterService.WriteCollectionAsync(master, transaction);
+        masterService.WriteCollection(master, transaction);
 
         // create pipe context
         var pipeContext = new PipeContext(dataService, indexService, BsonDocument.Empty);
@@ -62,60 +62,61 @@ public partial class LiteEngine : ILiteEngine
         var counter = 0;
 
         // getting headerNodeResult (node+page) for new index
-        var headResult = await indexService.GetNodeAsync(indexDocument.HeadIndexNodeID);
+        var headResult = indexService.GetNode(indexDocument.HeadIndexNodeID);
 
         // read all documents based on a full PK scan
         using (var enumerator = new IndexAllEnumerator(collection.PK, LiteDB.Engine.Query.Ascending))
         {
-            var result = await enumerator.MoveNextAsync(pipeContext);
+            var result = enumerator.MoveNext(pipeContext);
 
             while(!result.IsEmpty)
             {
                 // read document fields
-                var docResult = await dataService.ReadDocumentAsync(result.DataBlockID, fields);
+                var docResult = dataService.ReadDocument(result.DataBlockID, fields);
 
                 if (docResult.Fail) throw docResult.Exception;
 
                 // get all keys for this index
                 var keys = expression.GetIndexKeys(docResult.Value.AsDocument, collation);
 
-                // get PK indexNode and Page 
-                var pkPage = await transaction.GetPageAsync(result.IndexNodeID.PageID);
-                var pkIndexNode = transaction.GetIndexNode(result.IndexNodeID);
-                var pkNextNodeID = pkIndexNode.NextNodeID;
-
-                // and set as start to NextNode
-                var first = __IndexNodeResult.Empty;
-                var last = new __IndexNodeResult(pkIndexNode, pkPage);
-
-                foreach (var key in keys)
-                {
-                    var nodeResult = await indexService.AddNodeAsync(collection.ColID, indexDocument, key, result.DataBlockID, headResult, last);
-
-                    // keep first node to add in NextNode list (after pk)
-                    if (first.IsEmpty) first = nodeResult;
-
-                    last = nodeResult;
-                    counter++;
-                }
-
-                // if pk already has a nextNode, point to first added 
-                if (!pkNextNodeID.IsEmpty)
-                {
-                    first.Node.SetNextNodeID(first.Page, pkNextNodeID);
-                }
-
-                // do a safepoint after insert each document
-                if (monitorService.Safepoint(transaction))
-                {
-                    await transaction.SafepointAsync();
-
-                    // after safepoint, reload headResult (can change page)
-                    headResult = await indexService.GetNodeAsync(indexDocument.HeadIndexNodeID);
-                }
-
-                // go to next result
-                result = await enumerator.MoveNextAsync(pipeContext);
+                throw new NotImplementedException();
+//                // get PK indexNode and Page 
+//                var pkPage = transaction.GetPageAsync(result.IndexNodeID.PageID);
+//                var pkIndexNode = transaction.GetIndexNode(result.IndexNodeID);
+//                var pkNextNodeID = pkIndexNode.NextNodeID;
+//
+//                // and set as start to NextNode
+//                var first = IndexNodeResult.Empty;
+//                var last = new IndexNodeResult(pkIndexNode, pkPage);
+//
+//                foreach (var key in keys)
+//                {
+//                    var nodeResult = indexService.AddNode(collection.ColID, indexDocument, key, result.DataBlockID, headResult, last);
+//
+//                    // keep first node to add in NextNode list (after pk)
+//                    if (first.IsEmpty) first = nodeResult;
+//
+//                    last = nodeResult;
+//                    counter++;
+//                }
+//
+//                // if pk already has a nextNode, point to first added 
+//                if (!pkNextNodeID.IsEmpty)
+//                {
+//                    first.SetNextNodeID(pkNextNodeID);
+//                }
+//
+//                // do a safepoint after insert each document
+//                if (monitorService.Safepoint(transaction))
+//                {
+//                    await transaction.SafepointAsync();
+//
+//                    // after safepoint, reload headResult (can change page)
+//                    headResult = indexService.GetNode(indexDocument.HeadIndexNodeID);
+//                }
+//
+//                // go to next result
+//                result = enumerator.MoveNext(pipeContext);
             }
         }
 

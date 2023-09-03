@@ -2,11 +2,11 @@
 
 internal struct PipeContext
 {
-    public readonly I__DataService DataService;
-    public readonly I__IndexService IndexService;
+    public readonly IDataService DataService;
+    public readonly IIndexService IndexService;
     public readonly BsonDocument QueryParameters;
 
-    public PipeContext(I__DataService dataService, I__IndexService indexService, BsonDocument queryParameters)
+    public PipeContext(IDataService dataService, IIndexService indexService, BsonDocument queryParameters)
     {
         this.DataService = dataService;
         this.IndexService = indexService;

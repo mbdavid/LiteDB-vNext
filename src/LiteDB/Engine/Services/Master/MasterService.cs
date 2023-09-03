@@ -76,7 +76,7 @@ internal class MasterService : IMasterService
 
         var doc = _mapper.MapToDocument(master);
 
-        dataService.UpdateDocumentAsync(MASTER_ROW_ID, doc);
+        dataService.UpdateDocument(MASTER_ROW_ID, doc);
     }
 
     #endregion

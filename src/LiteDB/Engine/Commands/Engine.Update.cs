@@ -33,12 +33,12 @@ public partial class LiteEngine : ILiteEngine
 
             if (id.IsNull || id.IsMinValue || id.IsMaxValue) throw ERR("Invalid _id");
 
-            var result = await indexService.FindAsync(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
+            var result = indexService.Find(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
 
             if (result.IsEmpty) continue;
 
             // update document content
-            await dataService.UpdateDocumentAsync(result.Node.IndexNodeID, doc);
+            dataService.UpdateDocument(result.IndexNodeID, doc);
 
             //if (collection.Indexes.Count > 1)
             //{

@@ -3,8 +3,8 @@
 internal class PipelineBuilder
 {
     // dependency injections
-    private I__MasterService _masterService;
-    private I__SortService _sortService;
+    private IMasterService _masterService;
+    private ISortService _sortService;
     private Collation _collation;
 
     private CollectionDocument _collection;
@@ -12,8 +12,8 @@ internal class PipelineBuilder
     private IPipeEnumerator? _enumerator;
 
     public PipelineBuilder(
-        I__MasterService masterService,
-        I__SortService sortService,
+        IMasterService masterService,
+        ISortService sortService,
         Collation collation,
         string collectionName, 
         BsonDocument queryParameters)
@@ -104,7 +104,7 @@ internal class PipelineBuilder
         }
     }
 
-    public IPipeEnumerator CreateIndex(__IndexDocument indexDocument, BsonValue value, BsonExpressionType exprType, int order)
+    public IPipeEnumerator CreateIndex(IndexDocument indexDocument, LiteDB.BsonValue value, BsonExpressionType exprType, int order)
     {
         return (exprType, value.Type) switch
         {
@@ -116,7 +116,7 @@ internal class PipelineBuilder
             (BsonExpressionType.LessThan, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, true, order, indexDocument, _collation),
             (BsonExpressionType.LessThanOrEqual, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, true, true, order, indexDocument, _collation),
             (BsonExpressionType.NotEqual, _) => new IndexScanEnumerator(indexDocument, x => x.CompareTo(value, _collation) != 0, order),
-            (BsonExpressionType.In, BsonType.Array) => new IndexInEnumerator(value.AsArray, indexDocument, _collation),
+            (BsonExpressionType.In, BsonType.Array) => throw new NotImplementedException(),// new IndexInEnumerator(value.AsArray, indexDocument, _collation),
             (BsonExpressionType.In, _) => new IndexEqualsEnumerator(value, indexDocument, _collation),
             _ => throw ERR($"There is no index for {exprType} predicate")
         };

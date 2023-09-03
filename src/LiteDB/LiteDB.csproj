@@ -29,6 +29,12 @@
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="_toDelete\**" />
+    <EmbeddedResource Remove="_toDelete\**" />
+    <None Remove="_toDelete\**" />
+  </ItemGroup>
+
  <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\LICENSE" Pack="true" PackagePath="LICENSE" />

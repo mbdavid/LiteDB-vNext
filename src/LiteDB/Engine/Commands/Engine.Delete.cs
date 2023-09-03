@@ -33,15 +33,17 @@ public partial class LiteEngine : ILiteEngine
             // there is no PK with this values
             if (id.IsNull || id.IsMinValue || id.IsMaxValue) continue;
 
-            var result = await indexService.FindAsync(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
+            var indexKey = new IndexKey(id);
+
+            var result = indexService.Find(collection.PK, indexKey, false, LiteDB.Engine.Query.Ascending);
 
             if (result.IsEmpty) continue;
 
             // delete all index nodes starting from PK
-            await indexService.DeleteAllAsync(result);
+            indexService.DeleteAllAsync(result);
 
             // delete document
-            await dataService.DeleteDocumentAsync(result.Node.DataBlockID);
+            dataService.DeleteDocument(result.DataBlockID);
 
             count++;
 

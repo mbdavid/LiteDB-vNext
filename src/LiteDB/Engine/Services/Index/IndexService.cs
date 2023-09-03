@@ -25,7 +25,7 @@ unsafe internal class IndexService : IIndexService
     /// <summary>
     /// Create head and tail nodes for a new index
     /// </summary>
-    public (__IndexNode head, __IndexNode tail) CreateHeadTailNodes(byte colID)
+    public (RowID head, RowID tail) CreateHeadTailNodes(byte colID)
     {
         // get how many bytes needed for each head/tail (both has same size)
         var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, IndexKey.MinValue);
@@ -52,14 +52,13 @@ unsafe internal class IndexService : IIndexService
             _transaction.UpdatePageMap(pagePtr->PageID, after);
         }
 
-        throw new NotImplementedException();
-        //return (head, tail);
+        return (head.IndexNodeID, tail.IndexNodeID);
     }
 
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, IndexNodeResult head, IndexNodeResult last)
+    public IndexNodeResult AddNode(byte colID, IndexDocument index, IndexKey indexKey, RowID dataBlockID, IndexNodeResult head, IndexNodeResult last)
     {
         using var _pc = PERF_COUNTER(4, nameof(AddNode), nameof(IndexService));
 
@@ -67,17 +66,14 @@ unsafe internal class IndexService : IIndexService
         var levels = this.Flip();
 
         // call AddNode with key value
-        return this.AddNodeInternal(colID, index, key, dataBlockID, levels, head, last);
+        return this.AddNodeInternal(colID, index, indexKey, dataBlockID, levels, head, last);
     }
 
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private IndexNodeResult AddNodeInternal(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, int insertLevels, IndexNodeResult head, IndexNodeResult last)
+    private IndexNodeResult AddNodeInternal(byte colID, IndexDocument index, IndexKey indexKey, RowID dataBlockID, int insertLevels, IndexNodeResult head, IndexNodeResult last)
     {
-        // transform BsonValue into Inde
-        var indexKey = new IndexKey(key);
-
         // get a free index page for head note
         var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, indexKey);
 

@@ -155,9 +155,9 @@ unsafe internal class AllocationMapPageModifier : BasePageModifier, IAllocationM
     /// Returns a AllocationMapID from a allocation map pageID. Must return 0, 1, 2, 3
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetAllocationMapID(int pageID)
+    public static uint GetAllocationMapID(uint pageID)
     {
-        return (pageID - __AM_FIRST_PAGE_ID) % AM_EXTEND_COUNT;
+        return (pageID - AM_FIRST_PAGE_ID) % AM_EXTEND_COUNT;
     }
 
     /// <summary>

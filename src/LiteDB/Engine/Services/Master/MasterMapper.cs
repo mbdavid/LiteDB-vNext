@@ -71,14 +71,14 @@ internal class MasterMapper : IMasterMapper
             {
                 ColID = (byte)c.Value["colID"],
                 Name = c.Key,
-                Indexes = c.Value["indexes"].AsArray.Select(i => new __IndexDocument
+                Indexes = c.Value["indexes"].AsArray.Select(i => new IndexDocument
                 {
                     Slot = (byte)i["slot"],
                     Name = i["name"],
                     Expression = BsonExpression.Create(i["expr"]),
                     Unique = i["unique"],
-                    HeadIndexNodeID = new(i["head"][0], (byte)i["head"][1]),
-                    TailIndexNodeID = new(i["tail"][0], (byte)i["tail"][1])
+                    HeadIndexNodeID = new((uint)i["head"][0], (byte)i["head"][1]),
+                    TailIndexNodeID = new((uint)i["tail"][0], (byte)i["tail"][1])
                 }).ToList()
             }),
             Pragmas = new PragmaDocument

@@ -3,7 +3,7 @@
 internal class AggregateQueryOptimization : IQueryOptimization
 {
     // dependency injections
-    private readonly I__ServicesFactory _factory;
+    private readonly IServicesFactory _factory;
 
     // ctor 
     private readonly CollectionDocument _collection;
@@ -11,7 +11,7 @@ internal class AggregateQueryOptimization : IQueryOptimization
     // fields filled by all query optimization proccess
 
     public AggregateQueryOptimization(
-        I__ServicesFactory factory,
+        IServicesFactory factory,
         CollectionDocument collection)
     {
         _factory = factory;

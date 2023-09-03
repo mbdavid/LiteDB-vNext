@@ -2,28 +2,29 @@
 
 internal readonly struct SortItem
 {
-    public static readonly SortItem Empty = new();
+    public readonly RowID DataBlockID;
+    public readonly IndexKey Key;
 
-    public readonly PageAddress DataBlockID;
-    public readonly BsonValue Key;
+    public static readonly SortItem Empty = new();
 
     public bool IsEmpty => this.DataBlockID.IsEmpty;
 
     public SortItem()
     {
-        this.DataBlockID = PageAddress.Empty;
-        this.Key = BsonValue.Null;
+        this.DataBlockID = RowID.Empty;
+        this.Key = IndexKey.MinValue;
     }
 
-    public SortItem(PageAddress dataBlockID, BsonValue key)
+    public SortItem(RowID dataBlockID, BsonValue key)
     {
         this.DataBlockID = dataBlockID;
         this.Key = key;
     }
 
-    public int GetBytesCount()
+    public unsafe int GetBytesCount()
     {
-        return __IndexNode.GetKeyLength(this.Key) + PageAddress.SIZE;
+        throw new NotImplementedException();
+//        return IndexNode.GetKeyLength(this.Key) + sizeof(RowID);
     }
 
     public override string ToString() => Dump.Object(this);

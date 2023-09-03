@@ -3,8 +3,8 @@
 internal class IndexInEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
-    private readonly __IndexDocument _indexDocument;
-    private readonly BsonArray _values;
+    private readonly IndexDocument _indexDocument;
+    private readonly IList<IndexKey> _values;
 
     private bool _init = false;
     private bool _eof = false;
@@ -14,8 +14,8 @@ internal class IndexInEnumerator : IPipeEnumerator
     private IndexEqualsEnumerator? _currentIndex;
 
     public IndexInEnumerator(
-        BsonArray values,
-        __IndexDocument indexDocument,
+        IList<IndexKey> values,
+        IndexDocument indexDocument,
         Collation collation)
     {
         _values = values;
@@ -25,7 +25,7 @@ internal class IndexInEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public unsafe PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
@@ -37,20 +37,21 @@ internal class IndexInEnumerator : IPipeEnumerator
 
             var value = _values.Distinct().ElementAtOrDefault(_index);
 
-            if(value is null)
-            {
-                _eof = true;
-
-                return PipeValue.Empty;
-            }
+            throw new NotImplementedException(); ;
+            //if(value is null)
+            //{
+            //    _eof = true;
+            //
+            //    return PipeValue.Empty;
+            //}
 
             _currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation);
 
-            return await _currentIndex.MoveNextAsync(context);
+            return _currentIndex.MoveNext(context);
         }
         else
         {
-            var pipeValue = await _currentIndex!.MoveNextAsync(context);
+            var pipeValue = _currentIndex!.MoveNext(context);
 
             if (pipeValue.IsEmpty) _init = false;
 

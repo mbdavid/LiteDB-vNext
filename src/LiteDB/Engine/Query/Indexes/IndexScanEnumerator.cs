@@ -2,19 +2,18 @@
 
 internal class IndexScanEnumerator : IPipeEnumerator
 {
-
-    private readonly __IndexDocument _indexDocument;
-    private readonly Func<BsonValue, bool> _func;
+    private readonly IndexDocument _indexDocument;
+    private readonly Func<IndexKey, bool> _func;
     private readonly int _order;
 
     private bool _init = false;
     private bool _eof = false;
 
-    private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
+    private RowID _next = RowID.Empty; // all nodes from right of first node found
 
     public IndexScanEnumerator(
-        __IndexDocument indexDocument,
-        Func<BsonValue, bool> func,
+        IndexDocument indexDocument,
+        Func<IndexKey, bool> func,
         int order)
     {
         _indexDocument = indexDocument;
@@ -24,7 +23,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public async ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public unsafe PipeValue MoveNext(PipeContext context)
     {
         if (_eof) return PipeValue.Empty;
 
@@ -37,15 +36,16 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
             var start = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
 
-            var nodeRef = await indexService.GetNodeAsync(start);
+            var node = indexService.GetNode(start);
 
             // get pointer to next at level 0
-            _next = nodeRef.Node.GetNextPrev(0, _order);
+            _next = node[0]->GetNextPrev(_order);
 
-            if(_func(nodeRef.Node.Key))
-            {
-                return new PipeValue(nodeRef.Node.IndexNodeID, nodeRef.Node.DataBlockID);
-            }
+            throw new NotImplementedException();
+            //if(_func(node.Key))
+            //{
+            //    return new PipeValue(node.IndexNodeID, node.DataBlockID);
+            //}
         }
 
         // go forward
@@ -53,15 +53,15 @@ internal class IndexScanEnumerator : IPipeEnumerator
         {
             do
             {
-                var nodeRef = await indexService.GetNodeAsync(_next);
-                var node = nodeRef.Node;
+                var node = indexService.GetNode(_next);
 
-                _next = nodeRef.Node.GetNextPrev(0, _order);
+                _next = node[0]->GetNextPrev(_order);
 
-                if (_func(nodeRef.Node.Key))
-                {
-                    return new PipeValue(nodeRef.Node.IndexNodeID, nodeRef.Node.DataBlockID);
-                }
+                throw new NotImplementedException();
+                //if (_func(node.Key))
+                //{
+                //    return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                //}
 
             } while (!_next.IsEmpty);
         }

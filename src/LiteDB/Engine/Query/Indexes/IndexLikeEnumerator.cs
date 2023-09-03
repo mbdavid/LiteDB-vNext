@@ -4,8 +4,8 @@ internal class IndexLikeEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
-    private readonly __IndexDocument _indexDocument;
-    private readonly BsonValue _value;
+    private readonly IndexDocument _indexDocument;
+    private readonly IndexKey _value;
     private readonly string _startsWith;
     private readonly bool _hasMore;
     private readonly int _order;
@@ -13,16 +13,16 @@ internal class IndexLikeEnumerator : IPipeEnumerator
     private bool _init = false;
     private bool _eof = false;
 
-    private PageAddress _prev = PageAddress.Empty; // all nodes from left of first node found
-    private PageAddress _next = PageAddress.Empty; // all nodes from right of first node found
+    private RowID _prev = RowID.Empty; // all nodes from left of first node found
+    private RowID _next = RowID.Empty; // all nodes from right of first node found
 
     public IndexLikeEnumerator(
-        BsonValue value, 
-        __IndexDocument indexDocument, 
+        IndexKey value, 
+        IndexDocument indexDocument, 
         Collation collation,
         int order)
     {
-        _startsWith = value.AsString.SqlLikeStartsWith(out _hasMore);
+        //_startsWith = value.AsString.SqlLikeStartsWith(out _hasMore);
         _value = value;
         _indexDocument = indexDocument;
         _collation = collation;
@@ -31,96 +31,96 @@ internal class IndexLikeEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, false);
 
-    public ValueTask<PipeValue> MoveNextAsync(PipeContext context)
+    public PipeValue MoveNext(PipeContext context)
     {
-        if (_eof) return new ValueTask<PipeValue>(PipeValue.Empty);
+        if (_eof) return PipeValue.Empty;
 
         return _startsWith.Length > 0 ?  this.ExecuteLike(context) : this.ExecuteFullScan(context);
     }
 
-    private async ValueTask<PipeValue> ExecuteLike(PipeContext context)
+    private unsafe PipeValue ExecuteLike(PipeContext context)
     {
-        var indexService = context.IndexService;
+        throw new NotImplementedException();
+        //var indexService = context.IndexService;
 
-        if(!_init)
-        {
-            _init = true;
+        //if(!_init)
+        //{
+        //    _init = true;
 
-            var (node, _) = await indexService.FindAsync(_indexDocument, _startsWith, true, Query.Ascending);
+        //    var node = indexService.Find(_indexDocument, _startsWith, true, Query.Ascending);
 
-            if (node.IsEmpty)
-            {
-                _eof = true;
-                return PipeValue.Empty;
-            };
+        //    if (node.IsEmpty)
+        //    {
+        //        _eof = true;
+        //        return PipeValue.Empty;
+        //    };
 
-            // get pointer to next/prev
-            _prev = node.Prev[0];
-            _next = node.Next[0];
-        }
+        //    // get pointer to next/prev
+        //    _prev = node[0]->PrevID;
+        //    _next = node[0]->NextID;
+        //}
 
-        if(!_next.IsEmpty || !_prev.IsEmpty)
-        {
-            var (node, _) = !_next.IsEmpty ?
-                await indexService.GetNodeAsync(_next) :
-                await indexService.GetNodeAsync(_prev);
+        //if(!_next.IsEmpty || !_prev.IsEmpty)
+        //{
+        //    var node = !_next.IsEmpty ?
+        //        indexService.GetNode(_next) :
+        //        indexService.GetNode(_prev);
             
-            if(node.Key.AsString.StartsWith(_startsWith, StringComparison.OrdinalIgnoreCase))
-            {
-                if(!_hasMore || (_hasMore && node.Key.AsString.SqlLike(_value, _collation)))
-                {
-                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
-                }
-            }
-        }
-        return PipeValue.Empty;
+        //    if(node.Key.AsString.StartsWith(_startsWith, StringComparison.OrdinalIgnoreCase))
+        //    {
+        //        if(!_hasMore || (_hasMore && node.Key.AsString.SqlLike(_value, _collation)))
+        //        {
+        //            return new PipeValue(node.IndexNodeID, node.DataBlockID);
+        //        }
+        //    }
+        //}
+        //return PipeValue.Empty;
     }
 
-    private async ValueTask<PipeValue> ExecuteFullScan(PipeContext context)
+    private unsafe PipeValue ExecuteFullScan(PipeContext context)
     {
-        var indexService = context.IndexService;
+        throw new NotImplementedException();
+        //var indexService = context.IndexService;
 
-        if (_eof) return PipeValue.Empty;
+        //if (_eof) return PipeValue.Empty;
 
-        // in first run, gets head node
-        if (!_init)
-        {
-            _init = true;
+        //// in first run, gets head node
+        //if (!_init)
+        //{
+        //    _init = true;
 
-            var start = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
+        //    var start = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
 
-            var nodeRef = await indexService.GetNodeAsync(start);
-            var node = nodeRef.Node;
+        //    var node = indexService.GetNode(start);
 
-            // get pointer to next at level 0
-            _next = nodeRef.Node.GetNextPrev(0, _order);
+        //    // get pointer to next at level 0
+        //    _next = node[0]->GetNextPrev(_order);
 
-            if (node.Key.AsString.SqlLike(_value, _collation))
-            {
-                return new PipeValue(node.IndexNodeID, node.DataBlockID);
-            }
-        }
-        // go forward
-        if (!_next.IsEmpty)
-        {
-            do
-            {
-                var nodeRef = await indexService.GetNodeAsync(_next);
-                var node = nodeRef.Node;
+        //    if (node.Key.AsString.SqlLike(_value, _collation))
+        //    {
+        //        return new PipeValue(node.IndexNodeID, node.DataBlockID);
+        //    }
+        //}
+        //// go forward
+        //if (!_next.IsEmpty)
+        //{
+        //    do
+        //    {
+        //        var node = indexService.GetNode(_next);
 
-                if (node.Key.AsString.SqlLike(_value, _collation))
-                {
-                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
-                }
+        //        if (node.Key.AsString.SqlLike(_value, _collation))
+        //        {
+        //            return new PipeValue(node.IndexNodeID, node.DataBlockID);
+        //        }
 
-                _next = nodeRef.Node.GetNextPrev(0, _order);
+        //        _next = node[0]->GetNextPrev(_order);
 
-            } while (!_next.IsEmpty);
-        }
+        //    } while (!_next.IsEmpty);
+        //}
 
-        _eof = true;
+        //_eof = true;
 
-        return PipeValue.Empty;
+        //return PipeValue.Empty;
     }
 
     public void Dispose()

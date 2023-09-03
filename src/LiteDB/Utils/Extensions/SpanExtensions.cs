@@ -68,9 +68,9 @@ internal static class SpanExtensions
         return utc ? utcDate : utcDate.ToLocalTime();
     }
 
-    public static PageAddress ReadPageAddress(this Span<byte> span)
+    public static RowID ReadPageAddress(this Span<byte> span)
     {
-        return new PageAddress(span.ReadInt32(), span[4]);
+        return new RowID(span.ReadUInt32(), span[4]);
     }
 
     public static UInt32 ReadExtendValue(this Span<byte> span)
@@ -176,10 +176,11 @@ internal static class SpanExtensions
         buffer.WriteInt64(value.ToUniversalTime().Ticks);
     }
 
-    public static void WritePageAddress(this Span<byte> span, PageAddress value)
+    public static void WritePageAddress(this Span<byte> span, RowID value)
     {
-        span.WriteInt32(value.PageID);
-        span[4] = value.Index;
+        span.WriteUInt32(value.PageID);
+        span.WriteUInt16(value.Index);
+        span.WriteUInt16(0);
     }
 
     public static void WriteExtendValue(this Span<byte> span, UInt32 value)
