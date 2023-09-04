@@ -31,28 +31,28 @@ unsafe internal class MemoryCache : IMemoryCache
             return null;
         }
 
-        var pagePtr = (PageMemory*)ptr;
+        var page = (PageMemory*)ptr;
 
-        ENSURE(pagePtr->ShareCounter != NO_CACHE);
-        ENSURE(pagePtr->TransactionID == 0);
-        ENSURE(pagePtr->IsConfirmed == false);
+        ENSURE(page->ShareCounter != NO_CACHE);
+        ENSURE(page->TransactionID == 0);
+        ENSURE(page->IsConfirmed == false);
 
         // test if this page are getted from a writable collection in transaction
-        writable = Array.IndexOf(writeCollections, pagePtr->ColID) > -1;
+        writable = Array.IndexOf(writeCollections, page->ColID) > -1;
 
         if (writable)
         {
             // if no one are using, remove from cache (double check)
-            if (pagePtr->ShareCounter == 0)
+            if (page->ShareCounter == 0)
             {
                 var removed = _cache.TryRemove(positionID, out _);
 
                 ENSURE(removed, new { removed, self = this });
 
                 // clean share counter after remove from cache
-                pagePtr->ShareCounter = NO_CACHE;
+                page->ShareCounter = NO_CACHE;
 
-                return pagePtr;
+                return page;
             }
             else
             {
@@ -60,7 +60,7 @@ unsafe internal class MemoryCache : IMemoryCache
                 var newPage = _memoryFactory.AllocateNewPage();
 
                 // copy all content for this new created page
-                PageMemory.CopyPageContent(pagePtr, newPage);
+                PageMemory.CopyPageContent(page, newPage);
 
                 // and return as a new page instance
                 return newPage;
@@ -69,13 +69,13 @@ unsafe internal class MemoryCache : IMemoryCache
         else
         {
             // get page for read-only
-            ENSURE(pagePtr->ShareCounter != NO_CACHE);
+            ENSURE(page->ShareCounter != NO_CACHE);
 
             // increment ShareCounter to be used by another transaction
             //Interlocked.Increment(ref pagePtr->ShareCounter);
-            pagePtr->ShareCounter++;
+            page->ShareCounter++;
 
-            return pagePtr;
+            return page;
         }
 
         throw new NotSupportedException();

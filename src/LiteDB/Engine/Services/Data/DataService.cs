@@ -58,7 +58,7 @@ unsafe internal class DataService : IDataService
             // get extend page value before page change
             var before = page->ExtendPageValue;
 
-            var dataBlock = page->InsertDataBlock(bufferDoc.AsSpan(position, bytesToCopy), extend, out var dataBlockID);
+            var dataBlock = page->InsertDataBlock(bufferDoc.AsSpan(position, bytesToCopy), extend, out _);
 
             // checks if extend page value change and update map
             var after = page->ExtendPageValue;
@@ -73,12 +73,12 @@ unsafe internal class DataService : IDataService
                 var lastDataBlockPtr = lastPage->GetDataBlock(lastDataBlockIndex, out _);
 
                 // update NextDataBlock from last page
-                lastDataBlockPtr->NextBlockID = dataBlockID;
+                lastDataBlockPtr.DataBlock->NextBlockID = dataBlock.DataBlockID;
             }
             else
             {
                 // get first dataBlock dataBlockID
-                firstDataBlockID = dataBlockID;
+                firstDataBlockID = dataBlock.DataBlockID;
             }
 
             bytesLeft -= bytesToCopy;
@@ -88,7 +88,7 @@ unsafe internal class DataService : IDataService
 
             // keep last instance
             lastPage = page;
-            lastDataBlockIndex = dataBlockID.Index;
+            lastDataBlockIndex = dataBlock.DataBlockID.Index;
 
             page = _transaction.GetFreeDataPage(colID);
 
@@ -122,7 +122,7 @@ unsafe internal class DataService : IDataService
         // get extend page value before page change
         var before = page->ExtendPageValue;
 
-        page->UpdateDataBlock(dataBlockID.Index, bufferDoc.AsSpan(), RowID.Empty);
+        page->UpdateDataBlock(dataBlockID.Index, bufferDoc.AsSpan(), RowID.Empty, out var _);
 
         // checks if extend page value change and update map
         var after = page->ExtendPageValue;
@@ -145,12 +145,10 @@ unsafe internal class DataService : IDataService
         // get data block segment
         var dataBlock = page->GetDataBlock(dataBlockID.Index, out var dataBlockLength);
 
-        if (dataBlock->NextBlockID.IsEmpty)
+        if (dataBlock.DataBlock->NextBlockID.IsEmpty)
         {
             // get content buffer inside dataBlock 
-            var span = new Span<byte>((byte*)((nint)dataBlock + sizeof(DataBlock)), dataBlockLength - sizeof(DataBlock));
-
-            var result = _bsonReader.ReadDocument(span, fields, false, out _);
+            var result = _bsonReader.ReadDocument(dataBlock.AsSpan(), fields, false, out _);
 
             return result;
         }
@@ -199,7 +197,7 @@ unsafe internal class DataService : IDataService
             // get page from dataBlockID
             var page = _transaction.GetPage(dataBlockID.PageID);
 
-            var dataBlockPtr = page->GetDataBlock(dataBlockID.Index, out _);
+            var dataBlock = page->GetDataBlock(dataBlockID.Index, out _);
 
             var before = page->ExtendPageValue;
 
@@ -216,10 +214,10 @@ unsafe internal class DataService : IDataService
             }
 
             // stop if there is not block to delete
-            if (dataBlockPtr->NextBlockID.IsEmpty) break;
+            if (dataBlock.DataBlock->NextBlockID.IsEmpty) break;
 
             // go to next block
-            dataBlockID = dataBlockPtr->NextBlockID;
+            dataBlockID = dataBlock.DataBlock->NextBlockID;
         }
     }
 

@@ -28,14 +28,14 @@ unsafe internal class IndexService : IIndexService
         var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, IndexKey.MinValue);
 
         // get a index page for this collection
-        var page = _transaction.GetFreeIndexPage(colID, bytesLength);
+        var page = _transaction.GetFreeIndexPage(colID, bytesLength * 2);
 
         // get initial pageExtend value
         var before = page->ExtendPageValue;
 
         // add head/tail nodes into page
-        var head = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, bytesLength);
-        var tail = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, bytesLength);
+        var head = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, out _);
+        var tail = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, out _);
 
         // link head-to-tail with double link list in first level
         head[0]->NextID = tail.IndexNodeID;
@@ -81,7 +81,7 @@ unsafe internal class IndexService : IIndexService
         var before = page->ExtendPageValue;
 
         // create node in page
-        var node = page->InsertIndexNode(index.Slot, (byte)insertLevels, indexKey, dataBlockID, bytesLength);
+        var node = page->InsertIndexNode(index.Slot, (byte)insertLevels, indexKey, dataBlockID, out var defrag);
 
         // update allocation map if needed (this page has no more "size" changes)
         var after = page->ExtendPageValue;
@@ -106,7 +106,7 @@ unsafe internal class IndexService : IIndexService
 
                 // read next node to compare
                 //***var diff = rightNode.Node.Key.CompareTo(key, _collation);
-                var diff = IndexKey.Compare(rightNode.Key, &indexKey, _collation);
+                var diff = IndexKey.Compare(rightNode.Key, indexKey, _collation);
 
                 //***if unique and diff == 0, throw index exception (must rollback transaction - others nodes can be dirty)
                 if (diff == 0 && index.Unique) throw ERR("IndexDuplicateKey(index.Name, key)");
@@ -187,6 +187,10 @@ unsafe internal class IndexService : IIndexService
     public IndexNodeResult GetNode(RowID indexNodeID)
     {
         using var _pc = PERF_COUNTER(5, nameof(GetNode), nameof(IndexService));
+
+        ENSURE(!indexNodeID.IsEmpty);
+        ENSURE(!(indexNodeID.PageID ==0 && indexNodeID.Index == 0));
+
 
         var page = _transaction.GetPage(indexNodeID.PageID);
 

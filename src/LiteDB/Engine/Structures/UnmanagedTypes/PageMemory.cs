@@ -97,14 +97,16 @@ unsafe internal partial struct PageMemory   // 8192
 
     }
 
-    public void Teste()
+    public string DumpPage()
     {
-        var self = this;
-        var ptr = &self;
+        fixed(PageMemory* page = &this)
+        {
+            return PageDump.Render(page);
+        }
+    }
 
-        var str = MarshalEx.ReadStrUtf8((byte*)ptr, 4);
-
-        Console.WriteLine("==[" + str + "]");
-
+    public override string ToString()
+    {
+        return Dump.Object(this);
     }
 }

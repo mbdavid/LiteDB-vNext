@@ -25,11 +25,11 @@ unsafe internal partial struct PageMemory
 
             var indexNodeID = new RowID(page->PageID, index);
 
-            return new IndexNodeResult(indexNodeID, indexNode->DataBlockID, page, indexNode, keyPtr);
+            return new IndexNodeResult(indexNodeID, indexNode->DataBlockID, page, segment, indexNode, keyPtr);
         }
     }
 
-    public IndexNodeResult InsertIndexNode(byte slot, byte levels, IndexKey indexKey, RowID dataBlockID, ushort bytesLength)
+    public IndexNodeResult InsertIndexNode(byte slot, byte levels, IndexKey indexKey, RowID dataBlockID, out bool defrag)
     {
         fixed (PageMemory* page = &this)
         {
@@ -39,8 +39,10 @@ unsafe internal partial struct PageMemory
             // get new rowid
             var indexNodeID = new RowID(page->PageID, newIndex);
 
+            var nodeLength = IndexNode.GetNodeLength(levels, indexKey);
+
             // get page segment for this indexNode
-            var segment = this.InsertSegment(bytesLength, newIndex, true);
+            var segment = this.InsertSegment(nodeLength, newIndex, true, out defrag);
 
             var indexNode = (IndexNode*)((nint)page + segment->Location);
 
@@ -64,7 +66,7 @@ unsafe internal partial struct PageMemory
             // get new indexKey and copy to memory
             IndexKey.CopyValues(indexKey, keyPtr);
 
-            return new IndexNodeResult(indexNodeID, dataBlockID, page, indexNode, keyPtr);
+            return new IndexNodeResult(indexNodeID, dataBlockID, page, segment, indexNode, keyPtr);
         }
     }
 }

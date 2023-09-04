@@ -14,7 +14,7 @@ unsafe internal partial struct PageMemory
         }
     }
 
-    public PageSegment* InsertSegment(ushort bytesLength, ushort index, bool isNewInsert)
+    public PageSegment* InsertSegment(ushort bytesLength, ushort index, bool isNewInsert, out bool defrag)
     {
         ENSURE(index != ushort.MaxValue, new { bytesLength, index, isNewInsert });
 
@@ -34,7 +34,9 @@ unsafe internal partial struct PageMemory
             new { continuousBlocks, isNewInsert });
 
         // if continuous blocks are not big enough for this data, must run page defrag
-        if (bytesLength > continuousBlocks)
+        defrag = bytesLength > continuousBlocks;
+
+        if (defrag)
         {
             //this.Defrag(page);
             throw new NotImplementedException();
@@ -128,7 +130,7 @@ unsafe internal partial struct PageMemory
 
     /// <summary>
     /// </summary>
-    public PageSegment* UpdateSegment(ushort index, ushort bytesLength)
+    public PageSegment* UpdateSegment(ushort index, ushort bytesLength, out bool defrag)
     {
         fixed (PageMemory* page = &this)
         {
@@ -148,6 +150,8 @@ unsafe internal partial struct PageMemory
             // best situation: same length
             if (bytesLength == segment->Length)
             {
+                defrag = false;
+
                 return segment;
             }
             // when new length are less than original length (will fit in current segment)
@@ -176,6 +180,8 @@ unsafe internal partial struct PageMemory
                 var fragment = (byte*)((nint)page + segment->Location + bytesLength);
 
                 MarshalEx.FillZero(fragment, diff);
+
+                defrag = false;
 
                 return segment;
             }
@@ -206,7 +212,7 @@ unsafe internal partial struct PageMemory
                 segment->Length = 0;
 
                 // call insert
-                return InsertSegment(bytesLength, index, false);
+                return InsertSegment(bytesLength, index, false, out defrag);
             }
         }
     }
@@ -223,7 +229,7 @@ unsafe internal partial struct PageMemory
             ENSURE(this.HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
 
             // first get all blocks inside this page sorted by location (location, index)
-            var blocks = new SortedList<ushort, ushort>(this.ItemsCount); ;
+            var blocks = new SortedList<ushort, ushort>(this.ItemsCount);
 
             // get first segment
             var segment = this.GetSegmentPtr(0);

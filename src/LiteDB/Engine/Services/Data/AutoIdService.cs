@@ -83,7 +83,7 @@ unsafe internal class AutoIdService : IAutoIdService
         }
         else if (last.Key->IsInt64)
         {
-            _sequences[colID].LastLong = last.Key->ValueInt64;
+            //TODO: ***_sequences[colID].LastLong = last.Key->ValueInt64;
         }
         else
         {

@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+
+namespace LiteDB.Engine;
 
 [AutoInterface]
 unsafe internal partial struct PageMemory
@@ -12,7 +14,7 @@ unsafe internal partial struct PageMemory
         this.IsDirty = true;
     }
 
-    public DataBlock* GetDataBlock(ushort index, out int dataBlockLength)
+    public DataBlockResult GetDataBlock(ushort index, out int dataBlockLength)
     {
         fixed (PageMemory* page = &this)
         {
@@ -22,11 +24,13 @@ unsafe internal partial struct PageMemory
 
             dataBlockLength = segment->Length;
 
-            return dataBlock;
+            var dataBlockID = new RowID(page->PageID, index);
+
+            return new DataBlockResult(dataBlockID, page, segment, dataBlock);
         }
     }
 
-    public DataBlock* InsertDataBlock(Span<byte> content, bool extend, out RowID dataBlockID)
+    public DataBlockResult InsertDataBlock(Span<byte> content, bool extend, out bool defrag)
     {
         fixed (PageMemory* page = &this)
         {
@@ -37,10 +41,10 @@ unsafe internal partial struct PageMemory
             var newIndex = this.GetFreeIndex();
 
             // get new rowid
-            dataBlockID = new RowID(this.PageID, newIndex);
+            var dataBlockID = new RowID(this.PageID, newIndex);
 
             // get page segment for this data block
-            var segment = this.InsertSegment(bytesLength, newIndex, true);
+            var segment = this.InsertSegment(bytesLength, newIndex, true, out defrag);
 
             var dataBlock = (DataBlock*)((nint)page + segment->Location);
 
@@ -48,15 +52,12 @@ unsafe internal partial struct PageMemory
             dataBlock->Extend = extend;
             dataBlock->NextBlockID = RowID.Empty;
 
-            // get datablock content pointer
-            var contentPtr = (byte*)((nint)page + segment->Location + sizeof(DataBlock));
+            var result = new DataBlockResult(dataBlockID, page, segment, dataBlock);
 
-            // create a span 
-            var contentSpan = new Span<byte>(contentPtr, bytesLength);
+            // copy content into dataBlock content block
+            content.CopyTo(result.AsSpan());
 
-            content.CopyTo(contentSpan);
-
-            return dataBlock;
+            return result;
         }
     }
 
@@ -64,7 +65,7 @@ unsafe internal partial struct PageMemory
     /// <summary>
     /// Update an existing document inside a single page. This new document must fit on this page
     /// </summary>
-    public void UpdateDataBlock(ushort index, Span<byte> content, RowID nextBlock)
+    public void UpdateDataBlock(ushort index, Span<byte> content, RowID nextBlock, out bool defrag)
     {
         fixed (PageMemory* page = &this)
         {
@@ -74,7 +75,7 @@ unsafe internal partial struct PageMemory
             this.IsDirty = true;
 
             // get page segment to update this buffer
-            var segment = this.UpdateSegment(index, bytesLength);
+            var segment = this.UpdateSegment(index, bytesLength, out defrag);
 
             // get dataBlock pointer
             var dataBlock = (DataBlock*)((nint)page + segment->Location);

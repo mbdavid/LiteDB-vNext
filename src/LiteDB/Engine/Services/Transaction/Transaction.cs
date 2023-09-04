@@ -156,19 +156,19 @@ internal class Transaction : ITransaction
         positionID = _walIndexService.GetPagePositionID(pageID, readVersion, out _);
 
         // get a page from cache (if writable, this page are not linked to cache anymore)
-        var pagePtr = _memoryCache.GetPageReadWrite(positionID, _writeCollections, out var writable, out var found);
+        var page = _memoryCache.GetPageReadWrite(positionID, _writeCollections, out var writable, out var found);
 
         // if page not found, allocate new page and read from disk
         if (found == false)
         {
-            pagePtr = _memoryFactory.AllocateNewPage();
+            page = _memoryFactory.AllocateNewPage();
 
-            _reader.ReadPage(pagePtr, positionID);
+            _reader.ReadPage(page, positionID);
 
-            ENSURE(pagePtr->PageType == PageType.Data || pagePtr->PageType == PageType.Index, $"Only data/index page on transaction read page: {pagePtr->PageID}");
+            ENSURE(page->PageType == PageType.Data || page->PageType == PageType.Index, $"Only data/index page on transaction read page: {page->PageID}");
         }
 
-        return pagePtr;
+        return page;
     }
 
     /// <summary>
