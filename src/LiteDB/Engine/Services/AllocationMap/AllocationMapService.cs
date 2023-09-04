@@ -6,7 +6,6 @@
 [AutoInterface(typeof(IDisposable))]
 unsafe internal class AllocationMapService : IAllocationMapService
 {
-    private readonly IAllocationMapPageModifier _pageModifier;
     private readonly IDiskService _diskService;
     private readonly IMemoryFactory _memoryFactory;
 
@@ -16,11 +15,9 @@ unsafe internal class AllocationMapService : IAllocationMapService
     private readonly List<nint> _pages = new();
 
     public AllocationMapService(
-        IAllocationMapPageModifier pageModifier,
         IDiskService diskService, 
         IMemoryFactory memoryFactory)
     {
-        _pageModifier = pageModifier;
         _diskService = diskService;
         _memoryFactory = memoryFactory;
     }
@@ -38,11 +35,11 @@ unsafe internal class AllocationMapService : IAllocationMapService
 
         while (positionID <= lastPositionID)
         {
-            var pagePtr = _memoryFactory.AllocateNewPage();
+            var page = _memoryFactory.AllocateNewPage();
 
-            writer.ReadPage(pagePtr, positionID);
+            writer.ReadPage(page, positionID);
 
-            _pages.Add((nint)pagePtr);
+            _pages.Add((nint)page);
 
             positionID += AM_PAGE_STEP;
         }
@@ -53,9 +50,9 @@ unsafe internal class AllocationMapService : IAllocationMapService
     /// </summary>
     public (uint pageID, bool isNew, ExtendLocation next) GetFreeExtend(ExtendLocation current, byte colID, PageType type)
     {
-        var pagePtr = (PageMemory*)_pages[current.AllocationMapID];
+        var page = (PageMemory*)_pages[current.AllocationMapID];
 
-        var (extendIndex, pageIndex, isNew) = _pageModifier.GetFreeExtend(pagePtr, current.ExtendIndex, colID, type);
+        var (extendIndex, pageIndex, isNew) = page->GetFreeExtend(current.ExtendIndex, colID, type);
 
         if (extendIndex >= 0)
         {
@@ -77,22 +74,22 @@ unsafe internal class AllocationMapService : IAllocationMapService
             var extend = new ExtendLocation(current.AllocationMapID + 1, 0);
 
             // if there is no more free extend in any AM page, let's create a new allocation map page
-            var newPagePtr = _memoryFactory.AllocateNewPage();
+            var newPage = _memoryFactory.AllocateNewPage();
 
             ENSURE(_pages.Count > 0);
 
-            var lastPagePtr = (PageMemory*)_pages.Last();
+            var lastPage = (PageMemory*)_pages.Last();
 
             // get a new PageID based on last AM page
-            var nextPageID = lastPagePtr->PageID + AM_PAGE_STEP;
+            var nextPageID = lastPage->PageID + AM_PAGE_STEP;
 
             // get allocation map position
-            newPagePtr->PositionID = nextPageID;
-            newPagePtr->PageID = nextPageID;
-            newPagePtr->PageType = PageType.AllocationMap;
-            newPagePtr->IsDirty = true;
+            newPage->PositionID = nextPageID;
+            newPage->PageID = nextPageID;
+            newPage->PageType = PageType.AllocationMap;
+            newPage->IsDirty = true;
 
-            _pages.Add((nint)newPagePtr);
+            _pages.Add((nint)newPage);
 
             // call again this method with this new page
             return this.GetFreeExtend(extend, colID, type);
@@ -104,9 +101,9 @@ unsafe internal class AllocationMapService : IAllocationMapService
     /// </summary>
     public uint GetExtendValue(ExtendLocation extend)
     {
-        var pagePtr = (PageMemory*)_pages[extend.AllocationMapID];
+        var page = (PageMemory*)_pages[extend.AllocationMapID];
 
-        return pagePtr->Extends[extend.ExtendIndex];
+        return page->Extends[extend.ExtendIndex];
     }
 
     /// <summary>
@@ -126,9 +123,9 @@ unsafe internal class AllocationMapService : IAllocationMapService
         var extendIndex = (int)((pageID - 1 - allocationMapID * AM_PAGE_STEP) / AM_EXTEND_SIZE);
         var pageIndex = (int)pageID - 1 - allocationMapID * AM_PAGE_STEP - extendIndex * AM_EXTEND_SIZE;
 
-        var pagePtr = (PageMemory*)_pages[allocationMapID];
+        var page = (PageMemory*)_pages[allocationMapID];
 
-        _pageModifier.UpdateExtendPageValue(pagePtr, extendIndex, pageIndex, pageValue);
+        page->UpdateExtendPageValue(extendIndex, pageIndex, pageValue);
     }
 
     /// <summary>

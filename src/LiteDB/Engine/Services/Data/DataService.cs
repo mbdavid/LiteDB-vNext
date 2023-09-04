@@ -4,18 +4,15 @@
 unsafe internal class DataService : IDataService
 {
     // dependency injection
-    private readonly IDataPageModifier _dataPageModifier;
     private readonly IBsonReader _bsonReader;
     private readonly IBsonWriter _bsonWriter;
     private readonly ITransaction _transaction;
 
     public DataService(
-        IDataPageModifier dataPageModifier,
         IBsonReader bsonReader,
         IBsonWriter bsonWriter,
         ITransaction transaction)
     {
-        _dataPageModifier = dataPageModifier;
         _bsonReader = bsonReader;
         _bsonWriter = bsonWriter;
         _transaction = transaction;
@@ -39,10 +36,10 @@ unsafe internal class DataService : IDataService
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get first page
-        var pagePtr = _transaction.GetFreeDataPage(colID);
+        var page = _transaction.GetFreeDataPage(colID);
 
         // keep last instance to update nextBlock
-        var lastPagePtr = (PageMemory*)default;
+        var lastPage = (PageMemory*)default;
         var lastDataBlockIndex = ushort.MaxValue;
 
         // return dataBlockID - will be update in first insert
@@ -55,25 +52,25 @@ unsafe internal class DataService : IDataService
         while (true)
         {
             // get how many bytes must be copied in this page (should consider data block and new footer item)
-            var pageFreeSpace = pagePtr->FreeBytes - sizeof(DataBlock) - sizeof(PageSegment);
+            var pageFreeSpace = page->FreeBytes - sizeof(DataBlock) - sizeof(PageSegment);
             var bytesToCopy = Math.Min(pageFreeSpace, bytesLeft);
 
             // get extend page value before page change
-            var before = pagePtr->ExtendPageValue;
+            var before = page->ExtendPageValue;
 
-            var dataBlockPtr = _dataPageModifier.InsertDataBlock(pagePtr, bufferDoc.AsSpan(position, bytesToCopy), extend, out var dataBlockID);
+            var dataBlock = page->InsertDataBlock(bufferDoc.AsSpan(position, bytesToCopy), extend, out var dataBlockID);
 
             // checks if extend page value change and update map
-            var after = pagePtr->ExtendPageValue;
+            var after = page->ExtendPageValue;
 
             if (before != after)
             {
-                _transaction.UpdatePageMap(pagePtr->PageID, after);
+                _transaction.UpdatePageMap(page->PageID, after);
             }
 
             if (lastDataBlockIndex != ushort.MaxValue)
             {
-                var lastDataBlockPtr = _dataPageModifier.GetDataBlock(lastPagePtr, lastDataBlockIndex, out _);
+                var lastDataBlockPtr = lastPage->GetDataBlock(lastDataBlockIndex, out _);
 
                 // update NextDataBlock from last page
                 lastDataBlockPtr->NextBlockID = dataBlockID;
@@ -90,10 +87,10 @@ unsafe internal class DataService : IDataService
             if (bytesLeft == 0) break;
 
             // keep last instance
-            lastPagePtr = pagePtr;
+            lastPage = page;
             lastDataBlockIndex = dataBlockID.Index;
 
-            pagePtr = _transaction.GetFreeDataPage(colID);
+            page = _transaction.GetFreeDataPage(colID);
 
             // mark next data block as extend
             extend = true;
@@ -118,21 +115,21 @@ unsafe internal class DataService : IDataService
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
 
         // get current datablock (for first one)
-        var pagePtr = _transaction.GetPage(dataBlockID.PageID);
+        var page = _transaction.GetPage(dataBlockID.PageID);
 
 //        //TODO: SOMENTE PRIMEIRA PAGINA
 
         // get extend page value before page change
-        var before = pagePtr->ExtendPageValue;
+        var before = page->ExtendPageValue;
 
-        _dataPageModifier.UpdateDataBlock(pagePtr, dataBlockID.Index, bufferDoc.AsSpan(), RowID.Empty);
+        page->UpdateDataBlock(dataBlockID.Index, bufferDoc.AsSpan(), RowID.Empty);
 
         // checks if extend page value change and update map
-        var after = pagePtr->ExtendPageValue;
+        var after = page->ExtendPageValue;
 
         if (before != after)
         {
-            _transaction.UpdatePageMap(pagePtr->PageID, after);
+            _transaction.UpdatePageMap(page->PageID, after);
         }
     }
 
@@ -146,7 +143,7 @@ unsafe internal class DataService : IDataService
         var page = _transaction.GetPage(dataBlockID.PageID);
 
         // get data block segment
-        var dataBlock = _dataPageModifier.GetDataBlock(page, dataBlockID.Index, out var dataBlockLength);
+        var dataBlock = page->GetDataBlock(dataBlockID.Index, out var dataBlockLength);
 
         if (dataBlock->NextBlockID.IsEmpty)
         {
@@ -200,22 +197,22 @@ unsafe internal class DataService : IDataService
         while (true)
         {
             // get page from dataBlockID
-            var pagePtr = _transaction.GetPage(dataBlockID.PageID);
+            var page = _transaction.GetPage(dataBlockID.PageID);
 
-            var dataBlockPtr = _dataPageModifier.GetDataBlock(pagePtr, dataBlockID.Index, out _);
+            var dataBlockPtr = page->GetDataBlock(dataBlockID.Index, out _);
 
-            var before = pagePtr->ExtendPageValue;
+            var before = page->ExtendPageValue;
 
             // delete dataBlock
-            _dataPageModifier.DeleteDataBlock(pagePtr, dataBlockID.Index);
+            page->DeleteSegment(dataBlockID.Index);
 
             // checks if extend pageValue changes
-            var after = pagePtr->ExtendPageValue;
+            var after = page->ExtendPageValue;
 
             if (before != after)
             {
                 // update allocation map after change page
-                _transaction.UpdatePageMap(pagePtr->PageID, after);
+                _transaction.UpdatePageMap(page->PageID, after);
             }
 
             // stop if there is not block to delete

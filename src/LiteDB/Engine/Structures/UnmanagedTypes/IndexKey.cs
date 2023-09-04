@@ -3,19 +3,20 @@
 [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
 unsafe internal struct IndexKey : IComparable<IndexKey>, IEquatable<IndexKey>
 {
-    [FieldOffset(0)] public BsonType DataType; // 1
-    [FieldOffset(1)] public byte Length;       // 1
+    [FieldOffset(0)] public BsonType Type;   // 1
+    [FieldOffset(1)] public byte Length;     // 1
 
-    [FieldOffset(2)] public int ValueInt32;
-    [FieldOffset(2)] public long ValueInt64;
+    [FieldOffset(2)] public int ValueInt32;  // .. always same position
+    [FieldOffset(2)] public long ValueInt64; // 8 [2..9]
 
-    public static IndexKey MinValue = new() { DataType = BsonType.MinValue, Length = 0 };
-    public static IndexKey MaxValue = new() { DataType = BsonType.MinValue, Length = 0 };
+    public static IndexKey MinValue = new() { Type = BsonType.MinValue, Length = 0 };
+    public static IndexKey MaxValue = new() { Type = BsonType.MinValue, Length = 0 };
 
-    public bool IsMinValue => this.DataType == BsonType.MinValue;
-    public bool IsMaxValue => this.DataType == BsonType.MaxValue;
-    public bool IsInt32 => this.DataType == BsonType.Int32;
-    public bool IsInt64 => this.DataType == BsonType.Int64;
+    public bool IsMinValue => this.Type == BsonType.MinValue;
+    public bool IsMaxValue => this.Type == BsonType.MaxValue;
+    public bool IsInt32 => this.Type == BsonType.Int32;
+    public bool IsInt64 => this.Type == BsonType.Int64;
+    public bool IsNull => this.Type == BsonType.Null;
 
     public IndexKey()
     {
@@ -23,9 +24,11 @@ unsafe internal struct IndexKey : IComparable<IndexKey>, IEquatable<IndexKey>
 
     public IndexKey(BsonValue value)
     {
-        this.DataType = value.Type;
+        this.Type = value.Type;
 
         //var xx = Marshal.PtrToStringAnsi((nint)myStructPtr + 2, 4);
+        this.ValueInt32 = 0;
+        this.Length = 8;
 
         switch (value.Type)
         {
@@ -40,17 +43,17 @@ unsafe internal struct IndexKey : IComparable<IndexKey>, IEquatable<IndexKey>
 
     public static implicit operator IndexKey(BsonValue value) => new IndexKey(value);
 
-    public void CopyFrom(IndexKey indexKey)
+    public static void CopyValues(IndexKey from, IndexKey* to)
     {
-        this.DataType = indexKey.DataType;
-        this.Length = indexKey.Length;
+        to->Type = from.Type;
+        to->Length = to->Length;
 
-        switch(indexKey.DataType)
+        switch(from.Type)
         {
-            case BsonType.Int32: this.ValueInt32 = indexKey.ValueInt32; break;
-            case BsonType.Int64: this.ValueInt64 = indexKey.ValueInt64; break;
+            case BsonType.Int32: to->ValueInt32 = from.ValueInt32; break;
+            case BsonType.Int64: to->ValueInt64 = from.ValueInt64; break;
 
-            default: throw new NotSupportedException();
+            //default: throw new NotImplementedException();
         }
 
 
@@ -59,7 +62,7 @@ unsafe internal struct IndexKey : IComparable<IndexKey>, IEquatable<IndexKey>
     public static int Compare(IndexKey left, IndexKey right, Collation collation)
     {
 
-        if (left.DataType == BsonType.Int32 &&  right.DataType == BsonType.Int32)
+        if (left.Type == BsonType.Int32 &&  right.Type == BsonType.Int32)
         {
             return left.ValueInt32 - right.ValueInt32;
         }
@@ -70,7 +73,7 @@ unsafe internal struct IndexKey : IComparable<IndexKey>, IEquatable<IndexKey>
 
     public static int Compare(IndexKey* left, IndexKey* right, Collation collation)
     {
-        if (left->DataType == BsonType.Int32 && right->DataType == BsonType.Int32)
+        if (left->Type == BsonType.Int32 && right->Type == BsonType.Int32)
         {
             return left->ValueInt32 - right->ValueInt32;
         }
@@ -81,7 +84,7 @@ unsafe internal struct IndexKey : IComparable<IndexKey>, IEquatable<IndexKey>
 
     public static int Compare(IndexKey left, IndexKey* right, Collation collation)
     {
-        if (left.DataType == BsonType.Int32 && right->DataType == BsonType.Int32)
+        if (left.Type == BsonType.Int32 && right->Type == BsonType.Int32)
         {
             return left.ValueInt32 - right->ValueInt32;
         }
@@ -92,7 +95,7 @@ unsafe internal struct IndexKey : IComparable<IndexKey>, IEquatable<IndexKey>
 
     public static int Compare(IndexKey* left, IndexKey right, Collation collation)
     {
-        if (left->DataType == BsonType.Int32 && right.DataType == BsonType.Int32)
+        if (left->Type == BsonType.Int32 && right.Type == BsonType.Int32)
         {
             return left->ValueInt32 - right.ValueInt32;
         }

@@ -38,10 +38,6 @@ internal partial class ServicesFactory : IServicesFactory
     public IMonitorService MonitorService { get; }
     public IAutoIdService AutoIdService { get; }
 
-    public IDataPageModifier DataPageModifier { get; }
-    public IIndexPageModifier IndexPageModifier { get; }
-    public IAllocationMapPageModifier AllocationMapPageModifier { get; }
-
     #endregion
 
     public ServicesFactory(IEngineSettings settings)
@@ -59,9 +55,6 @@ internal partial class ServicesFactory : IServicesFactory
         this.BsonWriter = new BsonWriter();
         this.WalIndexService = new WalIndexService();
         this.MemoryFactory = new MemoryFactory();
-        this.DataPageModifier = new DataPageModifier();
-        this.IndexPageModifier = new IndexPageModifier();
-        this.AllocationMapPageModifier = new AllocationMapPageModifier();
         this.MasterMapper = new MasterMapper();
         this.AutoIdService = new AutoIdService();
 
@@ -79,7 +72,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.MemoryCache = new MemoryCache(this.MemoryFactory);
         this.DiskService = new DiskService(this.StreamFactory, this);
         this.LogService = new LogService(this.DiskService, this.MemoryCache, this.MemoryFactory, this.WalIndexService, this);
-        this.AllocationMapService = new AllocationMapService(this.AllocationMapPageModifier, this.DiskService, this.MemoryFactory);
+        this.AllocationMapService = new AllocationMapService(this.DiskService, this.MemoryFactory);
         this.MasterService = new MasterService(this);
         this.MonitorService = new MonitorService(this);
         this.RecoveryService = new RecoveryService(this.MemoryFactory, this.DiskService);
@@ -99,7 +92,6 @@ internal partial class ServicesFactory : IServicesFactory
         this.MemoryFactory,
         this.MasterMapper,
         this.BsonWriter,
-        this.DataPageModifier,
         this.Settings);
 
     public ITransaction CreateTransaction(int transactionID, byte[] writeCollections, int readVersion) => new Transaction(
@@ -109,19 +101,15 @@ internal partial class ServicesFactory : IServicesFactory
         this.MemoryCache,
         this.WalIndexService,
         this.AllocationMapService,
-        this.IndexPageModifier,
-        this.DataPageModifier,
         this.LockService,
         transactionID, writeCollections, readVersion);
 
     public IDataService CreateDataService(ITransaction transaction) => new DataService(
-        this.DataPageModifier, 
         this.BsonReader, 
         this.BsonWriter, 
         transaction);
 
     public IIndexService CreateIndexService(ITransaction transaction) => new IndexService(
-        this.IndexPageModifier,
         this.FileHeader.Collation,
         transaction);
 

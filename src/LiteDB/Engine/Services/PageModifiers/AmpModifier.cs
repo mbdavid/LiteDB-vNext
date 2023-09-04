@@ -1,14 +1,15 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface]
-unsafe internal class AllocationMapPageModifier : BasePageModifier, IAllocationMapPageModifier
+unsafe internal partial struct PageMemory
 {
-    public (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(PageMemory* pagePtr, int currentExtendIndex, byte colID, PageType type)
+    public (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(int currentExtendIndex, byte colID, PageType type)
     {
+        ENSURE(this.PageType == PageType.AllocationMap);
+
         while (currentExtendIndex < AM_EXTEND_COUNT)
         {
             // get extend value as uint
-            var extendValue = pagePtr->Extends[currentExtendIndex];
+            var extendValue = this.Extends[currentExtendIndex];
 
             var (pageIndex, isNew) = HasFreeSpaceInExtend(extendValue, colID, type);
 
@@ -22,7 +23,7 @@ unsafe internal class AllocationMapPageModifier : BasePageModifier, IAllocationM
             if (extendValue == 0)
             {
                 // update extend value with only colID value in first 1 byte (shift 3 bytes)
-                pagePtr->Extends[currentExtendIndex] = (uint)(colID << 24);
+                this.Extends[currentExtendIndex] = (uint)(colID << 24);
 
                 return (currentExtendIndex, 0, true);
             }
@@ -37,13 +38,13 @@ unsafe internal class AllocationMapPageModifier : BasePageModifier, IAllocationM
     /// <summary>
     /// Update extend value based on extendIndex (0-2039) and pageIndex (0-7)
     /// </summary>
-    public void UpdateExtendPageValue(PageMemory* pagePtr, int extendIndex, int pageIndex, ExtendPageValue pageValue)
+    public void UpdateExtendPageValue(int extendIndex, int pageIndex, ExtendPageValue pageValue)
     {
         ENSURE(extendIndex <= 2039);
         ENSURE(pageIndex <= 7);
 
         // get extend value from array
-        var value = pagePtr->Extends[extendIndex];
+        var value = this.Extends[extendIndex];
 
         // update value (3 bits) according pageIndex
         var extendValue = pageIndex switch
@@ -60,13 +61,12 @@ unsafe internal class AllocationMapPageModifier : BasePageModifier, IAllocationM
         };
 
         // update extend array value
-        pagePtr->Extends[extendIndex] = extendValue;
+        this.Extends[extendIndex] = extendValue;
 
         // mark page as dirty (in map page this should be manual)
-        pagePtr->IsDirty = true;
+        this.IsDirty = true;
 
     }
-
 
     #region Static Helpers
 
@@ -75,7 +75,7 @@ unsafe internal class AllocationMapPageModifier : BasePageModifier, IAllocationM
     /// Returns pageIndex if found or -1 if this extend has no space. Returns if page is new (empty)
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public (int pageIndex, bool isNew) HasFreeSpaceInExtend(uint extendValue, byte colID, PageType type)
+    public static (int pageIndex, bool isNew) HasFreeSpaceInExtend(uint extendValue, byte colID, PageType type)
     {
         // extendValue (colID + 8 pages values)
 

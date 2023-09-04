@@ -1,7 +1,7 @@
 ﻿namespace LiteDB.Engine;
 
 [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
-internal unsafe struct PageMemory   // 8192
+unsafe internal partial struct PageMemory   // 8192
 {
     [FieldOffset(00)] public uint PositionID;         // 4
     [FieldOffset(04)] public uint PageID;             // 4
@@ -46,7 +46,7 @@ internal unsafe struct PageMemory   // 8192
     /// <summary>
     /// Get current extend page value based on PageType and FreeSpace
     /// </summary>
-    public ExtendPageValue ExtendPageValue => AllocationMapPageModifier.GetExtendPageValue(this.PageType, this.FreeBytes);
+    public ExtendPageValue ExtendPageValue => PageMemory.GetExtendPageValue(this.PageType, this.FreeBytes);
 
     public bool IsPageInLogFile => this.PositionID != this.PageID;
     public bool IsPageInCache => this.ShareCounter != NO_CACHE;

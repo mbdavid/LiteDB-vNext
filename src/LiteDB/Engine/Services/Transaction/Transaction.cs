@@ -10,8 +10,6 @@ internal class Transaction : ITransaction
     private readonly ILogService _logService;
     private readonly IWalIndexService _walIndexService;
     private readonly IAllocationMapService _allocationMapService;
-    private readonly IIndexPageModifier _indexPageModifier;
-    private readonly IDataPageModifier _dataPageModifier;
     private readonly IMemoryFactory _memoryFactory;
     private readonly IMemoryCache _memoryCache;
     private readonly ILockService _lockService;
@@ -60,8 +58,6 @@ internal class Transaction : ITransaction
         IMemoryCache memoryCache,
         IWalIndexService walIndexService,
         IAllocationMapService allocationMapService,
-        IIndexPageModifier indexPageModifier,
-        IDataPageModifier dataPageModifier,
         ILockService lockService,
         int transactionID, byte[] writeCollections, int readVersion)
     {
@@ -71,8 +67,6 @@ internal class Transaction : ITransaction
         _memoryCache = memoryCache;
         _walIndexService = walIndexService;
         _allocationMapService = allocationMapService;
-        _indexPageModifier = indexPageModifier;
-        _dataPageModifier = dataPageModifier;
         _lockService = lockService;
 
         this.TransactionID = transactionID;
@@ -195,15 +189,15 @@ internal class Transaction : ITransaction
 
         if (isNew)
         {
-            var pagePtr = _memoryFactory.AllocateNewPage();
+            var page = _memoryFactory.AllocateNewPage();
 
             // initialize empty page as data page
-            _dataPageModifier.Initialize(pagePtr, pageID, colID);
+            page->InitializeAsDataPage(pageID, colID);
 
             // add in local cache
-            _localPages.Add(pageID, (nint)pagePtr);
+            _localPages.Add(pageID, (nint)page);
 
-            return pagePtr;
+            return page;
         }
         else
         {
@@ -235,7 +229,7 @@ internal class Transaction : ITransaction
             var pagePtr = _memoryFactory.AllocateNewPage();
 
             // initialize empty page as index page
-            _indexPageModifier.Initialize(pagePtr, pageID, colID);
+            pagePtr->InitializeAsIndexPage(pageID, colID);
 
             // add in local cache
             _localPages.Add(pageID, (nint)pagePtr);

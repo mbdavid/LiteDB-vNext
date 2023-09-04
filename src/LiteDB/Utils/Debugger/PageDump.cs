@@ -34,7 +34,7 @@ unsafe internal static class PageDump
 
     private static void RenderAllocationMapPage(PageMemory* page, StringBuilder sb)
     {
-        var allocationMapID = AllocationMapPageModifier.GetAllocationMapID(page->PageID);
+        var allocationMapID = PageMemory.GetAllocationMapID(page->PageID);
 
         for (var i = 0; i < AM_EXTEND_COUNT; i++)
         {
@@ -64,16 +64,16 @@ unsafe internal static class PageDump
 
         for (ushort i = 0; i <= page->HighestIndex; i++)
         {
-            var segmentPtr = PageSegment.GetSegment(page, i);
+            var segment = page->GetSegmentPtr(i);
 
             var index = i.ToString().PadRight(3, ' ');
 
-            if (!segmentPtr->IsEmpty)
+            if (!segment->IsEmpty)
             {
-                var dataBlock = (DataBlock*)(page + segmentPtr->Location);
+                var dataBlock = (DataBlock*)(page + segment->Location);
 
                 var dataContent = dataBlock + sizeof(DataBlock);
-                var len = segmentPtr->Length - sizeof(DataBlock);
+                var len = segment->Length - sizeof(DataBlock);
                 var span = new Span<byte>(dataContent, len);
 
                 var result = reader.ReadDocument(span, Array.Empty<string>(), false, out _);
@@ -81,11 +81,11 @@ unsafe internal static class PageDump
                 var content = result.Value.ToString() +
                     (result.Fail ? "..." : "");
 
-                sb.AppendLine($"[{index}] = {*segmentPtr} => {dataBlock->NextBlockID} = {content}");
+                sb.AppendLine($"[{index}] = {*segment} => {dataBlock->NextBlockID} = {content}");
             }
             else
             {
-                sb.AppendLine($"[{index}] = {*segmentPtr}");
+                sb.AppendLine($"[{index}] = {*segment}");
             }
         }
     }
@@ -102,7 +102,7 @@ unsafe internal static class PageDump
 
         for (ushort i = 0; i < page->HighestIndex; i++)
         {
-            var segmentPtr = PageSegment.GetSegment(page, i);
+            var segmentPtr = page->GetSegmentPtr(i);
 
             var index = i.ToString().PadRight(3, ' ');
 

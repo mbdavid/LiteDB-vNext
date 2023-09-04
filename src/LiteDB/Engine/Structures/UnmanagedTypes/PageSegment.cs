@@ -28,19 +28,6 @@ unsafe internal struct PageSegment
         this.Length = length;
     }
 
-    /// <summary>
-    /// Get a page segment location/length using index
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static PageSegment* GetSegment(PageMemory* page, ushort index)
-    {
-        var segmentOffset = PAGE_SIZE - (index * sizeof(PageSegment));
-
-        var segment = (PageSegment*)((nint)page + segmentOffset);
-
-        return segment;
-    }
-
     public override string ToString() => Dump.Object(this);
 
 }

@@ -8,16 +8,13 @@
 unsafe internal class IndexService : IIndexService
 {
     // dependency injection
-    private readonly IIndexPageModifier _indexPageModifier;
     private readonly ITransaction _transaction;
     private readonly Collation _collation;
 
     public IndexService(
-        IIndexPageModifier indexPageModifier,
         Collation collation,
         ITransaction transaction)
     {
-        _indexPageModifier = indexPageModifier;
         _collation = collation;
         _transaction = transaction;
     }
@@ -31,25 +28,25 @@ unsafe internal class IndexService : IIndexService
         var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, IndexKey.MinValue);
 
         // get a index page for this collection
-        var pagePtr = _transaction.GetFreeIndexPage(colID, bytesLength);
+        var page = _transaction.GetFreeIndexPage(colID, bytesLength);
 
         // get initial pageExtend value
-        var before = pagePtr->ExtendPageValue;
+        var before = page->ExtendPageValue;
 
         // add head/tail nodes into page
-        var head = _indexPageModifier.InsertIndexNode(pagePtr, 0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, bytesLength);
-        var tail = _indexPageModifier.InsertIndexNode(pagePtr, 0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, bytesLength);
+        var head = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, bytesLength);
+        var tail = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, bytesLength);
 
         // link head-to-tail with double link list in first level
-        head.Levels->NextID = tail.IndexNodeID;
-        tail.Levels->PrevID = head.IndexNodeID;
+        head[0]->NextID = tail.IndexNodeID;
+        tail[0]->PrevID = head.IndexNodeID;
 
         // update allocation map if needed
-        var after = pagePtr->ExtendPageValue;
+        var after = page->ExtendPageValue;
 
         if (before != after)
         {
-            _transaction.UpdatePageMap(pagePtr->PageID, after);
+            _transaction.UpdatePageMap(page->PageID, after);
         }
 
         return (head.IndexNodeID, tail.IndexNodeID);
@@ -78,20 +75,20 @@ unsafe internal class IndexService : IIndexService
         var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, indexKey);
 
         // get an index page with avaliable space to add this node
-        var pagePtr = _transaction.GetFreeIndexPage(colID, bytesLength);
+        var page = _transaction.GetFreeIndexPage(colID, bytesLength);
 
         // get initial pageValue
-        var before = pagePtr->ExtendPageValue;
+        var before = page->ExtendPageValue;
 
         // create node in page
-        var node = _indexPageModifier.InsertIndexNode(pagePtr, index.Slot, (byte)insertLevels, indexKey, dataBlockID, bytesLength);
+        var node = page->InsertIndexNode(index.Slot, (byte)insertLevels, indexKey, dataBlockID, bytesLength);
 
         // update allocation map if needed (this page has no more "size" changes)
-        var after = pagePtr->ExtendPageValue;
+        var after = page->ExtendPageValue;
 
         if (before != after)
         {
-            _transaction.UpdatePageMap(pagePtr->PageID, after);
+            _transaction.UpdatePageMap(page->PageID, after);
         }
 
         // now, let's link my index node on right place
@@ -191,11 +188,11 @@ unsafe internal class IndexService : IIndexService
     {
         using var _pc = PERF_COUNTER(5, nameof(GetNode), nameof(IndexService));
 
-        var pagePtr = _transaction.GetPage(indexNodeID.PageID);
+        var page = _transaction.GetPage(indexNodeID.PageID);
 
-        ENSURE(pagePtr->PageType == PageType.Index, new { indexNodeID });
+        ENSURE(page->PageType == PageType.Index, new { indexNodeID });
 
-        var result = _indexPageModifier.GetIndexNode(pagePtr, indexNodeID.Index);
+        var result = page->GetIndexNode(indexNodeID.Index);
 
         return result;
     }
@@ -305,7 +302,7 @@ unsafe internal class IndexService : IIndexService
         var before = node.Page->ExtendPageValue;
 
         // delete node segment in page
-        _indexPageModifier.DeleteIndexNode(node.Page, node.IndexNodeID.Index);
+        node.Page->DeleteSegment(node.IndexNodeID.Index);
 
         // update map page only if change page value
         var after = node.Page->ExtendPageValue;
