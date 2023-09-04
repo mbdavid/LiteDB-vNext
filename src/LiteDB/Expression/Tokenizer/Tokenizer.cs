@@ -1,182 +1,19 @@
 ﻿namespace LiteDB;
 
-#region TokenType definition
-
-/// <summary>
-/// ASCII char names: https://www.ascii.cl/htmlcodes.htm
-/// </summary>
-internal enum TokenType
-{
-    /// <summary> { </summary>
-    OpenBrace,
-    /// <summary> } </summary>
-    CloseBrace,
-    /// <summary> [ </summary>
-    OpenBracket,
-    /// <summary> ] </summary>
-    CloseBracket,
-    /// <summary> ( </summary>
-    OpenParenthesis,
-    /// <summary> ) </summary>
-    CloseParenthesis,
-    /// <summary> , </summary>
-    Comma,
-    /// <summary> : </summary>
-    Colon,
-    /// <summary> ; </summary>
-    SemiColon,
-    /// <summary> =&gt; </summary>
-    Arrow,
-    /// <summary> @ </summary>
-    At,
-    /// <summary> # </summary>
-    Hashtag,
-    /// <summary> ~ </summary>
-    Til,
-    /// <summary> . </summary>
-    Period,
-    /// <summary> &amp; </summary>
-    Ampersand,
-    /// <summary> $ </summary>
-    Dollar,
-    /// <summary> ! </summary>
-    Exclamation,
-    /// <summary> != </summary>
-    NotEquals,
-    /// <summary> = </summary>
-    Equals,
-    /// <summary> &gt; </summary>
-    Greater,
-    /// <summary> &gt;= </summary>
-    GreaterOrEquals,
-    /// <summary> &lt; </summary>
-    Less,
-    /// <summary> &lt;= </summary>
-    LessOrEquals,
-    /// <summary> - </summary>
-    Minus,
-    /// <summary> + </summary>
-    Plus,
-    /// <summary> * </summary>
-    Asterisk,
-    /// <summary> / </summary>
-    Slash,
-    /// <summary> \ </summary>
-    Backslash,
-    /// <summary> % </summary>
-    Percent,
-    /// <summary> "..." or '...' </summary>
-    String,
-    /// <summary> [0-9]+ </summary>
-    Int,
-    /// <summary> [0-9]+.[0-9] </summary>
-    Double,
-    /// <summary> \n\r\t \u0032 </summary>
-    Whitespace,
-    /// <summary> [a-Z_$]+[a-Z0-9_$] </summary>
-    Word,
-    EOF,
-    Unknown
-}
-
-#endregion
-
-#region Token definition
-
-/// <summary>
-/// Represent a single string token
-/// </summary>
-internal class Token
-{
-    public Token(TokenType tokenType, string value, long position)
-    {
-        this.Position = position;
-        this.Value = value;
-        this.Type = tokenType;
-    }
-
-    public TokenType Type { get; private set; }
-    public string Value { get; private set; }
-    public long Position { get; private set; }
-
-    /// <summary>
-    /// Expect if token is type (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type)
-    {
-        if (this.Type != type)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Expect for type1 OR type2 (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type1, TokenType type2)
-    {
-        if (this.Type != type1 && this.Type != type2)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Expect for type1 OR type2 OR type3 (if not, throw UnexpectedToken)
-    /// </summary>
-    public Token Expect(TokenType type1, TokenType type2, TokenType type3)
-    {
-        if (this.Type != type1 && this.Type != type2 && this.Type != type3)
-        {
-            throw ERR_UNEXPECTED_TOKEN(this);
-        }
-
-        return this;
-    }
-
-    public Token Expect(string value, bool ignoreCase = true)
-    {
-        if (!this.Is(value, ignoreCase))
-        {
-            throw ERR_UNEXPECTED_TOKEN(this, value);
-        }
-
-        return this;
-    }
-
-    public bool Is(string value, bool ignoreCase = true)
-    {
-        return 
-            this.Type == TokenType.Word &&
-            value.Equals(this.Value, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-    }
-
-    public override string ToString()
-    {
-        return this.Value + " (" + this.Type + ")";
-    }
-}
-
-#endregion
-
 /// <summary>
 /// Class to tokenize TextReader input used in JsonRead/BsonExpressions
 /// This class are not thread safe
 /// </summary>
 internal class Tokenizer
 {
-    private TextReader _reader;
+    private string _reader;
     private char _char = '\0';
-    private Token? _current = null;
-    private Token? _ahead = null;
+    private Token _current = Token.Empty;
+    private Token _ahead = Token.Empty;
     private bool _eof = false;
-    private long _position = 0;
+    private int _position = 0;
 
-    public bool EOF => _eof && _ahead == null;
+    public bool EOF => _eof && _ahead.IsEmpty;
     public long Position => _position;
     public Token Current => _current!;
 
@@ -190,15 +27,9 @@ internal class Tokenizer
         return false;
     }
 
-    public Tokenizer(string source)
-        : this(new StringReader(source))
-    {
-    }
-
-    public Tokenizer(TextReader reader)
+    public Tokenizer(string reader)
     {
         _reader = reader;
-
         _position = 0;
         this.ReadChar();
     }
@@ -222,8 +53,13 @@ internal class Tokenizer
     private char ReadChar()
     {
         if (_eof) return '\0';
+        if (_position >= _reader.Length)
+        {
+            _eof = true;
+            return _char = '\0';
+        }
 
-        var c = _reader.Read();
+        var c = _reader[_position];
 
         _position++;
 
@@ -245,17 +81,39 @@ internal class Tokenizer
     /// </summary>
     public Token LookAhead(bool eatWhitespace = true, int tokensCount = 1)
     {
-        if (_ahead != null)
+        if (tokensCount <= 0)
+            return _current;
+        if(tokensCount==1)
         {
-            if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
+            if (_ahead.IsEmpty == false)
             {
-                _ahead = this.ReadNext(eatWhitespace);
+                if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
+                {
+                    _ahead = this.ReadNext(eatWhitespace);
+                }
+
+                return _ahead;
             }
 
-            return _ahead;
+            return _ahead = this.ReadNext(eatWhitespace);
         }
-
-        return _ahead = this.ReadNext(eatWhitespace);
+        else
+        {
+            var keepCurent = _current;
+            var keepAhead = this.ReadNext(eatWhitespace);
+            var keepPos = _position-1;
+            for (int i=1; i<tokensCount-1; i++)
+            {
+                this.ReadNext(eatWhitespace);
+            }
+            var tok = this.ReadNext(eatWhitespace);
+            _position = keepPos;
+            _eof = false;
+            this.ReadChar();
+            _ahead = keepAhead;
+            _current = keepCurent;
+            return tok;
+        }
     }
 
     /// <summary>
@@ -263,7 +121,7 @@ internal class Tokenizer
     /// </summary>
     public Token ReadToken(bool eatWhitespace = true)
     {
-        if (_ahead == null)
+        if (_ahead.IsEmpty)
         {
             return _current = this.ReadNext(eatWhitespace);
         }
@@ -274,7 +132,7 @@ internal class Tokenizer
         }
 
         _current = _ahead;
-        _ahead = null;
+        _ahead = Token.Empty;
         return _current;
     }
 
@@ -291,7 +149,7 @@ internal class Tokenizer
             return new Token(TokenType.EOF, "", _position);
         }
 
-        Token? token = null;
+        Token token = Token.Empty;
 
         switch (_char)
         {
@@ -512,7 +370,7 @@ internal class Tokenizer
                 break;
         }
 
-        return token ?? new Token(TokenType.Unknown, _char.ToString(), _position);
+        return token.IsEmpty ? new Token(TokenType.Unknown, _char.ToString(), _position) : token;
     }
 
     /// <summary>
@@ -669,6 +527,6 @@ internal class Tokenizer
 
     public override string ToString()
     {
-        return _current?.ToString() + " [ahead: " + _ahead?.ToString() + "] - position: " + _position;
+        return _current.ToString() + " [ahead: " + _ahead.ToString() + "] - position: " + _position;
     }
 }
