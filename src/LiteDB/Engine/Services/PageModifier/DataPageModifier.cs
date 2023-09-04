@@ -14,70 +14,70 @@ unsafe internal class DataPageModifier : BasePageModifier, IDataPageModifier
         pagePtr->IsDirty = true;
     }
 
-    public DataBlock* GetDataBlock(PageMemory* pagePtr, ushort index, out int dataBlockLength)
+    public DataBlock* GetDataBlock(PageMemory* page, ushort index, out int dataBlockLength)
     {
-        var segmentPtr = PageSegment.GetSegment(pagePtr, index);
+        var segmentPtr = PageSegment.GetSegment(page, index);
 
-        var dataBlock = (DataBlock*)(pagePtr + segmentPtr->Location);
+        var dataBlock = (DataBlock*)((nint)page + segmentPtr->Location);
 
         dataBlockLength = segmentPtr->Length;
 
         return dataBlock;
     }
 
-    public DataBlock* InsertDataBlock(PageMemory* pagePtr, Span<byte> content, bool extend, out RowID dataBlockID)
+    public DataBlock* InsertDataBlock(PageMemory* page, Span<byte> content, bool extend, out RowID dataBlockID)
     {
         // get required bytes this insert
         var bytesLength = (ushort)(content.Length + sizeof(DataBlock));
 
         // get a new index block
-        var newIndex = base.GetFreeIndex(pagePtr);
+        var newIndex = base.GetFreeIndex(page);
 
         // get new rowid
-        dataBlockID = new RowID(pagePtr->PageID, newIndex);
+        dataBlockID = new RowID(page->PageID, newIndex);
 
         // get page segment for this data block
-        var segmentPtr = base.Insert(pagePtr, bytesLength, newIndex, true);
+        var segment = base.Insert(page, bytesLength, newIndex, true);
 
-        var dataBlockPtr = (DataBlock*)&pagePtr->Buffer[segmentPtr->Location - PAGE_HEADER_SIZE];
+        var dataBlock = (DataBlock*)((nint)page + segment->Location);
 
-        dataBlockPtr->DataFormat = 0; // Bson
-        dataBlockPtr->Extend = extend;
-        dataBlockPtr->NextBlockID = RowID.Empty;
+        dataBlock->DataFormat = 0; // Bson
+        dataBlock->Extend = extend;
+        dataBlock->NextBlockID = RowID.Empty;
 
         // get datablock content pointer
-        var contentPtr = (byte*)((nint)pagePtr + segmentPtr->Location + sizeof(DataBlock));
+        var contentPtr = (byte*)((nint)page + segment->Location + sizeof(DataBlock));
         
         // create a span 
-        var dataBlockSpan = new Span<byte>(contentPtr, bytesLength);
+        var contentSpan = new Span<byte>(contentPtr, bytesLength);
 
-        content.CopyTo(dataBlockSpan);
+        content.CopyTo(contentSpan);
 
-        return dataBlockPtr;
+        return dataBlock;
     }
 
 
     /// <summary>
     /// Update an existing document inside a single page. This new document must fit on this page
     /// </summary>
-    public void UpdateDataBlock(PageMemory* pagePtr, ushort index, Span<byte> content, RowID nextBlock)
+    public void UpdateDataBlock(PageMemory* page, ushort index, Span<byte> content, RowID nextBlock)
     {
         // get required bytes this update
         var bytesLength = (ushort)(content.Length + sizeof(DataBlock));
 
-        pagePtr->IsDirty = true;
+        page->IsDirty = true;
 
         // get page segment to update this buffer
-        var segmentPtr = base.Update(pagePtr, index, bytesLength);
+        var segmentPtr = base.Update(page, index, bytesLength);
 
         // get dataBlock pointer
-        var dataBlockPtr = (DataBlock*)&pagePtr->Buffer[segmentPtr->Location - PAGE_HEADER_SIZE];
+        var dataBlockPtr = (DataBlock*)&page->Buffer[segmentPtr->Location - PAGE_HEADER_SIZE];
 
         dataBlockPtr->DataFormat = 0; // Bson
         dataBlockPtr->NextBlockID = nextBlock;
 
         // get datablock content pointer
-        var contentPtr = (byte*)((nint)pagePtr + segmentPtr->Location + sizeof(DataBlock));
+        var contentPtr = (byte*)((nint)page + segmentPtr->Location + sizeof(DataBlock));
 
         // create a span and copy from source
         var dataBlockSpan = new Span<byte>(contentPtr, bytesLength);
@@ -85,6 +85,6 @@ unsafe internal class DataPageModifier : BasePageModifier, IDataPageModifier
         content.CopyTo(dataBlockSpan);
     }
 
-    public void DeleteDataBlock(PageMemory* pagePtr, ushort index) => base.Delete(pagePtr, index);
+    public void DeleteDataBlock(PageMemory* page, ushort index) => base.Delete(page, index);
 
 }

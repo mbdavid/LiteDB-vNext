@@ -143,15 +143,15 @@ unsafe internal class DataService : IDataService
     {
         using var _pc = PERF_COUNTER(1, nameof(ReadDocument), nameof(DataService));
 
-        var pagePtr = _transaction.GetPage(dataBlockID.PageID);
+        var page = _transaction.GetPage(dataBlockID.PageID);
 
         // get data block segment
-        var dataBlockPtr = _dataPageModifier.GetDataBlock(pagePtr, dataBlockID.Index, out var dataBlockLength);
+        var dataBlock = _dataPageModifier.GetDataBlock(page, dataBlockID.Index, out var dataBlockLength);
 
-        if (dataBlockPtr->NextBlockID.IsEmpty)
+        if (dataBlock->NextBlockID.IsEmpty)
         {
             // get content buffer inside dataBlock 
-            var span = new Span<byte>(dataBlockPtr + sizeof(DataBlock), dataBlockLength - sizeof(DataBlock));
+            var span = new Span<byte>((byte*)((nint)dataBlock + sizeof(DataBlock)), dataBlockLength - sizeof(DataBlock));
 
             var result = _bsonReader.ReadDocument(span, fields, false, out _);
 

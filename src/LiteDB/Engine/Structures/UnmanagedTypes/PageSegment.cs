@@ -32,13 +32,13 @@ unsafe internal struct PageSegment
     /// Get a page segment location/length using index
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static PageSegment* GetSegment(PageMemory* pagePtr, ushort index)
+    public static PageSegment* GetSegment(PageMemory* page, ushort index)
     {
         var segmentOffset = PAGE_SIZE - (index * sizeof(PageSegment));
 
-        var segmentPtr = (PageSegment*)((nint)pagePtr + segmentOffset);
+        var segment = (PageSegment*)((nint)page + segmentOffset);
 
-        return segmentPtr;
+        return segment;
     }
 
     public override string ToString() => Dump.Object(this);

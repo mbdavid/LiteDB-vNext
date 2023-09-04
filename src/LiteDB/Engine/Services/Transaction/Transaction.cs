@@ -118,7 +118,7 @@ internal class Transaction : ITransaction
     {
         using var _pc = PERF_COUNTER(8, nameof(GetPage), nameof(Transaction));
 
-        ENSURE(pageID != int.MaxValue, "PageID must have a value");
+        ENSURE(pageID != uint.MaxValue, "PageID must have a value");
 
         if (_localPages.TryGetValue(pageID, out var ptr))
         {
@@ -319,25 +319,25 @@ internal class Transaction : ITransaction
         // update local transaction wal index
         for (var i = 0; i < dirtyPages.Length; i++)
         {
-            var pagePtr = (PageMemory*)dirtyPages[i];
+            var page = (PageMemory*)dirtyPages[i];
 
-            _walDirtyPages[pagePtr->PageID] = pagePtr->PositionID;
+            _walDirtyPages[page->PageID] = page->PositionID;
         }
 
         // add pages to cache or decrement sharecount
         foreach (var ptr in _localPages.Values)
         {
-            var pagePtr = (PageMemory*)ptr;
+            var page = (PageMemory*)ptr;
 
-            if (pagePtr->ShareCounter > 0)
+            if (page->IsPageInCache && page->ShareCounter > 0)
             {
                 // page already in cache (was not changed)
-                _memoryCache.ReturnPageToCache(pagePtr);
+                _memoryCache.ReturnPageToCache(page);
             }
             else
             {
                 // all other pages are not came from cache, must be deallocated
-                _memoryFactory.DeallocatePage(pagePtr);
+                _memoryFactory.DeallocatePage(page);
             }
         }
 
@@ -365,13 +365,13 @@ internal class Transaction : ITransaction
 
         for (var i = 0; i < dirtyPages.Length; i++)
         {
-            var pagePtr = (PageMemory*)dirtyPages[i];
+            var page = (PageMemory*)dirtyPages[i];
 
-            ENSURE(pagePtr->ShareCounter == NO_CACHE, "Page should not be on cache when saving");
+            ENSURE(page->ShareCounter == NO_CACHE, "Page should not be on cache when saving");
 
             // update page header
-            pagePtr->TransactionID = this.TransactionID;
-            pagePtr->IsConfirmed = i == (dirtyPages.Length - 1);
+            page->TransactionID = this.TransactionID;
+            page->IsConfirmed = i == (dirtyPages.Length - 1);
         }
 
         // write pages on disk and flush data
@@ -393,7 +393,7 @@ internal class Transaction : ITransaction
             var pagePtr = (PageMemory*)(ptr);
 
             // page already in cache (was not changed)
-            if (pagePtr->ShareCounter > 0)
+            if (pagePtr->IsPageInCache && pagePtr->ShareCounter > 0)
             {
                 _memoryCache.ReturnPageToCache(pagePtr);
             }
@@ -422,28 +422,28 @@ internal class Transaction : ITransaction
         // add pages to cache or decrement sharecount
         foreach (var ptr in _localPages.Values)
         {
-            var pagePtr = (PageMemory*)ptr;
+            var page = (PageMemory*)ptr;
 
-            if (pagePtr->IsDirty)
+            if (page->IsDirty)
             {
-                _memoryFactory.DeallocatePage(pagePtr);
+                _memoryFactory.DeallocatePage(page);
             }
             else
             {
                 // test if page is came from the cache
-                if (pagePtr->ShareCounter > 0)
+                if (page->IsPageInCache && page->ShareCounter > 0)
                 {
                     // return page to cache
-                    _memoryCache.ReturnPageToCache(pagePtr);
+                    _memoryCache.ReturnPageToCache(page);
                 }
                 else
                 {
                     // try add this page in cache
-                    var added = _memoryCache.AddPageInCache(pagePtr);
+                    var added = _memoryCache.AddPageInCache(page);
 
                     if (!added)
                     {
-                        _memoryFactory.DeallocatePage(pagePtr);
+                        _memoryFactory.DeallocatePage(page);
                     }
                 }
             }

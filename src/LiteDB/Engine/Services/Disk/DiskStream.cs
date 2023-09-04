@@ -125,32 +125,34 @@ unsafe internal class DiskStream : IDiskStream
         var read = _contentStream.Read(span);
 
         pagePtr->UniqueID = uniqueID;
+        pagePtr->IsDirty = false;
 
-        ENSURE(pagePtr->PositionID == positionID, "is temp page?");
+        ENSURE(pagePtr->ShareCounter == NO_CACHE);
+        ENSURE(pagePtr->PositionID == positionID);
 
         return read == PAGE_SIZE;
     }
 
-    public void WritePage(PageMemory* pagePtr)
+    public void WritePage(PageMemory* page)
     {
         using var _pc = PERF_COUNTER(3, nameof(WritePage), nameof(DiskStream));
 
-        ENSURE(pagePtr->IsDirty);
-        ENSURE(pagePtr->ShareCounter == NO_CACHE);
-        ENSURE(pagePtr->PositionID != int.MaxValue);
+        ENSURE(page->IsDirty);
+        ENSURE(page->ShareCounter == NO_CACHE);
+        ENSURE(page->PositionID != int.MaxValue);
 
         // update crc8 page
-        pagePtr->Crc8 = 0; // pagePtr->ComputeCrc8();
+        page->Crc8 = 0; // pagePtr->ComputeCrc8();
 
         // set real position on stream
-        _contentStream!.Position = FILE_HEADER_SIZE + (pagePtr->PositionID * PAGE_SIZE);
+        _contentStream!.Position = FILE_HEADER_SIZE + (page->PositionID * PAGE_SIZE);
 
-        var span = new Span<byte>(pagePtr, PAGE_SIZE);
+        var span = new Span<byte>(page, PAGE_SIZE);
+
+        // clear isDirty flag before write on disk
+        page->IsDirty = false;
 
         _contentStream.Write(span);
-
-        // clear isDirty flag
-        pagePtr->IsDirty = false;
     }
 
     /// <summary>

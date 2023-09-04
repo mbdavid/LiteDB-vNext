@@ -18,12 +18,12 @@ unsafe internal class MemoryFactory : IMemoryFactory
 
     public PageMemory* AllocateNewPage()
     {
-        if (_freePages.TryDequeue(out var pagePrt))
+        if (_freePages.TryDequeue(out var page))
         {
-            var pageMemoryPtr = (PageMemory*)pagePrt;
+            var pageMemoryPtr = (PageMemory*)page;
             var uniqueID = pageMemoryPtr->UniqueID;
 
-            _inUsePages.TryAdd(uniqueID, pagePrt);
+            _inUsePages.TryAdd(uniqueID, page);
 
             //ENSURE(page.IsCleanInstance, "Page are not clean to be allocated", page);
 
@@ -43,20 +43,20 @@ unsafe internal class MemoryFactory : IMemoryFactory
         return pagePtr;
     }
 
-    public void DeallocatePage(PageMemory* pagePrt)
+    public void DeallocatePage(PageMemory* page)
     {
-        ENSURE(pagePrt->ShareCounter != NO_CACHE, "ShareCounter must be 0 before return page to memory");
+        ENSURE(page->ShareCounter != NO_CACHE, page->ShareCounter != 0, "ShareCounter must be 0 before return page to memory");
 
         // remove from inUse pages 
-        var removed = _inUsePages.TryRemove(pagePrt->UniqueID, out _);
+        var removed = _inUsePages.TryRemove(page->UniqueID, out _);
 
         ENSURE(removed, new { _pagesAllocated, _freePages, _inUsePages });
 
         // clear page
-        pagePrt->Initialize(pagePrt->UniqueID);
+        page->Initialize(page->UniqueID);
 
         // add used page as new free page
-        _freePages.Enqueue((nint)pagePrt);
+        _freePages.Enqueue((nint)page);
     }
 
 

@@ -33,27 +33,27 @@ internal class NewDatafile : INewDatafile
         var fileHeader = new FileHeader(_settings);
 
         // create new file and write header
-        writer.OpenFile(fileHeader);
+        writer.CreateNewFile(fileHeader);
 
         unsafe
         {
             // create map page
-            var mapPagePtr = _memoryFactory.AllocateNewPage();
+            var mapPage = _memoryFactory.AllocateNewPage();
 
-            mapPagePtr->PageID = AM_FIRST_PAGE_ID;
-            mapPagePtr->PageType = PageType.AllocationMap;
+            mapPage->PageID = AM_FIRST_PAGE_ID;
+            mapPage->PageType = PageType.AllocationMap;
 
             // mark first extend to $master and first page as data
-            mapPagePtr->Buffer[0] = MASTER_COL_ID;
-            mapPagePtr->Buffer[1] = (byte)(1 << 6); // set first 3 bits as "001" - data page
+            mapPage->Buffer[0] = MASTER_COL_ID;
+            mapPage->Buffer[1] = 0b0010_0000; // set first 3 bits as "001" - data page
 
-            mapPagePtr->IsDirty = true;
+            mapPage->IsDirty = true;
 
             // create $master page buffer
-            var masterPagePtr = _memoryFactory.AllocateNewPage();
+            var masterPage = _memoryFactory.AllocateNewPage();
 
             // initialize page buffer as data page
-            // _dataPageService.InitializeDataPage(masterPagePtr, MASTER_PAGE_ID, MASTER_COL_ID);
+            _dataPageModifier.Initialize(masterPage, MASTER_PAGE_ID, MASTER_COL_ID);
 
             // create new/empty $master document
             var master = new MasterDocument();
@@ -64,19 +64,19 @@ internal class NewDatafile : INewDatafile
             _bsonWriter.WriteDocument(masterBuffer.AsSpan(), masterDoc, out _);
 
             // insert $master document into master page
-            _dataPageModifier.InsertDataBlock(masterPagePtr, masterBuffer.AsSpan(), false, out _);
+            _dataPageModifier.InsertDataBlock(masterPage, masterBuffer.AsSpan(), false, out _);
 
             // initialize fixed position id 
-            mapPagePtr->PositionID = 0;
-            masterPagePtr->PositionID = 1;
+            mapPage->PositionID = 0;
+            masterPage->PositionID = 1;
 
             // write both pages in disk and flush to OS
-            writer.WritePage(mapPagePtr);
-            writer.WritePage(masterPagePtr);
+            writer.WritePage(mapPage);
+            writer.WritePage(masterPage);
 
             // deallocate buffers
-            _memoryFactory.DeallocatePage(mapPagePtr);
-            _memoryFactory.DeallocatePage(masterPagePtr);
+            _memoryFactory.DeallocatePage(mapPage);
+            _memoryFactory.DeallocatePage(masterPage);
         }
 
         await writer.FlushAsync();

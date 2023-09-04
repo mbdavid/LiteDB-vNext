@@ -48,6 +48,9 @@ internal unsafe struct PageMemory   // 8192
     /// </summary>
     public ExtendPageValue ExtendPageValue => AllocationMapPageModifier.GetExtendPageValue(this.PageType, this.FreeBytes);
 
+    public bool IsPageInLogFile => this.PositionID != this.PageID;
+    public bool IsPageInCache => this.ShareCounter != NO_CACHE;
+
     public PageMemory()
     {
     }
@@ -91,6 +94,17 @@ internal unsafe struct PageMemory   // 8192
         toPtr->UniqueID = uniqueID;
         toPtr->ShareCounter = NO_CACHE;
         toPtr->IsDirty = false;
+
+    }
+
+    public void Teste()
+    {
+        var self = this;
+        var ptr = &self;
+
+        var str = MarshalEx.ReadStrUtf8((byte*)ptr, 4);
+
+        Console.WriteLine("==[" + str + "]");
 
     }
 }

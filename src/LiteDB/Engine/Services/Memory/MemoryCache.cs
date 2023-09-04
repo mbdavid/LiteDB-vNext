@@ -105,12 +105,12 @@ unsafe internal class MemoryCache : IMemoryCache
     /// Add a new page to cache. Returns true if page was added. If returns false,
     /// page are not in cache and must be released in bufferFactory
     /// </summary>
-    public bool AddPageInCache(PageMemory* pagePtr)
+    public bool AddPageInCache(PageMemory* page)
     {
-        ENSURE(!pagePtr->IsDirty, "PageMemory must be clean before add into cache");
-        ENSURE(pagePtr->PositionID != uint.MaxValue, "PageMemory must have a position before add in cache");
-        ENSURE(pagePtr->ShareCounter != NO_CACHE);
-        ENSURE(pagePtr->PageType == PageType.Data || pagePtr->PageType == PageType.Index);
+        ENSURE(!page->IsDirty, "PageMemory must be clean before add into cache");
+        ENSURE(page->PositionID != uint.MaxValue, "PageMemory must have a position before add in cache");
+        ENSURE(page->ShareCounter == NO_CACHE);
+        ENSURE(page->PageType == PageType.Data || page->PageType == PageType.Index);
 
         // before add, checks cache limit and cleanup if full
         if (_cache.Count >= CACHE_LIMIT)
@@ -125,16 +125,16 @@ unsafe internal class MemoryCache : IMemoryCache
         }
 
         // try add into cache before change page
-        var added = _cache.TryAdd(pagePtr->PositionID, (nint)pagePtr);
+        var added = _cache.TryAdd(page->PositionID, (nint)page);
 
         if (!added) return false;
 
         // clear any transaction info before add in cache
-        pagePtr->TransactionID = 0;
-        pagePtr->IsConfirmed = false;
+        page->TransactionID = 0;
+        page->IsConfirmed = false;
 
         // initialize shared counter
-        pagePtr->ShareCounter = 0;
+        page->ShareCounter = 0;
 
         return true;
     }
