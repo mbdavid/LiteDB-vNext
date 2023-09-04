@@ -82,9 +82,6 @@ internal partial class ServicesFactory : IServicesFactory
 
     #region Transient instances ("Create" prefix)
 
-    public IEngineContext CreateEngineContext() 
-        => new EngineContext();
-
     public IDiskStream CreateDiskStream()
         => new DiskStream(this.Settings, this.StreamFactory);
 

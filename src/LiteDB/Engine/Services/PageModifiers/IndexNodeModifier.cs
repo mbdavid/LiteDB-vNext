@@ -29,7 +29,7 @@ unsafe internal partial struct PageMemory
         }
     }
 
-    public IndexNodeResult InsertIndexNode(byte slot, byte levels, IndexKey indexKey, RowID dataBlockID, out bool defrag)
+    public IndexNodeResult InsertIndexNode(byte slot, byte levels, IndexKey indexKey, RowID dataBlockID, out bool defrag, out ExtendPageValue newPageValue)
     {
         fixed (PageMemory* page = &this)
         {

@@ -30,7 +30,7 @@ unsafe internal partial struct PageMemory
         }
     }
 
-    public DataBlockResult InsertDataBlock(Span<byte> content, bool extend, out bool defrag)
+    public DataBlockResult InsertDataBlock(Span<byte> content, bool extend, out bool defrag, out ExtendPageValue newPageValue)
     {
         fixed (PageMemory* page = &this)
         {
