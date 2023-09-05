@@ -44,7 +44,7 @@ unsafe internal partial struct PageMemory
             var dataBlockID = new RowID(this.PageID, newIndex);
 
             // get page segment for this data block
-            var segment = this.InsertSegment(bytesLength, newIndex, true, out defrag);
+            var segment = this.InsertSegment(bytesLength, newIndex, true, out defrag, out newPageValue);
 
             var dataBlock = (DataBlock*)((nint)page + segment->Location);
 
@@ -75,7 +75,7 @@ unsafe internal partial struct PageMemory
             this.IsDirty = true;
 
             // get page segment to update this buffer
-            var segment = this.UpdateSegment(index, bytesLength, out defrag);
+            var segment = this.UpdateSegment(index, bytesLength, out defrag, out newPageValue);
 
             // get dataBlock pointer
             var dataBlock = (DataBlock*)((nint)page + segment->Location);

@@ -152,11 +152,11 @@ unsafe internal class AllocationMapService : IAllocationMapService
 
         foreach(var ptr in _pages)
         {
-            var pagePtr = (PageMemory*)ptr;
+            var page = (PageMemory*)ptr;
 
-            if (pagePtr->IsDirty)
+            if (page->IsDirty)
             {
-                writer.WritePage(pagePtr);
+                writer.WritePage(page);
             }
         }
     }

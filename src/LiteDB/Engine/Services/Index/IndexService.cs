@@ -34,19 +34,17 @@ unsafe internal class IndexService : IIndexService
         var before = page->ExtendPageValue;
 
         // add head/tail nodes into page
-        var head = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, out _);
-        var tail = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, out _);
+        var head = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, out _, out var newPageValue);
+        var tail = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, out _, out newPageValue);
 
         // link head-to-tail with double link list in first level
         head[0]->NextID = tail.IndexNodeID;
         tail[0]->PrevID = head.IndexNodeID;
 
         // update allocation map if needed
-        var after = page->ExtendPageValue;
-
-        if (before != after)
+        if (newPageValue != ExtendPageValue.NoChange)
         {
-            _transaction.UpdatePageMap(page->PageID, after);
+            _transaction.UpdatePageMap(page->PageID, newPageValue);
         }
 
         return (head.IndexNodeID, tail.IndexNodeID);
@@ -72,7 +70,7 @@ unsafe internal class IndexService : IIndexService
     private IndexNodeResult AddNodeInternal(byte colID, IndexDocument index, IndexKey indexKey, RowID dataBlockID, int insertLevels, IndexNodeResult head, IndexNodeResult last)
     {
         // get a free index page for head note
-        var bytesLength = (ushort)IndexNode.GetNodeLength(insertLevels, indexKey);
+        var bytesLength = IndexNode.GetNodeLength(insertLevels, indexKey);
 
         // get an index page with avaliable space to add this node
         var page = _transaction.GetFreeIndexPage(colID, bytesLength);
@@ -81,14 +79,12 @@ unsafe internal class IndexService : IIndexService
         var before = page->ExtendPageValue;
 
         // create node in page
-        var node = page->InsertIndexNode(index.Slot, (byte)insertLevels, indexKey, dataBlockID, out var defrag);
+        var node = page->InsertIndexNode(index.Slot, (byte)insertLevels, indexKey, dataBlockID, out var defrag, out var newPageValue);
 
         // update allocation map if needed (this page has no more "size" changes)
-        var after = page->ExtendPageValue;
-
-        if (before != after)
+        if (newPageValue != ExtendPageValue.NoChange)
         {
-            _transaction.UpdatePageMap(page->PageID, after);
+            _transaction.UpdatePageMap(page->PageID, newPageValue);
         }
 
         // now, let's link my index node on right place
@@ -302,18 +298,13 @@ unsafe internal class IndexService : IIndexService
             }
         }
 
-        // get extend page value before page change
-        var before = node.Page->ExtendPageValue;
-
         // delete node segment in page
-        node.Page->DeleteSegment(node.IndexNodeID.Index);
+        node.Page->DeleteSegment(node.IndexNodeID.Index, out var newPageValue);
 
         // update map page only if change page value
-        var after = node.Page->ExtendPageValue;
-
-        if (before != after)
+        if (newPageValue != ExtendPageValue.NoChange)
         {
-            _transaction.UpdatePageMap(node.Page->PageID, after);
+            _transaction.UpdatePageMap(node.Page->PageID, newPageValue);
         }
     }
 }

@@ -190,18 +190,14 @@ unsafe internal class DataService : IDataService
 
             var dataBlock = page->GetDataBlock(dataBlockID.Index, out _);
 
-            var before = page->ExtendPageValue;
-
             // delete dataBlock
-            page->DeleteSegment(dataBlockID.Index);
+            page->DeleteSegment(dataBlockID.Index, out var newPageValue);
 
             // checks if extend pageValue changes
-            var after = page->ExtendPageValue;
-
-            if (before != after)
+            if (newPageValue != ExtendPageValue.NoChange)
             {
                 // update allocation map after change page
-                _transaction.UpdatePageMap(page->PageID, after);
+                _transaction.UpdatePageMap(page->PageID, newPageValue);
             }
 
             // stop if there is not block to delete

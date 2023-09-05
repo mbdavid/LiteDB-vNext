@@ -42,7 +42,7 @@ unsafe internal partial struct PageMemory
             var nodeLength = IndexNode.GetNodeLength(levels, indexKey);
 
             // get page segment for this indexNode
-            var segment = this.InsertSegment(nodeLength, newIndex, true, out defrag);
+            var segment = this.InsertSegment(nodeLength, newIndex, true, out defrag, out newPageValue);
 
             var indexNode = (IndexNode*)((nint)page + segment->Location);
 

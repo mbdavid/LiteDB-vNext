@@ -61,7 +61,7 @@ internal class NewDatafile : INewDatafile
             _bsonWriter.WriteDocument(masterBuffer.AsSpan(), masterDoc, out _);
 
             // insert $master document into master page
-            masterPage->InsertDataBlock(masterBuffer.AsSpan(), false, out _);
+            masterPage->InsertDataBlock(masterBuffer.AsSpan(), false, out _, out _);
 
             // initialize fixed position id 
             mapPage->PositionID = 0;

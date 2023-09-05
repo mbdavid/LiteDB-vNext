@@ -12,9 +12,9 @@ const string VER = "v6-pointer";
 //var INSERT_1 = new Range(1, 300_000);
 //var DELETE_1 = new Range(5, 60_000);
 //var INSERT_2 = new Range(6, 30_000);
-var INSERT_1 = new Range(1, 100_000);
-var DELETE_1 = new Range(5, 600);
-var INSERT_2 = new Range(6, 300);
+var INSERT_1 = new Range(1, 1_000);
+//var DELETE_1 = new Range(5, 600);
+//var INSERT_2 = new Range(6, 300);
 ////////////////////////
 
 var _random = new Random(420);
@@ -29,9 +29,9 @@ var settings = new EngineSettings
 Console.WriteLine($"Filename: {filename} ");
 
 var data1 = GetData(INSERT_1, 200).ToArray();
-var data2 = GetData(INSERT_2, 60).ToArray();
+//var data2 = GetData(INSERT_2, 60).ToArray();
 
-await Task.Delay(5_000); Console.WriteLine("Initializing...");
+//await Task.Delay(5_000); Console.WriteLine("Initializing...");
 
 var sw = Stopwatch.StartNew();
 
