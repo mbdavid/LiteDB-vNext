@@ -34,8 +34,8 @@ unsafe internal class IndexService : IIndexService
         var before = page->ExtendPageValue;
 
         // add head/tail nodes into page
-        var head = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, out _, out var newPageValue);
-        var tail = page->InsertIndexNode(0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, out _, out newPageValue);
+        var head = PageMemory.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, out _, out var newPageValue);
+        var tail = PageMemory.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, out _, out newPageValue);
 
         // link head-to-tail with double link list in first level
         head[0]->NextID = tail.IndexNodeID;
@@ -79,7 +79,7 @@ unsafe internal class IndexService : IIndexService
         var before = page->ExtendPageValue;
 
         // create node in page
-        var node = page->InsertIndexNode(index.Slot, (byte)insertLevels, indexKey, dataBlockID, out var defrag, out var newPageValue);
+        var node = PageMemory.InsertIndexNode(page, index.Slot, (byte)insertLevels, indexKey, dataBlockID, out var defrag, out var newPageValue);
 
         // update allocation map if needed (this page has no more "size" changes)
         if (newPageValue != ExtendPageValue.NoChange)
@@ -192,7 +192,7 @@ unsafe internal class IndexService : IIndexService
 
         ENSURE(page->PageType == PageType.Index, new { indexNodeID });
 
-        var result = page->GetIndexNode(indexNodeID.Index);
+        var result = PageMemory.GetIndexNode(page, indexNodeID.Index);
 
         return result;
     }
@@ -299,7 +299,7 @@ unsafe internal class IndexService : IIndexService
         }
 
         // delete node segment in page
-        node.Page->DeleteSegment(node.IndexNodeID.Index, out var newPageValue);
+        PageMemory.DeleteSegment(node.Page, node.IndexNodeID.Index, out var newPageValue);
 
         // update map page only if change page value
         if (newPageValue != ExtendPageValue.NoChange)

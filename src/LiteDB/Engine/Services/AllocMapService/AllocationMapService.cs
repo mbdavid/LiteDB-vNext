@@ -52,7 +52,7 @@ unsafe internal class AllocationMapService : IAllocationMapService
     {
         var page = (PageMemory*)_pages[current.AllocationMapID];
 
-        var (extendIndex, pageIndex, isNew) = page->GetFreeExtend(current.ExtendIndex, colID, type);
+        var (extendIndex, pageIndex, isNew) = PageMemory.GetFreeExtend(page, current.ExtendIndex, colID, type);
 
         if (extendIndex >= 0)
         {
@@ -125,7 +125,7 @@ unsafe internal class AllocationMapService : IAllocationMapService
 
         var page = (PageMemory*)_pages[allocationMapID];
 
-        page->UpdateExtendPageValue(extendIndex, pageIndex, pageValue);
+        PageMemory.UpdateExtendPageValue(page, extendIndex, pageIndex, pageValue);
     }
 
     /// <summary>

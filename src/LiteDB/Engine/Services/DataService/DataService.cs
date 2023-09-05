@@ -58,7 +58,7 @@ unsafe internal class DataService : IDataService
             // get extend page value before page change
             var before = page->ExtendPageValue;
 
-            var dataBlock = page->InsertDataBlock(bufferDoc.AsSpan(position, bytesToCopy), extend, out _, out var newPageValue);
+            var dataBlock = PageMemory.InsertDataBlock(page, bufferDoc.AsSpan(position, bytesToCopy), extend, out _, out var newPageValue);
 
             if (newPageValue != ExtendPageValue.NoChange)
             {
@@ -67,7 +67,7 @@ unsafe internal class DataService : IDataService
 
             if (lastDataBlockIndex != ushort.MaxValue)
             {
-                var lastDataBlockPtr = lastPage->GetDataBlock(lastDataBlockIndex, out _);
+                var lastDataBlockPtr = PageMemory.GetDataBlock(lastPage, lastDataBlockIndex, out _);
 
                 // update NextDataBlock from last page
                 lastDataBlockPtr.DataBlock->NextBlockID = dataBlock.DataBlockID;
@@ -116,7 +116,7 @@ unsafe internal class DataService : IDataService
 
 //        //TODO: SOMENTE PRIMEIRA PAGINA
 
-        page->UpdateDataBlock(dataBlockID.Index, bufferDoc.AsSpan(), RowID.Empty, out var _, out var newPageValue);
+        PageMemory.UpdateDataBlock(page, dataBlockID.Index, bufferDoc.AsSpan(), RowID.Empty, out var _, out var newPageValue);
 
         if (newPageValue != ExtendPageValue.NoChange)
         {
@@ -134,7 +134,7 @@ unsafe internal class DataService : IDataService
         var page = _transaction.GetPage(dataBlockID.PageID);
 
         // get data block segment
-        var dataBlock = page->GetDataBlock(dataBlockID.Index, out var dataBlockLength);
+        var dataBlock = PageMemory.GetDataBlock(page, dataBlockID.Index, out var dataBlockLength);
 
         if (dataBlock.DataBlock->NextBlockID.IsEmpty)
         {
@@ -188,10 +188,10 @@ unsafe internal class DataService : IDataService
             // get page from dataBlockID
             var page = _transaction.GetPage(dataBlockID.PageID);
 
-            var dataBlock = page->GetDataBlock(dataBlockID.Index, out _);
+            var dataBlock = PageMemory.GetDataBlock(page, dataBlockID.Index, out _);
 
             // delete dataBlock
-            page->DeleteSegment(dataBlockID.Index, out var newPageValue);
+            PageMemory.DeleteSegment(page, dataBlockID.Index, out var newPageValue);
 
             // checks if extend pageValue changes
             if (newPageValue != ExtendPageValue.NoChange)

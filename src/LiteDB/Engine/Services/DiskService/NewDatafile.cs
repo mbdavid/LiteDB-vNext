@@ -50,7 +50,7 @@ internal class NewDatafile : INewDatafile
             var masterPage = _memoryFactory.AllocateNewPage();
 
             // initialize page buffer as data page
-            masterPage->InitializeAsDataPage(MASTER_PAGE_ID, MASTER_COL_ID);
+            PageMemory.InitializeAsDataPage(masterPage, MASTER_PAGE_ID, MASTER_COL_ID);
 
             // create new/empty $master document
             var master = new MasterDocument();
@@ -61,7 +61,7 @@ internal class NewDatafile : INewDatafile
             _bsonWriter.WriteDocument(masterBuffer.AsSpan(), masterDoc, out _);
 
             // insert $master document into master page
-            masterPage->InsertDataBlock(masterBuffer.AsSpan(), false, out _, out _);
+            PageMemory.InsertDataBlock(masterPage, masterBuffer.AsSpan(), false, out _, out _);
 
             // initialize fixed position id 
             mapPage->PositionID = 0;

@@ -1,15 +1,15 @@
 ﻿namespace LiteDB.Engine;
 
-unsafe internal partial struct PageMemory
+unsafe internal partial struct PageMemory // PageMemory.AllocMap
 {
-    public (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(int currentExtendIndex, byte colID, PageType type)
+    public static (int extendIndex, int pageIndex, bool isNew) GetFreeExtend(PageMemory* page, int currentExtendIndex, byte colID, PageType type)
     {
-        ENSURE(this.PageType == PageType.AllocationMap);
+        ENSURE(page->PageType == PageType.AllocationMap);
 
         while (currentExtendIndex < AM_EXTEND_COUNT)
         {
             // get extend value as uint
-            var extendValue = this.Extends[currentExtendIndex];
+            var extendValue = page->Extends[currentExtendIndex];
 
             var (pageIndex, isNew) = HasFreeSpaceInExtend(extendValue, colID, type);
 
@@ -23,7 +23,7 @@ unsafe internal partial struct PageMemory
             if (extendValue == 0)
             {
                 // update extend value with only colID value in first 1 byte (shift 3 bytes)
-                this.Extends[currentExtendIndex] = (uint)(colID << 24);
+                page->Extends[currentExtendIndex] = (uint)(colID << 24);
 
                 return (currentExtendIndex, 0, true);
             }
@@ -38,13 +38,13 @@ unsafe internal partial struct PageMemory
     /// <summary>
     /// Update extend value based on extendIndex (0-2039) and pageIndex (0-7)
     /// </summary>
-    public void UpdateExtendPageValue(int extendIndex, int pageIndex, ExtendPageValue pageValue)
+    public static void UpdateExtendPageValue(PageMemory* page, int extendIndex, int pageIndex, ExtendPageValue pageValue)
     {
         ENSURE(extendIndex <= 2039);
         ENSURE(pageIndex <= 7);
 
         // get extend value from array
-        var value = this.Extends[extendIndex];
+        var value = page->Extends[extendIndex];
 
         // update value (3 bits) according pageIndex
         var extendValue = pageIndex switch
@@ -61,10 +61,10 @@ unsafe internal partial struct PageMemory
         };
 
         // update extend array value
-        this.Extends[extendIndex] = extendValue;
+        page->Extends[extendIndex] = extendValue;
 
         // mark page as dirty (in map page this should be manual)
-        this.IsDirty = true;
+        page->IsDirty = true;
 
     }
 

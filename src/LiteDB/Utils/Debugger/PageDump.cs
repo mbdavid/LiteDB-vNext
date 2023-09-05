@@ -64,7 +64,7 @@ unsafe internal static class PageDump
 
         for (ushort i = 0; i <= page->HighestIndex; i++)
         {
-            var segment = page->GetSegmentPtr(i);
+            var segment = PageMemory.GetSegmentPtr(page, i);
 
             var index = i.ToString().PadRight(3, ' ');
 
@@ -102,19 +102,19 @@ unsafe internal static class PageDump
 
         for (ushort i = 0; i < page->HighestIndex; i++)
         {
-            var segmentPtr = page->GetSegmentPtr(i);
+            var segment = PageMemory.GetSegmentPtr(page, i);
 
             var index = i.ToString().PadRight(3, ' ');
 
-            if (!segmentPtr->IsEmpty)
+            if (!segment->IsEmpty)
             {
-                var indexNode = (IndexNode*)(page + segmentPtr->Location);
+                var indexNode = (IndexNode*)(page + segment->Location);
 
-                sb.AppendLine($"[{index}] = {*segmentPtr} => {*indexNode}");
+                sb.AppendLine($"[{index}] = {*segment} => {*indexNode}");
             }
             else
             {
-                sb.AppendLine($"[{index}] = {*segmentPtr}");
+                sb.AppendLine($"[{index}] = {*segment}");
             }
         }
     }

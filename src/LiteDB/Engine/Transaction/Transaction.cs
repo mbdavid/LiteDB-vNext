@@ -192,7 +192,7 @@ internal class Transaction : ITransaction
             var page = _memoryFactory.AllocateNewPage();
 
             // initialize empty page as data page
-            page->InitializeAsDataPage(pageID, colID);
+            PageMemory.InitializeAsDataPage(page, pageID, colID);
 
             // add in local cache
             _localPages.Add(pageID, (nint)page);
@@ -226,31 +226,31 @@ internal class Transaction : ITransaction
 
         if (isNew)
         {
-            var pagePtr = _memoryFactory.AllocateNewPage();
+            var page = _memoryFactory.AllocateNewPage();
 
             // initialize empty page as index page
-            pagePtr->InitializeAsIndexPage(pageID, colID);
+            PageMemory.InitializeAsIndexPage(page, pageID, colID);
 
             // add in local cache
-            _localPages.Add(pageID, (nint)pagePtr);
+            _localPages.Add(pageID, (nint)page);
 
-            return pagePtr;
+            return page;
         }
         else
         {
-            var pagePtr = this.GetPage(pageID);
+            var page = this.GetPage(pageID);
 
             // if current page has no avaiable space (super rare cases), get another page
-            if (pagePtr->FreeBytes < indexNodeLength)
+            if (page->FreeBytes < indexNodeLength)
             {
                 // set this page as full before get next page
-                this.UpdatePageMap(pagePtr->PageID, ExtendPageValue.Full);
+                this.UpdatePageMap(page->PageID, ExtendPageValue.Full);
 
                 // call recursive to get another page
                 return this.GetFreeIndexPage(colID, indexNodeLength);
             }
 
-            return pagePtr;
+            return page;
         }
     }
 
