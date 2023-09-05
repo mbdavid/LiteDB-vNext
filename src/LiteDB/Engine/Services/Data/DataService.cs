@@ -58,14 +58,11 @@ unsafe internal class DataService : IDataService
             // get extend page value before page change
             var before = page->ExtendPageValue;
 
-            var dataBlock = page->InsertDataBlock(bufferDoc.AsSpan(position, bytesToCopy), extend, out _);
+            var dataBlock = page->InsertDataBlock(bufferDoc.AsSpan(position, bytesToCopy), extend, out _, out var newPageValue);
 
-            // checks if extend page value change and update map
-            var after = page->ExtendPageValue;
-
-            if (before != after)
+            if (newPageValue != ExtendPageValue.NoChange)
             {
-                _transaction.UpdatePageMap(page->PageID, after);
+                _transaction.UpdatePageMap(page->PageID, newPageValue);
             }
 
             if (lastDataBlockIndex != ushort.MaxValue)
@@ -119,17 +116,11 @@ unsafe internal class DataService : IDataService
 
 //        //TODO: SOMENTE PRIMEIRA PAGINA
 
-        // get extend page value before page change
-        var before = page->ExtendPageValue;
+        page->UpdateDataBlock(dataBlockID.Index, bufferDoc.AsSpan(), RowID.Empty, out var _, out var newPageValue);
 
-        page->UpdateDataBlock(dataBlockID.Index, bufferDoc.AsSpan(), RowID.Empty, out var _);
-
-        // checks if extend page value change and update map
-        var after = page->ExtendPageValue;
-
-        if (before != after)
+        if (newPageValue != ExtendPageValue.NoChange)
         {
-            _transaction.UpdatePageMap(page->PageID, after);
+            _transaction.UpdatePageMap(page->PageID, newPageValue);
         }
     }
 

@@ -65,7 +65,7 @@ unsafe internal partial struct PageMemory
     /// <summary>
     /// Update an existing document inside a single page. This new document must fit on this page
     /// </summary>
-    public void UpdateDataBlock(ushort index, Span<byte> content, RowID nextBlock, out bool defrag)
+    public void UpdateDataBlock(ushort index, Span<byte> content, RowID nextBlock, out bool defrag, out ExtendPageValue newPageValue)
     {
         fixed (PageMemory* page = &this)
         {

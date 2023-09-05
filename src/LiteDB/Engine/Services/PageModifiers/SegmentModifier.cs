@@ -14,12 +14,15 @@ unsafe internal partial struct PageMemory
         }
     }
 
-    public PageSegment* InsertSegment(ushort bytesLength, ushort index, bool isNewInsert, out bool defrag)
+    public PageSegment* InsertSegment(ushort bytesLength, ushort index, bool isNewInsert, out bool defrag, out ExtendPageValue newPageValue)
     {
         ENSURE(index != ushort.MaxValue, new { bytesLength, index, isNewInsert });
 
         // mark page as dirty
         this.IsDirty = true;
+
+        // get initial page value to check for changes
+        var initialPageValue = this.ExtendPageValue;
 
         //TODO: converter em um ensure
         if (!(this.FreeBytes >= bytesLength + (isNewInsert ? sizeof(PageSegment) : 0)))
@@ -67,6 +70,9 @@ unsafe internal partial struct PageMemory
         ENSURE(location + bytesLength <= (PAGE_SIZE - (this.HighestIndex + 1) * sizeof(PageSegment)), "New buffer slice could not override footer area",
             new { location, bytesLength});
 
+        // check for change on extend pageValue
+        newPageValue = initialPageValue == this.ExtendPageValue ? ExtendPageValue.NoChange : this.ExtendPageValue;
+
         // create page segment based new inserted segment
         return segment;
     }
@@ -74,12 +80,15 @@ unsafe internal partial struct PageMemory
     /// <summary>
     /// Remove index slot about this page segment. Returns deleted page segment
     /// </summary>
-    public void DeleteSegment(ushort index)
+    public void DeleteSegment(ushort index, out ExtendPageValue newPageValue)
     {
         fixed (PageMemory* page = &this)
         {
             // mark page as dirty
             this.IsDirty = true;
+
+            // get initial page value to check for changes
+            var initialPageValue = this.ExtendPageValue;
 
             // read block position on index slot
             var segment = this.GetSegmentPtr(index);
@@ -125,12 +134,15 @@ unsafe internal partial struct PageMemory
                 this.NextFreeLocation = PAGE_HEADER_SIZE;
                 this.FragmentedBytes = 0;
             }
+
+            // check for change on extend pageValue
+            newPageValue = initialPageValue == this.ExtendPageValue ? ExtendPageValue.NoChange : this.ExtendPageValue;
         }
     }
 
     /// <summary>
     /// </summary>
-    public PageSegment* UpdateSegment(ushort index, ushort bytesLength, out bool defrag)
+    public PageSegment* UpdateSegment(ushort index, ushort bytesLength, out bool defrag, out ExtendPageValue newPageValue)
     {
         fixed (PageMemory* page = &this)
         {
@@ -138,6 +150,9 @@ unsafe internal partial struct PageMemory
 
             // mark page as dirty
             this.IsDirty = true;
+
+            // get initial page value to check for changes
+            var initialPageValue = this.ExtendPageValue;
 
             // read page segment
             var segment = this.GetSegmentPtr(index);
@@ -151,6 +166,7 @@ unsafe internal partial struct PageMemory
             if (bytesLength == segment->Length)
             {
                 defrag = false;
+                newPageValue = ExtendPageValue.NoChange;
 
                 return segment;
             }
@@ -183,6 +199,9 @@ unsafe internal partial struct PageMemory
 
                 defrag = false;
 
+                // check for change on extend pageValue
+                newPageValue = initialPageValue == this.ExtendPageValue ? ExtendPageValue.NoChange : this.ExtendPageValue;
+
                 return segment;
             }
             // when new length are large than current segment must remove current item and add again
@@ -212,7 +231,7 @@ unsafe internal partial struct PageMemory
                 segment->Length = 0;
 
                 // call insert
-                return InsertSegment(bytesLength, index, false, out defrag);
+                return InsertSegment(bytesLength, index, false, out defrag, out newPageValue);
             }
         }
     }
