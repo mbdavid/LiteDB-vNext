@@ -28,3 +28,16 @@ public enum BsonType : byte
 
     MaxValue = 31
 }
+
+public static class BsonTypeExtensions
+{
+    /// <summary>
+    /// Checks if BsonType is a numeric data type (can be cast to be compare)
+    /// </summary>
+    public static bool IsNumeric(this BsonType bsonType) =>
+        bsonType == BsonType.Int32 ||
+        bsonType == BsonType.Double ||
+        bsonType == BsonType.Int64 ||
+        bsonType == BsonType.Decimal ||
+        bsonType == BsonType.Boolean;
+}

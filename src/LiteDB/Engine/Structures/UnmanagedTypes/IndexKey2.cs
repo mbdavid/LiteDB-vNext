@@ -139,10 +139,8 @@ unsafe internal struct IndexKey2
         // first, test if types are different
         if (left->Type != right->Type)
         {
-            var leftIsNumber = left->Type == BsonType.Int32 || left->Type == BsonType.Int64 || left->Type == BsonType.Double || left->Type == BsonType.Decimal;
-            var rightIsNumber = right->Type == BsonType.Int32 || right->Type == BsonType.Int64 || right->Type == BsonType.Double || right->Type == BsonType.Decimal;
-
-            if (leftIsNumber && rightIsNumber)
+            // check with both sides are number (in diferent data types, but can be cast)
+            if (left->Type.IsNumeric() && right->Type.IsNumeric())
             {
                 return CompareNumbers(left, right);
             }
@@ -190,34 +188,49 @@ unsafe internal struct IndexKey2
         throw new NotSupportedException();
     }
 
+    /// <summary>
+    /// Compare two different numbers types [bool, int32, int64, double, decimal]
+    /// </summary>
     private static int CompareNumbers(IndexKey2* left, IndexKey2* right)
     {
-        ENSURE(left->Type == BsonType.Int32 || left->Type == BsonType.Int64 || left->Type == BsonType.Double || left->Type == BsonType.Decimal);
-        ENSURE(right->Type == BsonType.Int32 || right->Type == BsonType.Int64 || right->Type == BsonType.Double || right->Type == BsonType.Decimal);
-
         var leftValuePtr = (nint)left + sizeof(IndexNode);
         var rightValuePtr = (nint)right + sizeof(IndexNode);
 
         return (left->Type, right->Type) switch
         {
+            (BsonType.Boolean, BsonType.Int32) => left->ValueBool.CompareTo(right->ValueInt32),
+            (BsonType.Boolean, BsonType.Int64) => left->ValueBool.CompareTo(*(long*)rightValuePtr),
+            (BsonType.Boolean, BsonType.Double) => left->ValueBool.CompareTo(*(double*)rightValuePtr),
+            (BsonType.Boolean, BsonType.Decimal) => left->ValueBool.CompareTo(*(decimal*)rightValuePtr),
+
+            (BsonType.Int32, BsonType.Boolean) => left->ValueInt32.CompareTo(right->ValueBool),
             (BsonType.Int32, BsonType.Int64) => left->ValueInt32.CompareTo(*(long*)rightValuePtr),
             (BsonType.Int32, BsonType.Double) => left->ValueInt32.CompareTo(*(double*)rightValuePtr),
             (BsonType.Int32, BsonType.Decimal) => left->ValueInt32.CompareTo(*(decimal*)rightValuePtr),
 
+            (BsonType.Int64, BsonType.Boolean) => (*(long*)leftValuePtr).CompareTo(left->ValueBool),
             (BsonType.Int64, BsonType.Int32) => (*(long*)leftValuePtr).CompareTo(left->ValueInt32),
             (BsonType.Int64, BsonType.Double) => (*(long*)leftValuePtr).CompareTo(*(double*)rightValuePtr),
             (BsonType.Int64, BsonType.Decimal) => (*(long*)leftValuePtr).CompareTo(*(decimal*)rightValuePtr),
 
+            (BsonType.Double, BsonType.Boolean) => (*(double*)leftValuePtr).CompareTo(left->ValueBool),
             (BsonType.Double, BsonType.Int32) => (*(double*)leftValuePtr).CompareTo(left->ValueInt32),
             (BsonType.Double, BsonType.Int64) => (*(double*)leftValuePtr).CompareTo(*(long*)rightValuePtr),
             (BsonType.Double, BsonType.Decimal) => (*(double*)leftValuePtr).CompareTo(*(decimal*)rightValuePtr),
 
+            (BsonType.Decimal, BsonType.Boolean) => (*(decimal*)leftValuePtr).CompareTo(left->ValueBool),
             (BsonType.Decimal, BsonType.Int32) => (*(decimal*)leftValuePtr).CompareTo(left->ValueInt32),
             (BsonType.Decimal, BsonType.Int64) => (*(decimal*)leftValuePtr).CompareTo(*(long*)rightValuePtr),
             (BsonType.Decimal, BsonType.Double) => (*(decimal*)leftValuePtr).CompareTo(*(double*)rightValuePtr),
 
             _ => throw new NotImplementedException()
         };
+    }
+
+    public static bool Equals(IndexKey2* left, IndexKey2* right, Collation collation)
+    {
+        //TODO: can be optimized because equals can be faster than get length and compares with 0
+        return Compare(left, right, collation) == 0;
     }
 
     /// <summary>
@@ -240,7 +253,7 @@ unsafe internal struct IndexKey2
             BsonType.Double => *(double*)ptr,
             BsonType.DateTime => *(DateTime*)ptr,
 
-            //BsonType.ObjectId => *(ObjectId*)ptr,
+            BsonType.ObjectId => *(ObjectId*)ptr,
             BsonType.Guid => *(Guid*)ptr,
             BsonType.Decimal => *(decimal*)ptr,
 
