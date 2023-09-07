@@ -130,6 +130,11 @@ internal class Constants
     /// <summary>
     /// Define index name max length
     /// </summary>
+    public const int MAX_INDEX_KEY_SIZE = 256;
+
+    /// <summary>
+    /// Define index name max length
+    /// </summary>
     public const int INDEX_MAX_NAME_LENGTH = 32;
 
     /// <summary>
