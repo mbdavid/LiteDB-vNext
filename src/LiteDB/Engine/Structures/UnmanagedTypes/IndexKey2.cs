@@ -10,8 +10,6 @@ unsafe internal struct IndexKey2
     [FieldOffset(4)] public bool ValueBool;   // 1
     [FieldOffset(4)] public int ValueInt32;   // 4 
 
-    private const int INDEX_KEY_HEADER_SIZE = 8; // long
-
     /// <summary>
     /// Get how many bytes, in memory, this IndexKey are using
     /// </summary>
@@ -19,7 +17,7 @@ unsafe internal struct IndexKey2
     {
         get
         {
-            var header = sizeof(long);
+            var header = sizeof(IndexKey2);
             var valueSize = this.Type switch
             {
                 BsonType.Boolean => 0, // 0 (1 but use header hi-space)
@@ -37,7 +35,7 @@ unsafe internal struct IndexKey2
     /// </summary>
     public static int GetIndexKeyLength(BsonValue value, out int valueSize)
     {
-        const int MAX_KEY_LENGTH = MAX_INDEX_KEY_SIZE - INDEX_KEY_HEADER_SIZE; // header 8 bytes
+        var maxKeyLength = MAX_INDEX_KEY_SIZE - sizeof(IndexKey2);
 
         valueSize = value.Type switch
         {
@@ -57,9 +55,9 @@ unsafe internal struct IndexKey2
             _ => throw ERR($"This object type `{value.Type}` are not supported as an index key")
         };
 
-        if (valueSize > MAX_KEY_LENGTH) throw ERR($"index value too excedded {MAX_KEY_LENGTH}");
+        if (valueSize > maxKeyLength) throw ERR($"index value too excedded {maxKeyLength}");
 
-        var header = sizeof(long);
+        var header = sizeof(IndexKey2);
         var padding = valueSize % 8 > 0 ? 8 - (valueSize % 8) : 0;
         var result = header + valueSize + padding;
 
@@ -82,7 +80,7 @@ unsafe internal struct IndexKey2
         indexKey->Reserved = 0;
         indexKey->KeyLength = (byte)valueSize; // it's wrong for in bool/int (fix below)
 
-        var ptr = (nint)indexKey + sizeof(long); // get content out of IndexKey structure
+        var ptr = (nint)indexKey + sizeof(IndexKey2); // get content out of IndexKey structure
 
         // copy value according with BsonType (use ptr as starting point - extect Bool/Int32)
         switch (value.Type)
@@ -137,16 +135,17 @@ unsafe internal struct IndexKey2
         Marshal.FreeHGlobal((nint)indexKey);
     }
 
-    public static int Compare(IndexKey2* left, IndexKey2* right, Collation collection)
+    public static int Compare(IndexKey2* left, IndexKey2* right, Collation collation)
     {
         // first, test if types are different
         if (left->Type != right->Type)
         {
-            // if both values are number, convert them to Decimal (128 bits) to compare
-            // it's the slowest way, but more secure
-            if (left.IsNumber && right.IsNumber)
+            var leftIsNumber = left->Type == BsonType.Int32 || left->Type == BsonType.Int64 || left->Type == BsonType.Double || left->Type == BsonType.Decimal;
+            var rightIsNumber = right->Type == BsonType.Int32 || right->Type == BsonType.Int64 || right->Type == BsonType.Double || right->Type == BsonType.Decimal;
+
+            if (leftIsNumber && rightIsNumber)
             {
-                return Convert.ToDecimal(this.RawValue).CompareTo(Convert.ToDecimal(other.RawValue));
+                return CompareNumbers(left, right);
             }
             // if not, order by sort type order
             else
@@ -156,8 +155,8 @@ unsafe internal struct IndexKey2
             }
         }
 
-        var leftValuePtr = (nint)left + sizeof(long);
-        var rightValuePtr = (nint)right + sizeof(long);
+        var leftValuePtr = (nint)left + sizeof(IndexKey2);
+        var rightValuePtr = (nint)right + sizeof(IndexKey2);
 
         switch (left->Type)
         {
@@ -174,19 +173,52 @@ unsafe internal struct IndexKey2
 
 //            case BsonType.ObjectId: return (*(ObjectId*)leftValuePtr).CompareTo(*(ObjectId*)rightValuePtr);
             case BsonType.Guid: return (*(Guid*)leftValuePtr).CompareTo(*(Guid*)rightValuePtr);
-            case BsonType.Decimal: return (*(Decimal*)leftValuePtr).CompareTo(*(Decimal*)rightValuePtr);
+            case BsonType.Decimal: return (*(decimal*)leftValuePtr).CompareTo(*(decimal*)rightValuePtr);
 
             case BsonType.String:
                 var leftString = Encoding.UTF8.GetString((byte*)leftValuePtr, left->KeyLength);
-                var rightString = Encoding.UTF8.GetString((byte*)rightValuePtr, left->KeyLength);
+                var rightString = Encoding.UTF8.GetString((byte*)rightValuePtr, right->KeyLength);
 
-                return collection.Compare();
+                return collation.Compare(leftString, rightString);
 
+            case BsonType.Binary:
+                var leftBinary = new Span<byte>((byte*)leftValuePtr, left->KeyLength);
+                var rightBinary = new Span<byte>((byte*)leftValuePtr, left->KeyLength);                
+
+                return leftBinary.SequenceCompareTo(rightBinary);
         }
 
-
-
         throw new NotSupportedException();
+    }
+
+    private static int CompareNumbers(IndexKey2* left, IndexKey2* right)
+    {
+        ENSURE(left->Type == BsonType.Int32 || left->Type == BsonType.Int64 || left->Type == BsonType.Double || left->Type == BsonType.Decimal);
+        ENSURE(right->Type == BsonType.Int32 || right->Type == BsonType.Int64 || right->Type == BsonType.Double || right->Type == BsonType.Decimal);
+
+        var leftValuePtr = (nint)left + sizeof(IndexNode);
+        var rightValuePtr = (nint)right + sizeof(IndexNode);
+
+        return (left->Type, right->Type) switch
+        {
+            (BsonType.Int32, BsonType.Int64) => left->ValueInt32.CompareTo(*(long*)rightValuePtr),
+            (BsonType.Int32, BsonType.Double) => left->ValueInt32.CompareTo(*(double*)rightValuePtr),
+            (BsonType.Int32, BsonType.Decimal) => left->ValueInt32.CompareTo(*(decimal*)rightValuePtr),
+
+            (BsonType.Int64, BsonType.Int32) => (*(long*)leftValuePtr).CompareTo(left->ValueInt32),
+            (BsonType.Int64, BsonType.Double) => (*(long*)leftValuePtr).CompareTo(*(double*)rightValuePtr),
+            (BsonType.Int64, BsonType.Decimal) => (*(long*)leftValuePtr).CompareTo(*(decimal*)rightValuePtr),
+
+            (BsonType.Double, BsonType.Int32) => (*(double*)leftValuePtr).CompareTo(left->ValueInt32),
+            (BsonType.Double, BsonType.Int64) => (*(double*)leftValuePtr).CompareTo(*(long*)rightValuePtr),
+            (BsonType.Double, BsonType.Decimal) => (*(double*)leftValuePtr).CompareTo(*(decimal*)rightValuePtr),
+
+            (BsonType.Decimal, BsonType.Int32) => (*(decimal*)leftValuePtr).CompareTo(left->ValueInt32),
+            (BsonType.Decimal, BsonType.Int64) => (*(decimal*)leftValuePtr).CompareTo(*(long*)rightValuePtr),
+            (BsonType.Decimal, BsonType.Double) => (*(decimal*)leftValuePtr).CompareTo(*(double*)rightValuePtr),
+
+            _ => throw new NotImplementedException()
+        };
     }
 
     /// <summary>
