@@ -11,7 +11,7 @@ internal class BsonObjectId : BsonValue
 
     public BsonObjectId(ObjectId value)
     {
-        this.Value = value ?? throw new ArgumentNullException(nameof(value));
+        this.Value = value;
     }
 
     public override BsonType Type => BsonType.ObjectId;

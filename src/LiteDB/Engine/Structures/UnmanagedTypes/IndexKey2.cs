@@ -47,7 +47,7 @@ unsafe internal struct IndexKey2
             BsonType.Int64 => sizeof(long), // 8
             BsonType.Double => sizeof(double), // 8
             BsonType.DateTime => sizeof(DateTime), // 8
-//            BsonType.ObjectId => sizeof(ObjectId), // 12
+            BsonType.ObjectId => sizeof(ObjectId), // 12
             BsonType.Decimal => sizeof(decimal), // 16
             BsonType.Guid => sizeof(Guid), // 16
             BsonType.String => Encoding.UTF8.GetByteCount(value.AsString),
@@ -103,8 +103,7 @@ unsafe internal struct IndexKey2
                 *(DateTime*)ptr = value.AsDateTime; // convert pointer into DateTime* to set value
                 break;
             case BsonType.ObjectId: // 12
-                //*(ObjectId*)ptr = value.AsObjectId; // convert pointer into ObjectId* to set value
-                throw new NotImplementedException();
+                *(ObjectId*)ptr = value.AsObjectId; // convert pointer into ObjectId* to set value
                 break;
             case BsonType.Guid: // 16
                 *(Guid*)ptr = value.AsGuid; // convert pointer into Guid* to set value
@@ -171,7 +170,7 @@ unsafe internal struct IndexKey2
             case BsonType.Double: return (*(double*)leftValuePtr).CompareTo(*(double*)rightValuePtr);
             case BsonType.DateTime: return (*(DateTime*)leftValuePtr).CompareTo(*(DateTime*)rightValuePtr);
 
-//            case BsonType.ObjectId: return (*(ObjectId*)leftValuePtr).CompareTo(*(ObjectId*)rightValuePtr);
+            case BsonType.ObjectId: return (*(ObjectId*)leftValuePtr).CompareTo(*(ObjectId*)rightValuePtr);
             case BsonType.Guid: return (*(Guid*)leftValuePtr).CompareTo(*(Guid*)rightValuePtr);
             case BsonType.Decimal: return (*(decimal*)leftValuePtr).CompareTo(*(decimal*)rightValuePtr);
 

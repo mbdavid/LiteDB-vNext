@@ -1,48 +1,18 @@
-﻿using System.Net.WebSockets;
-
-namespace LiteDB;
+﻿namespace LiteDB;
 
 /// <summary>
 /// Represent a 12-bytes BSON type used in document Id
 /// </summary>
-public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
+public struct ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
 {
-    /// <summary>
-    /// A zero 12-bytes ObjectId
-    /// </summary>
-    public static ObjectId Empty => new ();
+    public readonly int Timestamp;
+    public readonly int Machine;
+    public readonly short Pid;
+    public readonly int Increment;
 
-    #region Properties
+    public DateTime CreationTime => BsonDateTime.UnixEpoch.AddSeconds(this.Timestamp);
 
-    /// <summary>
-    /// Get timestamp
-    /// </summary>
-    public int Timestamp { get; }
-
-    /// <summary>
-    /// Get machine number
-    /// </summary>
-    public int Machine { get; }
-
-    /// <summary>
-    /// Get pid number
-    /// </summary>
-    public short Pid { get; }
-
-    /// <summary>
-    /// Get increment
-    /// </summary>
-    public int Increment { get; }
-
-    /// <summary>
-    /// Get creation time
-    /// </summary>
-    public DateTime CreationTime
-    {
-        get { return BsonDateTime.UnixEpoch.AddSeconds(this.Timestamp); }
-    }
-
-    #endregion
+    public static ObjectId Empty = new ();
 
     #region Ctor
 
@@ -92,7 +62,7 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// </summary>
     public ObjectId(Span<byte> span)
     {
-        this.Timestamp = 
+        this.Timestamp =
             (span[0] << 24) + 
             (span[1] << 16) + 
             (span[2] << 8) + 
@@ -140,9 +110,9 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// if the given object is equal to the value of this instance. 
     /// Returns false otherwise.
     /// </summary>
-    public bool Equals(ObjectId? other)
+    public bool Equals(ObjectId other)
     {
-        return other is not null && 
+        return 
             this.Timestamp == other.Timestamp &&
             this.Machine == other.Machine &&
             this.Pid == other.Pid &&
@@ -154,21 +124,13 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     /// </summary>
     public override bool Equals(object other)
     {
-        return Equals(other as ObjectId);
+        return Equals((ObjectId)other);
     }
 
     /// <summary>
     /// Returns a hash code for this instance.
     /// </summary>
-    public override int GetHashCode()
-    {
-        int hash = 17;
-        hash = 37 * hash + this.Timestamp.GetHashCode();
-        hash = 37 * hash + this.Machine.GetHashCode();
-        hash = 37 * hash + this.Pid.GetHashCode();
-        hash = 37 * hash + this.Increment.GetHashCode();
-        return hash;
-    }
+    public override int GetHashCode() => HashCode.Combine(Timestamp, Machine, Pid, Increment);
 
     /// <summary>
     /// Compares two instances of ObjectId
@@ -238,9 +200,6 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
 
     public static bool operator ==(ObjectId left, ObjectId right)
     {
-        if (left is null) return right is null;
-        if (right is null) return false; // don't check type because sometimes different types can be ==
-
         return left.Equals(right);
     }
 
@@ -280,7 +239,7 @@ public class ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>
     // static constructor
     static ObjectId()
     {
-        _increment = (new Random()).Next();
+        _increment = Randomizer.Next();
 
         try
         {
