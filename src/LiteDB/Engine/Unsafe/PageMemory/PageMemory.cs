@@ -84,16 +84,20 @@ unsafe internal partial struct PageMemory   // 8192
         }
     }
 
-    public static void CopyPageContent(PageMemory* fromPtr, PageMemory* toPtr)
+    public static void CopyPageContent(PageMemory* fromPage, PageMemory* toPage)
     {
-        var uniqueID = toPtr->UniqueID;
+        var uniqueID = toPage->UniqueID;
 
-        MarshalEx.Copy((byte*)fromPtr, (byte*)toPtr, PAGE_SIZE);
+        // get span from each page pointer
+        var fromSpan = new Span<byte>(fromPage, PAGE_SIZE);
+        var toSpan = new Span<byte>(fromPage, PAGE_SIZE);
+
+        fromSpan.CopyTo(toSpan);
 
         // clean page when copy
-        toPtr->UniqueID = uniqueID;
-        toPtr->ShareCounter = NO_CACHE;
-        toPtr->IsDirty = false;
+        toPage->UniqueID = uniqueID;
+        toPage->ShareCounter = NO_CACHE;
+        toPage->IsDirty = false;
 
     }
 

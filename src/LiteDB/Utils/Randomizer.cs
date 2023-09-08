@@ -9,17 +9,25 @@ internal static class Randomizer
 
     public static int Next()
     {
+#if DEBUG
         lock (_random)
         {
             return _random.Next();
         }
+#else
+        return Random.Shared.Next();
+#endif
     }
 
     public static int Next(int minValue, int maxValue)
     {
+#if DEBUG
         lock (_random)
         {
             return _random.Next(minValue, maxValue);
         }
+#else
+        return Random.Shared.Next(minValue, maxValue);
+#endif
     }
 }

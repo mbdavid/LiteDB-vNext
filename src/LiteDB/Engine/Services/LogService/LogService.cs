@@ -96,10 +96,10 @@ internal class LogService : ILogService
     /// </summary>
     private uint GetNextLogPositionID()
     {
-        var next = MarshalEx.IncrementUInt(ref _logPositionID);
+        var next = Interlocked.Increment(ref _logPositionID);
 
         // test if next log position is not an AMP
-        if (next % AM_PAGE_STEP == 0) next = MarshalEx.IncrementUInt(ref _logPositionID);
+        if (next % AM_PAGE_STEP == 0) next = Interlocked.Increment(ref _logPositionID);
 
         return next;
     }

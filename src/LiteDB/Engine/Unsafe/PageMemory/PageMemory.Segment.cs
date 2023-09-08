@@ -273,10 +273,10 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
                 ENSURE(location > next, "current segment position must be greater than current empty space", new { location, next });
 
                 // copy from original location into new (correct) location
-                var sourcePtr = (byte*)((nint)page + location);
-                var destPtr = (byte*)((nint)page + next);
+                var sourceSpan = new Span<byte>((byte*)((nint)page + location), addr->Length);
+                var destSpan = new Span<byte>((byte*)((nint)page + next), addr->Length);
 
-                MarshalEx.Copy(sourcePtr, destPtr, addr->Length);
+                sourceSpan.CopyTo(destSpan);
 
                 // update new location for this index (on footer page)
                 addr->Location = next;
