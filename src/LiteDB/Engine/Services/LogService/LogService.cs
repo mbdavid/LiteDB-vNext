@@ -74,17 +74,16 @@ internal class LogService : ILogService
 
         for (var i = 0; i < pages.Length; i++)
         {
-            var pagePtr = (PageMemory*)pages[i];
+            var page = (PageMemory*)pages[i];
 
             // get next page position on log (update header PositionID too)
-            pagePtr->PositionID = this.GetNextLogPositionID();
-            //***>>> page.Header.PositionID = page.PositionID;
+            page->PositionID = page->RecoveryPositionID = this.GetNextLogPositionID();
 
             // write page to writer stream
-            writer.WritePage(pagePtr);
+            writer.WritePage(page);
 
             // create a log header structure with needed information about this page on checkpoint
-            var header = new LogPageHeader { PositionID = pagePtr->PositionID, PageID = pagePtr->PageID, TransactionID = pagePtr->TransactionID, IsConfirmed = pagePtr->IsConfirmed };
+            var header = new LogPageHeader { PositionID = page->PositionID, PageID = page->PageID, TransactionID = page->TransactionID, IsConfirmed = page->IsConfirmed };
 
             // add page header only into log memory list
             this.AddLogPage(header);
@@ -125,7 +124,7 @@ internal class LogService : ILogService
         _logPages.Add(header);
     }
 
-    public ValueTask<int> CheckpointAsync(bool crop)
+    public ValueTask<int> CheckpointAsync(bool crop, bool addToCache)
     {
         var logLength = _logPages.Count;
 
@@ -137,12 +136,12 @@ internal class LogService : ILogService
         var startTempPositionID = Math.Max(_lastPageID, _logPositionID) + 1;
         var tempPages = Array.Empty<LogPageHeader>();
 
-        var result = this.CheckpointInternal(startTempPositionID, tempPages, crop);
+        var result = this.CheckpointInternal(startTempPositionID, tempPages, crop, addToCache);
 
         return new ValueTask<int>(result);
     }
 
-    private unsafe int CheckpointInternal(uint startTempPositionID, IList<LogPageHeader> tempPages, bool crop)
+    private unsafe int CheckpointInternal(uint startTempPositionID, IList<LogPageHeader> tempPages, bool crop, bool addToCache)
     {
         // get all actions that checkpoint must do with all pages
         var actions = new CheckpointActions().GetActions(
@@ -150,7 +149,7 @@ internal class LogService : ILogService
             _confirmedTransactions,
             _lastPageID,
             startTempPositionID, 
-            tempPages);
+            tempPages).ToArray();
 
         // get writer stream from disk service
         var writer = _diskService.GetDiskWriter();
@@ -172,19 +171,19 @@ internal class LogService : ILogService
             else
             {
                 // get page from file position ID (log or data)
-                var pagePtr = this.GetLogPage(writer, action.PositionID);
+                var page = this.GetLogPage(writer, action.PositionID);
 
                 if (action.Action == CheckpointActionType.CopyToDataFile)
                 {
                     // transform this page into a data file page
-                    pagePtr->PositionID = action.TargetPositionID;
-//****                    page.Header.PositionID = action.TargetPositionID;
-                    pagePtr->PageID = action.TargetPositionID;
-                    pagePtr->TransactionID = 0;
-                    pagePtr->IsConfirmed = false;
-                    pagePtr->IsDirty = true;
+                    page->PositionID = action.TargetPositionID;
+                    page->RecoveryPositionID = action.TargetPositionID;
+                    page->PageID = action.TargetPositionID;
+                    page->TransactionID = 0;
+                    page->IsConfirmed = false;
+                    page->IsDirty = true;
 
-                    writer.WritePage(pagePtr);
+                    writer.WritePage(page);
 
                     // increment checkpoint counter page
                     counter++;
@@ -192,11 +191,11 @@ internal class LogService : ILogService
                 else if (action.Action == CheckpointActionType.CopyToTempFile)
                 {
                     // transform this page into a log temp file (keeps Header.PositionID in original value)
-                    pagePtr->PositionID = action.TargetPositionID;
-                    pagePtr->IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
-                    pagePtr->IsDirty = true;
+                    page->PositionID = action.TargetPositionID;
+                    page->IsConfirmed = true; // mark all pages to true in temp disk (to recovery)
+                    page->IsDirty = true;
 
-                    writer.WritePage(pagePtr);
+                    writer.WritePage(page);
                 }
 
                 // after copy page, checks if page need to be clean on disk
@@ -206,18 +205,23 @@ internal class LogService : ILogService
                 }
 
                 // if cache contains this position (old data version) must be removed from cache and deallocate
-                if (_memoryCache.TryRemove(pagePtr->PositionID, out var removedPagePtr))
+                if (_memoryCache.TryRemove(page->PositionID, out var removedPagePtr))
                 {
                     _memoryFactory.DeallocatePage(removedPagePtr);
                 }
 
                 // add this page to cache (or try it)
-                var added = _memoryCache.AddPageInCache(pagePtr);
+                var added = false;
+
+                if (addToCache)
+                {
+                    added = _memoryCache.AddPageInCache(page);
+                }
 
                 // if cache is full, deallocate page
                 if (!added)
                 {
-                    _memoryFactory.DeallocatePage(pagePtr);
+                    _memoryFactory.DeallocatePage(page);
                 }
             }
         }

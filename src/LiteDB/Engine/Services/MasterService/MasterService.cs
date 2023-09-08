@@ -42,7 +42,7 @@ internal class MasterService : IMasterService
         var docResult = dataService.ReadDocument(MASTER_ROW_ID, Array.Empty<string>());
 
         // rollback transaction to release used pages (no changes here)
-        transaction.Rollback();
+        transaction.Abort();
 
         if (docResult.Fail) throw docResult.Exception;
 

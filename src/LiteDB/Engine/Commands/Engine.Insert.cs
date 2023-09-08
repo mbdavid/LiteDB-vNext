@@ -54,7 +54,6 @@ public partial class LiteEngine : ILiteEngine
         //for (var i = 0; i < documents.Length; i++)
         foreach (var doc in documents)
         {
-            //    var doc = documents[i];
             using var _p2 = PERF_COUNTER(35, "InsertSingle", nameof(LiteEngine));
 
             // get/set _id

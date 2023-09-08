@@ -138,13 +138,20 @@ unsafe internal class IndexService : IIndexService
                 //***leftNode.Node.SetNext(leftNode.Page, currentLevel, node.IndexNodeID);
                 leftNode[currentLevel]->NextID = node.IndexNodeID;
 
+                // mark left page as dirty
+                leftNode.Page->IsDirty= true;
+
                 //***right = node.Next[currentLevel];
                 right = node[currentLevel]->NextID;
 
                 //***var rightNode = await this.GetNodeAsync(right);
                 //***rightNode.Node.SetPrev(rightNode.Page, currentLevel, node.IndexNodeID);
                 var rightNode = this.GetNode(right);
+
                 rightNode[currentLevel]->PrevID = node.IndexNodeID;
+
+                // mark right page as dirty (after change PrevID)
+                rightNode.Page->IsDirty = true;
 
             }
 

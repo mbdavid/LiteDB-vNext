@@ -19,7 +19,7 @@ public partial class LiteEngine : ILiteEngine
         _factory.State = EngineState.Shutdown;
 
         // do checkpoint
-        await logService.CheckpointAsync(true);
+        await logService.CheckpointAsync(true, false);
 
         // persist all dirty amp into disk
         allocationMapService.WriteAllChanges();

@@ -33,7 +33,7 @@ public partial class LiteEngine : ILiteEngine
         var result = dataService.ReadDocument(node.DataBlockID, fields);
 
         // rollback transaction to release pages back to cache
-        transaction.Rollback();
+        transaction.Abort();
 
         // release transaction
         monitorService.ReleaseTransaction(transaction);

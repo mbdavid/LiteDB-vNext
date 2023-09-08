@@ -298,16 +298,16 @@ internal class Transaction : ITransaction
 
         for (var i = 0; i < dirtyPages.Length; i++)
         {
-            var pagePtr = (PageMemory*)dirtyPages[i];
+            var page = (PageMemory*)dirtyPages[i];
 
-            ENSURE(pagePtr->ShareCounter == NO_CACHE, "Page should not be on cache when saving");
+            ENSURE(page->ShareCounter == NO_CACHE, "Page should not be on cache when saving");
 
             // update page header
-            pagePtr->TransactionID = this.TransactionID;
-            pagePtr->IsConfirmed = false;
+            page->TransactionID = this.TransactionID;
+            page->IsConfirmed = false;
         }
 
-        // write pages on disk and flush data
+        // write pages on disk and flush data (updates PositionID)
         _logService.WriteLogPages(dirtyPages);
 
         // update local transaction wal index
@@ -323,15 +323,21 @@ internal class Transaction : ITransaction
         {
             var page = (PageMemory*)ptr;
 
-            if (page->IsPageInCache && page->ShareCounter > 0)
+            if (page->IsPageInCache)
             {
                 // page already in cache (was not changed)
                 _memoryCache.ReturnPageToCache(page);
             }
             else
             {
-                // all other pages are not came from cache, must be deallocated
-                _memoryFactory.DeallocatePage(page);
+                // add page to cache (even if is on "non-commited" transaction)
+                // only this transactions knows about this new positionIDs
+                var added = _memoryCache.AddPageInCache(page);
+
+                if (!added)
+                {
+                    _memoryFactory.DeallocatePage(page);
+                }
             }
         }
 
@@ -368,37 +374,38 @@ internal class Transaction : ITransaction
             page->IsConfirmed = i == (dirtyPages.Length - 1);
         }
 
-        // write pages on disk and flush data
+        // write pages on disk and flush data (updates PositionID)
         _logService.WriteLogPages(dirtyPages);
 
         // update wal index with this new version
         for (var i = 0; i < dirtyPages.Length; i++)
         {
-            var pagePtr = (PageMemory*)dirtyPages[i];
+            var page = (PageMemory*)dirtyPages[i];
 
-            _walDirtyPages[pagePtr->PageID] = pagePtr->PositionID;
+            _walDirtyPages[page->PageID] = page->PositionID;
         }
 
+        // update wal index with new page set 
         _walIndexService.AddVersion(this.ReadVersion, _walDirtyPages.Select(x => (x.Key, x.Value)));
 
         // add pages to cache or decrement sharecount
         foreach (var ptr in _localPages.Values)
         {
-            var pagePtr = (PageMemory*)(ptr);
+            var page = (PageMemory*)(ptr);
 
             // page already in cache (was not changed)
-            if (pagePtr->IsPageInCache && pagePtr->ShareCounter > 0)
+            if (page->IsPageInCache)
             {
-                _memoryCache.ReturnPageToCache(pagePtr);
+                _memoryCache.ReturnPageToCache(page);
             }
             else
             {
                 // try add this page in cache
-                var added = _memoryCache.AddPageInCache(pagePtr);
+                var added = _memoryCache.AddPageInCache(page);
 
                 if (!added)
                 {
-                    _memoryFactory.DeallocatePage(pagePtr);
+                    _memoryFactory.DeallocatePage(page);
                 }
             }
         }
@@ -406,12 +413,11 @@ internal class Transaction : ITransaction
         // clear page buffer references
         _localPages.Clear();
         _walDirtyPages.Clear();
-
     }
 
-    public unsafe void Rollback()
+    public unsafe void Abort()
     {
-        using var _pc = PERF_COUNTER(48, nameof(Rollback), nameof(Transaction));
+        using var _pc = PERF_COUNTER(48, nameof(Abort), nameof(Transaction));
 
         // add pages to cache or decrement sharecount
         foreach (var ptr in _localPages.Values)
@@ -425,7 +431,7 @@ internal class Transaction : ITransaction
             else
             {
                 // test if page is came from the cache
-                if (page->IsPageInCache && page->ShareCounter > 0)
+                if (page->IsPageInCache)
                 {
                     // return page to cache
                     _memoryCache.ReturnPageToCache(page);

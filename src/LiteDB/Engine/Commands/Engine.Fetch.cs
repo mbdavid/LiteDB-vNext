@@ -28,7 +28,7 @@ public partial class LiteEngine : ILiteEngine
         var result = queryService.FetchAsync(cursor, fetchSize, pipeContext);
 
         // rollback transaction to release pages back to cache
-        transaction.Rollback();
+        transaction.Abort();
 
         // release transaction
         monitorService.ReleaseTransaction(transaction);

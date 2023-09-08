@@ -12,9 +12,9 @@ const string VER = "v6-pointer";
 //var INSERT_1 = new Range(1, 300_000);
 //var DELETE_1 = new Range(5, 60_000);
 //var INSERT_2 = new Range(6, 30_000);
-var INSERT_1 = new Range(1, 100_000);
-//var DELETE_1 = new Range(5, 600);
-//var INSERT_2 = new Range(6, 300);
+var INSERT_1 = new Range(1, 300_000);
+var DELETE_1 = new Range(5, 6_000);
+var INSERT_2 = new Range(6, 3_000);
 ////////////////////////
 
 var _random = new Random(420);
@@ -29,9 +29,9 @@ var settings = new EngineSettings
 Console.WriteLine($"Filename: {filename} ");
 
 var data1 = GetData(INSERT_1, 200).ToArray();
-//var data2 = GetData(INSERT_2, 60).ToArray();
+var data2 = GetData(INSERT_2, 60).ToArray();
 
-//await Task.Delay(5_000); Console.WriteLine("Initializing...");
+await Task.Delay(5_000); Console.WriteLine("Initializing...");
 
 var sw = Stopwatch.StartNew();
 
@@ -62,7 +62,13 @@ Profiler.AddResult("Insert", true);
 await Run("Checkpoint", async () =>
 {
     await db.CheckpointAsync();
+
+    Console.WriteLine("press ");
+    Console.ReadKey();
+
 });
+
+Profiler.AddResult("Checkpoint", true);
 
 await Run("Shutdown", async () =>
 {
@@ -136,25 +142,13 @@ IEnumerable<BsonDocument> GetData(Range range, int lorem = 5)
 {
     for (var i = range.Start.Value; i <= range.End.Value; i++)
     {
-        var doc = new BsonDocument
+        yield return new BsonDocument
         {
             ["_id"] = i,
             ["name"] = Faker.Fullname(),
             ["age"] = Faker.Age(),
-            ["lorem"] = Faker.Lorem(lorem),
-            ["padding"] = ""
+            ["lorem"] = Faker.Lorem(lorem)
         };
-
-        var len = doc.GetBytesCount();
-        var padding = (len % 8) > 0 ? 8 - (len % 8) : 0;
-
-        if (padding > 0)
-        {
-            doc["padding"] = "".PadLeft(padding, '0');
-        }
-
-
-        yield return doc;
     }
 }
 

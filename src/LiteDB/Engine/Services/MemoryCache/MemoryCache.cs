@@ -84,19 +84,19 @@ unsafe internal class MemoryCache : IMemoryCache
     /// <summary>
     /// Remove page from cache. Must not be in use
     /// </summary>
-    public bool TryRemove(uint positionID, [MaybeNullWhen(false)] out PageMemory* pagePtr)
+    public bool TryRemove(uint positionID, [MaybeNullWhen(false)] out PageMemory* page)
     {
         // first try to remove from cache
         if (_cache.TryRemove(positionID, out var ptr))
         {
-            pagePtr = (PageMemory*)ptr;
+            page = (PageMemory*)ptr;
 
-            pagePtr->ShareCounter = NO_CACHE;
+            page->ShareCounter = NO_CACHE;
 
             return true;
         }
 
-        pagePtr = default;
+        page = default;
 
         return false;
     }
@@ -139,19 +139,19 @@ unsafe internal class MemoryCache : IMemoryCache
         return true;
     }
 
-    public void ReturnPageToCache(PageMemory* pagePtr)
+    public void ReturnPageToCache(PageMemory* page)
     {
-        ENSURE(!pagePtr->IsDirty);
-        ENSURE(pagePtr->ShareCounter > 0 && pagePtr->ShareCounter < byte.MaxValue);
+        ENSURE(!page->IsDirty);
+        ENSURE(page->ShareCounter > 0 && page->ShareCounter < byte.MaxValue);
 
         //Interlocked.Decrement(ref page.ShareCounter);
-        pagePtr->ShareCounter--;
+        page->ShareCounter--;
 
-        ENSURE(pagePtr->ShareCounter != NO_CACHE);
+        ENSURE(page->ShareCounter != NO_CACHE);
 
         // clear header log information
-        pagePtr->TransactionID = 0;
-        pagePtr->IsConfirmed = false;
+        page->TransactionID = 0;
+        page->IsConfirmed = false;
     }
 
     /// <summary>

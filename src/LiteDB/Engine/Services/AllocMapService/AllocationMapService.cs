@@ -84,7 +84,7 @@ unsafe internal class AllocationMapService : IAllocationMapService
             var nextPageID = lastPage->PageID + AM_PAGE_STEP;
 
             // get allocation map position
-            newPage->PositionID = nextPageID;
+            newPage->PositionID = newPage->RecoveryPositionID = nextPageID;
             newPage->PageID = nextPageID;
             newPage->PageType = PageType.AllocationMap;
             newPage->IsDirty = true;
