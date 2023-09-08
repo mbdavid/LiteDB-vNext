@@ -26,12 +26,16 @@ unsafe
     var asGuid = IndexKey2.AllocNewIndexKey(Guid.NewGuid());
     var asObjectId = IndexKey2.AllocNewIndexKey(ObjectId.NewObjectId());
 
-
+    // 16 bytes
     var asString_1 = IndexKey2.AllocNewIndexKey("Less_8");
+
+    // 24 bytes
     var asString_2 = IndexKey2.AllocNewIndexKey("Between_8-16");
+
+    // 40 bytes
     var asString_3 = IndexKey2.AllocNewIndexKey("Larger_than_24_bytes_here");
 
-
+    // 64 bytes
     var asBinary_1 = IndexKey2.AllocNewIndexKey(new byte[50]);
 
 
