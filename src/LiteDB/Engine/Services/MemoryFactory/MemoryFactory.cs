@@ -18,29 +18,27 @@ unsafe internal class MemoryFactory : IMemoryFactory
 
     public PageMemory* AllocateNewPage()
     {
-        if (_freePages.TryDequeue(out var page))
+        if (_freePages.TryDequeue(out var ptr))
         {
-            var pageMemoryPtr = (PageMemory*)page;
-            var uniqueID = pageMemoryPtr->UniqueID;
+            var page = (PageMemory*)ptr;
 
-            _inUsePages.TryAdd(uniqueID, page);
+            _inUsePages.TryAdd(page->UniqueID, ptr);
 
-            //ENSURE(page.IsCleanInstance, "Page are not clean to be allocated", page);
-
-            return pageMemoryPtr;
+            return page;
         }
 
         // get memory pointer from unmanaged memory
-        var pagePtr = (PageMemory*)Marshal.AllocHGlobal(sizeof(PageMemory));
+        var newPage = (PageMemory*)Marshal.AllocHGlobal(sizeof(PageMemory));
 
-        Interlocked.Increment(ref _nextUniqueID);
+        var uniqueID = Interlocked.Increment(ref _nextUniqueID);
         Interlocked.Increment(ref _pagesAllocated);
 
-        pagePtr->Initialize(_nextUniqueID);
+        // clear page and initialize with uniqueID
+        PageMemory.Initialize(newPage, uniqueID);
 
-        _inUsePages.TryAdd(pagePtr->UniqueID, (nint)pagePtr);
+        _inUsePages.TryAdd(newPage->UniqueID, (nint)newPage);
 
-        return pagePtr;
+        return newPage;
     }
 
     public void DeallocatePage(PageMemory* page)
@@ -53,7 +51,7 @@ unsafe internal class MemoryFactory : IMemoryFactory
         ENSURE(removed, new { _pagesAllocated, _freePages, _inUsePages });
 
         // clear page
-        page->Initialize(page->UniqueID);
+        PageMemory.Initialize(page, page->UniqueID);
 
         // add used page as new free page
         _freePages.Enqueue((nint)page);

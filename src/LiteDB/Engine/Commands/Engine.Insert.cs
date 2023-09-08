@@ -68,7 +68,7 @@ public partial class LiteEngine : ILiteEngine
 
             if (collection.Indexes.Count > 1)
             {
-                for(var i = 1; i < collection.Indexes.Count; i++)
+                for (var i = 1; i < collection.Indexes.Count; i++)
                 {
                     var index = collection.Indexes[i];
 

@@ -36,11 +36,11 @@ unsafe internal partial struct PageMemory // PageMemory.AllocMap
     }
 
     /// <summary>
-    /// Update extend value based on extendIndex (0-2039) and pageIndex (0-7)
+    /// Update extend value based on extendIndex (0-2031) and pageIndex (0-7)
     /// </summary>
     public static void UpdateExtendPageValue(PageMemory* page, int extendIndex, int pageIndex, ExtendPageValue pageValue)
     {
-        ENSURE(extendIndex <= 2039);
+        ENSURE(extendIndex <= 2031);
         ENSURE(pageIndex <= 7);
 
         // get extend value from array

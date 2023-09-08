@@ -1,11 +1,11 @@
 ﻿namespace LiteDB.Engine;
 
-internal class IndexLikeEnumerator : IPipeEnumerator
+unsafe internal class IndexLikeEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
     private readonly IndexDocument _indexDocument;
-    private readonly IndexKey _value;
+    private readonly BsonValue _value;
     private readonly string _startsWith;
     private readonly bool _hasMore;
     private readonly int _order;
@@ -17,12 +17,12 @@ internal class IndexLikeEnumerator : IPipeEnumerator
     private RowID _next = RowID.Empty; // all nodes from right of first node found
 
     public IndexLikeEnumerator(
-        IndexKey value, 
+        BsonValue value, 
         IndexDocument indexDocument, 
         Collation collation,
         int order)
     {
-        //_startsWith = value.AsString.SqlLikeStartsWith(out _hasMore);
+        _startsWith = value.AsString.SqlLikeStartsWith(out _hasMore);
         _value = value;
         _indexDocument = indexDocument;
         _collation = collation;

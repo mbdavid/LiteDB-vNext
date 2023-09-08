@@ -1,12 +1,12 @@
 ﻿namespace LiteDB.Engine;
 
-internal class IndexRangeEnumerator : IPipeEnumerator
+unsafe internal class IndexRangeEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
     private readonly IndexDocument _indexDocument;
-    private readonly IndexKey _start;
-    private readonly IndexKey _end;
+    private readonly BsonValue _start;
+    private readonly BsonValue _end;
 
     private readonly bool _startEquals;
     private readonly bool _endEquals;
@@ -18,8 +18,8 @@ internal class IndexRangeEnumerator : IPipeEnumerator
     private RowID _next = RowID.Empty; // all nodes from right of first node found
 
     public IndexRangeEnumerator(
-        IndexKey start,
-        IndexKey end,
+        BsonValue start,
+        BsonValue end,
         bool startEquals,
         bool endEquals,
         int order,
@@ -29,6 +29,7 @@ internal class IndexRangeEnumerator : IPipeEnumerator
         // if order are desc, swap start/end values
         _start = order == Query.Ascending ? start : end;
         _end = order == Query.Ascending ? end : start;
+
         _startEquals = order == Query.Ascending ? startEquals : endEquals;
         _endEquals = order == Query.Ascending ? endEquals : startEquals;
         _order = order;

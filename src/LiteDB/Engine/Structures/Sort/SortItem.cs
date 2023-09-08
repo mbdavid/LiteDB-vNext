@@ -3,7 +3,7 @@
 internal readonly struct SortItem
 {
     public readonly RowID DataBlockID;
-    public readonly IndexKey Key;
+    public readonly BsonValue Key;
 
     public static readonly SortItem Empty = new();
 
@@ -12,7 +12,7 @@ internal readonly struct SortItem
     public SortItem()
     {
         this.DataBlockID = RowID.Empty;
-        this.Key = IndexKey.MinValue;
+        this.Key = BsonValue.MinValue;
     }
 
     public SortItem(RowID dataBlockID, BsonValue key)

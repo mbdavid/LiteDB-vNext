@@ -60,7 +60,7 @@ unsafe internal class MemoryCache : IMemoryCache
                 var newPage = _memoryFactory.AllocateNewPage();
 
                 // copy all content for this new created page
-                PageMemory.CopyPageContent(page, newPage);
+                PageMemory.CopyPage(page, newPage);
 
                 // and return as a new page instance
                 return newPage;

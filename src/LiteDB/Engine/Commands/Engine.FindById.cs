@@ -25,7 +25,7 @@ public partial class LiteEngine : ILiteEngine
         var indexService = _factory.CreateIndexService(transaction);
 
         // find indexNode based on PK index
-        var node = indexService.Find(collection.PK, new IndexKey(id), false, LiteDB.Engine.Query.Ascending);
+        var node = indexService.Find(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
 
         if (node.IsEmpty) return null;
 

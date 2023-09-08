@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal class IndexInEnumerator : IPipeEnumerator
+unsafe internal class IndexInEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
     private readonly IndexDocument _indexDocument;
@@ -44,10 +44,10 @@ internal class IndexInEnumerator : IPipeEnumerator
             //
             //    return PipeValue.Empty;
             //}
-
-            _currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation);
-
-            return _currentIndex.MoveNext(context);
+            //
+            //_currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation);
+            //
+            //return _currentIndex.MoveNext(context);
         }
         else
         {

@@ -18,10 +18,10 @@ internal class Constants
     /// <summary>
     /// Header page size
     /// </summary>
-    public const int PAGE_HEADER_SIZE = 32;
+    public const int PAGE_HEADER_SIZE = 64;
 
     /// <summary>
-    /// Get page content area size (8160)
+    /// Get page content area size (8128)
     /// </summary>
     public const int PAGE_CONTENT_SIZE = PAGE_SIZE - PAGE_HEADER_SIZE;
 
@@ -59,7 +59,6 @@ internal class Constants
     /// Represent pageID of first AllocationMapPage (#0)
     /// </summary>
     public const uint AM_FIRST_PAGE_ID = 0;
-    [Obsolete] public const int __AM_FIRST_PAGE_ID = 0;
 
     /// <summary>
     /// Represent how many pages each extend will allocate in AllocationMapPage
@@ -73,12 +72,12 @@ internal class Constants
     public const int AM_BYTES_PER_EXTEND = 4;
 
     /// <summary>
-    /// Get how many extends a single AllocationMap page support (2.040 extends)
+    /// Get how many extends a single AllocationMap page support (2.032 extends)
     /// </summary>
     public const int AM_EXTEND_COUNT = PAGE_CONTENT_SIZE / AM_BYTES_PER_EXTEND;
 
     /// <summary>
-    /// Get how many pages (data/index/empty) a single allocation map page support (16.320 pages)
+    /// Get how many pages (data/index/empty) a single allocation map page support (16.256 pages)
     /// </summary>
     public const int AM_MAP_PAGES_COUNT = AM_EXTEND_COUNT * AM_EXTEND_SIZE;
 
@@ -120,7 +119,7 @@ internal class Constants
     /// <summary>
     /// Define when ShareCounter (on PageBuffer) are in cache or not
     /// </summary>
-    public const byte NO_CACHE = byte.MaxValue;
+    public const int NO_CACHE = -1;
 
     /// <summary>
     /// Initial seed for Random

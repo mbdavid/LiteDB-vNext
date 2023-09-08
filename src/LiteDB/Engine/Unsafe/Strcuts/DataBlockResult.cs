@@ -11,8 +11,8 @@ unsafe internal struct DataBlockResult
 
     public bool IsEmpty => this.DataBlockID.IsEmpty;
 
-    public int ContentLength => this.Segment->Length - sizeof(DataBlock);
-    public int DocumentLength => throw new NotImplementedException();
+    public int ContentLength => this.Segment->Length - sizeof(DataBlock) - this.DataBlock->Padding;
+    public int DocumentLength => this.DataBlock->Extend ? -1 : this.AsSpan().ReadVariantLength(out _);
 
     public DataBlockResult(RowID dataBlockID, PageMemory* page, PageSegment* segment, DataBlock* dataBlock)
     {

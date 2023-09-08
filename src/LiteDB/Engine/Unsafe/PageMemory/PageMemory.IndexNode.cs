@@ -26,7 +26,7 @@ unsafe internal partial struct PageMemory // PageMemory.IndexNode
         return new IndexNodeResult(indexNodeID, indexNode->DataBlockID, page, segment, indexNode, keyPtr);
     }
 
-    public static IndexNodeResult InsertIndexNode(PageMemory* page, byte slot, byte levels, IndexKey indexKey, RowID dataBlockID, out bool defrag, out ExtendPageValue newPageValue)
+    public static IndexNodeResult InsertIndexNode(PageMemory* page, byte slot, byte levels, BsonValue key, RowID dataBlockID, out bool defrag, out ExtendPageValue newPageValue)
     {
         // get a new index block
         var newIndex = PageMemory.GetFreeIndex(page);
@@ -34,16 +34,18 @@ unsafe internal partial struct PageMemory // PageMemory.IndexNode
         // get new rowid
         var indexNodeID = new RowID(page->PageID, newIndex);
 
-        var nodeLength = IndexNode.GetNodeLength(levels, indexKey);
+        var nodeSize = IndexNode.GetSize(levels, key);
 
         // get page segment for this indexNode
-        var segment = PageMemory.InsertSegment(page, nodeLength, newIndex, true, out defrag, out newPageValue);
+        var segment = PageMemory.InsertSegment(page, (ushort)nodeSize, newIndex, true, out defrag, out newPageValue);
 
         var indexNode = (IndexNode*)((nint)page + segment->Location);
 
         // initialize indexNode
         indexNode->Slot = slot;
         indexNode->Levels = levels;
+        indexNode->Reserved1 = 0;
+        indexNode->Reserved2 = 0;
         indexNode->DataBlockID = dataBlockID;
         indexNode->NextNodeID = RowID.Empty;
 
@@ -56,12 +58,12 @@ unsafe internal partial struct PageMemory // PageMemory.IndexNode
         }
 
         // after write all level nodes, levelPtr are at IndexKey location
-        var keyPtr = (IndexKey*)levelPtr;
+        var indexKey = (IndexKey*)levelPtr;
 
         // get new indexKey and copy to memory
-        IndexKey.CopyValues(indexKey, keyPtr);
+        IndexKey.Initialize(indexKey, key);
 
-        return new IndexNodeResult(indexNodeID, dataBlockID, page, segment, indexNode, keyPtr);
+        return new IndexNodeResult(indexNodeID, dataBlockID, page, segment, indexNode, indexKey);
     }
 }
 

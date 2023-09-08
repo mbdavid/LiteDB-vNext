@@ -39,7 +39,8 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
                 // get sort key 
                 var key = _orderBy.Expression.Execute(item.Document, context.QueryParameters, _collation);
 
-                list.Add(new (item.DataBlockID, key, item.Document!));
+                //list.Add(new (item.DataBlockID, key, item.Document!));
+                throw new NotImplementedException();
             }
 
             // sort list in a new enumerable

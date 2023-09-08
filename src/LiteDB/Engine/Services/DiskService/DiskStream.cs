@@ -108,7 +108,7 @@ unsafe internal class DiskStream : IDiskStream
     /// <summary>
     /// Read single page from disk using disk position. Load header instance too. This position has FILE_HEADER_SIZE offset
     /// </summary>
-    public bool ReadPage(PageMemory* pagePtr, uint positionID)
+    public bool ReadPage(PageMemory* page, uint positionID)
     {
         using var _pc = PERF_COUNTER(2, nameof(ReadPage), nameof(DiskStream));
 
@@ -117,18 +117,18 @@ unsafe internal class DiskStream : IDiskStream
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (positionID * PAGE_SIZE);
 
-        var span = new Span<byte>(pagePtr, PAGE_SIZE);
+        var span = new Span<byte>(page, PAGE_SIZE);
 
         // read uniqueID to restore after read from disk
-        var uniqueID = pagePtr->UniqueID;
+        var uniqueID = page->UniqueID;
 
         var read = _contentStream.Read(span);
 
-        pagePtr->UniqueID = uniqueID;
-        pagePtr->IsDirty = false;
+        page->UniqueID = uniqueID;
+        page->IsDirty = false;
 
-        ENSURE(pagePtr->ShareCounter == NO_CACHE);
-        ENSURE(pagePtr->PositionID == positionID);
+        ENSURE(page->ShareCounter == NO_CACHE);
+        ENSURE(page->PositionID == positionID);
 
         return read == PAGE_SIZE;
     }
@@ -141,8 +141,8 @@ unsafe internal class DiskStream : IDiskStream
         ENSURE(page->ShareCounter == NO_CACHE);
         ENSURE(page->PositionID != int.MaxValue);
 
-        // update crc8 page
-        page->Crc8 = 0; // pagePtr->ComputeCrc8();
+        // update crc32 page
+        page->Crc32 = 0; // pagePtr->ComputeCrc8();
 
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (page->PositionID * PAGE_SIZE);

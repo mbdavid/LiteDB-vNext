@@ -29,16 +29,18 @@ public partial class LiteEngine : ILiteEngine
         {
             var doc = documents[i];
 
-            var id = doc["_id"];
+            var key = doc["_id"];
 
-            if (id.IsNull || id.IsMinValue || id.IsMaxValue) throw ERR("Invalid _id");
+            if (key.IsNull || key.IsMinValue || key.IsMaxValue) throw ERR("Invalid _id");
 
-            var result = indexService.Find(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
+            var result = indexService.Find(collection.PK, key, false, LiteDB.Engine.Query.Ascending);
 
             if (result.IsEmpty) continue;
 
             // update document content
             dataService.UpdateDocument(result.IndexNodeID, doc);
+
+
 
             //if (collection.Indexes.Count > 1)
             //{

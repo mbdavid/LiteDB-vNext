@@ -1,8 +1,8 @@
 ﻿namespace LiteDB.Engine;
 
-unsafe internal partial struct IndexKey2
+unsafe internal partial struct IndexKey
 {
-    public static BsonValue ToBsonValue(IndexKey2* indexKey)
+    public static BsonValue ToBsonValue(IndexKey* indexKey)
     {
         var ptr = (nint)indexKey + sizeof(long);
 

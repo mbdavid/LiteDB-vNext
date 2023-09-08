@@ -1,30 +1,40 @@
 ﻿namespace LiteDB.Engine;
 
 [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
-unsafe internal partial struct PageMemory   // 8192
+unsafe internal partial struct PageMemory             // 8192 (64 bytes header - 8128 content)
 {
     [FieldOffset(00)] public uint PositionID;         // 4
-    [FieldOffset(04)] public uint PageID;             // 4
+    [FieldOffset(04)] public uint PageID;             // 4 *
 
     [FieldOffset(08)] public PageType PageType;       // 1
     [FieldOffset(09)] public byte ColID;              // 1
-    [FieldOffset(10)] public byte ShareCounter;       // 1
-    [FieldOffset(11)] public bool IsDirty;            // 1
+    [FieldOffset(10)] public bool IsDirty;            // 1
+    [FieldOffset(11)] public bool IsConfirmed;        // 1
 
-    [FieldOffset(12)] public int UniqueID;            // 4
-    [FieldOffset(16)] public int TransactionID;       // 4 
+    [FieldOffset(12)] public int ShareCounter;        // 4 *
+    [FieldOffset(16)] public int UniqueID;            // 4
+    [FieldOffset(20)] public int TransactionID;       // 4 *
+    [FieldOffset(24)] public uint RecoveryPositionID; // 4
 
-    [FieldOffset(20)] public ushort ItemsCount;       // 2
-    [FieldOffset(22)] public ushort UsedBytes;        // 2
-    [FieldOffset(24)] public ushort FragmentedBytes;  // 2
-    [FieldOffset(26)] public ushort NextFreeLocation; // 2
-    [FieldOffset(28)] public ushort HighestIndex;     // 2
+    [FieldOffset(28)] public ushort ItemsCount;       // 2
+    [FieldOffset(30)] public ushort UsedBytes;        // 2 *
+    [FieldOffset(32)] public ushort FragmentedBytes;  // 2
+    [FieldOffset(34)] public ushort NextFreeLocation; // 2
+    [FieldOffset(36)] public ushort HighestIndex;     // 2
 
-    [FieldOffset(30)] public bool IsConfirmed;        // 1
-    [FieldOffset(31)] public byte Crc8;               // 1
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    [FieldOffset(38)] public ushort Reserved1;        // 2 *
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    [FieldOffset(40)] public ulong Reserved2;         // 8 *
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    [FieldOffset(48)] public ulong Reserved3;         // 8 *
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    [FieldOffset(56)] public uint Reserved4;          // 4
 
-    [FieldOffset(32)] public fixed byte Buffer[PAGE_CONTENT_SIZE];   // 8160
-    [FieldOffset(32)] public fixed uint Extends[PAGE_CONTENT_SIZE];  // 8160
+    [FieldOffset(60)] public int Crc32;               // 4 *
+
+    [FieldOffset(PAGE_HEADER_SIZE)] public fixed byte Buffer[PAGE_CONTENT_SIZE];   // 8128
+    [FieldOffset(PAGE_HEADER_SIZE)] public fixed uint Extends[PAGE_CONTENT_SIZE];  // 8128
 
 
     /// <summary>
@@ -36,7 +46,7 @@ unsafe internal partial struct PageMemory   // 8192
 
     /// <summary>
     /// Get how many bytes are used in footer page at this moment
-    /// ((HighestIndex + 1) * 4 bytes per slot: [2 for position, 2 for length])
+    /// ((HighestIndex + 1) * segment (4)
     /// </summary>
     public int FooterSize =>
         (this.HighestIndex == ushort.MaxValue ?
@@ -55,50 +65,52 @@ unsafe internal partial struct PageMemory   // 8192
     {
     }
 
-    public void Initialize(int uniqueID)
+    public static void Initialize(PageMemory* page, int uniqueID)
     {
-        this.PositionID = uint.MaxValue;
-        this.PageID = uint.MaxValue;
+        page->PositionID = uint.MaxValue;
+        page->PageID = uint.MaxValue;
 
-        this.PageType = PageType.Empty;
-        this.ColID = 0;
-        this.ShareCounter = byte.MaxValue;
-        this.IsDirty = false;
+        page->PageType = PageType.Empty;
+        page->ColID = 0;
+        page->IsDirty = false;
+        page->IsConfirmed = false;
 
-        this.UniqueID = uniqueID;
-        this.TransactionID = 0;
+        page->Reserved1 = 0;
+        page->Reserved2 = 0;
+        page->Reserved3 = 0;
+        page->Reserved4 = 0;
 
-        this.ItemsCount = 0;
-        this.UsedBytes = 0;
-        this.FragmentedBytes = 0;
-        this.NextFreeLocation = PAGE_HEADER_SIZE; // first location
-        this.HighestIndex = ushort.MaxValue;
+        page->ShareCounter = NO_CACHE;
+        page->UniqueID = uniqueID;
+        page->TransactionID = 0;
+        page->RecoveryPositionID = uint.MaxValue;
 
-        this.IsConfirmed = false;
-        this.Crc8 = 0;
+        page->ItemsCount = 0;
+        page->UsedBytes = 0;
+        page->FragmentedBytes = 0;
+        page->NextFreeLocation = PAGE_HEADER_SIZE; // first location
+        page->HighestIndex = ushort.MaxValue;
+
+        page->Crc32 = 0;
 
         // clear full content area
-        fixed(byte* bufferPtr = this.Buffer)
-        {
-            MarshalEx.FillZero(bufferPtr, PAGE_CONTENT_SIZE);
-        }
+        MarshalEx.FillZero((byte*)(nint)page + PAGE_HEADER_SIZE, PAGE_CONTENT_SIZE);
     }
 
-    public static void CopyPageContent(PageMemory* fromPage, PageMemory* toPage)
+    public static void CopyPage(PageMemory* sourcePage, PageMemory* targetPage)
     {
-        var uniqueID = toPage->UniqueID;
+        var uniqueID = targetPage->UniqueID;
 
         // get span from each page pointer
-        var fromSpan = new Span<byte>(fromPage, PAGE_SIZE);
-        var toSpan = new Span<byte>(fromPage, PAGE_SIZE);
+        var sourceSpan = new Span<byte>(sourcePage, PAGE_SIZE);
+        var targetSpan = new Span<byte>(targetPage, PAGE_SIZE);
 
-        fromSpan.CopyTo(toSpan);
+        sourceSpan.CopyTo(targetSpan);
 
         // clean page when copy
-        toPage->UniqueID = uniqueID;
-        toPage->ShareCounter = NO_CACHE;
-        toPage->IsDirty = false;
-
+        targetPage->UniqueID = uniqueID;
+        targetPage->ShareCounter = NO_CACHE;
+        targetPage->IsDirty = false;
     }
 
     public string DumpPage()

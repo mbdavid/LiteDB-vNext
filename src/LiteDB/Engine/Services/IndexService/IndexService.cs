@@ -25,7 +25,7 @@ unsafe internal class IndexService : IIndexService
     public (RowID head, RowID tail) CreateHeadTailNodes(byte colID)
     {
         // get how many bytes needed for each head/tail (both has same size)
-        var bytesLength = (ushort)IndexNode.GetNodeLength(INDEX_MAX_LEVELS, IndexKey.MinValue);
+        var bytesLength = (ushort)IndexNode.GetSize(INDEX_MAX_LEVELS, BsonValue.MinValue);
 
         // get a index page for this collection
         var page = _transaction.GetFreeIndexPage(colID, bytesLength * 2);
@@ -34,8 +34,8 @@ unsafe internal class IndexService : IIndexService
         var before = page->ExtendPageValue;
 
         // add head/tail nodes into page
-        var head = PageMemory.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, IndexKey.MinValue, RowID.Empty, out _, out var newPageValue);
-        var tail = PageMemory.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, IndexKey.MaxValue, RowID.Empty, out _, out newPageValue);
+        var head = PageMemory.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MinValue, RowID.Empty, out _, out var newPageValue);
+        var tail = PageMemory.InsertIndexNode(page, 0, INDEX_MAX_LEVELS, BsonValue.MaxValue, RowID.Empty, out _, out _);
 
         // link head-to-tail with double link list in first level
         head[0]->NextID = tail.IndexNodeID;
@@ -53,7 +53,7 @@ unsafe internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public IndexNodeResult AddNode(byte colID, IndexDocument index, IndexKey indexKey, RowID dataBlockID, IndexNodeResult head, IndexNodeResult last)
+    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, IndexNodeResult head, IndexNodeResult last)
     {
         using var _pc = PERF_COUNTER(4, nameof(AddNode), nameof(IndexService));
 
@@ -61,16 +61,16 @@ unsafe internal class IndexService : IIndexService
         var levels = this.Flip();
 
         // call AddNode with key value
-        return this.AddNodeInternal(colID, index, indexKey, dataBlockID, levels, head, last);
+        return this.AddNodeInternal(colID, index, key, dataBlockID, levels, head, last);
     }
 
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private IndexNodeResult AddNodeInternal(byte colID, IndexDocument index, IndexKey indexKey, RowID dataBlockID, int insertLevels, IndexNodeResult head, IndexNodeResult last)
+    private IndexNodeResult AddNodeInternal(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, int insertLevels, IndexNodeResult head, IndexNodeResult last)
     {
         // get a free index page for head note
-        var bytesLength = IndexNode.GetNodeLength(insertLevels, indexKey);
+        var bytesLength = IndexNode.GetSize(insertLevels, key);
 
         // get an index page with avaliable space to add this node
         var page = _transaction.GetFreeIndexPage(colID, bytesLength);
@@ -79,7 +79,7 @@ unsafe internal class IndexService : IIndexService
         var before = page->ExtendPageValue;
 
         // create node in page
-        var node = PageMemory.InsertIndexNode(page, index.Slot, (byte)insertLevels, indexKey, dataBlockID, out var defrag, out var newPageValue);
+        var node = PageMemory.InsertIndexNode(page, index.Slot, (byte)insertLevels, key, dataBlockID, out var defrag, out var newPageValue);
 
         // update allocation map if needed (this page has no more "size" changes)
         if (newPageValue != ExtendPageValue.NoChange)
@@ -102,7 +102,7 @@ unsafe internal class IndexService : IIndexService
 
                 // read next node to compare
                 //***var diff = rightNode.Node.Key.CompareTo(key, _collation);
-                var diff = IndexKey.Compare(rightNode.Key, indexKey, _collation);
+                var diff = IndexKey.Compare(rightNode.Key, key, _collation);
 
                 //***if unique and diff == 0, throw index exception (must rollback transaction - others nodes can be dirty)
                 if (diff == 0 && index.Unique) throw ERR("IndexDuplicateKey(index.Name, key)");
@@ -204,7 +204,7 @@ unsafe internal class IndexService : IIndexService
     /// If index are unique, return unique value - if index are not unique, return first found (can start, middle or end)
     /// If not found but sibling = true and key are not found, returns next value index node (if order = Asc) or prev node (if order = Desc)
     /// </summary>
-    public IndexNodeResult Find(IndexDocument index, IndexKey key, bool sibling, int order)
+    public IndexNodeResult Find(IndexDocument index, BsonValue key, bool sibling, int order)
     {
         var left = order == Query.Ascending ? index.HeadIndexNodeID : index.TailIndexNodeID;
         var leftNode = this.GetNode(left);
@@ -219,7 +219,7 @@ unsafe internal class IndexService : IIndexService
                 var rightNode = this.GetNode(right);
 
                 //var diff = rightNode.Node.Key.CompareTo(key, _collation);
-                var diff = IndexKey.Compare(rightNode.Key, &key, _collation);
+                var diff = IndexKey.Compare(rightNode.Key, key, _collation);
 
                 if (diff == order && (level > 0 || !sibling)) break; // go down one level
 

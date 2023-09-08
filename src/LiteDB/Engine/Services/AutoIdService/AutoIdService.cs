@@ -77,13 +77,14 @@ unsafe internal class AutoIdService : IAutoIdService
         var tail = indexService.GetNode(tailIndexNodeID);
         var last = indexService.GetNode(tail[0]->PrevID);
 
-        if (last.Key->IsInt32)
+        if (last.Key->Type == BsonType.Int32)
         {
             _sequences[colID].LastInt = last.Key->ValueInt32;
         }
-        else if (last.Key->IsInt64)
+        else if (last.Key->Type == BsonType.Int32)
         {
-            //TODO: ***_sequences[colID].LastLong = last.Key->ValueInt64;
+            throw new NotImplementedException();
+            //_sequences[colID].LastLong = last.Key->ValueInt64;
         }
         else
         {

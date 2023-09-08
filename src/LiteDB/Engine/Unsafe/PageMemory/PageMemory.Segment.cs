@@ -14,6 +14,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
     public static PageSegment* InsertSegment(PageMemory* page, ushort bytesLength, ushort index, bool isNewInsert, out bool defrag, out ExtendPageValue newPageValue)
     {
         ENSURE(index != ushort.MaxValue, new { bytesLength, index, isNewInsert });
+        ENSURE(bytesLength % 8 == 0 && bytesLength > 0, new { bytesLength, index, isNewInsert });
 
         // mark page as dirty
         page->IsDirty = true;
@@ -97,8 +98,9 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         page->UsedBytes -= segment->Length;
 
         // clean block area with \0
-        var dataPtr = (byte*)((nint)page + segment->Location); // position on page
-        MarshalEx.FillZero(dataPtr, segment->Length);
+        var pageContent = (byte*)((nint)page + segment->Location); // position on page
+
+        MarshalEx.FillZero(pageContent, segment->Length);
 
         // check if deleted segment are at end of page
         var isLastSegment = (segment->EndLocation == page->NextFreeLocation);
@@ -138,7 +140,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
     /// </summary>
     public static PageSegment* UpdateSegment(PageMemory* page, ushort index, ushort bytesLength, out bool defrag, out ExtendPageValue newPageValue)
     {
-        ENSURE(bytesLength > 0, "Must update more than 0 bytes", new { bytesLength });
+        ENSURE(bytesLength % 8 == 0 && bytesLength > 0, new { bytesLength });
 
         // mark page as dirty
         page->IsDirty = true;

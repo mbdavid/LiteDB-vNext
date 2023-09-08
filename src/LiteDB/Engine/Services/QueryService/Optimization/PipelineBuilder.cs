@@ -115,7 +115,7 @@ internal class PipelineBuilder
             (BsonExpressionType.GreaterThanOrEqual, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, true, true, order, indexDocument, _collation),
             (BsonExpressionType.LessThan, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, true, order, indexDocument, _collation),
             (BsonExpressionType.LessThanOrEqual, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, true, true, order, indexDocument, _collation),
-            (BsonExpressionType.NotEqual, _) => new IndexScanEnumerator(indexDocument, x => x.CompareTo(value, _collation) != 0, order),
+            (BsonExpressionType.NotEqual, _) => throw new NotImplementedException(), // new IndexScanEnumerator(indexDocument, x => x.CompareTo(value, _collation) != 0, order),
             (BsonExpressionType.In, BsonType.Array) => throw new NotImplementedException(),// new IndexInEnumerator(value.AsArray, indexDocument, _collation),
             (BsonExpressionType.In, _) => new IndexEqualsEnumerator(value, indexDocument, _collation),
             _ => throw ERR($"There is no index for {exprType} predicate")

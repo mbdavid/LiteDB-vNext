@@ -1,11 +1,11 @@
 ﻿namespace LiteDB.Engine;
 
-internal class IndexEqualsEnumerator : IPipeEnumerator
+unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
 
     private readonly IndexDocument _indexDocument;
-    private readonly IndexKey _value;
+    private readonly BsonValue _value;
 
     private bool _init = false;
     private bool _eof = false;
@@ -14,7 +14,7 @@ internal class IndexEqualsEnumerator : IPipeEnumerator
     private RowID _next = RowID.Empty; // all nodes from right of first node found
 
     public IndexEqualsEnumerator(
-        IndexKey value, 
+        BsonValue value, 
         IndexDocument indexDocument, 
         Collation collation)
     {

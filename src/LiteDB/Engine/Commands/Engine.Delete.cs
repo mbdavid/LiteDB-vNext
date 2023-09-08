@@ -33,9 +33,7 @@ public partial class LiteEngine : ILiteEngine
             // there is no PK with this values
             if (id.IsNull || id.IsMinValue || id.IsMaxValue) continue;
 
-            var indexKey = new IndexKey(id);
-
-            var result = indexService.Find(collection.PK, indexKey, false, LiteDB.Engine.Query.Ascending);
+            var result = indexService.Find(collection.PK, id, false, LiteDB.Engine.Query.Ascending);
 
             if (result.IsEmpty) continue;
 
