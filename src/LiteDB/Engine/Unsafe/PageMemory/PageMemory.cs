@@ -8,11 +8,11 @@ unsafe internal partial struct PageMemory             // 8192 (64 bytes header -
 
     [FieldOffset(08)] public PageType PageType;       // 1
     [FieldOffset(09)] public byte ColID;              // 1
-    [FieldOffset(10)] public bool IsDirty;            // 1
+    [FieldOffset(10)] public bool IsDirty;            // 1    - memory only control (but stores on disk default value)
     [FieldOffset(11)] public bool IsConfirmed;        // 1
 
-    [FieldOffset(12)] public int ShareCounter;        // 4 *
-    [FieldOffset(16)] public int UniqueID;            // 4
+    [FieldOffset(12)] public int ShareCounter;        // 4 *  - memory only control (but stores on disk default value)
+    [FieldOffset(16)] public int UniqueID;            // 4    - memory only control (but stores on disk default value)
     [FieldOffset(20)] public int TransactionID;       // 4 *
     [FieldOffset(24)] public uint RecoveryPositionID; // 4
 
@@ -96,22 +96,6 @@ unsafe internal partial struct PageMemory             // 8192 (64 bytes header -
 
         // clear full content area
         MarshalEx.FillZero((byte*)(nint)page + PAGE_HEADER_SIZE, PAGE_CONTENT_SIZE);
-    }
-
-    public static void CopyPage(PageMemory* sourcePage, PageMemory* targetPage)
-    {
-        var uniqueID = targetPage->UniqueID;
-
-        // get span from each page pointer
-        var sourceSpan = new Span<byte>(sourcePage, PAGE_SIZE);
-        var targetSpan = new Span<byte>(targetPage, PAGE_SIZE);
-
-        sourceSpan.CopyTo(targetSpan);
-
-        // clean page when copy
-        targetPage->UniqueID = uniqueID;
-        targetPage->ShareCounter = NO_CACHE;
-        targetPage->IsDirty = false;
     }
 
     public string DumpPage()

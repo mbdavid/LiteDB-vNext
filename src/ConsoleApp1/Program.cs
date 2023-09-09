@@ -58,25 +58,24 @@ await Run($"Insert {INSERT_1}", async () =>
 
 Profiler.AddResult("Insert", true);
 
+await Run("Checkpoint", async () =>
+{
+    await db.CheckpointAsync();
+});
 
-//await Run("Checkpoint", async () =>
-//{
-//    await db.CheckpointAsync();
-//});
-//
-//Profiler.AddResult("Checkpoint", true);
-//
-//
-//
-//await Run("Shutdown", async () =>
-//{
-//    await db.ShutdownAsync();
-//});
-//
-//await Run("Re-open database", async () =>
-//{
-//    await db.OpenAsync();
-//});
+Profiler.AddResult("Checkpoint", true);
+
+
+
+await Run("Shutdown", async () =>
+{
+    await db.ShutdownAsync();
+});
+
+await Run("Re-open database", async () =>
+{
+    await db.OpenAsync();
+});
 
 Profiler.Reset();
 

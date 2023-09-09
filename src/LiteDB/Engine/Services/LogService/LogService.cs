@@ -74,6 +74,7 @@ internal class LogService : ILogService
 
         var lastPositionID = 0u;
 
+        // set all lastPosition before write on disk
         for (var i = 0; i < pages.Length; i++)
         {
             var page = (PageMemory*)pages[i];
@@ -94,9 +95,6 @@ internal class LogService : ILogService
 
             // create a log header structure with needed information about this page on checkpoint
             var header = new LogPageHeader { PositionID = page->PositionID, PageID = page->PageID, TransactionID = page->TransactionID, IsConfirmed = page->IsConfirmed };
-
-            // and update isConfirmed after write on disk
-            page->IsConfirmed = false;
 
             // add page header only into log memory list
             this.AddLogPage(header);
@@ -189,9 +187,7 @@ internal class LogService : ILogService
                 if (action.Action == CheckpointActionType.CopyToDataFile)
                 {
                     // transform this page into a data file page
-                    page->PositionID = action.TargetPositionID;
-                    page->RecoveryPositionID = action.TargetPositionID;
-                    page->PageID = action.TargetPositionID;
+                    page->PositionID = page->RecoveryPositionID = page->PageID = action.TargetPositionID;
                     page->TransactionID = 0;
                     page->IsConfirmed = false;
                     page->IsDirty = true;
@@ -218,9 +214,10 @@ internal class LogService : ILogService
                 }
 
                 // if cache contains this position (old data version) must be removed from cache and deallocate
-                if (_memoryCache.TryRemove(page->PositionID, out var removedPagePtr))
+                if (_memoryCache.TryRemove(page->PositionID, out var removedPage))
                 {
-                    _memoryFactory.DeallocatePage(removedPagePtr);
+                    ENSURE(false); // quando para aqui?
+                    _memoryFactory.DeallocatePage(removedPage);
                 }
 
                 // add this page to cache (or try it)
@@ -278,17 +275,17 @@ internal class LogService : ILogService
     private unsafe PageMemory* GetLogPage(IDiskStream stream, uint positionID)
     {
         // try get page from cache
-        if (_memoryCache.TryRemove(positionID, out var pagePtr))
+        if (_memoryCache.TryRemove(positionID, out var page))
         {
-            return pagePtr;
+            return page;
         }
 
         // otherwise, allocate new buffer page and read from disk
-        pagePtr = _memoryFactory.AllocateNewPage();
+        page = _memoryFactory.AllocateNewPage();
 
-        stream.ReadPage(pagePtr, positionID);
+        stream.ReadPage(page, positionID);
 
-        return pagePtr;
+        return page;
     }
 
     public override string ToString()
