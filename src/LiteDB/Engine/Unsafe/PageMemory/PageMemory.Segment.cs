@@ -8,6 +8,9 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
 
         var segment = (PageSegment*)((nint)page + segmentOffset);
 
+        ENSURE(segment->Length < PAGE_CONTENT_SIZE);
+        ENSURE(segment->Location < PAGE_CONTENT_SIZE);
+
         return segment;
     }
 
@@ -23,15 +26,15 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         var initialPageValue = page->ExtendPageValue;
 
         //TODO: converter em um ensure
-        if (!(page->FreeBytes >= bytesLength + (isNewInsert ? sizeof(PageSegment) : 0)))
+        if (!(page->FreeBytes >= bytesLength + (isNewInsert ? (sizeof(PageSegment) * 2) : 0)))
         {
-            throw ERR_INVALID_FREE_SPACE_PAGE(page->PageID, page->FreeBytes, bytesLength + (isNewInsert ? sizeof(PageSegment) : 0));
+            throw ERR_INVALID_FREE_SPACE_PAGE(page->PageID, page->FreeBytes, bytesLength + (isNewInsert ? (sizeof(PageSegment) * 2): 0));
         }
 
         // calculate how many continuous bytes are available in this page
-        var continuousBlocks = page->FreeBytes - page->FragmentedBytes - (isNewInsert ? sizeof(PageSegment) : 0);
+        var continuousBlocks = page->FreeBytes - page->FragmentedBytes - (isNewInsert ? (sizeof(PageSegment) * 2) : 0);
 
-        ENSURE(continuousBlocks == PAGE_SIZE - page->NextFreeLocation - page->FooterSize - (isNewInsert ? sizeof(PageSegment) : 0), "ContinuosBlock must be same as from NextFreePosition",
+        ENSURE(continuousBlocks == PAGE_SIZE - page->NextFreeLocation - page->FooterSize - (isNewInsert ? (sizeof(PageSegment) * 2) : 0), "ContinuosBlock must be same as from NextFreePosition",
             new { continuousBlocks, isNewInsert });
 
         // if continuous blocks are not big enough for this data, must run page defrag
@@ -65,7 +68,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         page->UsedBytes += bytesLength;
         page->NextFreeLocation += bytesLength;
 
-        ENSURE(location + bytesLength <= (PAGE_SIZE - (page->HighestIndex + 1) * sizeof(PageSegment)), "New buffer slice could not override footer area",
+        ENSURE(location + bytesLength <= (PAGE_SIZE - (page->HighestIndex + 1) * (sizeof(PageSegment) * 2)), "New buffer slice could not override footer area",
             new { location, bytesLength});
 
         // check for change on extend pageValue
@@ -202,9 +205,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         else
         {
             // clear current block
-            var dataPtr = (byte*)((nint)page + segment->Location);
-
-            MarshalEx.FillZero(dataPtr, segment->Length);
+            segment->AsSpan(page).Fill(0);
 
             page->ItemsCount--;
             page->UsedBytes -= segment->Length;
@@ -312,7 +313,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         // check for all slot area to get first empty slot [safe for byte loop]
         for (var index = 0; index <= page->HighestIndex; index++)
         {
-            if (segment->Location == 0)
+            if (segment->IsEmpty)
             {
                 return (ushort)index;
             }
@@ -320,7 +321,11 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
             segment--;
         }
 
-        return (byte)(page->HighestIndex + 1);
+        var last = (ushort)(page->HighestIndex + 1);
+
+        ENSURE(PageMemory.GetSegmentPtr(page, last)->IsEmpty);
+
+        return last;
     }
 
 

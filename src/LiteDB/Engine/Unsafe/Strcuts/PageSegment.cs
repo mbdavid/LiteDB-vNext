@@ -28,6 +28,15 @@ unsafe internal struct PageSegment
         this.Length = length;
     }
 
+    public Span<byte> AsSpan(PageMemory* page)
+    {
+        ENSURE(!this.IsEmpty);
+
+        var ptr = (byte*)((nint)page + this.Location);
+
+        return new Span<byte>(ptr, this.Length);
+    }
+
     public override string ToString() => Dump.Object(this);
 
 }

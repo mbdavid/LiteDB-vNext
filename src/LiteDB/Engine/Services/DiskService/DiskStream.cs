@@ -124,6 +124,8 @@ unsafe internal class DiskStream : IDiskStream
 
         var read = _contentStream.Read(span);
 
+        ENSURE(page->UniqueID == 0);
+
         // update init value on page (memory)
         page->UniqueID = uniqueID;
         page->ShareCounter = NO_CACHE;
@@ -154,12 +156,13 @@ unsafe internal class DiskStream : IDiskStream
 
         var span = new Span<byte>(page, PAGE_SIZE);
 
+        _contentStream.Write(span);
+
         // clear isDirty flag before write on disk
         page->UniqueID = uniqueID;
         page->ShareCounter = NO_CACHE;
         page->IsDirty = false;
 
-        _contentStream.Write(span);
     }
 
     /// <summary>

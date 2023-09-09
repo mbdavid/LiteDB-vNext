@@ -46,7 +46,7 @@ unsafe internal partial struct PageMemory             // 8192 (64 bytes header -
 
     /// <summary>
     /// Get how many bytes are used in footer page at this moment. Should align in  8 bytes
-    /// ((HighestIndex + 1) * segment (4)
+    /// ((HighestIndex + 1) * segment (4) + padding 8
     /// </summary>
     public int FooterSize =>
         (this.HighestIndex == ushort.MaxValue ?
