@@ -110,6 +110,11 @@ internal class WalIndexService : IWalIndexService
         _index.Clear();
     }
 
+    public override string ToString()
+    {
+        return Dump.Object(this);
+    }
+
     public void Dispose()
     {
         // reset fields

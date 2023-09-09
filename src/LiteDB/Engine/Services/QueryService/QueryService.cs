@@ -111,6 +111,11 @@ internal class QueryService : IQueryService
         };
     }
 
+    public override string ToString()
+    {
+        return Dump.Object(new { openCursors = Dump.Array(_openCursors.Select(x => x.Key)) });
+    }
+
     public void Dispose()
     {
         _openCursors.Clear();

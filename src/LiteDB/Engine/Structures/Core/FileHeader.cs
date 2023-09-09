@@ -152,4 +152,9 @@ internal class FileHeader
             throw ERR_INVALID_FILE_VERSION();
     }
 
+    public override string ToString()
+    {
+        return Dump.Object(this);
+    }
+
 }

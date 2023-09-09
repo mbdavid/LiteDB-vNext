@@ -4,7 +4,7 @@ public partial class LiteEngine : ILiteEngine
 {
     public async Task<int> InsertAsync(string collectionName, IEnumerable<BsonDocument> documents, BsonAutoId autoId)
     {
-        using var _pc = PERF_COUNTER(29, nameof(InsertAsync), nameof(LiteEngine));
+        using var _pc = PERF_COUNTER(0, nameof(InsertAsync), nameof(LiteEngine));
 
         if (_factory.State != EngineState.Open) throw new Exception("must be open");
 
@@ -54,7 +54,7 @@ public partial class LiteEngine : ILiteEngine
         //for (var i = 0; i < documents.Length; i++)
         foreach (var doc in documents)
         {
-            using var _p2 = PERF_COUNTER(35, "InsertSingle", nameof(LiteEngine));
+            using var _p2 = PERF_COUNTER(10, "InsertSingle", nameof(LiteEngine));
 
             // get/set _id
             var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);

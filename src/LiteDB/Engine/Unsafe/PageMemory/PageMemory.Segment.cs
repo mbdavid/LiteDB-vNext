@@ -89,10 +89,6 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         // read block position on index slot
         var segment = PageMemory.GetSegmentPtr(page, index);
 
-        // clear both location/length
-        segment->Location = 0;
-        segment->Length = 0;
-
         // add as free blocks
         page->ItemsCount--;
         page->UsedBytes -= segment->Length;
@@ -131,6 +127,10 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
             page->NextFreeLocation = PAGE_HEADER_SIZE;
             page->FragmentedBytes = 0;
         }
+
+        // clear both location/length
+        segment->Location = 0;
+        segment->Length = 0;
 
         // check for change on extend pageValue
         newPageValue = initialPageValue == page->ExtendPageValue ? ExtendPageValue.NoChange : page->ExtendPageValue;

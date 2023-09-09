@@ -5,6 +5,8 @@ internal struct Sequence
     public int LastInt;
     public long LastLong;
 
+    public bool IsEmpty => this.LastInt == int.MaxValue && this.LastLong == long.MaxValue;
+
     public Sequence()
     {
         this.Reset();

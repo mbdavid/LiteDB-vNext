@@ -79,5 +79,8 @@ unsafe internal class MemoryFactory : IMemoryFactory
 
         _inUsePages.Clear();
         _freePages.Clear();
+
+        _nextUniqueID = BUFFER_UNIQUE_ID - 1;
+        _pagesAllocated = 0;
     }
 }

@@ -45,13 +45,14 @@ unsafe internal partial struct PageMemory             // 8192 (64 bytes header -
         PAGE_CONTENT_SIZE - this.UsedBytes - this.FooterSize;
 
     /// <summary>
-    /// Get how many bytes are used in footer page at this moment
+    /// Get how many bytes are used in footer page at this moment. Should align in  8 bytes
     /// ((HighestIndex + 1) * segment (4)
     /// </summary>
     public int FooterSize =>
         (this.HighestIndex == ushort.MaxValue ?
         0 :  // no items in page
-        ((this.HighestIndex + 1) * sizeof(PageSegment))); // 4 bytes PER item (2 to position + 2 to length) - need consider HighestIndex used
+        ((this.HighestIndex + 1) % 2 == 1 ? (this.HighestIndex + 2) : (this.HighestIndex + 1)) // align in 8 bytes
+        * sizeof(PageSegment)); // 4 bytes PER item (2 to position + 2 to length) - need consider HighestIndex used
 
     /// <summary>
     /// Get current extend page value based on PageType and FreeSpace
@@ -123,6 +124,6 @@ unsafe internal partial struct PageMemory             // 8192 (64 bytes header -
 
     public override string ToString()
     {
-        return Dump.Object(this);
+        return Dump.Object(new { PositionID, PageID, PageType, ColID, IsDirty, IsConfirmed, ShareCounter, TransactionID, ItemsCount, FreeBytes });
     }
 }

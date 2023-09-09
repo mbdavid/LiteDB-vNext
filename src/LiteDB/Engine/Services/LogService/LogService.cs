@@ -72,18 +72,31 @@ internal class LogService : ILogService
             writer.WriteFlag(FileHeader.P_IS_DIRTY, 1);
         }
 
+        var lastPositionID = 0u;
+
         for (var i = 0; i < pages.Length; i++)
         {
             var page = (PageMemory*)pages[i];
 
             // get next page position on log (update header PositionID too)
-            page->PositionID = page->RecoveryPositionID = this.GetNextLogPositionID();
+            lastPositionID = page->PositionID = page->RecoveryPositionID = this.GetNextLogPositionID();
+        }
+
+        // pre-allocate file
+        writer.SetSize(lastPositionID);
+
+        for (var i = 0; i < pages.Length; i++)
+        {
+            var page = (PageMemory*)pages[i];
 
             // write page to writer stream
             writer.WritePage(page);
 
             // create a log header structure with needed information about this page on checkpoint
             var header = new LogPageHeader { PositionID = page->PositionID, PageID = page->PageID, TransactionID = page->TransactionID, IsConfirmed = page->IsConfirmed };
+
+            // and update isConfirmed after write on disk
+            page->IsConfirmed = false;
 
             // add page header only into log memory list
             this.AddLogPage(header);

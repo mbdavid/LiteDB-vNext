@@ -110,18 +110,18 @@ internal class Transaction : ITransaction
     /// </summary>
     public unsafe PageMemory* GetPage(uint pageID)
     {
-        using var _pc = PERF_COUNTER(8, nameof(GetPage), nameof(Transaction));
+        using var _pc = PERF_COUNTER(90, nameof(GetPage), nameof(Transaction));
 
         ENSURE(pageID != uint.MaxValue, "PageID must have a value");
 
         if (_localPages.TryGetValue(pageID, out var ptr))
         {
-            var pagePtr = (PageMemory*)ptr;
+            var page = (PageMemory*)ptr;
 
             // if writable, page should not be in cache
-            ENSURE(Array.IndexOf(_writeCollections, pagePtr->ColID) > -1, pagePtr->ShareCounter == NO_CACHE, "Page should not be in cache", new { _writeCollections });
+            ENSURE(Array.IndexOf(_writeCollections, page->ColID) > -1, page->ShareCounter == NO_CACHE, "Page should not be in cache", new { _writeCollections });
 
-            return pagePtr;
+            return page;
         }
 
         var newPage = this.ReadPage(pageID, this.ReadVersion);
@@ -136,27 +136,41 @@ internal class Transaction : ITransaction
     /// </summary>
     private unsafe PageMemory* ReadPage(uint pageID, int readVersion)
     {
-        using var _pc = PERF_COUNTER(9, nameof(ReadPage), nameof(Transaction));
+        using var _pc = PERF_COUNTER(100, nameof(ReadPage), nameof(Transaction));
 
         _reader ??= _diskService.RentDiskReader();
 
-        // test if page are in transaction wal pages
+        var writable = false;
+        var found = false;
+
+        // test if page are in local wal pages
         if (_walDirtyPages.TryGetValue(pageID, out var positionID))
         {
-            var walPagePtr = _memoryFactory.AllocateNewPage();
+            // if page are in local wal, try get from cache
+            var cachePage = _memoryCache.GetPageReadWrite(positionID, _writeCollections, out writable, out found);
 
-            _reader.ReadPage(walPagePtr, positionID);
+            if (found == false)
+            {
+                // if not found, allocate new page
+                var walPage = _memoryFactory.AllocateNewPage();
 
-            ENSURE(walPagePtr->PageType == PageType.Data || walPagePtr->PageType == PageType.Index, $"Only data/index page on transaction read page: {walPagePtr->PageID}");
+                _reader.ReadPage(walPage, positionID);
 
-            return walPagePtr;
+                ENSURE(walPage->PageType == PageType.Data || walPage->PageType == PageType.Index, $"Only data/index page on transaction read page: {walPage->PageID}");
+
+                return walPage;
+            }
+            else
+            {
+                return cachePage;
+            }
         }
 
-        // get disk position (data/log)
+        // get disk position from global wal (data/log)
         positionID = _walIndexService.GetPagePositionID(pageID, readVersion, out _);
 
         // get a page from cache (if writable, this page are not linked to cache anymore)
-        var page = _memoryCache.GetPageReadWrite(positionID, _writeCollections, out var writable, out var found);
+        var page = _memoryCache.GetPageReadWrite(positionID, _writeCollections, out writable, out found);
 
         // if page not found, allocate new page and read from disk
         if (found == false)
@@ -176,7 +190,7 @@ internal class Transaction : ITransaction
     /// </summary>
     public unsafe PageMemory* GetFreeDataPage(byte colID)
     {
-        using var _pc = PERF_COUNTER(11, nameof(GetFreeDataPage), nameof(Transaction));
+        using var _pc = PERF_COUNTER(110, nameof(GetFreeDataPage), nameof(Transaction));
 
         var colIndex = Array.IndexOf(_writeCollections, colID);
         var currentExtend = _currentDataExtend[colIndex];
@@ -213,7 +227,7 @@ internal class Transaction : ITransaction
     /// </summary>
     public unsafe PageMemory* GetFreeIndexPage(byte colID, int indexNodeLength)
     {
-        using var _pc = PERF_COUNTER(12, nameof(GetFreeIndexPage), nameof(Transaction));
+        using var _pc = PERF_COUNTER(120, nameof(GetFreeIndexPage), nameof(Transaction));
 
         var colIndex = Array.IndexOf(_writeCollections, colID);
         var currentExtend = _currentIndexExtend[colIndex];
@@ -282,7 +296,7 @@ internal class Transaction : ITransaction
     /// </summary>
     public async Task SafepointAsync()
     {
-        using var _pc = PERF_COUNTER(59, nameof(SafepointAsync), nameof(Transaction));
+        using var _pc = PERF_COUNTER(130, nameof(SafepointAsync), nameof(Transaction));
 
         this.SafepointInternal();
 
@@ -349,7 +363,7 @@ internal class Transaction : ITransaction
     /// </summary>
     public async ValueTask CommitAsync()
     {
-        using var _pc = PERF_COUNTER(59, nameof(CommitAsync), nameof(Transaction));
+        using var _pc = PERF_COUNTER(140, nameof(CommitAsync), nameof(Transaction));
 
         this.CommitInternal();
 
@@ -417,7 +431,7 @@ internal class Transaction : ITransaction
 
     public unsafe void Abort()
     {
-        using var _pc = PERF_COUNTER(48, nameof(Abort), nameof(Transaction));
+        using var _pc = PERF_COUNTER(150, nameof(Abort), nameof(Transaction));
 
         // add pages to cache or decrement sharecount
         foreach (var ptr in _localPages.Values)

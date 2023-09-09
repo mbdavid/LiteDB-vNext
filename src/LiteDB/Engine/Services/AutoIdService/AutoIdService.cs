@@ -12,6 +12,11 @@ unsafe internal class AutoIdService : IAutoIdService
 
     public AutoIdService()
     {
+        // set all _sequences to MaxValue
+        for (var i = 0; i < _sequences.Length; i++)
+        {
+            _sequences[i].Reset();
+        }
     }
 
     /// <summary>
@@ -67,7 +72,7 @@ unsafe internal class AutoIdService : IAutoIdService
     /// Checks if a sequence already initialized
     /// </summary>
     public bool NeedInitialize(byte colID, BsonAutoId autoId) =>
-        (autoId == BsonAutoId.Int32 || autoId == BsonAutoId.Int64) && _sequences[colID].LastInt != int.MaxValue;
+        (autoId == BsonAutoId.Int32 || autoId == BsonAutoId.Int64) && _sequences[colID].IsEmpty;
 
     /// <summary>
     /// Initialize sequence based on last value on _id key.
@@ -81,7 +86,7 @@ unsafe internal class AutoIdService : IAutoIdService
         {
             _sequences[colID].LastInt = last.Key->ValueInt32;
         }
-        else if (last.Key->Type == BsonType.Int32)
+        else if (last.Key->Type == BsonType.Int64)
         {
             throw new NotImplementedException();
             //_sequences[colID].LastLong = last.Key->ValueInt64;
@@ -92,6 +97,15 @@ unsafe internal class AutoIdService : IAutoIdService
             _sequences[colID].LastInt = 0;
             _sequences[colID].LastLong = 0;
         }
+    }
+
+    public override string ToString()
+    {
+        return Dump.Object(new
+        {
+            LastInt = Dump.Array(_sequences.Where(x => !x.IsEmpty).Select((x, i) => new { ColID = i, x.LastInt } )),
+            LastLong = Dump.Array(_sequences.Where(x => !x.IsEmpty).Select((x, i) => new { ColID = i, x.LastLong }))
+        });
     }
 
     public void Dispose()

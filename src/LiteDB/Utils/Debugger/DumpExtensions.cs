@@ -46,7 +46,7 @@ internal static class Dump
             }
         }
 
-        return sb.Length > 0 ? $"{{ {sb} }}" : "";
+        return sb.Length > 0 ? $"{{ {sb} }}" : "{}";
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ internal static class Dump
             }
         }
 
-        return sb.Length > 0 ? $"[ {sb} ]" : "";
+        return sb.Length > 0 ? $"[ {sb} ]" : "[]";
     }
 
     private static string GetStringValue(object? value)

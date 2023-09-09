@@ -23,7 +23,7 @@ unsafe internal class DataService : IDataService
     /// </summary>
     public RowID InsertDocument(byte colID, BsonDocument doc)
     {
-        using var _pc = PERF_COUNTER(0, nameof(InsertDocument), nameof(DataService));
+        using var _pc = PERF_COUNTER(20, nameof(InsertDocument), nameof(DataService));
 
         var docLength = doc.GetBytesCount();
 
@@ -129,7 +129,7 @@ unsafe internal class DataService : IDataService
     /// </summary>
     public BsonReadResult ReadDocument(RowID dataBlockID, string[] fields)
     {
-        using var _pc = PERF_COUNTER(1, nameof(ReadDocument), nameof(DataService));
+        using var _pc = PERF_COUNTER(30, nameof(ReadDocument), nameof(DataService));
 
         var page = _transaction.GetPage(dataBlockID.PageID);
 

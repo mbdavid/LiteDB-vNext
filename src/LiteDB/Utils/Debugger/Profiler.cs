@@ -2,11 +2,17 @@
 
 internal static class Profiler
 {
-    private const int COUNTERS = 100;
+    private const int COUNTERS = 200;
 
     private static long _start = Stopwatch.GetTimestamp();
     private static readonly Counter[] _counters = new Counter[COUNTERS];
     private static readonly StringBuilder _results = new();
+    private static long _memoryAllocated;
+
+    static Profiler()
+    {
+        Reset();
+    }
 
     public static IDisposable PERF_COUNTER(int index, string methodName, string typeName)
     {
@@ -24,6 +30,7 @@ internal static class Profiler
 
     public static void Reset()
     {
+        _memoryAllocated = GC.GetTotalAllocatedBytes(true);
         _start = Stopwatch.GetTimestamp();
 
         for(var i = 0; i < COUNTERS; i++)
@@ -50,7 +57,10 @@ internal static class Profiler
             _results.AppendLine($"|  {title}  |".PadRight(screen_width - name_width, ch));
         }
 
-        _results.AppendLine($"{("> Total Time Spent".PadRight(50, '.'))}: {total,10} - 100,000%");
+
+        var allocated = $"{(double)(GC.GetTotalAllocatedBytes(true) - _memoryAllocated) / 1024d / 1024d:n2}";
+
+        _results.AppendLine($"{("> Total Time Spent / Memory Allocated".PadRight(50, '.'))}: {total,10} - 100,000% - {allocated,10} Mb");
 
         var sorted = _counters
             .Where(x => x is not null)

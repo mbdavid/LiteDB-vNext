@@ -110,7 +110,7 @@ unsafe internal class DiskStream : IDiskStream
     /// </summary>
     public bool ReadPage(PageMemory* page, uint positionID)
     {
-        using var _pc = PERF_COUNTER(2, nameof(ReadPage), nameof(DiskStream));
+        using var _pc = PERF_COUNTER(40, nameof(ReadPage), nameof(DiskStream));
 
         ENSURE(positionID != uint.MaxValue, "PositionID should not be empty");
 
@@ -135,7 +135,7 @@ unsafe internal class DiskStream : IDiskStream
 
     public void WritePage(PageMemory* page)
     {
-        using var _pc = PERF_COUNTER(3, nameof(WritePage), nameof(DiskStream));
+        using var _pc = PERF_COUNTER(50, nameof(WritePage), nameof(DiskStream));
 
         ENSURE(page->IsDirty);
         ENSURE(page->ShareCounter == NO_CACHE);
@@ -144,12 +144,17 @@ unsafe internal class DiskStream : IDiskStream
         // update crc32 page
         page->Crc32 = 0; // pagePtr->ComputeCrc8();
 
+        // cache and clear before write on disk
+        var uniqueID = page->UniqueID;
+        page->UniqueID = 0; 
+
         // set real position on stream
         _contentStream!.Position = FILE_HEADER_SIZE + (page->PositionID * PAGE_SIZE);
 
         var span = new Span<byte>(page, PAGE_SIZE);
 
         // clear isDirty flag before write on disk
+        page->UniqueID = uniqueID;
         page->IsDirty = false;
 
         _contentStream.Write(span);

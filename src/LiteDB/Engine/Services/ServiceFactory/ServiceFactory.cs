@@ -110,20 +110,17 @@ internal partial class ServicesFactory : IServicesFactory
         this.FileHeader.Collation,
         transaction);
 
-    public PipelineBuilder CreatePipelineBuilder(string collectionName, BsonDocument queryParameters) =>
-        throw new NotImplementedException();
-    //        new PipelineBuilder(
-    //        this.MasterService,
-    //        this.SortService,
-    //        this.FileHeader.Collation,
-    //        collectionName,
-    //        queryParameters);
+    public PipelineBuilder CreatePipelineBuilder(string collectionName, BsonDocument queryParameters) => new PipelineBuilder(
+            this.MasterService,
+            this.SortService,
+            this.FileHeader.Collation,
+            collectionName,
+            queryParameters);
 
     public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, IQuery query) =>
-        throw new NotImplementedException();
-//        query is Query ? new QueryOptimization(this, collection) :
-//        query is AggregateQuery ? new AggregateQueryOptimization(this, collection) :
-//        throw new NotSupportedException();
+        query is Query ? new QueryOptimization(this, collection) :
+        query is AggregateQuery ? new AggregateQueryOptimization(this, collection) :
+        throw new NotSupportedException();
 
     public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(
         this.SortService,

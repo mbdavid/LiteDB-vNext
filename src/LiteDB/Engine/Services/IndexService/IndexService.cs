@@ -55,7 +55,7 @@ unsafe internal class IndexService : IIndexService
     /// </summary>
     public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, IndexNodeResult head, IndexNodeResult last)
     {
-        using var _pc = PERF_COUNTER(4, nameof(AddNode), nameof(IndexService));
+        using var _pc = PERF_COUNTER(60, nameof(AddNode), nameof(IndexService));
 
         // random level (flip coin mode) - return number between 0-31
         var levels = this.Flip();
@@ -189,11 +189,10 @@ unsafe internal class IndexService : IIndexService
     /// </summary>
     public IndexNodeResult GetNode(RowID indexNodeID)
     {
-        using var _pc = PERF_COUNTER(5, nameof(GetNode), nameof(IndexService));
+        using var _pc = PERF_COUNTER(70, nameof(GetNode), nameof(IndexService));
 
         ENSURE(!indexNodeID.IsEmpty);
         ENSURE(!(indexNodeID.PageID ==0 && indexNodeID.Index == 0));
-
 
         var page = _transaction.GetPage(indexNodeID.PageID);
 

@@ -81,7 +81,13 @@ internal class MasterService : IMasterService
 
     #endregion
 
+    public override string ToString()
+    {
+        return Dump.Object(new { _master = JsonWriterStatic.Serialize(_mapper.MapToDocument(_master)) });
+    }
+
     public void Dispose()
     {
+        _master = new();
     }
 }

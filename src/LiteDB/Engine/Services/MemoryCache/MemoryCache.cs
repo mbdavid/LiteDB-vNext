@@ -34,8 +34,8 @@ unsafe internal class MemoryCache : IMemoryCache
         var page = (PageMemory*)ptr;
 
         ENSURE(page->ShareCounter != NO_CACHE);
-        ENSURE(page->TransactionID == 0);
         ENSURE(page->IsConfirmed == false);
+        //ENSURE(page->TransactionID == 0);
 
         // test if this page are getted from a writable collection in transaction
         writable = Array.IndexOf(writeCollections, page->ColID) > -1;
@@ -72,8 +72,7 @@ unsafe internal class MemoryCache : IMemoryCache
             ENSURE(page->ShareCounter != NO_CACHE);
 
             // increment ShareCounter to be used by another transaction
-            //Interlocked.Increment(ref pagePtr->ShareCounter);
-            page->ShareCounter++;
+            Interlocked.Increment(ref page->ShareCounter);
 
             return page;
         }
@@ -110,6 +109,7 @@ unsafe internal class MemoryCache : IMemoryCache
         ENSURE(!page->IsDirty, "PageMemory must be clean before add into cache");
         ENSURE(page->PositionID != uint.MaxValue, "PageMemory must have a position before add in cache");
         ENSURE(page->ShareCounter == NO_CACHE);
+        ENSURE(page->IsConfirmed == false);
         ENSURE(page->PageType == PageType.Data || page->PageType == PageType.Index);
 
         // before add, checks cache limit and cleanup if full
@@ -129,10 +129,6 @@ unsafe internal class MemoryCache : IMemoryCache
 
         if (!added) return false;
 
-        // clear any transaction info before add in cache
-        page->TransactionID = 0;
-        page->IsConfirmed = false;
-
         // initialize shared counter
         page->ShareCounter = 0;
 
@@ -142,16 +138,10 @@ unsafe internal class MemoryCache : IMemoryCache
     public void ReturnPageToCache(PageMemory* page)
     {
         ENSURE(!page->IsDirty);
-        ENSURE(page->ShareCounter > 0 && page->ShareCounter < byte.MaxValue);
-
-        //Interlocked.Decrement(ref page.ShareCounter);
-        page->ShareCounter--;
-
+        ENSURE(page->ShareCounter > 0);
         ENSURE(page->ShareCounter != NO_CACHE);
 
-        // clear header log information
-        page->TransactionID = 0;
-        page->IsConfirmed = false;
+        Interlocked.Decrement(ref page->ShareCounter);
     }
 
     /// <summary>
