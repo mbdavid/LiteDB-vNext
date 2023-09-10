@@ -20,7 +20,7 @@ unsafe internal partial struct PageMemory             // 8192 (64 bytes header -
     [FieldOffset(30)] public ushort UsedBytes;        // 2 *
     [FieldOffset(32)] public ushort FragmentedBytes;  // 2
     [FieldOffset(34)] public ushort NextFreeLocation; // 2
-    [FieldOffset(36)] public ushort HighestIndex;     // 2
+    [FieldOffset(36)] public short HighestIndex;      // 2  use -1 to unset
 
     [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
     [FieldOffset(38)] public ushort Reserved1;        // 2 *
@@ -33,26 +33,22 @@ unsafe internal partial struct PageMemory             // 8192 (64 bytes header -
 
     [FieldOffset(60)] public int Crc32;               // 4 *
 
-    [FieldOffset(PAGE_HEADER_SIZE)] public fixed byte Buffer[PAGE_CONTENT_SIZE];   // 8128
-    [FieldOffset(PAGE_HEADER_SIZE)] public fixed uint Extends[PAGE_CONTENT_SIZE];  // 8128
+    [FieldOffset(PAGE_HEADER_SIZE)] public fixed byte Buffer[PAGE_CONTENT_SIZE];  // 8128
+    [FieldOffset(PAGE_HEADER_SIZE)] public fixed uint Extends[AM_EXTEND_COUNT];   // 8128
 
 
     /// <summary>
     /// Get how many free bytes (including fragmented bytes) are in this page (content space) - Will return 0 bytes if page are full (or with max 255 items)
     /// </summary>
-    public int FreeBytes => this.ItemsCount == ushort.MaxValue ? // if page is full of items (255) - returns 0 bytes empty
-        0 :
-        PAGE_CONTENT_SIZE - this.UsedBytes - this.FooterSize;
+    public int FreeBytes => PAGE_CONTENT_SIZE - this.UsedBytes - this.FooterSize;
 
     /// <summary>
     /// Get how many bytes are used in footer page at this moment. Should align in  8 bytes
     /// ((HighestIndex + 1) * segment (4) + padding 8
     /// </summary>
-    public int FooterSize =>
-        (this.HighestIndex == ushort.MaxValue ?
-        0 :  // no items in page
+    public int FooterSize => this.HighestIndex == -1 ? 0 :  // no items in page
         ((this.HighestIndex + 1) % 2 == 1 ? (this.HighestIndex + 2) : (this.HighestIndex + 1)) // align in 8 bytes
-        * sizeof(PageSegment)); // 4 bytes PER item (2 to position + 2 to length) - need consider HighestIndex used
+        * sizeof(PageSegment); // 4 bytes PER item (2 to position + 2 to length) - need consider HighestIndex used
 
     /// <summary>
     /// Get current extend page value based on PageType and FreeSpace
@@ -90,7 +86,7 @@ unsafe internal partial struct PageMemory             // 8192 (64 bytes header -
         page->UsedBytes = 0;
         page->FragmentedBytes = 0;
         page->NextFreeLocation = PAGE_HEADER_SIZE; // first location
-        page->HighestIndex = ushort.MaxValue;
+        page->HighestIndex = -1;
 
         page->Crc32 = 0;
 

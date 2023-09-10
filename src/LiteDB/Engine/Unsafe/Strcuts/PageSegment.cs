@@ -28,6 +28,12 @@ unsafe internal struct PageSegment
         this.Length = length;
     }
 
+    public void Reset()
+    {
+        this.Location = 0;
+        this.Length = 0;
+    }
+
     public Span<byte> AsSpan(PageMemory* page)
     {
         ENSURE(!this.IsEmpty);

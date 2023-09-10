@@ -46,11 +46,6 @@ internal class Constants
     public const string FILE_HEADER_INFO = "** This is a LiteDB file **";
 
     /// <summary>
-    /// File header info length
-    /// </summary>
-    public const int FILE_HEADER_INFO_SIZE = 27;
-
-    /// <summary>
     /// Current file version
     /// </summary>
     public const byte FILE_VERSION = 9;

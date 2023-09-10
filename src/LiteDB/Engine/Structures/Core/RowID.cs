@@ -36,7 +36,7 @@ internal struct RowID : IEquatable<RowID>
         return !(left == right);
     }
 
-    public override int GetHashCode() => HashCode.Combine(this.PageID, this.Index);
+    public override int GetHashCode() => HashCode.Combine(PageID, Index);
 
     public override string ToString()
     {

@@ -4,6 +4,8 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
 {
     public static PageSegment* GetSegmentPtr(PageMemory* page, ushort index)
     {
+        ENSURE(index >= 0 && index < 300);
+
         var segmentOffset = PAGE_SIZE - (index * sizeof(PageSegment));
 
         var segment = (PageSegment*)((nint)page + segmentOffset);
@@ -16,7 +18,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
 
     public static PageSegment* InsertSegment(PageMemory* page, ushort bytesLength, ushort index, bool isNewInsert, out bool defrag, out ExtendPageValue newPageValue)
     {
-        ENSURE(index != ushort.MaxValue, new { bytesLength, index, isNewInsert });
+        ENSURE(index < 300, new { bytesLength, index, isNewInsert });
         ENSURE(bytesLength % 8 == 0 && bytesLength > 0, new { bytesLength, index, isNewInsert });
 
         // mark page as dirty
@@ -25,16 +27,18 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         // get initial page value to check for changes
         var initialPageValue = page->ExtendPageValue;
 
-        //TODO: converter em um ensure
-        if (!(page->FreeBytes >= bytesLength + (isNewInsert ? (sizeof(PageSegment) * 2) : 0)))
+        // update highst index if needed
+        if (index > page->HighestIndex)
         {
-            throw ERR_INVALID_FREE_SPACE_PAGE(page->PageID, page->FreeBytes, bytesLength + (isNewInsert ? (sizeof(PageSegment) * 2): 0));
+            page->HighestIndex = (short)index;
         }
 
-        // calculate how many continuous bytes are available in this page
-        var continuousBlocks = page->FreeBytes - page->FragmentedBytes - (isNewInsert ? (sizeof(PageSegment) * 2) : 0);
+        // get continuous block
+        var continuousBlocks = page->FreeBytes - page->FragmentedBytes;
 
-        ENSURE(continuousBlocks == PAGE_SIZE - page->NextFreeLocation - page->FooterSize - (isNewInsert ? (sizeof(PageSegment) * 2) : 0), "ContinuosBlock must be same as from NextFreePosition",
+        //TODO: converter em um ensure
+        ENSURE(page->FreeBytes >= bytesLength);
+        ENSURE(continuousBlocks == PAGE_SIZE - page->NextFreeLocation - page->FooterSize, "ContinuosBlock must be same as from NextFreePosition",
             new { continuousBlocks, isNewInsert });
 
         // if continuous blocks are not big enough for this data, must run page defrag
@@ -46,15 +50,11 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
             throw new NotImplementedException();
         }
 
-        if (index > page->HighestIndex || page->HighestIndex == ushort.MaxValue)
-        {
-            page->HighestIndex = index;
-        }
-
         // get segment addresses
         var segment = PageMemory.GetSegmentPtr(page, index);
 
-        ENSURE(segment->IsEmpty, "segment must be free in insert", new { location = segment->Location, length = segment->Length });
+        ENSURE(segment->IsEmpty, "segment must be free in insert", *segment);
+        ENSURE(segment->AsSpan(page).IsFullZero());
 
         // get next free location in page
         var location = page->NextFreeLocation;
@@ -68,7 +68,9 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         page->UsedBytes += bytesLength;
         page->NextFreeLocation += bytesLength;
 
-        ENSURE(location + bytesLength <= (PAGE_SIZE - (page->HighestIndex + 1) * (sizeof(PageSegment) * 2)), "New buffer slice could not override footer area",
+        var footerPosition = PAGE_SIZE - page->FooterSize;
+
+        ENSURE(location + bytesLength < footerPosition, "New buffer slice could not override footer area",
             new { location, bytesLength});
 
         // check for change on extend pageValue
@@ -92,14 +94,15 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         // read block position on index slot
         var segment = PageMemory.GetSegmentPtr(page, index);
 
+        ENSURE(!segment->IsEmpty);
+        ENSURE(!segment->AsSpan(page).IsFullZero());
+
         // add as free blocks
         page->ItemsCount--;
         page->UsedBytes -= segment->Length;
 
         // clean block area with \0
-        var pageContent = (byte*)((nint)page + segment->Location); // position on page
-
-        MarshalEx.FillZero(pageContent, segment->Length);
+        segment->AsSpan(page).Fill(0);
 
         // check if deleted segment are at end of page
         var isLastSegment = (segment->EndLocation == page->NextFreeLocation);
@@ -118,13 +121,13 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         // if deleted if are HighestIndex, update HighestIndex
         if (page->HighestIndex == index)
         {
-            PageMemory.UpdateHighestIndex(page);
+            PageMemory.RemoveHighestIndex(page);
         }
 
         // if there is no more blocks in page, clean FragmentedBytes and NextFreePosition
         if (page->ItemsCount == 0)
         {
-            ENSURE(page->HighestIndex == ushort.MaxValue, "if there is no items, HighestIndex must be clear");
+            ENSURE(page->HighestIndex == -1, "if there is no items, HighestIndex must be clear");
             ENSURE(page->UsedBytes == 0, "should be no bytes used in clean page");
 
             page->NextFreeLocation = PAGE_HEADER_SIZE;
@@ -171,6 +174,8 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         else if (bytesLength < segment->Length)
         {
             var diff = (ushort)(segment->Length - bytesLength); // bytes removed (should > 0)
+
+            ENSURE(diff % 8 == 0, "diff must be padded", new { diff, segment = *segment, bytesLength });
 
             if (isLastSegment)
             {
@@ -301,7 +306,6 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         page->NextFreeLocation = next;
     }
 
-
     /// <summary>
     /// Get a free index slot in this page
     /// </summary>
@@ -309,23 +313,18 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
     {
         // get first pointer do 0 index segment
         var segment = PageMemory.GetSegmentPtr(page, 0);
+        var index = (ushort)0;
 
-        // check for all slot area to get first empty slot [safe for byte loop]
-        for (var index = 0; index <= page->HighestIndex; index++)
+        // loop, in pointers, to check for empty segment
+        while (!segment->IsEmpty)
         {
-            if (segment->IsEmpty)
-            {
-                return (ushort)index;
-            }
-
             segment--;
+            index++;
+
+            ENSURE(index <= 300);
         }
 
-        var last = (ushort)(page->HighestIndex + 1);
-
-        ENSURE(PageMemory.GetSegmentPtr(page, last)->IsEmpty);
-
-        return last;
+        return index;
     }
 
 
@@ -333,32 +332,26 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
     /// Update HighestIndex based on current HighestIndex (step back looking for next used slot)
     /// * Used only in Delete() operation *
     /// </summary>
-    private static void UpdateHighestIndex(PageMemory* page)
+    private static void RemoveHighestIndex(PageMemory* page)
     {
-        // if current index is 0, clear index
-        if (page->HighestIndex == 0)
+        ENSURE(page->HighestIndex >= 0);
+
+        var index = page->HighestIndex;
+        var segment = PageMemory.GetSegmentPtr(page, (ushort)index);
+
+        // reset current index
+        segment->Reset();
+
+        // look for first empty index (top to bottom)
+        while (segment->IsEmpty && index >= 0)
         {
-            page->HighestIndex = byte.MaxValue;
-            return;
-        }
-
-        var highestIndex = (ushort)(page->HighestIndex - 1);
-        var segment = PageMemory.GetSegmentPtr(page, highestIndex);
-
-        // start from current - 1 to 0 (should use "int" because for use ">= 0")
-        for (int index = highestIndex; index >= 0; index--)
-        {
-            if (segment->Location != 0)
-            {
-                page->HighestIndex = (ushort)index;
-                return;
-            }
-
             segment++;
+            index--;
         }
 
-        // there is no more slots used
-        page->HighestIndex = ushort.MaxValue;
-    }
+        // update highest index
+        page->HighestIndex = index;
 
+        ENSURE(index >= -1 && index < 300);
+    }
 }
