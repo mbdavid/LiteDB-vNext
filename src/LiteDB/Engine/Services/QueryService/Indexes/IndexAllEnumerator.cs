@@ -54,7 +54,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
             _next = node[0]->GetNextPrev(_order);
 
-            return new PipeValue(node.IndexNodeID, node.DataBlockID);
+            return new PipeValue(node.DataBlockID);
         }
 
         _eof = true;

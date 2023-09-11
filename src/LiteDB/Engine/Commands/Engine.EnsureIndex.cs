@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Xml.Linq;
 
 namespace LiteDB.Engine;
 
@@ -65,58 +66,60 @@ public partial class LiteEngine : ILiteEngine
         var headResult = indexService.GetNode(indexDocument.HeadIndexNodeID);
 
         // read all documents based on a full PK scan
-        using (var enumerator = new IndexAllEnumerator(collection.PK, LiteDB.Engine.Query.Ascending))
+        using (var enumerator = new IndexNodeEnumerator(indexService, collection.PK))
         {
-            var result = enumerator.MoveNext(pipeContext);
-
-            while(!result.IsEmpty)
+            while(enumerator.MoveNext())
             {
+                var pkIndexNode = enumerator.Current;
+                var dataBlockID = pkIndexNode.DataBlockID;
+                var defrag = false;
+
                 // read document fields
-                var docResult = dataService.ReadDocument(result.DataBlockID, fields);
+                var docResult = dataService.ReadDocument(pkIndexNode.DataBlockID, fields);
 
                 if (docResult.Fail) throw docResult.Exception;
 
                 // get all keys for this index
                 var keys = expression.GetIndexKeys(docResult.Value.AsDocument, collation);
 
-                throw new NotImplementedException();
-//                // get PK indexNode and Page 
-//                var pkPage = transaction.GetPageAsync(result.IndexNodeID.PageID);
-//                var pkIndexNode = transaction.GetIndexNode(result.IndexNodeID);
-//                var pkNextNodeID = pkIndexNode.NextNodeID;
-//
-//                // and set as start to NextNode
-//                var first = IndexNodeResult.Empty;
-//                var last = new IndexNodeResult(pkIndexNode, pkPage);
-//
-//                foreach (var key in keys)
-//                {
-//                    var nodeResult = indexService.AddNode(collection.ColID, indexDocument, key, result.DataBlockID, headResult, last);
-//
-//                    // keep first node to add in NextNode list (after pk)
-//                    if (first.IsEmpty) first = nodeResult;
-//
-//                    last = nodeResult;
-//                    counter++;
-//                }
-//
-//                // if pk already has a nextNode, point to first added 
-//                if (!pkNextNodeID.IsEmpty)
-//                {
-//                    first.SetNextNodeID(pkNextNodeID);
-//                }
-//
-//                // do a safepoint after insert each document
-//                if (monitorService.Safepoint(transaction))
-//                {
-//                    await transaction.SafepointAsync();
-//
-//                    // after safepoint, reload headResult (can change page)
-//                    headResult = indexService.GetNode(indexDocument.HeadIndexNodeID);
-//                }
-//
-//                // go to next result
-//                result = enumerator.MoveNext(pipeContext);
+                var first = IndexNodeResult.Empty;
+                var last = IndexNodeResult.Empty;
+
+                foreach (var key in keys)
+                {
+                    var node = indexService.AddNode(collection.ColID, indexDocument, key, dataBlockID, headResult, last, out defrag);
+
+                    // ensure execute reload on indexNode after any defrag
+                    if (defrag && pkIndexNode.IndexNodeID.PageID == node.IndexNodeID.PageID)
+                    {
+                        pkIndexNode.Reload();
+                    }
+
+                    // keep first node to add in NextNode list (after pk)
+                    if (first.IsEmpty) first = node;
+
+                    last = node;
+                    counter++;
+                }
+
+                ENSURE(first.IsEmpty == false);
+                //pkIndexNode.Reload();
+
+                pkIndexNode.NextNodeID = first.IndexNodeID;
+
+                unsafe
+                {
+                    pkIndexNode.Page->IsDirty = true;
+                }
+
+                // do a safepoint after insert each document
+                if (monitorService.Safepoint(transaction))
+                {
+                    await transaction.SafepointAsync();
+                    
+                    // after safepoint, reload headResult (page pointer changes)
+                    headResult = indexService.GetNode(indexDocument.HeadIndexNodeID);
+                }
             }
         }
 

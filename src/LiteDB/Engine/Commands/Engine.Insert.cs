@@ -63,7 +63,7 @@ public partial class LiteEngine : ILiteEngine
             var dataBlockID = dataService.InsertDocument(collection.ColID, doc);
 
             // insert _id as PK and get node to be used 
-            var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, headResults[0], IndexNodeResult.Empty);
+            var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, headResults[0], IndexNodeResult.Empty, out _);
 
             if (collection.Indexes.Count > 1)
             {
@@ -76,7 +76,7 @@ public partial class LiteEngine : ILiteEngine
 
                     foreach (var key in keys)
                     {
-                        var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, headResults[i], last);
+                        var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, headResults[i], last, out _);
 
                         last = node;
                     }

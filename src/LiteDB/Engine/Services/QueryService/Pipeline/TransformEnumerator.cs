@@ -33,7 +33,7 @@ internal class TransformEnumerator : IPipeEnumerator
 
         var result = _expr.Execute(item.Document, context.QueryParameters, _collation);
 
-        return new PipeValue(item.IndexNodeID, item.DataBlockID, result.AsDocument);
+        return new PipeValue(item.DataBlockID, result.AsDocument);
     }
 
     public void Dispose()

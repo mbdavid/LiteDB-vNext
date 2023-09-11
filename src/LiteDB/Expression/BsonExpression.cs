@@ -62,8 +62,6 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
     /// </summary>
     internal IEnumerable<BsonValue> GetIndexKeys(BsonDocument root, Collation collation)
     {
-        using var _pc = PERF_COUNTER(160, nameof(GetIndexKeys), nameof(BsonExpression));
-
         var keys = this.Execute(root, null, collation);
 
         if (keys.IsArray)

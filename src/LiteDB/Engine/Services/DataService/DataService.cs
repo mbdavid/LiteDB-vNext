@@ -39,8 +39,7 @@ unsafe internal class DataService : IDataService
         var page = _transaction.GetFreeDataPage(colID);
 
         // keep last instance to update nextBlock
-        var lastPage = (PageMemory*)default;
-        var lastDataBlockIndex = ushort.MaxValue;
+        var lastDataBlock = DataBlockResult.Empty;
 
         // return dataBlockID - will be update in first insert
         var firstDataBlockID = RowID.Empty;
@@ -48,6 +47,7 @@ unsafe internal class DataService : IDataService
         var bytesLeft = docLength;
         var position = 0;
         var extend = false;
+        var defrag = false;
 
         while (true)
         {
@@ -60,20 +60,19 @@ unsafe internal class DataService : IDataService
 
             var bytesToCopy = Math.Min(pageAvailableSpace, bytesLeft);
 
-            var dataBlock = PageMemory.InsertDataBlock(page, bufferDoc.AsSpan(position, bytesToCopy), extend, out _, out var newPageValue);
+            var dataBlock = PageMemory.InsertDataBlock(page, bufferDoc.AsSpan(position, bytesToCopy), extend, out defrag, out var newPageValue);
 
             if (newPageValue != ExtendPageValue.NoChange)
             {
                 _transaction.UpdatePageMap(page->PageID, newPageValue);
             }
 
-            if (lastDataBlockIndex != ushort.MaxValue)
+            if (lastDataBlock.IsEmpty == false)
             {
-                var lastDataBlock = PageMemory.GetDataBlock(lastPage, lastDataBlockIndex, out _);
+                ENSURE(dataBlock.Page->PageID != lastDataBlock.Page->PageID);
 
                 // update NextDataBlock from last page
                 lastDataBlock.DataBlock->NextBlockID = dataBlock.DataBlockID;
-                lastDataBlock.Page->IsDirty = true;
             }
             else
             {
@@ -87,8 +86,7 @@ unsafe internal class DataService : IDataService
             if (bytesLeft == 0) break;
 
             // keep last instance
-            lastPage = page;
-            lastDataBlockIndex = dataBlock.DataBlockID.Index;
+            lastDataBlock = dataBlock;
 
             page = _transaction.GetFreeDataPage(colID);
 
@@ -137,7 +135,7 @@ unsafe internal class DataService : IDataService
         var page = _transaction.GetPage(dataBlockID.PageID);
 
         // get data block segment
-        var dataBlock = PageMemory.GetDataBlock(page, dataBlockID.Index, out var dataBlockLength);
+        var dataBlock = new DataBlockResult(page, dataBlockID);
 
         if (dataBlock.DataBlock->NextBlockID.IsEmpty)
         {
@@ -191,9 +189,12 @@ unsafe internal class DataService : IDataService
             // get page from dataBlockID
             var page = _transaction.GetPage(dataBlockID.PageID);
 
-            var dataBlock = PageMemory.GetDataBlock(page, dataBlockID.Index, out _);
+            var dataBlock = new DataBlockResult(page, dataBlockID);
 
-            // delete dataBlock
+            // copy values before delete
+            var nextBlockID = dataBlock.DataBlock->NextBlockID;
+
+            // delete dataBlock (do not use "dataBlock" after here because are "fully zero")
             PageMemory.DeleteSegment(page, dataBlockID.Index, out var newPageValue);
 
             // checks if extend pageValue changes
@@ -204,10 +205,10 @@ unsafe internal class DataService : IDataService
             }
 
             // stop if there is not block to delete
-            if (dataBlock.DataBlock->NextBlockID.IsEmpty) break;
+            if (nextBlockID.IsEmpty) break;
 
             // go to next block
-            dataBlockID = dataBlock.DataBlock->NextBlockID;
+            dataBlockID = nextBlockID;
         }
     }
 

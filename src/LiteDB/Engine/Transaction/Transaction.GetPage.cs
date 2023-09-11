@@ -154,8 +154,14 @@ internal partial class Transaction : ITransaction
         {
             var page = this.GetPage(pageID);
 
+            // get how many avaiable bytes (excluding new added record) this page contains
+            var pageAvailableSpace =
+                page->FreeBytes -
+                indexNodeLength -
+                8; // extra align
+
             // if current page has no avaiable space (super rare cases), get another page
-            if (page->FreeBytes < indexNodeLength)
+            if (pageAvailableSpace < indexNodeLength)
             {
                 // set this page as full before get next page
                 this.UpdatePageMap(page->PageID, ExtendPageValue.Full);

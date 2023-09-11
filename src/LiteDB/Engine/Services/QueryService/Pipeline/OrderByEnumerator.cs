@@ -36,7 +36,7 @@ internal class OrderByEnumerator : IPipeEnumerator
         // get next sorted item (returns Empty when EOF)
         var item = _sorter.MoveNext();
 
-        return new PipeValue(RowID.Empty, item.DataBlockID);
+        return new PipeValue(item.DataBlockID);
     }
 
     public void Dispose()

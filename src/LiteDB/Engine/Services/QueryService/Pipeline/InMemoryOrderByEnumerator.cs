@@ -54,7 +54,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
         {
             var item = _sortedItems.Dequeue();
 
-            return new PipeValue(RowID.Empty, item.DataBlockID, item.Document);
+            return new PipeValue(item.DataBlockID, item.Document);
         }
 
         return PipeValue.Empty;

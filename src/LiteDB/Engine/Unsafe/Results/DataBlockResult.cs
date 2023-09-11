@@ -3,23 +3,32 @@
 unsafe internal struct DataBlockResult
 {
     public RowID DataBlockID;
+
     public PageMemory* Page;
     public PageSegment* Segment;
     public DataBlock* DataBlock;
 
-    public static DataBlockResult Empty = new() { DataBlockID = RowID.Empty };
+    public static DataBlockResult Empty = new() { DataBlockID = RowID.Empty, Page = default };
 
     public bool IsEmpty => this.DataBlockID.IsEmpty;
 
     public int ContentLength => this.Segment->Length - sizeof(DataBlock) - this.DataBlock->Padding;
     public int DocumentLength => this.DataBlock->Extend ? -1 : this.AsSpan().ReadVariantLength(out _);
 
-    public DataBlockResult(RowID dataBlockID, PageMemory* page, PageSegment* segment, DataBlock* dataBlock)
+    public DataBlockResult(PageMemory* page, RowID dataBlockID)
     {
-        this.DataBlockID = dataBlockID;
+        ENSURE(page->PageID == dataBlockID.PageID);
+
         this.Page = page;
-        this.Segment = segment;
-        this.DataBlock = dataBlock;
+        this.DataBlockID = dataBlockID;
+
+        this.Reload();
+    }
+
+    public void Reload()
+    {
+        this.Segment = PageMemory.GetSegmentPtr(this.Page, this.DataBlockID.Index);
+        this.DataBlock = (DataBlock*)((nint)this.Page + this.Segment->Location);
     }
 
     /// <summary>

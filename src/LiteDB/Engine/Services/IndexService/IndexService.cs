@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Net;
+
+namespace LiteDB.Engine;
 
 /// <summary>
 /// Implement a Index service - Add/Remove index nodes on SkipList
@@ -53,7 +55,7 @@ unsafe internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, IndexNodeResult head, IndexNodeResult last)
+    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, IndexNodeResult head, IndexNodeResult last, out bool defrag)
     {
         using var _pc = PERF_COUNTER(60, nameof(AddNode), nameof(IndexService));
 
@@ -61,13 +63,21 @@ unsafe internal class IndexService : IIndexService
         var levels = this.Flip();
 
         // call AddNode with key value
-        return this.AddNodeInternal(colID, index, key, dataBlockID, levels, head, last);
+        return this.AddNodeInternal(colID, index, key, dataBlockID, levels, head, last, out defrag);
     }
 
     /// <summary>
     /// Insert a new node index inside an collection index.
     /// </summary>
-    private IndexNodeResult AddNodeInternal(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, int insertLevels, IndexNodeResult head, IndexNodeResult last)
+    private IndexNodeResult AddNodeInternal(
+        byte colID, 
+        IndexDocument index, 
+        BsonValue key, 
+        RowID dataBlockID, 
+        int insertLevels, 
+        IndexNodeResult head, 
+        IndexNodeResult last, 
+        out bool defrag)
     {
         // get a free index page for head note
         var bytesLength = IndexNode.GetSize(insertLevels, key);
@@ -79,7 +89,7 @@ unsafe internal class IndexService : IIndexService
         var before = page->ExtendPageValue;
 
         // create node in page
-        var node = PageMemory.InsertIndexNode(page, index.Slot, (byte)insertLevels, key, dataBlockID, out var defrag, out var newPageValue);
+        var node = PageMemory.InsertIndexNode(page, index.Slot, (byte)insertLevels, key, dataBlockID, out defrag, out var newPageValue);
 
         // update allocation map if needed (this page has no more "size" changes)
         if (newPageValue != ExtendPageValue.NoChange)
@@ -137,9 +147,7 @@ unsafe internal class IndexService : IIndexService
                 // fix sibling pointer to new node
                 //***leftNode.Node.SetNext(leftNode.Page, currentLevel, node.IndexNodeID);
                 leftNode[currentLevel]->NextID = node.IndexNodeID;
-
-                // mark left page as dirty
-                leftNode.Page->IsDirty= true;
+                leftNode.Page->IsDirty = true;
 
                 //***right = node.Next[currentLevel];
                 right = node[currentLevel]->NextID;
@@ -148,11 +156,9 @@ unsafe internal class IndexService : IIndexService
                 //***rightNode.Node.SetPrev(rightNode.Page, currentLevel, node.IndexNodeID);
                 var rightNode = this.GetNode(right);
 
-                rightNode[currentLevel]->PrevID = node.IndexNodeID;
-
                 // mark right page as dirty (after change PrevID)
+                rightNode[currentLevel]->PrevID = node.IndexNodeID;
                 rightNode.Page->IsDirty = true;
-
             }
 
         }
@@ -163,6 +169,7 @@ unsafe internal class IndexService : IIndexService
             // set last node to link with current node
             //***last.Node.SetNextNodeID(last.Page, node.IndexNodeID);
             last.Node->NextNodeID = node.IndexNodeID;
+            last.Page->IsDirty = true;
         }
 
         return node;
@@ -198,7 +205,7 @@ unsafe internal class IndexService : IIndexService
 
         ENSURE(page->PageType == PageType.Index, new { indexNodeID });
 
-        var result = PageMemory.GetIndexNode(page, indexNodeID.Index);
+        var result = new IndexNodeResult(page, indexNodeID);
 
         return result;
     }
@@ -256,17 +263,23 @@ unsafe internal class IndexService : IIndexService
     /// <summary>
     /// Deletes all indexes nodes from pkNode
     /// </summary>
-    public void DeleteAllAsync(IndexNodeResult node)
+    public void DeleteAll(IndexNodeResult nodeResult)
     {
+        // get a copy before change
+        var node = nodeResult;
+
         // all indexes nodes from a document are connected by nextNode
         while (!node.IsEmpty)
         {
+            // keep result before delete
+            var nextNodeID = node.Node->NextNodeID;
+
             this.DeleteSingleNode(node);
 
-            if (node.Node->NextNodeID.IsEmpty) break;
+            if (nextNodeID.IsEmpty) break;
 
             // move to next node
-            node = this.GetNode(node.Node->NextNodeID);
+            node = this.GetNode(nextNodeID);
         }
     }
 
@@ -296,15 +309,17 @@ unsafe internal class IndexService : IIndexService
             if (!prev.IsEmpty)
             {
                 prev[i]->NextID = node[i]->NextID;
+                prev.Page->IsDirty = true;
             }
 
             if (!next.IsEmpty)
             {
                 next[i]->PrevID = node[i]->PrevID;
+                next.Page->IsDirty = true;
             }
         }
 
-        // delete node segment in page
+        // delete node segment in page (set IsDirtry = true)
         PageMemory.DeleteSegment(node.Page, node.IndexNodeID.Index, out var newPageValue);
 
         // update map page only if change page value
