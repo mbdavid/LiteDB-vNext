@@ -51,12 +51,14 @@ unsafe internal class DataService : IDataService
 
         while (true)
         {
-            // get how many bytes must be copied in this page (should consider data block and new footer item)
-            var pageFreeSpace = page->FreeBytes - sizeof(DataBlock) - sizeof(PageSegment);
-            var bytesToCopy = Math.Min(pageFreeSpace, bytesLeft);
+            // get how many avaiable bytes (excluding new added record) this page contains
+            var pageAvailableSpace =
+                page->FreeBytes -
+                sizeof(DataBlock) - // new data block fixed syze
+                (sizeof(PageSegment) * 2) - // footer (*2 to align)
+                8; // extra align
 
-            // get extend page value before page change
-            var before = page->ExtendPageValue;
+            var bytesToCopy = Math.Min(pageAvailableSpace, bytesLeft);
 
             var dataBlock = PageMemory.InsertDataBlock(page, bufferDoc.AsSpan(position, bytesToCopy), extend, out _, out var newPageValue);
 
@@ -67,10 +69,11 @@ unsafe internal class DataService : IDataService
 
             if (lastDataBlockIndex != ushort.MaxValue)
             {
-                var lastDataBlockPtr = PageMemory.GetDataBlock(lastPage, lastDataBlockIndex, out _);
+                var lastDataBlock = PageMemory.GetDataBlock(lastPage, lastDataBlockIndex, out _);
 
                 // update NextDataBlock from last page
-                lastDataBlockPtr.DataBlock->NextBlockID = dataBlock.DataBlockID;
+                lastDataBlock.DataBlock->NextBlockID = dataBlock.DataBlockID;
+                lastDataBlock.Page->IsDirty = true;
             }
             else
             {
