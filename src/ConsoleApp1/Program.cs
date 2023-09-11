@@ -5,7 +5,37 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// SETUP
+var doc = new BsonDocument
+{
+    ["_id"] = 16,
+    ["name"] = 10,//"Name Surname",
+    ["age"] = 26
+};
+
+var bw = new BsonDocumentWriter(doc);
+
+bw._currentValue = new BsonString("abcd");//BsonGuid(new Guid(new byte[] { 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255 }));//BsonInt32(16843009);
+
+var span = new Span<byte>(new byte[19]);
+
+bw.WriteSegment(span[0..4]);
+bw.WriteSegment(span[4..10]);
+bw.WriteSegment(span[10..]);
+/*bw.WriteValue(span[0..2]);
+bw.WriteValue(span[2..10]);
+bw.WriteValue(span[10..16]);
+bw.WriteValue(span[16..17]);*/
+
+/*Console.WriteLine(bw.WriteValue(span[0..1]));
+Console.WriteLine(bw.WriteValue(span[1..3]));
+Console.WriteLine(bw.WriteValue(span[3..5]));*/
+
+
+Console.WriteLine("End");
+
+
+
+/*// SETUP
 const string VER = "v6";
 
 
@@ -199,4 +229,4 @@ T RunSync<T>(string message, Func<T> syncFunc)
     Console.WriteLine($"{sw.Elapsed.TotalMilliseconds:n0}ms");
 
     return result;
-}
+}*/
