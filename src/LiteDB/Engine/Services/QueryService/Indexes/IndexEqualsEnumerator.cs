@@ -57,7 +57,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
             }
 
             // current node to return
-            return new PipeValue(node.IndexNodeID, node.DataBlockID);
+            return new PipeValue(node.DataBlockID);
         }
 
         // first go forward
@@ -72,7 +72,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
             {
                 _prev = node[0]->PrevID;
 
-                return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                return new PipeValue(node.DataBlockID);
             }
             else
             {
@@ -92,7 +92,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
             {
                 _next = node[0]->PrevID;
 
-                return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                return new PipeValue(node.DataBlockID);
             }
             else
             {

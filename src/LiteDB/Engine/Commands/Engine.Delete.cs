@@ -37,11 +37,14 @@ public partial class LiteEngine : ILiteEngine
 
             if (result.IsEmpty) continue;
 
+            // get value before DeleteAsync
+            var dataBlockID = result.DataBlockID;
+
             // delete all index nodes starting from PK
-            indexService.DeleteAllAsync(result);
+            indexService.DeleteAll(result);
 
             // delete document
-            dataService.DeleteDocument(result.DataBlockID);
+            dataService.DeleteDocument(dataBlockID);
 
             count++;
 

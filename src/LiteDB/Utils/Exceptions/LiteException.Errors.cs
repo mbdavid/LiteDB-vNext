@@ -59,7 +59,7 @@ public partial class LiteException
         new(900, $"Invalid database file version.");
 
     internal static LiteException ERR_INVALID_FREE_SPACE_PAGE(uint pageID, int freeBytes, int length) =>
-        new(901, $"An operation that would corrupt page {pageID} was prevented. The operation required {length} free bytes, but the page had only {freeBytes} available.");
+        new(901, $"An operation that would corrupt pageID #{pageID} was prevented. The operation required {length} free bytes, but the page had only {freeBytes} available.");
 
     internal static LiteException ERR_ENSURE(string? message) =>
         new(902, $"ENSURE: {message}.");

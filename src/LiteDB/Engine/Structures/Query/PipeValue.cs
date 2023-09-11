@@ -2,31 +2,27 @@
 
 internal struct PipeValue
 {
-    public readonly RowID IndexNodeID;
     public readonly RowID DataBlockID;
     public readonly BsonDocument? Document;
 
     public static readonly PipeValue Empty = new();
 
-    public readonly bool IsEmpty => this.IndexNodeID.IsEmpty && this.DataBlockID.IsEmpty && this.Document is null;
+    public readonly bool IsEmpty => this.DataBlockID.IsEmpty && this.Document is null;
 
-    public PipeValue(RowID indexNodeID, RowID dataBlockID)
+    public PipeValue(RowID dataBlockID)
     {
-        this.IndexNodeID = indexNodeID;
         this.DataBlockID = dataBlockID;
         this.Document = null;
     }
 
-    public PipeValue(RowID indexNodeID, RowID dataBlockID, BsonDocument value)
+    public PipeValue(RowID dataBlockID, BsonDocument value)
     {
-        this.IndexNodeID = indexNodeID;
         this.DataBlockID = dataBlockID;
         this.Document = value;
     }
 
     public PipeValue()
     {
-        this.IndexNodeID = RowID.Empty;
         this.DataBlockID = RowID.Empty;
         this.Document = null;
     }

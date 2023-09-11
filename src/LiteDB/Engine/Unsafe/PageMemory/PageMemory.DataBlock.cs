@@ -12,19 +12,6 @@ unsafe internal partial struct PageMemory // PageMemory.DataBlock
         page->IsDirty = true;
     }
 
-    public static DataBlockResult GetDataBlock(PageMemory* page, ushort index, out int dataBlockLength)
-    {
-        var segment = PageMemory.GetSegmentPtr(page, index);
-
-        var dataBlock = (DataBlock*)((nint)page + segment->Location);
-
-        dataBlockLength = segment->Length;
-
-        var dataBlockID = new RowID(page->PageID, index);
-
-        return new DataBlockResult(dataBlockID, page, segment, dataBlock);
-    }
-
     public static DataBlockResult InsertDataBlock(PageMemory* page, Span<byte> content, bool extend, out bool defrag, out ExtendPageValue newPageValue)
     {
         // get required bytes this insert
@@ -52,7 +39,7 @@ unsafe internal partial struct PageMemory // PageMemory.DataBlock
         dataBlock->Padding = (byte)padding;
         dataBlock->NextBlockID = RowID.Empty;
 
-        var result = new DataBlockResult(dataBlockID, page, segment, dataBlock);
+        var result = new DataBlockResult(page, dataBlockID);
 
         // copy content into dataBlock content block
         content.CopyTo(result.AsSpan());

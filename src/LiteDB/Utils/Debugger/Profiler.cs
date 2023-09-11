@@ -7,7 +7,7 @@ internal static class Profiler
     private static long _start = Stopwatch.GetTimestamp();
     private static readonly Counter[] _counters = new Counter[COUNTERS];
     private static readonly StringBuilder _results = new();
-    private static long _memoryAllocated;
+    private static long _maxAllocatedBytes;
 
     static Profiler()
     {
@@ -18,6 +18,10 @@ internal static class Profiler
     {
         //return new PerfHit();
         var counter = _counters[index];
+
+        var allocatedBytes = GC.GetTotalAllocatedBytes();
+
+        _maxAllocatedBytes = Math.Max(_maxAllocatedBytes, allocatedBytes);
 
         if (counter is null)
         {
@@ -30,7 +34,6 @@ internal static class Profiler
 
     public static void Reset()
     {
-        _memoryAllocated = GC.GetTotalAllocatedBytes(true);
         _start = Stopwatch.GetTimestamp();
 
         for(var i = 0; i < COUNTERS; i++)
@@ -57,10 +60,7 @@ internal static class Profiler
             _results.AppendLine($"|  {title}  |".PadRight(screen_width - name_width, ch));
         }
 
-
-        var allocated = $"{(double)(GC.GetTotalAllocatedBytes(true) - _memoryAllocated) / 1024d / 1024d:n2}";
-
-        _results.AppendLine($"{("> Total Time Spent / Memory Allocated".PadRight(50, '.'))}: {total,10} - 100,000% - {allocated,10} Mb");
+        _results.AppendLine($"{("> Total Time Spent".PadRight(50, '.'))}: {total,10} - 100,000%");
 
         var sorted = _counters
             .Where(x => x is not null)
@@ -91,6 +91,12 @@ internal static class Profiler
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine($"# PERFORMANCE COUNTERS");
         Console.WriteLine(_results.ToString());
+        Console.WriteLine($"# MEMORY MAX USAGE");
+        var allocated = $"{(double)(_maxAllocatedBytes) / 1024d / 1024d:n2}";
+
+        Console.WriteLine($"{("> Max Memory Allocated".PadRight(50, '.'))}: {allocated,10} Mb");
+
+
         Console.ForegroundColor = ConsoleColor.Gray;
     }
 

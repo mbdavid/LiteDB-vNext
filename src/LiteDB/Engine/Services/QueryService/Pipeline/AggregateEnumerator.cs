@@ -87,7 +87,7 @@ internal class AggregateEnumerator : IPipeEnumerator
             func.Reset();
         }
 
-        return new PipeValue(RowID.Empty, RowID.Empty, doc);
+        return new PipeValue(RowID.Empty, doc);
     }
 
     public void Dispose()

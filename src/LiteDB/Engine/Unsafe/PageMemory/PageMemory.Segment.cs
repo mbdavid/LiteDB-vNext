@@ -4,12 +4,12 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
 {
     public static PageSegment* GetSegmentPtr(PageMemory* page, ushort index)
     {
-        var segmentOffset = PAGE_SIZE - (index * sizeof(PageSegment));
+        var segmentOffset = PAGE_SIZE - ((index + 1) * sizeof(PageSegment));
 
         var segment = (PageSegment*)((nint)page + segmentOffset);
 
-        ENSURE(segment->Length < PAGE_CONTENT_SIZE);
-        ENSURE(segment->Location < PAGE_CONTENT_SIZE);
+        ENSURE(segment->Length < PAGE_CONTENT_SIZE, new { index, Segment = *segment });
+        ENSURE(segment->Location < PAGE_CONTENT_SIZE, new { index, Segment = *segment });
 
         return segment;
     }
@@ -42,8 +42,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
 
         if (defrag)
         {
-            //this.Defrag(page);
-            throw new NotImplementedException();
+            Defrag(page);
         }
 
         if (index > page->HighestIndex || page->HighestIndex == ushort.MaxValue)
@@ -68,8 +67,8 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         page->UsedBytes += bytesLength;
         page->NextFreeLocation += bytesLength;
 
-        ENSURE(location + bytesLength <= (PAGE_SIZE - (page->HighestIndex + 1) * (sizeof(PageSegment) * 2)), "New buffer slice could not override footer area",
-            new { location, bytesLength});
+        ENSURE(segment->EndLocation < (PAGE_SIZE - page->FooterSize), "New segment could not override footer area",
+            new { location, bytesLength });
 
         // check for change on extend pageValue
         newPageValue = initialPageValue == page->ExtendPageValue ? ExtendPageValue.NoChange : page->ExtendPageValue;
@@ -236,8 +235,9 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
     /// </summary>
     private static void Defrag(PageMemory* page)
     {
-        ENSURE(page->FragmentedBytes > 0, "do not call this when page has no fragmentation");
-        ENSURE(page->HighestIndex < byte.MaxValue, "there is no items in this page to run defrag");
+        ENSURE(page->FragmentedBytes > 0);
+        ENSURE(page->ItemsCount > 0);
+        ENSURE(page->HighestIndex != ushort.MaxValue);
 
         // first get all blocks inside this page sorted by location (location, index)
         var blocks = new SortedList<ushort, ushort>(page->ItemsCount);
@@ -249,7 +249,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         for (ushort index = 0; index <= page->HighestIndex; index++)
         {
             // get only used index
-            if (segment->Location != 0)
+            if (!segment->IsEmpty)
             {
                 // sort by position
                 blocks.Add(segment->Location, index);
@@ -276,7 +276,7 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
                 ENSURE(location > next, "current segment position must be greater than current empty space", new { location, next });
 
                 // copy from original location into new (correct) location
-                var sourceSpan = new Span<byte>((byte*)((nint)page + location), addr->Length);
+                var sourceSpan = addr->AsSpan(page); // new Span<byte>((byte*)((nint)page + location), addr->Length);
                 var destSpan = new Span<byte>((byte*)((nint)page + next), addr->Length);
 
                 sourceSpan.CopyTo(destSpan);
@@ -291,10 +291,11 @@ unsafe internal partial struct PageMemory // PageMemory.Segment
         // fill all non-used content area with 0
         var endContent = PAGE_SIZE - page->FooterSize;
 
-        var nextPtr = (byte*)((nint)page + next);
-        var contentLength = endContent - next;
+        // fill new are with 0
+        var emptyAddr = (byte*)((nint)page + next);
+        var emptyLength = endContent - next;
 
-        MarshalEx.FillZero(nextPtr, contentLength);
+        MarshalEx.FillZero(emptyAddr, emptyLength);
 
         // clear fragment blocks (page are in a continuous segment)
         page->FragmentedBytes = 0;

@@ -12,9 +12,9 @@ const string VER = "v6-pointer";
 //var INSERT_1 = new Range(1, 300_000);
 //var DELETE_1 = new Range(5, 60_000);
 //var INSERT_2 = new Range(6, 30_000);
-var INSERT_1 = new Range(1, 30_000);
-var DELETE_1 = new Range(5, 6_000);
-var INSERT_2 = new Range(6, 3_000);
+var INSERT_1 = new Range(1, 300_000);
+var DELETE_1 = new Range(5, 60_000);
+var INSERT_2 = new Range(6, 30_000);
 ////////////////////////
 
 var _random = new Random(420);
@@ -58,26 +58,24 @@ await Run($"Insert {INSERT_1}", async () =>
 
 Profiler.AddResult("Insert", true);
 
-await Run("Checkpoint", async () =>
-{
-    await db.CheckpointAsync();
-});
-
-Profiler.AddResult("Checkpoint", true);
-
-
-
-await Run("Shutdown", async () =>
-{
-    await db.ShutdownAsync();
-});
-
-await Run("Re-open database", async () =>
-{
-    await db.OpenAsync();
-});
-
-Profiler.Reset();
+//await Run("Checkpoint", async () =>
+//{
+//    await db.CheckpointAsync();
+//});
+//
+//Profiler.AddResult("Checkpoint", true);
+//
+//await Run("Shutdown", async () =>
+//{
+//    await db.ShutdownAsync();
+//});
+//
+//await Run("Re-open database", async () =>
+//{
+//    await db.OpenAsync();
+//});
+//
+//Profiler.Reset();
 
 await Run($"Query full 'col1'", async () =>
 {
@@ -87,23 +85,23 @@ await Run($"Query full 'col1'", async () =>
 Profiler.AddResult("Query", true);
 
 
-//await Run($"EnsureIndex (age)", async () =>
-//{
-//    await db.EnsureIndexAsync("col1", "idx_age", "age", false);
-//});
-//
-//Profiler.AddResult("EnsureIndex", true);
+await Run($"EnsureIndex (age)", async () =>
+{
+    await db.EnsureIndexAsync("col1", "idx_age", "age", false);
+});
+
+Profiler.AddResult("EnsureIndex", true);
 
 
-//await Run($"Delete ({DELETE_1})", async () =>
-//{
-//    await db.DeleteAsync("col1", Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(x => new BsonInt32(x)).ToArray());
-//});
-//
-//await Run($"Insert {INSERT_2}", async () =>
-//{
-//    await db.InsertAsync("col1", data2, BsonAutoId.Int32);
-//});
+await Run($"Delete ({DELETE_1})", async () =>
+{
+    await db.DeleteAsync("col1", Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(x => new BsonInt32(x)).ToArray());
+});
+
+await Run($"Insert {INSERT_2}", async () =>
+{
+    await db.InsertAsync("col1", data2, BsonAutoId.Int32);
+});
 
 await Run("Checkpoint", async () =>
 {
