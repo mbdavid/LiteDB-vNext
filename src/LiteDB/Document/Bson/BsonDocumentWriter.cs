@@ -10,13 +10,21 @@ public class BsonDocumentWriter : IBsonDocumentWriter
 {
     private int _remaining;
     private BsonDocument _doc;
-    public BsonValue _currentValue;
-    public string _currentKey;
-    private int _currentValueIndex;
-    private int _currentKeyIndex;
+
     private int _currentIndex;
+
+    private bool _unfinishedKeyVL = false;
+    private byte[] _currentKeyVL = new byte[4];
+    private int _currentKeyVLIndex;
+
     private bool _unfinishedKey = false;
+    public string _currentKey;
+    private int _currentKeyIndex;
+
     private bool _unfinishedValue = false;
+    public BsonValue _currentValue;
+    private int _currentValueIndex;
+
     private IEnumerable<KeyValuePair<string, BsonValue>> _elements;
 
     public BsonDocumentWriter(BsonDocument doc)
@@ -43,35 +51,65 @@ public class BsonDocumentWriter : IBsonDocumentWriter
         var isFull = false;
         for (; _currentIndex < _elements.Count(); _currentIndex++)
         {
+            if(_unfinishedKeyVL)
+            {
+                isFull = !WriteUnfinishedKeyVL(span, out var keyVLLength);
+                offSet += keyVLLength;
+                if (isFull) break;
+
+                if (offSet == span.Length) break;
+            }
+
+            if (_unfinishedKey)
+            {
+                isFull = !WriteUnfinishedKey(span, out var keyLength);
+                offSet += keyLength;
+                if (isFull) break;
+
+                if (offSet == span.Length) break;
+            }
+
             if(_unfinishedValue)
             {
-                isFull = !WriteUnfinishedValue(span, out var length);
-                offSet += length;
+                isFull = !WriteUnfinishedValue(span, out var ValueLength);
+                offSet += ValueLength;
                 if (isFull) break;
                 _currentIndex++;
                 if (offSet == span.Length) break;
             }
 
 
+
             var el = _elements.ElementAt(_currentIndex);
 
-            _currentValue = el.Value;
+            _currentKeyVL.AsSpan<byte>().WriteVariantLength(Encoding.UTF8.GetByteCount(el.Key), out _);
             _currentKey = el.Key;
+            _currentValue = el.Value;
+            
 
 
-            /*
-            var strBytesLen = Encoding.UTF8.GetByteCount(el.Key);
-            var varLen = BsonValue.GetVariantLengthFromData(strBytesLen);
-            var keyLen = strBytesLen + varLen;
-            _currentKey = new byte[keyLen];
-            _currentKey.AsSpan<byte>().WriteVariantLength(strBytesLen, out _);
-            Encoding.UTF8.GetBytes(el.Key, _currentKey.AsSpan<byte>()[varLen..]);
-
-            if (!WriteKey(span[offSet..])) break;
-            offSet += keyLen;*/
 
 
-            isFull = !WriteValue(span[offSet..], _currentValue, ref _currentValueIndex, ref _unfinishedValue);
+            isFull = !WriteKeyVL(span[offSet..], out var length);
+            offSet += length;
+            if (isFull) break;
+            if (offSet == span.Length)
+            {
+                _unfinishedKey = true;
+                _unfinishedValue = true;
+                break;
+            };
+
+            isFull = !WriteKey(span[offSet..]);
+            offSet += Encoding.UTF8.GetByteCount(el.Key);
+            if (isFull) break;
+            if (offSet == span.Length)
+            {
+                _unfinishedValue = true;
+                break;
+            }
+
+            isFull = !WriteValue(span[offSet..]);
             offSet += el.Value.GetBytesCount() + 1;
             if (isFull) break;
             if(offSet == span.Length)
@@ -84,6 +122,94 @@ public class BsonDocumentWriter : IBsonDocumentWriter
         _remaining -= offSet;
         return _remaining;
     }
+
+    private bool WriteUnfinishedKeyVL(Span<byte> span, out int length)
+    {
+        var value = _currentKey;
+
+        var dataLen = Encoding.UTF8.GetByteCount(value);
+        length = BsonValue.GetVariantLengthFromData(dataLen) - _currentKeyVLIndex;
+        if (span.Length >= length)
+        {
+            _currentKeyVL.AsSpan<byte>()[_currentKeyVLIndex..].CopyTo(span);
+            _currentKeyVLIndex = 0;
+            _unfinishedKeyVL = false;
+            return true;
+        }
+        else
+        {
+            _currentKeyVL.AsSpan<byte>()[_currentKeyVLIndex..(_currentKeyVLIndex + span.Length)].CopyTo(span);
+            length = span.Length;
+            _currentKeyVLIndex += length;
+            return false;
+        }
+
+    }
+
+    public bool WriteKeyVL(Span<byte> span, out int length)
+    {
+        var value = _currentKey;
+
+        var dataLen = Encoding.UTF8.GetByteCount(value);
+        length = BsonValue.GetVariantLengthFromData(dataLen);
+        if (span.Length >= length)
+        {
+            span.WriteVariantLength(dataLen, out _);
+            return true;
+        }
+        else if (span.Length > 0)//REMOVE?
+        {
+            _currentKeyVL.AsSpan<byte>()[0..span.Length].CopyTo(span);
+            _currentKeyVLIndex = span.Length;
+        }
+        _unfinishedKeyVL = true;
+        _unfinishedKey = true;
+        _unfinishedValue = true;
+        return false;
+    }
+
+    private bool WriteUnfinishedKey(Span<byte> span, out int length)
+    {
+        var value = _currentKey;
+
+        length = Encoding.UTF8.GetByteCount(value) - _currentKeyIndex;
+        if (span.Length >= length)
+        {
+            span[0..].WriteString(value[_currentKeyIndex..]);
+            _currentKeyIndex = 0;
+            _unfinishedKey = false;
+            return true;
+        }
+        else
+        {
+            Encoding.UTF8.GetBytes(value.AsSpan().Slice(_currentKeyIndex, span.Length), span);
+            length = span.Length;
+            _currentKeyIndex += length;
+            return false;
+        }
+
+    }
+
+    public bool WriteKey(Span<byte> span)
+    {
+        var value = _currentKey;
+
+        var numBytes = Encoding.UTF8.GetByteCount(value);
+        if (span.Length >= numBytes)
+        {
+            Encoding.UTF8.GetBytes(value.AsSpan(), span);
+            return true;
+        }
+        else if (span.Length > 0)//REMOVE?
+        {
+            Encoding.UTF8.GetBytes(value.AsSpan()[0..span.Length], span);
+            _currentKeyIndex = span.Length;
+        }
+        _unfinishedKey = true;
+        _unfinishedValue = true;
+        return false;
+    }
+
 
     private bool WriteUnfinishedValue(Span<byte> span, out int length)
     {
@@ -113,13 +239,9 @@ public class BsonDocumentWriter : IBsonDocumentWriter
 
             if (span.Length >= length)
             {
-                var test = buffer.AsSpan()[_currentValueIndex..];
-                test.CopyTo(span[0..]);
-
-                //reset unfinished status values
+                buffer.AsSpan()[_currentValueIndex..].CopyTo(span[0..]);
                 _currentValueIndex = 0;
                 _unfinishedValue = false;
-
                 return true;
             }
             else
@@ -127,14 +249,14 @@ public class BsonDocumentWriter : IBsonDocumentWriter
                 length = span.Length;
                 buffer.AsSpan()[_currentValueIndex..(_currentValueIndex + length)].CopyTo(span[0..]);
                 _currentValueIndex += length;
-
                 return false;
             }
         }
     }
 
-    public bool WriteValue(Span<byte> span, BsonValue value, ref int index, ref bool unfinished)
+    public bool WriteValue(Span<byte> span)
     {
+        var value = _currentValue;
         switch (value.Type)
         {
             case BsonType.Int32:
@@ -149,10 +271,10 @@ public class BsonDocumentWriter : IBsonDocumentWriter
                 {
                     this.GetBytes(out var buffer);
 
-                    index = span.Length - 1;
-                    buffer.AsSpan()[0..index].CopyTo(span[1..]);
+                    _currentValueIndex = span.Length - 1;
+                    buffer.AsSpan()[0.._currentValueIndex].CopyTo(span[1..]);
                 }
-                unfinished = true;
+                _unfinishedValue = true;
                 return false;
 
             case BsonType.String:
@@ -166,9 +288,9 @@ public class BsonDocumentWriter : IBsonDocumentWriter
                 else if (span.Length > 1)
                 {
                     Encoding.UTF8.GetBytes(value.AsString.AsSpan().Slice(0, span.Length - 1), span[1..]);
-                    index = span.Length - 1;
+                    _currentValueIndex = span.Length - 1;
                 }
-                unfinished = true;
+                _unfinishedValue = true;
                 return false;
 
             case BsonType.Guid:
@@ -183,10 +305,10 @@ public class BsonDocumentWriter : IBsonDocumentWriter
                 {
                     this.GetBytes(out var buffer);
 
-                    index = span.Length - 1;
-                    buffer.AsSpan()[0..index].CopyTo(span[1..]);
+                    _currentValueIndex = span.Length - 1;
+                    buffer.AsSpan()[0.._currentValueIndex].CopyTo(span[1..]);
                 }
-                unfinished = true;
+                _unfinishedValue = true;
                 return false;
         }
         return true;
@@ -221,73 +343,6 @@ public class BsonDocumentWriter : IBsonDocumentWriter
         return 0;*/
     }
 
-    /*private bool WriteUnfinishedKey(Span<byte> span, out int length)
-    {
-        var value = _currentKey;
-
-        length = Encoding.UTF8.GetByteCount(value);
-        if (value.Type == BsonType.String)
-        {
-            if (span.Length >= length)
-            {
-                span[0..].WriteString(value.AsString[_currentValueIndex..]);
-                _currentValueIndex = 0;
-                _unfinishedValue = false;
-                return true;
-            }
-            else
-            {
-                Encoding.UTF8.GetBytes(value.AsString.AsSpan().Slice(_currentValueIndex, span.Length), span);
-                length = span.Length;
-                _currentValueIndex += length;
-                return false;
-            }
-        }
-        else
-        {
-            this.GetBytes(out var buffer);
-
-            if (span.Length >= length)
-            {
-                var test = buffer.AsSpan()[_currentValueIndex..];
-                test.CopyTo(span[0..]);
-
-                //reset unfinished status values
-                _currentValueIndex = 0;
-                _unfinishedValue = false;
-
-                return true;
-            }
-            else
-            {
-                length = span.Length;
-                buffer.AsSpan()[_currentValueIndex..(_currentValueIndex + length)].CopyTo(span[0..]);
-                _currentValueIndex += length;
-
-                return false;
-            }
-        }
-    }
-
-    public bool WriteKey(Span<byte> span)
-    {
-        var value = _currentKey;
-
-        var numBytes = Encoding.UTF8.GetByteCount(value);
-        if (span.Length >= numBytes)
-        {
-            Encoding.UTF8.GetBytes(value.AsSpan(), span);
-            return true;
-        }
-        else if (span.Length > 0)//REMOVE?
-        {
-            Encoding.UTF8.GetBytes(value.AsSpan()[0..span.Length], span);
-            _currentKeyIndex = span.Length;
-        }
-        _unfinishedKey = true;
-        return false;
-    }*/
-
     private void GetBytes(out byte[] buffer)
     {
         var len = _currentValue.GetBytesCount(); ;
@@ -306,9 +361,6 @@ public class BsonDocumentWriter : IBsonDocumentWriter
                 break;
             case BsonType.Decimal:
                 Marshal.StructureToPtr(_currentValue.AsDecimal, ptr, true);
-                break;
-                //case BsonType.String:
-                //    Marshal.StructureToPtr(_currentValue.AsString, ptr, true);
                 break;
             case BsonType.Document:
                 Marshal.StructureToPtr(_currentValue.AsDocument, ptr, true);

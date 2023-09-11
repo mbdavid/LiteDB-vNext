@@ -15,7 +15,7 @@ var doc = new BsonDocument
 var bw = new BsonDocumentWriter(doc);
 
 bw._currentValue = new BsonString("abcd");//BsonGuid(new Guid(new byte[] { 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255 }));//BsonInt32(16843009);
-
+bw._currentKey = "abcd";
 var span = new Span<byte>(new byte[19]);
 
 bw.WriteSegment(span[0..4]);
