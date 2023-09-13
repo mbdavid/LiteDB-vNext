@@ -73,11 +73,6 @@ internal static class SpanExtensions
         return new RowID(span.ReadUInt32(), span[4]);
     }
 
-    public static UInt32 ReadExtendValue(this Span<byte> span)
-    {
-        return BinaryPrimitives.ReadUInt32BigEndian(span);
-    }
-
     public static string ReadFixedString(this Span<byte> span)
     {
         return Encoding.UTF8.GetString(span);
@@ -86,7 +81,7 @@ internal static class SpanExtensions
     /// <summary>
     /// Read string utf8 inside span using int32 bytes length at start. Returns lengths for all string + 4
     /// </summary>
-    public static string ReadVarString(this Span<byte> span, out int length)
+    public static string ReadVString(this Span<byte> span, out int length)
     {
         var strLength = span.ReadInt32();
 
@@ -164,11 +159,6 @@ internal static class SpanExtensions
         span.WriteUInt16(0);
     }
 
-    public static void WriteExtendValue(this Span<byte> span, UInt32 value)
-    {
-        BinaryPrimitives.WriteUInt32BigEndian(span, value);
-    }
-
     public static void WriteGuid(this Span<byte> span, Guid value)
     {
         if (value.TryWriteBytes(span) == false) throw new ArgumentException("Span too small for Guid");
@@ -189,7 +179,10 @@ internal static class SpanExtensions
         Encoding.UTF8.GetBytes(value.AsSpan(), span);
     }
 
-    public static void WriteVarString(this Span<byte> span, string value, out int length)
+    /// <summary>
+    /// Write string value initialized with int32 size length. Returns used span length (includes int32 length)
+    /// </summary>
+    public static void WriteVString(this Span<byte> span, string value, out int length)
     {
         var strLength = Encoding.UTF8.GetByteCount(value);
 

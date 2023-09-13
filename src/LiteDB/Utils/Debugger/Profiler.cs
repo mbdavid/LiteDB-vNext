@@ -101,7 +101,7 @@ internal static class Profiler
 
         if (filename is not null)
         {
-            var fileLength = $"{(new FileInfo(filename).Length / 1024 / 1024)} MB";
+            var fileLength = $"{(new FileInfo(filename).Length / 1024 / 1024):n0} MB";
 
             Console.WriteLine($"{("> File Size".PadRight(NAME_WIDTH, '.'))}: {fileLength,10}");
         }

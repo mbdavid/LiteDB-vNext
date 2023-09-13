@@ -23,6 +23,8 @@ unsafe internal class MemoryCache : IMemoryCache
 
     public PageMemory* GetPageReadWrite(uint positionID, byte[] writeCollections, out bool writable, out bool found)
     {
+        using var _pc = PERF_COUNTER(101, nameof(GetPageReadWrite), nameof(MemoryCache));
+
         found = _cache.TryGetValue(positionID, out var ptr);
 
         if (!found)
@@ -30,6 +32,8 @@ unsafe internal class MemoryCache : IMemoryCache
             writable = false;
             return null;
         }
+
+        using var _ph = PERF_COUNTER(102, nameof(GetPageReadWrite) + " (hit)", nameof(MemoryCache));
 
         var page = (PageMemory*)ptr;
 
