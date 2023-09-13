@@ -4,21 +4,21 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
     private readonly IndexDocument _indexDocument;
-    private readonly IList<IndexKey> _values;
+
+    private readonly BsonValue[] _values;
+    private int _valueIndex = 0;
 
     private bool _init = false;
     private bool _eof = false;
 
-    private int _index = -1;
-
     private IndexEqualsEnumerator? _currentIndex;
 
     public IndexInEnumerator(
-        IList<IndexKey> values,
+        IEnumerable<BsonValue> values,
         IndexDocument indexDocument,
         Collation collation)
     {
-        _values = values;
+        _values = values.Distinct().ToArray();
         _indexDocument = indexDocument;
         _collation = collation;
     }
@@ -33,27 +33,33 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
         if (!_init)
         {
             _init = true;
-            _index++;
 
-            var value = _values.Distinct().ElementAtOrDefault(_index);
-
-            throw new NotImplementedException(); ;
-            //if(value is null)
-            //{
-            //    _eof = true;
-            //
-            //    return PipeValue.Empty;
-            //}
-            //
-            //_currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation);
-            //
-            //return _currentIndex.MoveNext(context);
+            var first = _values[_valueIndex];
+            
+            _currentIndex = new IndexEqualsEnumerator(first, _indexDocument, _collation);
+            
+            return _currentIndex.MoveNext(context);
         }
         else
         {
             var pipeValue = _currentIndex!.MoveNext(context);
 
-            if (pipeValue.IsEmpty) _init = false;
+            if (pipeValue.IsEmpty)
+            {
+                _valueIndex++;
+
+                if (_valueIndex == _values.Length)
+                {
+                    _eof = true;
+                    return PipeValue.Empty;
+                }
+
+                var value = _values[_valueIndex];
+
+                _currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation);
+
+                return _currentIndex.MoveNext(context);
+            }
 
             return pipeValue;
         }

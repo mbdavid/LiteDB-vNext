@@ -244,11 +244,11 @@ internal class QueryOptimization : IQueryOptimization
             if (fields.Length == 1 && fields[0] == _indexExpression.ToString()[2..])
             {
                 // use index based document lookup
-                _documentLookup = new IndexServiceLookup(fields[0]);
+                _documentLookup = new IndexLookup(fields[0]);
             }
             else
             {
-                _documentLookup = new DataServiceLookup(fields);
+                _documentLookup = new DataLookup(fields);
             }
         }
 
@@ -262,11 +262,11 @@ internal class QueryOptimization : IQueryOptimization
             if (docFields.Length == 1 && docFields[0] == _indexExpression.ToString()[2..])
             {
                 // use index based document lookup
-                _documentLookup = new IndexServiceLookup(docFields[0]);
+                _documentLookup = new IndexLookup(docFields[0]);
             }
             else
             {
-                _documentLookup = new DataServiceLookup(docFields);
+                _documentLookup = new DataLookup(docFields);
             }
 
             // get all fields used after order by
@@ -275,11 +275,11 @@ internal class QueryOptimization : IQueryOptimization
             // if contains a single field and are index expression
             if (orderFields.Length == 1 && orderFields[0] == _indexExpression.ToString()[2..])
             {
-                _orderByLookup = new IndexServiceLookup(orderFields[0]);
+                _orderByLookup = new IndexLookup(orderFields[0]);
             }
             else
             {
-                _orderByLookup = new DataServiceLookup(orderFields);
+                _orderByLookup = new DataLookup(orderFields);
             }
         }
 

@@ -223,7 +223,7 @@ internal static class SpanExtensions
     /// </summary>
     public static void WriteVariantLength(this Span<byte> span, int dataLength, out int varLen)
     {
-        varLen = BsonValue.GetVariantLengthFromData(dataLength);
+        varLen = BsonValue.GetVarLengthFromContentLength(dataLength);
 
         if (varLen == 1)
         {

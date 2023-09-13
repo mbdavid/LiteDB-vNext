@@ -492,9 +492,9 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
     /// 10xxxxxx xxxxxxxx                    14 bits 128-16383
     /// 11xxxxxx xxxxxxxx xxxxxxxx xxxxxxxx  30 bits 16383-1.073.741.823 (1Gb)
     /// </summary>
-    internal static int GetVariantLengthFromData(int dataLength)
+    internal static int GetVarLengthFromContentLength(int contentLength) // 
     {
-        return dataLength switch
+        return contentLength switch
         {
             < 128 => 1, // 7 bits
             < 16384 => 2, // 14 bits
@@ -503,7 +503,7 @@ public abstract class BsonValue : IComparable<BsonValue>, IEquatable<BsonValue>
         };
     }
 
-    internal static int GetVariantLengthFromValue(int valueLength)
+    internal static int GetVarLengthFromBytes(int valueLength) // first 4 bytes from span length
     {
         return valueLength switch
         {

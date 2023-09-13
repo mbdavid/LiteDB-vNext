@@ -3,7 +3,7 @@
 internal class IndexScanEnumerator : IPipeEnumerator
 {
     private readonly IndexDocument _indexDocument;
-    private readonly Func<IndexKey, bool> _func;
+    private readonly Func<BsonValue, bool> _func;
     private readonly int _order;
 
     private bool _init = false;
@@ -13,7 +13,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
     public IndexScanEnumerator(
         IndexDocument indexDocument,
-        Func<IndexKey, bool> func,
+        Func<BsonValue, bool> func,
         int order)
     {
         _indexDocument = indexDocument;
@@ -41,11 +41,13 @@ internal class IndexScanEnumerator : IPipeEnumerator
             // get pointer to next at level 0
             _next = node[0]->GetNextPrev(_order);
 
-            throw new NotImplementedException();
-            //if(_func(node.Key))
-            //{
-            //    return new PipeValue(node.IndexNodeID, node.DataBlockID);
-            //}
+            // get key as BsonValue to run computed function
+            var key = IndexKey.ToBsonValue(node.Key);
+
+            if(_func(key))
+            {
+                return new PipeValue(node.DataBlockID);
+            }
         }
 
         // go forward
@@ -57,11 +59,13 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
                 _next = node[0]->GetNextPrev(_order);
 
-                throw new NotImplementedException();
-                //if (_func(node.Key))
-                //{
-                //    return new PipeValue(node.IndexNodeID, node.DataBlockID);
-                //}
+                // get key as BsonValue to run computed function
+                var key = IndexKey.ToBsonValue(node.Key);
+
+                if (_func(key))
+                {
+                    return new PipeValue(node.DataBlockID);
+                }
 
             } while (!_next.IsEmpty);
         }

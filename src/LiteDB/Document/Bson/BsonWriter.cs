@@ -10,7 +10,7 @@ public class BsonWriter : IBsonWriter
         using var _pc = PERF_COUNTER(121, nameof(WriteDocument), nameof(BsonWriter));
 
         var docLength = document.GetBytesCountCached();
-        var varLength = BsonValue.GetVariantLengthFromValue(docLength);
+        var varLength = BsonValue.GetVarLengthFromContentLength(docLength);
 
         var offset = varLength; // skip VariantLength
 
@@ -33,7 +33,7 @@ public class BsonWriter : IBsonWriter
     private void WriteArray(Span<byte> span, BsonArray array, out int length)
     {
         var arrLength = array.GetBytesCountCached();
-        var varLength = BsonValue.GetVariantLengthFromValue(arrLength);
+        var varLength = BsonValue.GetVarLengthFromContentLength(arrLength);
 
         var offset = varLength; // skip VariantLength
 

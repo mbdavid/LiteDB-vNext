@@ -1,10 +1,10 @@
 ﻿namespace LiteDB.Engine;
 
-internal class IndexServiceLookup : IDocumentLookup
+internal class IndexLookup : IDocumentLookup
 {
     private readonly string _field;
 
-    public IndexServiceLookup(string field)
+    public IndexLookup(string field)
     {
         _field = field;
     }

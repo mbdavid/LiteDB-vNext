@@ -33,6 +33,9 @@ unsafe internal struct IndexNodeResult
         this.IndexNodeID = indexNodeID;
 
         this.Reload();
+
+        ENSURE(this.Segment->AsSpan(page).IsFullZero() == false);
+        ENSURE(this.Node->Levels > 0 && this.Node->Levels <= INDEX_MAX_LEVELS);
     }
 
     public void Reload()

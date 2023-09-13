@@ -37,13 +37,13 @@ internal class PipelineBuilder
     /// Create document lookup using DataService to get values
     /// </summary>
     public IDocumentLookup CreateDocumentLookup(string[] fields)
-        => new DataServiceLookup(fields);
+        => new DataLookup(fields);
 
     /// <summary>
     /// Create document lookup creating a fake document based only in index key only
     /// </summary>
     public IDocumentLookup CreateIndexLookup(string field)
-        => new IndexServiceLookup(field);
+        => new IndexLookup(field);
 
     /// <summary>
     /// Add index pipe based on predicate expression (BinaryBsonExpression) or index scan expression

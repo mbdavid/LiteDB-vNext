@@ -146,36 +146,34 @@ unsafe internal class DataService : IDataService
         }
         else
         {
-            throw new NotImplementedException();
-//            // get a full array to read all document chuncks
-//            using var docBuffer = SharedBuffer.Rent(dataBlock.DocumentLength);
-//
-//            // copy first page into full buffer
-//            page.AsSpan(segment.Location + __DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
-//                .CopyTo(docBuffer.AsSpan()); // and copy to docBuffer byte[]
-//
-//            var position = dataBlock.DataLength;
-//
-//            ENSURE(dataBlock.DocumentLength != int.MaxValue, new { dataBlock });
-//
-//            while (dataBlock.NextBlockID.IsEmpty)
-//            {
-//                page = await _transaction.GetPageAsync(dataBlock.NextBlockID.PageID);
-//
-//                segment = PageSegment.GetSegment(page, dataBlock.NextBlockID.Index, out var _);
-//
-//                dataBlock = new __DataBlock(page.AsSpan(segment), dataBlock.NextBlockID);
-//
-//                //dataBlock.GetDataSpan(page).CopyTo(docBuffer.AsSpan(position));
-//                page.AsSpan(segment.Location + __DataBlock.P_BUFFER, dataBlock.DataLength) // get dataBlock content area
-//                    .CopyTo(docBuffer.AsSpan()); // and copy to docBuffer byte[]
-//
-//                position += dataBlock.DataLength;
-//            }
-//
-//            var result = _bsonReader.ReadDocument(docBuffer.AsSpan(), fields, false, out _);
-//
-//            return result;
+            // get a full array to read all document chuncks
+            using var docBuffer = SharedBuffer.Rent(dataBlock.DocumentLength);
+
+            // copy datablock content to new in memory buffer
+            dataBlock.AsSpan().CopyTo(docBuffer.AsSpan());
+
+            var position = dataBlock.ContentLength;
+
+            ENSURE(dataBlock.DocumentLength > 0, new { dataBlock });
+
+            while (dataBlock.DataBlock->NextBlockID.IsEmpty)
+            {
+                // retain nextBlockID before change page
+                var nextBlockID = dataBlock.DataBlock->NextBlockID;
+
+                page = _transaction.GetPage(dataBlock.DataBlockID.PageID);
+
+                dataBlock = new DataBlockResult(page, nextBlockID);
+
+                // copy datablock content to new in memory buffer
+                dataBlock.AsSpan().CopyTo(docBuffer.AsSpan(position));
+
+                position += dataBlock.ContentLength;
+            }
+
+            var result = _bsonReader.ReadDocument(docBuffer.AsSpan(), fields, false, out _);
+
+            return result;
         }
     }
 

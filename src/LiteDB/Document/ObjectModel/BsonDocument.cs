@@ -73,7 +73,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
         }
 
         // adding variant length of document (1, 2 ou 4 bytes)
-        length += GetVariantLengthFromData(length);
+        length += GetVarLengthFromContentLength(length);
 
         _length = length;
 
@@ -219,7 +219,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     {
         var keyLength = Encoding.UTF8.GetByteCount(key);
 
-        keyLength += GetVariantLengthFromData(keyLength);
+        keyLength += GetVarLengthFromContentLength(keyLength);
 
         // get data length
         var valueLength = value.GetBytesCountCached();
@@ -228,7 +228,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
         if (value.Type == BsonType.String || 
             value.Type == BsonType.Binary)
         {
-            valueLength += GetVariantLengthFromData(valueLength);
+            valueLength += GetVarLengthFromContentLength(valueLength);
         }
 
         return
