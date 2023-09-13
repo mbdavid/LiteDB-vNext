@@ -8,7 +8,7 @@ public class BsonReader : IBsonReader
     /// <summary>
     /// Read a document inside span buffer. 
     /// Use filds to select custom fields only (on root document only)
-    /// Skip will skip document read (just update length output) - returns null
+    /// Skip will skip document read (just update length output) - returns Empty
     /// Returns length document size
     /// </summary>
     public BsonReadResult ReadDocument(Span<byte> span, string[] fields, bool skip, out int length)
@@ -16,22 +16,17 @@ public class BsonReader : IBsonReader
         var doc = new BsonDocument();
         var remaining = fields.Length == 0 ? null : new HashSet<string>(fields);
 
-        length = 0;
+        length = span.ReadInt32();
+
+        if (skip) return BsonReadResult.Empty;
+
+        var offset = sizeof(int); // skip int32 length
 
         try
         {
-            length = span.ReadVariantLength(out var varLen);
-
-            if (skip)
-            {
-                return BsonReadResult.Empty;
-            }
-
-            var offset = varLen; // skip variable length
-
             while (offset < length && (remaining == null || remaining?.Count > 0))
             {
-                var key = span[offset..].ReadVString(out var keyLength);
+                var key = span[offset..].ReadCString(out var keyLength);
 
                 offset += keyLength;
 
@@ -64,15 +59,15 @@ public class BsonReader : IBsonReader
     {
         var array = new BsonArray();
 
-        length = 0;
+        length = span.ReadInt32();
+
+        if (skip) return BsonReadResult.Empty;
+
+        var offset = sizeof(int); // skip int32 length
 
         try
         {
-            length = span.ReadVariantLength(out var varLen);
 
-            if (skip) return BsonReadResult.Empty;
-
-            var offset = varLen; // skip variable length
 
             while (offset < length)
             {
@@ -114,9 +109,9 @@ public class BsonReader : IBsonReader
                     return skip ? BsonReadResult.Empty : new BsonDouble(span[1..].ReadDouble());
 
                 case BsonTypeCode.String:
-                    var strLength = span[1..].ReadVariantLength(out var varSLen);
-                    length = 1 + varSLen + strLength;
-                    return skip ? BsonReadResult.Empty : new BsonString(span.Slice(1 + varSLen, strLength).ReadString());
+                    var strLength = span[1..].ReadInt32();
+                    length = 1 + sizeof(int) + strLength;
+                    return skip ? BsonReadResult.Empty : new BsonString(span.Slice(1 + sizeof(int), strLength).ReadFixedString());
 
                 case BsonTypeCode.Document:
                     var doc = this.ReadDocument(span[1..], Array.Empty<string>(), skip, out var docLength);
@@ -129,9 +124,9 @@ public class BsonReader : IBsonReader
                     return array;
 
                 case BsonTypeCode.Binary:
-                    var bytesLength = span[1..].ReadVariantLength(out var varBLen);
-                    length = 1 + varBLen + bytesLength;
-                    return skip ? BsonReadResult.Empty : new BsonBinary(span[(1 + varBLen)..(1 + varBLen + bytesLength)].ToArray());
+                    var bytesLength = span[1..].ReadInt32();
+                    length = 1 + sizeof(int) + bytesLength;
+                    return skip ? BsonReadResult.Empty : new BsonBinary(span.Slice(1 + sizeof(int), bytesLength).ToArray());
 
                 case BsonTypeCode.Guid:
                     length = 1 + 16;

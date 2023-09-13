@@ -101,9 +101,10 @@ unsafe internal class SortContainer : ISortContainer
 
                 pagePosition += sizeof(RowID);
 
-                span[pagePosition..].WriteBsonValue(orderedItem.Key, out var keyLength);
+                throw new NotImplementedException();
+                //**span[pagePosition..].WriteBsonValue(orderedItem.Key, out var keyLength);
 
-                pagePosition += keyLength;
+                //**pagePosition += keyLength;
 
                 // increment total container items
                 pageItems++;

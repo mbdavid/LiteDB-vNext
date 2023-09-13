@@ -10,13 +10,14 @@ public class BsonWriter : IBsonWriter
         using var _pc = PERF_COUNTER(121, nameof(WriteDocument), nameof(BsonWriter));
 
         var docLength = document.GetBytesCountCached();
-        var varLength = BsonValue.GetVarLengthFromContentLength(docLength);
 
-        var offset = varLength; // skip VariantLength
+        span.WriteInt32(docLength);
+
+        var offset = sizeof(int);
 
         foreach (var el in document.GetElements())
         {
-            span[offset..].WriteVString(el.Key, out var keyLength);
+            span[offset..].WriteCString(el.Key, out var keyLength);
 
             offset += keyLength;
 
@@ -27,15 +28,15 @@ public class BsonWriter : IBsonWriter
 
         length = offset;
 
-        span.WriteVariantLength(length, out _);
     }
 
     private void WriteArray(Span<byte> span, BsonArray array, out int length)
     {
         var arrLength = array.GetBytesCountCached();
-        var varLength = BsonValue.GetVarLengthFromContentLength(arrLength);
 
-        var offset = varLength; // skip VariantLength
+        span.WriteInt32(arrLength);
+
+        var offset = sizeof(int);
 
         for (var i = 0; i < array.Count; i++)
         {
@@ -46,7 +47,7 @@ public class BsonWriter : IBsonWriter
 
         length = offset;
 
-        span.WriteVariantLength(length, out _);
+        span.WriteInt32(length);
     }
 
     /// <summary>
@@ -65,9 +66,9 @@ public class BsonWriter : IBsonWriter
             case BsonType.String:
                 span[0] = (byte)BsonTypeCode.String;
                 var strLength = Encoding.UTF8.GetByteCount(value.AsString);
-                span[1..].WriteVariantLength(strLength, out var varLength);
-                span[(1 + varLength)..].WriteString(value.AsString);
-                length = 1 + varLength + strLength;
+                span[1..].WriteInt32(strLength);
+                span[(1 + sizeof(int))..].WriteFixedString(value.AsString);
+                length = 1 + sizeof(int) + strLength;
                 break;
 
             case BsonType.Document:
@@ -85,9 +86,9 @@ public class BsonWriter : IBsonWriter
             case BsonType.Binary:
                 span[0] = (byte)BsonTypeCode.Binary;
                 var binaryLength = value.AsBinary.Length;
-                span[1..].WriteVariantLength(binaryLength, out var varLen);
-                span[(1 + varLen)..].WriteBytes(value.AsBinary);
-                length = 1 + varLen + binaryLength;
+                span[1..].WriteInt32(binaryLength);
+                span[(1 + sizeof(int))..].WriteBytes(value.AsBinary);
+                length = 1 + sizeof(int) + binaryLength;
                 break;
 
             case BsonType.Guid:

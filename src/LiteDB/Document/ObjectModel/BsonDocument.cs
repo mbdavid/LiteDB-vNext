@@ -65,17 +65,14 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
 
     public override int GetBytesCount()
     {
-        var length = 0;
+        var length = sizeof(int); // for int32 length
 
         foreach (var element in _value)
         {
             length += GetBytesCountElement(element.Key, element.Value);
         }
 
-        // adding variant length of document (1, 2 ou 4 bytes)
-        length += GetVarLengthFromContentLength(length);
-
-        _length = length;
+        _length = length; // update local cache after loop
 
         return length;
     }
@@ -217,23 +214,21 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     /// </summary>
     internal static int GetBytesCountElement(string key, BsonValue value)
     {
-        var keyLength = Encoding.UTF8.GetByteCount(key);
-
-        keyLength += GetVarLengthFromContentLength(keyLength);
+        var keyLength = Encoding.UTF8.GetByteCount(key) + 1; // + \n for CString
 
         // get data length
         var valueLength = value.GetBytesCountCached();
 
-        // if data type is variant length, add varLength to length
+        // if data type has a variant length, add int32 length (array and documents already contains your int32 in valueLength)
         if (value.Type == BsonType.String || 
             value.Type == BsonType.Binary)
         {
-            valueLength += GetVarLengthFromContentLength(valueLength);
+            valueLength += sizeof(int);
         }
 
         return
             keyLength + 
-            1 + // element value type
+            1 + // for valueType
             valueLength;
     }
 

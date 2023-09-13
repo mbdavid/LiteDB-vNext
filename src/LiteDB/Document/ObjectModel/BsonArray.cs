@@ -66,17 +66,14 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
     public override int GetBytesCount()
     {
-        var length = 0;
+        var length = sizeof(int); // for int32 length
 
         for (var i = 0; i < _value.Count; i++)
         {
             length += GetBytesCountElement(_value[i]);
         }
 
-        // adding variant length of document (1, 2 ou 4 bytes)
-        length += GetVarLengthFromContentLength(length);
-
-        _length = length;
+        _length = length; // update local cache after loop
 
         return length;
     }
@@ -211,11 +208,11 @@ public class BsonArray : BsonValue, IList<BsonValue>
         // get data length
         var valueLength = value.GetBytesCountCached();
 
-        // if data type is variant length, add varLength to length
+        // if data type is variant length, add int32 to length
         if (value.Type == BsonType.String ||
             value.Type == BsonType.Binary)
         {
-            valueLength += GetVarLengthFromBytes(valueLength);
+            valueLength += sizeof(int);
         }
 
         return

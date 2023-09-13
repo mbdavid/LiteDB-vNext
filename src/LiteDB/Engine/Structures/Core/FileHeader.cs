@@ -73,7 +73,7 @@ internal class FileHeader
     /// </summary>
     public FileHeader(Span<byte> buffer)
     {
-        _headerInfo = buffer[P_HEADER_INFO..(P_HEADER_INFO + HEADER_INFO.Length)].ReadString();
+        _headerInfo = buffer[P_HEADER_INFO..(P_HEADER_INFO + HEADER_INFO.Length)].ReadFixedString();
         _fileVersion = buffer[P_FILE_VERSION];
 
         this.Encrypted = buffer[P_ENCRYPTED] == 1;
@@ -126,7 +126,7 @@ internal class FileHeader
         var buffer = array.AsSpan();
 
         // write flags/data into file header buffer
-        buffer[P_HEADER_INFO..].WriteString(HEADER_INFO);
+        buffer[P_HEADER_INFO..].WriteFixedString(HEADER_INFO);
         buffer[P_FILE_VERSION] = FILE_VERSION;
 
         buffer[P_ENCRYPTED] = this.Encrypted ? (byte)1 : (byte)0;

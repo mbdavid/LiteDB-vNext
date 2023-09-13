@@ -13,7 +13,8 @@ unsafe internal struct DataBlockResult
     public bool IsEmpty => this.DataBlockID.IsEmpty;
 
     public int ContentLength => this.Segment->Length - sizeof(DataBlock) - this.DataBlock->Padding;
-    public int DocumentLength => this.DataBlock->Extend ? -1 : this.AsSpan().ReadVariantLength(out _);
+    public int DocumentLength => this.DataBlock->Extend ? -1 : 
+        *(int*)((nint)this.Page + this.Segment->Location + sizeof(DataBlock)); // read first 4 bytes on datablock as int32 in first page only
 
     public DataBlockResult(PageMemory* page, RowID dataBlockID)
     {

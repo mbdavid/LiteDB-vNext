@@ -78,54 +78,35 @@ internal static class SpanExtensions
         return BinaryPrimitives.ReadUInt32BigEndian(span);
     }
 
-    public static string ReadString(this Span<byte> span)
+    public static string ReadFixedString(this Span<byte> span)
     {
         return Encoding.UTF8.GetString(span);
     }
 
-    public static string ReadVString(this Span<byte> span, out int length)
+    /// <summary>
+    /// Read string utf8 inside span using int32 bytes length at start. Returns lengths for all string + 4
+    /// </summary>
+    public static string ReadVarString(this Span<byte> span, out int length)
     {
-        var strLength = ReadVariantLength(span, out var varLen);
+        var strLength = span.ReadInt32();
 
-        length = varLen + strLength;
+        length = strLength + sizeof(int);
 
-        return Encoding.UTF8.GetString(span[varLen..(varLen + strLength)]);
-    }
-
-    public static int ReadVariantLength(this Span<byte> span, out int varLen)
-    {
-        if ((span[0] & 0b10000000) == 0) // first bit is 0
-        {
-            varLen = 1;
-            return span[0];
-        }
-        else if ((span[0] & 0b11000000) == 128) // first bit is 1 but second is 0
-        {
-            varLen = 2;
-            var value = BinaryPrimitives.ReadUInt16BigEndian(span);
-            var number = value & 0b01111111_11111111;
-            return number;
-        }
-        else
-        {
-            varLen = 4;
-            var value = BinaryPrimitives.ReadUInt32BigEndian(span);
-            var number = value & 0b00111111_11111111_11111111_11111111;
-            return (int)number;
-        }
-
+        return Encoding.UTF8.GetString(span.Slice(sizeof(int), strLength));
     }
 
     /// <summary>
-    /// Read a BsonValue from Span using singleton instance of IBsonReader. Used for IndexKey node
+    /// Read a variable string byte to byte until find \0. Returns utf8 string and how many bytes (including \0) used on span
     /// </summary>
-    public static BsonValue ReadBsonValue(this Span<byte> span, out int length)
+    public static string ReadCString(this Span<byte> span, out int length)
     {
-        var result = _reader.ReadValue(span, false, out length)!; // skip = false - always returns a BsonValue
+        var indexOf = span.IndexOf((byte)0);
 
-        if (result.Fail) throw result.Exception;
+        if (indexOf == -1) throw new ArgumentException("Not found \\0 in span finish read string");
 
-        return result.Value;
+        length = indexOf + 1;
+
+        return Encoding.UTF8.GetString(span.Slice(0, indexOf));
     }
 
     #endregion
@@ -203,52 +184,34 @@ internal static class SpanExtensions
         value.CopyTo(span);
     }
 
-    public static void WriteString(this Span<byte> span, string value)
+    public static void WriteFixedString(this Span<byte> span, string value)
     {
         Encoding.UTF8.GetBytes(value.AsSpan(), span);
     }
 
-    public static void WriteVString(this Span<byte> span, string value, out int length)
+    public static void WriteVarString(this Span<byte> span, string value, out int length)
     {
         var strLength = Encoding.UTF8.GetByteCount(value);
-        WriteVariantLength(span, strLength, out var varLen);
 
-        Encoding.UTF8.GetBytes(value.AsSpan(), span[varLen..(varLen + strLength)]);
+        span.WriteInt32(strLength);
 
-        length = varLen + strLength;
+        Encoding.UTF8.GetBytes(value.AsSpan(), span.Slice(sizeof(int), strLength));
+
+        length = sizeof(int) + strLength;
     }
 
     /// <summary>
-    /// Write dataLen using 1, 2 or 4 bytes to store length
+    /// Write full bytes string from utf8 and end's with \0 at end. Returns how many bytes (including this \0 at end) this string used in span
     /// </summary>
-    public static void WriteVariantLength(this Span<byte> span, int dataLength, out int varLen)
+    public static void WriteCString(this Span<byte> span, string value, out int length)
     {
-        varLen = BsonValue.GetVarLengthFromContentLength(dataLength);
+        var strLength = Encoding.UTF8.GetByteCount(value);
 
-        if (varLen == 1)
-        {
-            span[0] = (byte)dataLength;
-        }
-        else if (varLen == 2)
-        {
-            var op = 0b10000000_00000000;
-            var number = (ushort)(dataLength | op);
-            BinaryPrimitives.WriteUInt16BigEndian(span, number);
-        }
-        else
-        {
-            var op = 0b11000000_00000000_00000000_00000000;
-            var number = (((uint)dataLength) | op);
-            BinaryPrimitives.WriteUInt32BigEndian(span, number);
-        }
-    }
-    
-    /// <summary>
-    /// Write BsonValue direct into a byte[]. Used for Index Key write. Use a Singleton instance of BsonWriter
-    /// </summary>
-    public static void WriteBsonValue(this Span<byte> span, BsonValue value, out int length)
-    {
-        _writer.WriteValue(span, value, out length);
+        Encoding.UTF8.GetBytes(value.AsSpan(), span[..strLength]);
+
+        span[strLength] = 0;
+
+        length = strLength + 1; // for \0
     }
 
     #endregion
