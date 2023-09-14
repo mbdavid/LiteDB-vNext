@@ -175,7 +175,8 @@ internal class QueryOptimization : IQueryOptimization
         if (_indexExpression is null) return;
 
         // if query expression are same used in index, has no need use orderBy
-        if (orderBy.Expression == _indexExpression)
+        // suport left only expression - right only value
+        if (_indexExpression is BinaryBsonExpression bin && orderBy.Expression == bin.Left)
         {
             _indexOrder = orderBy.Order;
         }

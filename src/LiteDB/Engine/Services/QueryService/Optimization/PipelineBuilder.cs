@@ -104,7 +104,7 @@ internal class PipelineBuilder
         }
     }
 
-    public IPipeEnumerator CreateIndex(IndexDocument indexDocument, LiteDB.BsonValue value, BsonExpressionType exprType, int order)
+    public IPipeEnumerator CreateIndex(IndexDocument indexDocument, BsonValue value, BsonExpressionType exprType, int order)
     {
         return (exprType, value.Type) switch
         {

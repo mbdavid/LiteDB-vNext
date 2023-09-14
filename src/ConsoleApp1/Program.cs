@@ -11,7 +11,7 @@ var insert2 = GetData(INSERT_2, 5, 10).ToArray();
 
 var delete1 = Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(x => new BsonInt32(x)).ToArray();
 //var query1 = new Query { Where = "name like 'fernand%'" };
-var query1 = new Query { Where = "_id >= 90" };
+var query1 = new Query { Where = "_id >= 90", OrderBy = new OrderBy("_id", -1) };
 
 
 
