@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-public abstract partial class BsonExpression : IEquatable<BsonExpression>
+public abstract partial class BsonExpression : IEquatable<BsonExpression>, IIsEmpty
 {
     public abstract BsonExpressionType Type { get; }
 
@@ -98,7 +98,7 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
         this.Type == BsonExpressionType.NotEqual ||
         this.Type == BsonExpressionType.In;
 
-    internal bool IsEmpty => this.Type == BsonExpressionType.Empty;
+    public bool IsEmpty => this.Type == BsonExpressionType.Empty;
 
     internal BsonExpressionInfo GetInfo()
     {

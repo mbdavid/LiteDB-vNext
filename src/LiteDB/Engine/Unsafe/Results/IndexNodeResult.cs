@@ -2,7 +2,7 @@
 
 namespace LiteDB.Engine;
 
-unsafe internal struct IndexNodeResult
+unsafe internal struct IndexNodeResult : IIsEmpty
 {
     public RowID IndexNodeID;
 
@@ -61,6 +61,6 @@ unsafe internal struct IndexNodeResult
 
     public override string ToString()
     {
-        return Dump.Object( new { IndexNodeID, DataBlockID = Node->DataBlockID });
+        return Dump.Object( new { IndexNodeID, DataBlockID = Node->DataBlockID, KeyType = Key->Type, KeyValue = IndexKey.ToBsonValue(Key) });
     }
 }

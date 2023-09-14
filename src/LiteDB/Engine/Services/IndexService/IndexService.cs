@@ -225,7 +225,7 @@ unsafe internal class IndexService : IIndexService
         for (var level = INDEX_MAX_LEVELS - 1; level >= 0; level--)
         {
             //***var right = leftNode.Node.GetNextPrev(level, order);
-            var right = leftNode[level]->GetNextPrev(order);
+            var right = leftNode[level]->GetNext(order);
 
             while (right.IsEmpty == false)
             {
@@ -251,7 +251,7 @@ unsafe internal class IndexService : IIndexService
 
                 leftNode = rightNode;
                 //***right = rightNode.Node.GetNextPrev(level, order);
-                right = rightNode[level]->GetNextPrev(order);
+                right = rightNode[level]->GetNext(order);
             }
         }
 

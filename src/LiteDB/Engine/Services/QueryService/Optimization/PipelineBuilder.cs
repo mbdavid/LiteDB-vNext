@@ -111,12 +111,12 @@ internal class PipelineBuilder
             (BsonExpressionType.Equal, _) => new IndexEqualsEnumerator(value, indexDocument, _collation),
             (BsonExpressionType.Between, _) => new IndexRangeEnumerator(value.AsArray[0], value.AsArray[1], true, true, order, indexDocument, _collation),
             (BsonExpressionType.Like, _) => new IndexLikeEnumerator(value, indexDocument, _collation, order),
-            (BsonExpressionType.GreaterThan, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, false, true, order, indexDocument, _collation),
-            (BsonExpressionType.GreaterThanOrEqual, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, true, true, order, indexDocument, _collation),
-            (BsonExpressionType.LessThan, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, true, order, indexDocument, _collation),
-            (BsonExpressionType.LessThanOrEqual, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, true, true, order, indexDocument, _collation),
-            (BsonExpressionType.NotEqual, _) => throw new NotImplementedException(), // new IndexScanEnumerator(indexDocument, x => x.CompareTo(value, _collation) != 0, order),
-            (BsonExpressionType.In, BsonType.Array) => throw new NotImplementedException(),// new IndexInEnumerator(value.AsArray, indexDocument, _collation),
+            (BsonExpressionType.GreaterThan, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, false, false, order, indexDocument, _collation),
+            (BsonExpressionType.GreaterThanOrEqual, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, true, false, order, indexDocument, _collation),
+            (BsonExpressionType.LessThan, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, false, order, indexDocument, _collation),
+            (BsonExpressionType.LessThanOrEqual, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, true, order, indexDocument, _collation),
+            (BsonExpressionType.NotEqual, _) => new IndexScanEnumerator(indexDocument, x => x.CompareTo(value, _collation) != 0, order),
+            (BsonExpressionType.In, BsonType.Array) => new IndexInEnumerator(value.AsArray, indexDocument, _collation),
             (BsonExpressionType.In, _) => new IndexEqualsEnumerator(value, indexDocument, _collation),
             _ => throw ERR($"There is no index for {exprType} predicate")
         };

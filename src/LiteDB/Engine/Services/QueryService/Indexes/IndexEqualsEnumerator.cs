@@ -31,8 +31,12 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
 
         var indexService = context.IndexService;
 
+        // no _order here
+        var head = _indexDocument.HeadIndexNodeID;
+        var tail = _indexDocument.TailIndexNodeID;
+
         // in first run, look for index node
-        if (!_init)
+        if (_init == false)
         {
             _init = true;
 
@@ -45,6 +49,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
                 return PipeValue.Empty;
             }
 
+            // if unique index, set _eof = true to do not run more than once
             if (_indexDocument.Unique)
             {
                 _eof = true;
@@ -54,23 +59,29 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
                 // get pointer to next/prev at level 0
                 _prev = node[0]->PrevID;
                 _next = node[0]->NextID;
+
+                // check for head/tail nodes to set as empty
+                if (_prev == head) _prev = RowID.Empty;
+                if (_next == head) _next = RowID.Empty;
             }
 
             // current node to return
             return new PipeValue(node.DataBlockID);
         }
 
-        // first go forward
-        if (!_prev.IsEmpty)
+        // first, go backward
+        if (_prev.IsEmpty == false)
         {
+            // do not test head node
             var node = indexService.GetNode(_prev);
 
-            //var isEqual = _collation.Equals(_value, node.Key);
             var isEqual = IndexKey.Compare(_value, node.Key, _collation) == 0;
 
             if (isEqual)
             {
                 _prev = node[0]->PrevID;
+
+                if (_prev == head) _prev = RowID.Empty; 
 
                 return new PipeValue(node.DataBlockID);
             }
@@ -80,8 +91,8 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
             }
         }
 
-        // and than, go backward
-        if (!_next.IsEmpty)
+        // and than go forward
+        if (_next.IsEmpty == false)
         {
             var node = indexService.GetNode(_next);
 
@@ -90,14 +101,15 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
 
             if (isEqual)
             {
-                _next = node[0]->PrevID;
+                _next = node[0]->NextID;
+
+                if (_next == tail) _eof = true;
 
                 return new PipeValue(node.DataBlockID);
             }
             else
             {
                 _eof = true;
-                _next = RowID.Empty;
             }
         }
 

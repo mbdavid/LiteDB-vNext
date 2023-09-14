@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal readonly struct SortItem
+internal readonly struct SortItem : IIsEmpty
 {
     public readonly RowID DataBlockID;
     public readonly BsonValue Key;

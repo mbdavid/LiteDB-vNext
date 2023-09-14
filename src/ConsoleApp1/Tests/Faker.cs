@@ -26,6 +26,10 @@ internal class Faker
         "Hugo", "Branco", "Sobrinho", "Madeira", "Santacruz"
     };
 
+    // _nomes masculino (primeiro nome) 1000
+    // _nomes femininos 1000
+    // _sobrenomes 1000
+
     private static string[] _lorem = new string[] { "Lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit", "Suspendisse", "tempus", "sapien", "maximus", "dictum", "pretium", "tellus", "dui", "tincidunt", "massa", "lobortis", "pellentesque", "dolor", "ligula", "et", "nulla" };
 
     public static string Fullname()
@@ -38,9 +42,10 @@ internal class Faker
         return _random.Next(18, 96);
     }
 
-    public static string Lorem(int size)
+    public static string Lorem(int size, int end = -1)
     {
-        return string.Join(" ", Enumerable.Range(1, size).Select(x => _lorem[_random.Next(_lorem.Length - 1)]));
+        return string.Join(" ", Enumerable.Range(1, end == -1 ? size : _random.Next(size, end))
+            .Select(x => _lorem[_random.Next(_lorem.Length - 1)]));
     }
 
 }

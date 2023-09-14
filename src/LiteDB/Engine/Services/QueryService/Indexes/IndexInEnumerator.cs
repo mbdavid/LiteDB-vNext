@@ -30,7 +30,7 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
         if (_eof) return PipeValue.Empty;
 
         // in first run, gets head node
-        if (!_init)
+        if (_init == false)
         {
             _init = true;
 

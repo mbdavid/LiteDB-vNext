@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct PipeValue
+internal struct PipeValue : IIsEmpty
 {
     public readonly RowID DataBlockID;
     public readonly BsonDocument? Document;

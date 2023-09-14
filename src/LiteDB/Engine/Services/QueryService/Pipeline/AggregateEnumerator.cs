@@ -47,7 +47,7 @@ internal class AggregateEnumerator : IPipeEnumerator
                 var key = _keyExpr.Execute(item.Document, context.QueryParameters, _collation);
 
                 // initialize current key with first key
-                if (!_init)
+                if (_init == false)
                 {
                     _init = true;
                     _currentKey = key;

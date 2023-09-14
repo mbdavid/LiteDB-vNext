@@ -102,7 +102,7 @@ public partial class LiteEngine : ILiteEngine
                     counter++;
                 }
 
-                ENSURE(first.IsEmpty == false);
+                ENSURE(first.HasValue());
                 //pkIndexNode.Reload();
 
                 pkIndexNode.NextNodeID = first.IndexNodeID;

@@ -18,7 +18,7 @@ public class Query : IQuery
 
     #endregion
 
-    public BsonExpression Select { get; init; } = BsonExpression.Empty;
+    public BsonExpression Select { get; init; } = BsonExpression.Root();
     public BsonExpression[] Includes { get; init; } = Array.Empty<BsonExpression>();
     public BsonExpression Where { get; init; } = BsonExpression.Empty;
     public OrderBy OrderBy { get; init; } = OrderBy.Empty;

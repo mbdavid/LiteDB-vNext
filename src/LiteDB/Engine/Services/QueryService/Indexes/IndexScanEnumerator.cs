@@ -29,50 +29,45 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
         var indexService = context.IndexService;
 
+        var head = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
+        var tail = _order == Query.Ascending ? _indexDocument.TailIndexNodeID : _indexDocument.HeadIndexNodeID;
+
         // in first run, gets head node
-        if (!_init)
+        if (_init == false)
         {
             _init = true;
 
-            var start = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
-
-            var node = indexService.GetNode(start);
+            var node = indexService.GetNode(head);
 
             // get pointer to next at level 0
-            _next = node[0]->GetNextPrev(_order);
+            _next = node[0]->GetNext(_order);
+
+            // empty index
+            if (_next == tail)
+            {
+                _eof = true;
+                return PipeValue.Empty;
+            }
+        }
+
+        // loop until find any func<> = true
+        while (true)
+        {
+            var node = indexService.GetNode(_next);
+
+            _next = node[0]->GetNext(_order);
+
+            // if next is tail, do not run more than this time
+            if (_next == tail) _eof = true;
 
             // get key as BsonValue to run computed function
             var key = IndexKey.ToBsonValue(node.Key);
 
-            if(_func(key))
+            if (_func(key))
             {
                 return new PipeValue(node.DataBlockID);
             }
-        }
-
-        // go forward
-        if (!_next.IsEmpty)
-        {
-            do
-            {
-                var node = indexService.GetNode(_next);
-
-                _next = node[0]->GetNextPrev(_order);
-
-                // get key as BsonValue to run computed function
-                var key = IndexKey.ToBsonValue(node.Key);
-
-                if (_func(key))
-                {
-                    return new PipeValue(node.DataBlockID);
-                }
-
-            } while (!_next.IsEmpty);
-        }
-
-        _eof = true;
-
-        return PipeValue.Empty;
+        } 
     }
 
     public void Dispose()

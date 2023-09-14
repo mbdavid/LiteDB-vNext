@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent an OrderBy definition
 /// </summary>
-public struct OrderBy
+public struct OrderBy : IIsEmpty
 {
     public static OrderBy Empty = new(BsonExpression.Empty, 0);
 

@@ -25,7 +25,7 @@ unsafe internal class IndexNodeEnumerator : IEnumerator<IndexNodeResult>
     {
         if (_eof) return false;
 
-        if (!_init)
+        if (_init == false)
         {
             _init = true;
 

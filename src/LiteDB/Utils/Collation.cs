@@ -79,6 +79,11 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
         }
     }
 
+    public bool StartsWith(string value, string target)
+    {
+        return value.StartsWith(target, this.CompareOptions.HasFlag(CompareOptions.IgnoreCase), this.Culture);
+    }
+
     public int Compare(BsonValue left, BsonValue rigth)
     {
         return left.CompareTo(rigth, this);
