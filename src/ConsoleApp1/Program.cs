@@ -1,6 +1,6 @@
 ﻿// SETUP //////////////////
 const string VER = "v6-pointer";
-var INSERT_1 = new Range(1, 100);
+var INSERT_1 = new Range(1, 100_000);
 var DELETE_1 = new Range(1, 40_000);
 var INSERT_2 = new Range(1, 30_000);
 ////////////////////////
@@ -13,14 +13,12 @@ var delete1 = Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(
 //var query1 = new Query { Where = "name like 'fernand%'" };
 var query1 = new Query 
 {
-//    Where = "_id between 20 and 30 AND name like 'r%'",
+    Where = "age between 20 and 30 AND name like 'r%'",
     Includes = new BsonExpression[] { "country" },
-    Limit = 5,
-    Select = "{_id,name,country}"
-    //    OrderBy = new OrderBy("_id", -1) 
+    Limit = 15,
+//    Select = "$",
+    OrderBy = new OrderBy("name", 1) 
 };
-
-
 
 // INITIALIZE
 var filename = @$"C:\LiteDB\temp\{VER}\test-{DateTime.Now.Ticks}.db";
@@ -32,7 +30,7 @@ var db = new LiteEngine(settings);
 await db.OpenAsync();
 await db.InsertAsync("col1", insert1, BsonAutoId.Int32);
 await db.InsertAsync("col2", GetCountries(), BsonAutoId.Int32);
-await db.EnsureIndexAsync("col1", "idx_name", "name", false);
+//await db.EnsureIndexAsync("col1", "idx_name", "name", false);
 await db.ConsumeAsync("col1", query1, 1_000, 20);
 
 

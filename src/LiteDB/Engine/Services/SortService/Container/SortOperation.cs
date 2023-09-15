@@ -45,10 +45,7 @@ internal class SortOperation : ISortOperation
         {
             var current = enumerator.MoveNext(context);
 
-            if (current.IsEmpty)
-            {
-                break;
-            }
+            if (current.IsEmpty) break;
 
             var key = _orderBy.Expression.Execute(current.Document, context.QueryParameters, _collation);
 

@@ -23,8 +23,10 @@ internal readonly struct SortItem : IIsEmpty
 
     public unsafe int GetBytesCount()
     {
-        throw new NotImplementedException();
-//        return IndexNode.GetKeyLength(this.Key) + sizeof(RowID);
+        return sizeof(RowID) + 
+            1 +  // data type
+            (this.Key.IsString || this.Key.IsBinary ? sizeof(int) : 0) + // 4 for variant length
+            this.Key.GetBytesCountCached();
     }
 
     public override string ToString() => Dump.Object(this);

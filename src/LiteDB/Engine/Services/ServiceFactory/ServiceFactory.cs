@@ -129,7 +129,6 @@ internal partial class ServicesFactory : IServicesFactory
         orderBy);
 
     public ISortContainer CreateSortContainer(int containerID, int order, Stream stream) => new SortContainer(
-        this.MemoryFactory,
         this.FileHeader.Collation,
         containerID,
         order,

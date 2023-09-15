@@ -20,6 +20,6 @@ internal class DataLookup : IDocumentLookup
 
     public override string ToString()
     {
-        return $"DATA {(_fields.Length == 0 ? "FULL READ" : "FIELDS [" + string.Join(", ", _fields) + "]")}";
+        return $"DATABLOCK {(_fields.Length == 0 ? "FULL DOCUMENT" : "FIELDS " + string.Join(", ", _fields))}";
     }
 }

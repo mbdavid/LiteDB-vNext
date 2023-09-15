@@ -30,8 +30,7 @@ internal class OrderByEnumerator : IPipeEnumerator
         if(_init == false)
         {
             // consume all _enumerator and get ready for new enumerator: _sorter
-            // _sorter.InsertDataAsync(_enumerator, context);
-            throw new NotImplementedException();
+            _sorter.InsertData(_enumerator, context);
             _init = true;
         }
 

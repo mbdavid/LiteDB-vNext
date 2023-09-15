@@ -11,7 +11,7 @@ unsafe internal class SortContainer : ISortContainer
     private readonly int _order;
     private readonly Stream _stream;
 
-    private PageMemory* _page;
+    private byte[] _buffer; // 8k page buffe
 
     private SortItem _current; // current sorted item
     private int _pageIndex = -1; // current read page
@@ -21,19 +21,18 @@ unsafe internal class SortContainer : ISortContainer
     private int _pageRemaining; // remaining items on current page
 
     public SortContainer(
-        IMemoryFactory memoryFactory,
         Collation collation,
         int containerID,
         int order,
         Stream stream)
     {
-        _memoryFactory = memoryFactory;
         _collation = collation;
         _containerID = containerID;
         _order = order;
         _stream = stream;
 
-        _page = memoryFactory.AllocateNewPage();
+        // rent a full 8k buffer in managed memory
+        _buffer = ArrayPool<byte>.Shared.Rent(PAGE_SIZE);
     }
 
     /// <summary>
@@ -97,14 +96,13 @@ unsafe internal class SortContainer : ISortContainer
             else
             {
                 // write DataBlockID, Key on buffer
-                span[pagePosition..].WritePageAddress(orderedItem.DataBlockID);
+                span[pagePosition..].WriteRowID(orderedItem.DataBlockID);
 
                 pagePosition += sizeof(RowID);
 
-                throw new NotImplementedException();
-                //**span[pagePosition..].WriteBsonValue(orderedItem.Key, out var keyLength);
+                span[pagePosition..].WriteBsonValue(orderedItem.Key, out var keyLength);
 
-                //**pagePosition += keyLength;
+                pagePosition += keyLength;
 
                 // increment total container items
                 pageItems++;
@@ -122,24 +120,23 @@ unsafe internal class SortContainer : ISortContainer
     {
         if (_containerRemaining == 0) return false;
 
-        throw new NotImplementedException();
-        //if (_pageRemaining == 0)
-        //{
-        //    // set stream position to page position (increment pageIndex before)
-        //    _stream.Position = (_containerID * (CONTAINER_SORT_SIZE_IN_PAGES * PAGE_SIZE)) + (++_pageIndex * PAGE_SIZE);
+        if (_pageRemaining == 0)
+        {
+            // set stream position to page position (increment pageIndex before)
+            _stream.Position = (_containerID * (CONTAINER_SORT_SIZE_IN_PAGES * PAGE_SIZE)) + (++_pageIndex * PAGE_SIZE);
 
-        //    _stream.ReadAsync(_buffer.Buffer);
+            _stream.Read(_buffer, 0, PAGE_SIZE);
 
-        //    // set position and read remaining page items
-        //    _position = 2; // for int16
-        //    _pageRemaining = _buffer.AsSpan(0, 2).ReadInt16();
-        //}
+            // set position and read remaining page items
+            _position = 2; // for int16
+            _pageRemaining = _buffer.AsSpan(0, 2).ReadInt16();
+        }
 
-        //var itemSize = this.ReadCurrent();
+        var itemSize = this.ReadCurrent();
 
-        //_position += itemSize;
-        //_pageRemaining--;
-        //_containerRemaining--;
+        _position += itemSize;
+        _pageRemaining--;
+        _containerRemaining--;
 
         return true;
     }
@@ -149,20 +146,19 @@ unsafe internal class SortContainer : ISortContainer
     /// </summary>
     private int ReadCurrent()
     {
-        throw new NotImplementedException();
-        //var span = _buffer.AsSpan(_position);
+        var span = _buffer.AsSpan(_position);
 
-        //var dataBlockID = span[0..].ReadPageAddress();
-        //var key = span[PageAddress.SIZE..].ReadBsonValue(out var keyLength);
+        var dataBlockID = span[0..].ReadRowID();
+        var key = span[sizeof(RowID)..].ReadBsonValue(out var keyLength);
 
-        //// set current item
-        //_current = new SortItem(dataBlockID, key);
+        // set current item
+        _current = new SortItem(dataBlockID, key);
 
-        //return sizeof(RowID) + keyLength;
+        return sizeof(RowID) + keyLength;
     }
 
     public void Dispose()
     {
-        _memoryFactory.DeallocatePage(_page);
+        ArrayPool<byte>.Shared.Return(_buffer);
     }
 }
