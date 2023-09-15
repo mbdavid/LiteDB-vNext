@@ -15,6 +15,8 @@ public static class StaticUtils
                 ["_id"] = i,
                 ["name"] = Faker.Fullname(),
                 ["age"] = Faker.Age(),
+                ["created"] = Faker.Birthday(),
+                ["country"] = BsonDocument.DbRef(Faker.Next(1, 10), "col2"),
                 ["lorem"] = Faker.Lorem(lorem, loremEnd)
             };
 
@@ -26,6 +28,20 @@ public static class StaticUtils
         Console.WriteLine($"{(allocated / 1024 / 1024):n0} MB");
 
     }
+
+    public static BsonDocument[] GetCountries() => new BsonDocument[]
+    {
+        new() { ["_id"] = 1, ["name"] = "Brazil", ["code"] = "BR" },
+        new() { ["_id"] = 2, ["name"] = "USA", ["code"] = "US" },
+        new() { ["_id"] = 3, ["name"] = "México", ["code"] = "MX" },
+        new() { ["_id"] = 4, ["name"] = "Portugal", ["code"] = "PT" },
+        new() { ["_id"] = 5, ["name"] = "France", ["code"] = "FR" },
+        new() { ["_id"] = 6, ["name"] = "Italy", ["code"] = "IT" },
+        new() { ["_id"] = 7, ["name"] = "Spain", ["code"] = "ES" },
+        new() { ["_id"] = 8, ["name"] = "China", ["code"] = "CH" },
+        new() { ["_id"] = 9, ["name"] = "Uruguai", ["code"] = "UR" },
+        new() { ["_id"] = 10, ["name"] = "Argentina", ["code"] = "AR" },
+    };
 
     public static async Task Run(string message, Func<Task> asyncFunc)
     {

@@ -66,49 +66,46 @@ internal class IncludeEnumerator : IPipeEnumerator
     /// </summary>
     private void DoInclude(BsonDocument value, PipeContext context)
     {
-        throw new NotImplementedException();
+        // works only if is a document { $id: value, $ref: "col_name" }
+        var refId = value["$id"];
+        var refCol = value["$ref"];
 
+        // if has no reference, just go out
+        if (refId.IsNull || !refCol.IsString) return;
 
-        //// works only if is a document
-        //var refId = value["$id"];
-        //var refCol = value["$ref"];
+        // get master to get collection PK index
+        var master = _masterService.GetMaster(false);
 
-        //// if has no reference, just go out
-        //if (refId.IsNull || !refCol.IsString) return;
+        if (master.Collections.TryGetValue(refCol.AsString, out var collection))
+        {
+            var node = context.IndexService.Find(collection.PK, refId, false, Query.Ascending);
 
-        //// get master to get collection PK index
-        //var master = _masterService.GetMaster(false);
+            if (!node.IsEmpty)
+            {
+                var refDocResult = context.DataService.ReadDocument(node.DataBlockID, Array.Empty<string>());
 
-        //if (master.Collections.TryGetValue(refCol.AsString, out var collection))
-        //{
-        //    var node = context.IndexService.Find(collection.PK, refId, false, Query.Ascending);
+                if (refDocResult.Fail) throw refDocResult.Exception;
 
-        //    if (!node.IsEmpty)
-        //    {
-        //        var refDocResult = context.DataService.ReadDocument(node.DataBlockID, Array.Empty<string>());
+                //do not remove $id
+                value.Remove("$ref");
 
-        //        if (refDocResult.Fail) throw refDocResult.Exception;
-
-        //        //do not remove $id
-        //        value.Remove("$ref");
-
-        //        // copy values from refDocument into current documet (except _id - will keep $id)
-        //        foreach (var element in refDocResult.Value.AsDocument.Where(x => x.Key != "_id"))
-        //        {
-        //            value[element.Key] = element.Value;
-        //        }
-        //    }
-        //    else
-        //    {
-        //        // set in ref document that was not found
-        //        value["$missing"] = true;
-        //    }
-        //}
-        //else
-        //{
-        //    // set in ref document that was not found
-        //    value["$missing"] = true;
-        //}
+                // copy values from refDocument into current documet (except _id - will keep $id)
+                foreach (var element in refDocResult.Value.AsDocument.Where(x => x.Key != "_id"))
+                {
+                    value[element.Key] = element.Value;
+                }
+            }
+            else
+            {
+                // set in ref document that was not found
+                value["$missing"] = true;
+            }
+        }
+        else
+        {
+            // set in ref document that was not found
+            value["$missing"] = true;
+        }
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)

@@ -210,6 +210,14 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     #region Static Helpers
 
     /// <summary>
+    /// Create an BsonDocument for a extenal collection reference. Makes a document like { $id: value, $ref: 'collection' }
+    /// </summary>
+    public static BsonDocument DbRef(BsonValue idRef, string collectionRef)
+    {
+        return new() { ["$id"] = idRef, ["$ref"] = collectionRef };
+    }
+
+    /// <summary>
     /// Get how many bytes one single element will used in BSON format
     /// </summary>
     internal static int GetBytesCountElement(string key, BsonValue value)

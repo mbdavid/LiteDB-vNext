@@ -13,11 +13,12 @@ var delete1 = Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(
 //var query1 = new Query { Where = "name like 'fernand%'" };
 var query1 = new Query 
 {
-    Where = "_id between 20 and 30 AND name like 'r%'",
+//    Where = "_id between 20 and 30 AND name like 'r%'",
+    Includes = new BsonExpression[] { "country" },
+    Limit = 5,
+    Select = "{_id,name,country}"
     //    OrderBy = new OrderBy("_id", -1) 
 };
-
-string explain1;
 
 
 
@@ -30,6 +31,7 @@ var db = new LiteEngine(settings);
 
 await db.OpenAsync();
 await db.InsertAsync("col1", insert1, BsonAutoId.Int32);
+await db.InsertAsync("col2", GetCountries(), BsonAutoId.Int32);
 await db.EnsureIndexAsync("col1", "idx_name", "name", false);
 await db.ConsumeAsync("col1", query1, 1_000, 20);
 
