@@ -185,9 +185,10 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)
     {
-        var str = string.Format("{0} ({1} {2} \"{3}\")",
+        var str = string.Format("{0} \"{1}\" ({1} {2} \"{3}\")",
             _startsWith.Length > 0 ? "INDEX SEEK (+RANGE SCAN)" : "FULL INDEX SCAN",
             _indexDocument.Name,
+            _indexDocument.Expression,
             _order > 0 ? ">=" : "<=",
             _startsWith);
 

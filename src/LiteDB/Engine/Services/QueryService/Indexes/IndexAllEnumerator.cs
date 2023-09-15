@@ -59,7 +59,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)
     {
-        builder.Add($"FULL INDEX SCAN ({_indexDocument.Name}) {(_order > 0 ? "ASC" : "DESC")}", deep);
+        builder.Add($"INDEX FULL SCAN \"{_indexDocument.Name}\" {(_order > 0 ? "ASC" : "DESC")}", deep);
     }
 
     public void Dispose()

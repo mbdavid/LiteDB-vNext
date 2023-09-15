@@ -143,7 +143,7 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
                 (true, _, false, true) => $"INDEX SCAN ({_indexDocument.Name} <= {_end})",
                 (false, false, true, _) => $"INDEX SCAN ({_indexDocument.Name} > {_start})",
                 (false, true, true, _) => $"INDEX SCAN ({_indexDocument.Name} >= {_start})",
-                _ => $"INDEX RANGE SCAN ({_indexDocument.Name} BETWEEN {_start} AND {_end})",
+                _ => $"INDEX RANGE SCAN \"{_indexDocument.Name}\" ({_indexDocument.Expression} BETWEEN {_start} AND {_end})",
             } +
             (_order > 0 ? " ASC" : " DESC") +
             (_indexDocument.Unique ? " UNIQUE" : "");

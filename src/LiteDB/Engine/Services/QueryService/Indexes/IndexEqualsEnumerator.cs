@@ -118,7 +118,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)
     {
-        builder.Add($"INDEX SEEK({_indexDocument.Name} = {_value}){(_indexDocument.Unique ? " UNIQUE" : "")}", deep);
+        builder.Add($"INDEX SEEK \"{_indexDocument.Name}\" ({_indexDocument.Expression} = {_value}){(_indexDocument.Unique ? " UNIQUE" : "")}", deep);
     }
 
     public void Dispose()
