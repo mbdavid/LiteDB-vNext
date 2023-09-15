@@ -183,6 +183,17 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
         return PipeValue.Empty;
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        var str = string.Format("{0} ({1} {2} \"{3}\")",
+            _startsWith.Length > 0 ? "INDEX SEEK (+RANGE SCAN)" : "FULL INDEX SCAN",
+            _indexDocument.Name,
+            _order > 0 ? ">=" : "<=",
+            _startsWith);
+
+        builder.Add(str + (_order > 0 ? " ASC" : " DESC"), deep);
+    }
+
     public void Dispose()
     {
     }

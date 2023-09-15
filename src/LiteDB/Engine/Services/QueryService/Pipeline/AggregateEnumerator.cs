@@ -90,6 +90,16 @@ internal class AggregateEnumerator : IPipeEnumerator
         return new PipeValue(RowID.Empty, doc);
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        foreach(var func in _funcs)
+        {
+            builder.Add($"{func.Name} = {func}", deep);
+        }
+
+        _enumerator.GetPlan(builder, ++deep);
+    }
+
     public void Dispose()
     {
     }

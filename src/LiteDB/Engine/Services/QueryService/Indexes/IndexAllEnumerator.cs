@@ -57,6 +57,11 @@ internal class IndexAllEnumerator : IPipeEnumerator
         return new PipeValue(node.DataBlockID);
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"FULL INDEX SCAN ({_indexDocument.Name}) {(_order > 0 ? "ASC" : "DESC")}", deep);
+    }
+
     public void Dispose()
     {
     }

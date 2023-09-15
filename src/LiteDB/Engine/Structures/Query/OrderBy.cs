@@ -19,5 +19,6 @@ public struct OrderBy : IIsEmpty
         this.Order = order;
     }
 
-    public override string ToString() => Dump.Object(this);
+    public override string ToString() => IsEmpty ? "<EMPTY>" :
+        $"{Expression} {(Order > 0 ? "ASC" : "DESC")}";
 }

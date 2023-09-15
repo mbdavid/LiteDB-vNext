@@ -36,6 +36,22 @@ internal class TransformEnumerator : IPipeEnumerator
         return new PipeValue(item.DataBlockID, result.AsDocument);
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"TRANSFORM {_expr}", deep);
+
+        _enumerator.GetPlan(builder, ++deep);
+    }
+
+    public BsonDocument GetPlan()
+    {
+
+        return new BsonDocument
+        {
+            ["select"] = _expr.ToString() ?? BsonValue.Null
+        };
+    }
+
     public void Dispose()
     {
     }

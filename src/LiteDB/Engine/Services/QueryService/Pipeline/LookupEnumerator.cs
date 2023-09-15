@@ -34,6 +34,13 @@ internal class LookupEnumerator : IPipeEnumerator
         return new PipeValue(item.DataBlockID, doc);
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"LOOKUP {_lookup}", deep);
+
+        _enumerator.GetPlan(builder, ++deep);
+    }
+
     public void Dispose()
     {
     }

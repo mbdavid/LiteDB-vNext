@@ -44,17 +44,23 @@ public static class StaticUtils
         Console.ForegroundColor = ConsoleColor.Gray;
     }
 
-    public static async Task ConsumeAsync(this LiteDB.Engine.ILiteEngine db, Guid cursorID, int fetchSize, int printTop = 0)
+    public static async Task ConsumeAsync(this LiteDB.Engine.ILiteEngine db, string collection, Query query, int fetchSize, int printTop = 0)
     {
         if (printTop > 0) Console.WriteLine("...");
 
         var index = 1;
 
+        var cursorID = db.Query(collection, query, null, out var plan);
+
         var result = await db.FetchAsync(cursorID, fetchSize);
 
         if (printTop > 0)
         {
-            foreach(var item in result.Results)
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(plan);
+            Console.ForegroundColor = ConsoleColor.Gray;
+
+            foreach (var item in result.Results)
             {
                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                 Console.Write($"[{(index++):000}] ");

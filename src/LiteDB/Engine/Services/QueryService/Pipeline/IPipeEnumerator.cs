@@ -8,4 +8,6 @@ internal interface IPipeEnumerator : IDisposable
     PipeEmit Emit { get; }
 
     PipeValue MoveNext(PipeContext context);
+
+    void GetPlan(ExplainPlainBuilder builder, int deep);
 }

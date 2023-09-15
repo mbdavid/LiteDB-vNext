@@ -39,6 +39,13 @@ internal class LimitEnumerator : IPipeEnumerator
         return item;
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"LIMIT {_limit}", deep);
+
+        _enumerator.GetPlan(builder, ++deep);
+    }
+
     public void Dispose()
     {
     }

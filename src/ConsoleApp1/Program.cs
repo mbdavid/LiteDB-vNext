@@ -11,8 +11,13 @@ var insert2 = GetData(INSERT_2, 5, 10).ToArray();
 
 var delete1 = Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(x => new BsonInt32(x)).ToArray();
 //var query1 = new Query { Where = "name like 'fernand%'" };
-var query1 = new Query { Where = "_id >= 90", OrderBy = new OrderBy("_id", -1) };
+var query1 = new Query 
+{
+    Where = "_id between 20 and 30 AND name like 'r%'",
+    //    OrderBy = new OrderBy("_id", -1) 
+};
 
+string explain1;
 
 
 
@@ -26,7 +31,9 @@ var db = new LiteEngine(settings);
 await db.OpenAsync();
 await db.InsertAsync("col1", insert1, BsonAutoId.Int32);
 await db.EnsureIndexAsync("col1", "idx_name", "name", false);
-await db.ConsumeAsync(db.Query("col1", query1), 1_000, 20);
+await db.ConsumeAsync("col1", query1, 1_000, 20);
+
+
 await db.ShutdownAsync();
 
 //await Run("Create new database", () => db.OpenAsync());

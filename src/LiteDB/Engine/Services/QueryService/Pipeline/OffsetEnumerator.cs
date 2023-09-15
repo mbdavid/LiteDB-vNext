@@ -47,6 +47,13 @@ internal class OffsetEnumerator : IPipeEnumerator
         return item;
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"OFFSET {_offset}", deep);
+
+        _enumerator.GetPlan(builder, ++deep);
+    }
+
     public void Dispose()
     {
     }

@@ -134,6 +134,23 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
         return PipeValue.Empty;
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        var info =
+            (_start.IsMinValue, _startEquals, _end.IsMaxValue, _endEquals) switch
+            {
+                (true, _, false, false) => $"INDEX SCAN ({_indexDocument.Name} < {_end})",
+                (true, _, false, true) => $"INDEX SCAN ({_indexDocument.Name} <= {_end})",
+                (false, false, true, _) => $"INDEX SCAN ({_indexDocument.Name} > {_start})",
+                (false, true, true, _) => $"INDEX SCAN ({_indexDocument.Name} >= {_start})",
+                _ => $"INDEX RANGE SCAN ({_indexDocument.Name} BETWEEN {_start} AND {_end})",
+            } +
+            (_order > 0 ? " ASC" : " DESC") +
+            (_indexDocument.Unique ? " UNIQUE" : "");
+
+        builder.Add(info, deep);
+    }
+
     public void Dispose()
     {
     }

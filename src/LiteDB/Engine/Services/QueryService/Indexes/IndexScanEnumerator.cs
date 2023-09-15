@@ -70,6 +70,11 @@ internal class IndexScanEnumerator : IPipeEnumerator
         } 
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"INDEX FULL SCAN ({_indexDocument.Name})", deep);
+    }
+
     public void Dispose()
     {
     }

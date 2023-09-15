@@ -116,6 +116,11 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
         return PipeValue.Empty;
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"INDEX SEEK({_indexDocument.Name} = {_value}){(_indexDocument.Unique ? " UNIQUE" : "")}", deep);
+    }
+
     public void Dispose()
     {
     }

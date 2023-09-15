@@ -65,6 +65,11 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
         }
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"INDEX SEEK({_indexDocument.Name} IN ({string.Join(", ", _values.Select(x => x.ToString()))})", deep);
+    }
+
     public void Dispose()
     {
     }

@@ -111,6 +111,13 @@ internal class IncludeEnumerator : IPipeEnumerator
         //}
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"INCLUDE {_pathExpr}", deep);
+
+        _enumerator.GetPlan(builder, ++deep);
+    }
+
     public void Dispose()
     {
     }

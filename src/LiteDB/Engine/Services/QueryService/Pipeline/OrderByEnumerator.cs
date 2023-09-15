@@ -5,6 +5,7 @@ internal class OrderByEnumerator : IPipeEnumerator
     // dependency injections
     private readonly ISortOperation _sorter;
 
+    private readonly OrderBy _orderBy;
     private readonly IPipeEnumerator _enumerator;
     private bool _init;
 
@@ -18,6 +19,7 @@ internal class OrderByEnumerator : IPipeEnumerator
         if (_enumerator.Emit.DataBlockID == false) throw ERR($"OrderBy pipe enumerator requires DataBlockID from last pipe");
         if (_enumerator.Emit.Document == false) throw ERR($"OrderBy pipe enumerator requires Document from last pipe");
 
+        _orderBy = orderBy;
         _sorter = sortService.CreateSort(orderBy);
     }
 
@@ -37,6 +39,13 @@ internal class OrderByEnumerator : IPipeEnumerator
         var item = _sorter.MoveNext();
 
         return new PipeValue(item.DataBlockID);
+    }
+
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"ORDER BY {_orderBy}", deep);
+
+        _enumerator.GetPlan(builder, ++deep);
     }
 
     public void Dispose()

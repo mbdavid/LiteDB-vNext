@@ -45,6 +45,13 @@ internal class FilterEnumerator : IPipeEnumerator
         return PipeValue.Empty;
     }
 
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"FILTER {_filter}", deep);
+
+        _enumerator.GetPlan(builder, ++deep);
+    }
+
     public void Dispose()
     {
     }
