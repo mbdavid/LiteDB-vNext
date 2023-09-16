@@ -2,6 +2,9 @@
 
 public partial class LiteEngine : ILiteEngine
 {
+    public Task<BsonDocument?> FindById(string collectionName, BsonValue id)
+        => this.FindById(collectionName, id, Array.Empty<string>());
+
     public async Task<BsonDocument?> FindById(string collectionName, BsonValue id, string[] fields)
     {
         var monitorService = _factory.MonitorService;

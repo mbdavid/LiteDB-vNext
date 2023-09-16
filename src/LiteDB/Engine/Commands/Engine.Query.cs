@@ -2,6 +2,9 @@
 
 public partial class LiteEngine : ILiteEngine
 {
+    public Guid Query(string collectionName, Query query, BsonDocument? parameters = null)
+        => this.Query(collectionName, query, parameters, out _);
+
     public Guid Query(string collectionName, Query query, BsonDocument? parameters, out string executionPlan)
     {
         var queryService = _factory.QueryService;

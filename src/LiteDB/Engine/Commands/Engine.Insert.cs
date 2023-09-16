@@ -2,6 +2,9 @@
 
 public partial class LiteEngine : ILiteEngine
 {
+    public Task<int> InsertAsync(string collectionName, IEnumerable<BsonDocument> documents)
+        => this.InsertAsync(collectionName, documents, BsonAutoId.Int32);
+
     public async Task<int> InsertAsync(string collectionName, IEnumerable<BsonDocument> documents, BsonAutoId autoId)
     {
         using var _pc = PERF_COUNTER(0, nameof(InsertAsync), nameof(LiteEngine));
