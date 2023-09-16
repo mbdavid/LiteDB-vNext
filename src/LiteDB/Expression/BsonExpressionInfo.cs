@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-internal class BsonExpressionInfo
+internal readonly struct BsonExpressionInfo
 {
     /// <summary>
     /// Indicate that expression contains a root $ but without any path navigation (should load full document)

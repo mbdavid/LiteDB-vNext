@@ -4,7 +4,7 @@ internal class Cursor : IDisposable
 {
     public Guid CursorID { get; } = Guid.NewGuid();
 
-    public IQuery Query { get; }
+    public Query Query { get; }
     public BsonDocument Parameters { get; }
     public int ReadVersion { get; }
     public IPipeEnumerator Enumerator { get; }
@@ -18,7 +18,7 @@ internal class Cursor : IDisposable
 
     public BsonDocument? NextDocument { get; set; }
 
-    public Cursor(IQuery query, BsonDocument parameters, int readVersion, IPipeEnumerator enumerator)
+    public Cursor(Query query, BsonDocument parameters, int readVersion, IPipeEnumerator enumerator)
     {
         this.Query = query;
         this.Parameters = parameters;

@@ -17,7 +17,7 @@ internal class QueryService : IQueryService
         _factory = factory;
     }
 
-    public Cursor CreateCursor(CollectionDocument collection, int readVersion, IQuery query, BsonDocument parameters)
+    public Cursor CreateCursor(CollectionDocument collection, int readVersion, Query query, BsonDocument parameters)
     {
         var queryOptimization = _factory.CreateQueryOptimization(collection, query);
 

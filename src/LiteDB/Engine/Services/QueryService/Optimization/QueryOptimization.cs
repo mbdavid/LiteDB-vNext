@@ -1,34 +1,37 @@
 ﻿namespace LiteDB.Engine;
 
+[AutoInterface]
 internal class QueryOptimization : IQueryOptimization
 {
     // dependency injections
-    private readonly IServicesFactory _factory;
+    protected readonly IServicesFactory _factory;
 
     // ctor 
-    private readonly CollectionDocument _collection;
+    protected readonly CollectionDocument _collection;
 
     // fields filled by all query optimization proccess
 
     // SlitWhere
-    private List<BinaryBsonExpression> _terms = new();
+    protected List<BinaryBsonExpression> _terms = new();
 
     // Define Index
-    private int _indexCost = 0;
-    private BsonExpression _indexExpression = BsonExpression.Empty;
-    private int _indexOrder = Query.Ascending;
-    private BsonExpression _filter = BsonExpression.Empty;
+    protected int _indexCost = 0;
+    protected BsonExpression _indexExpression = BsonExpression.Empty;
+    protected int _indexOrder = Query.Ascending;
+
+    // Define Filter
+    protected BsonExpression _filter = BsonExpression.Empty;
 
     // Define OrderBy
-    private OrderBy _orderBy = OrderBy.Empty;
+    protected OrderBy _orderBy = OrderBy.Empty;
 
     // Define Includes (Before/After)
-    private List<BsonExpression> _includesBefore = new();
-    private List<BsonExpression> _includesAfter = new();
+    protected List<BsonExpression> _includesBefore = new();
+    protected List<BsonExpression> _includesAfter = new();
 
     // Define lookups
-    private IDocumentLookup? _documentLookup;
-    private IDocumentLookup? _orderByLookup;
+    protected IDocumentLookup? _documentLookup;
+    protected IDocumentLookup? _orderByLookup;
 
     public QueryOptimization(
         IServicesFactory factory,
@@ -38,7 +41,7 @@ internal class QueryOptimization : IQueryOptimization
         _collection = collection;
     }
 
-    public IPipeEnumerator ProcessQuery(IQuery query, BsonDocument queryParameters)
+    public virtual IPipeEnumerator ProcessQuery(Query query, BsonDocument queryParameters)
     {
         var plainQuery = (Query)query;
 
@@ -61,12 +64,47 @@ internal class QueryOptimization : IQueryOptimization
         return this.CreatePipeEnumerator(plainQuery, queryParameters);
     }
 
+    private IPipeEnumerator CreatePipeEnumerator(Query query, BsonDocument queryParameters)
+    {
+        var pipe = _factory.CreatePipelineBuilder(_collection.Name, queryParameters);
+
+        pipe.AddIndex(_indexExpression!, _indexOrder);
+
+        pipe.AddLookup(_documentLookup!);
+
+        foreach (var include in _includesBefore)
+            pipe.AddInclude(include);
+
+        if (_filter.IsEmpty == false)
+            pipe.AddFilter(_filter);
+
+        if (_orderBy.IsEmpty == false)
+            pipe.AddOrderBy(_orderBy);
+
+        if (query.Offset > 0)
+            pipe.AddOffset(query.Offset);
+
+        if (query.Limit != int.MaxValue)
+            pipe.AddLimit(query.Limit);
+
+        if (_orderByLookup is not null)
+            pipe.AddLookup(_orderByLookup);
+
+        foreach (var include in _includesAfter)
+            pipe.AddInclude(include);
+
+        if (query.Select.IsEmpty == false && query.Select.Type != BsonExpressionType.Root)
+            pipe.AddTransform(query.Select);
+
+        return pipe.GetPipeEnumerator();
+    }
+
     #region Split Where
 
     /// <summary>
     /// Fill terms from where predicate list
     /// </summary>
-    private void SplitWhereInTerms(BsonExpression predicate)
+    protected virtual void SplitWhereInTerms(BsonExpression predicate)
     {
         if (predicate.IsEmpty) return;
 
@@ -99,10 +137,9 @@ internal class QueryOptimization : IQueryOptimization
     private void DefineIndexAndFilter(OrderBy orderBy)
     {
         // from term predicate list, get lower term that can be use as best index option
-        // 
-        var (cost, lowerExpr, lowerIndex) = this.GetLowerCostIndex();
+        var (lowerCost, lowerExpr, lowerIndex) = this.GetLowerCostIndex();
 
-        _indexCost = cost;
+        _indexCost = lowerCost;
 
         if (lowerExpr is null)
         {
@@ -176,7 +213,7 @@ internal class QueryOptimization : IQueryOptimization
 
     #region OrderBy
 
-    private void DefineOrderBy(OrderBy orderBy)
+    protected virtual void DefineOrderBy(OrderBy orderBy)
     {
         if (orderBy.IsEmpty) return;
         if (_indexExpression is null) return;
@@ -249,7 +286,7 @@ internal class QueryOptimization : IQueryOptimization
             var fields = this.GetFields(query, where: true, select: true, orderBy: true, before: true, after: true);
 
             // if contains a single field and are index expression
-            if (fields.Length == 1 && fields[0] == _indexExpression.ToString()[2..])
+            if (fields.Length == 1 && fields[0] == _indexExpression.ToString()![2..])
             {
                 // use index based document lookup
                 _documentLookup = new IndexLookup(fields[0]);
@@ -267,7 +304,7 @@ internal class QueryOptimization : IQueryOptimization
             var docFields = this.GetFields(query, where: true, orderBy: true, before: true);
 
             // if contains a single field and are index expression
-            if (docFields.Length == 1 && docFields[0] == _indexExpression.ToString()[2..])
+            if (docFields.Length == 1 && docFields[0] == _indexExpression.ToString()![2..])
             {
                 // use index based document lookup
                 _documentLookup = new IndexLookup(docFields[0]);
@@ -281,7 +318,7 @@ internal class QueryOptimization : IQueryOptimization
             var orderFields = this.GetFields(query, select: true, before: true);
 
             // if contains a single field and are index expression
-            if (orderFields.Length == 1 && orderFields[0] == _indexExpression.ToString()[2..])
+            if (orderFields.Length == 1 && orderFields[0] == _indexExpression.ToString()![2..])
             {
                 _orderByLookup = new IndexLookup(orderFields[0]);
             }
@@ -343,39 +380,4 @@ internal class QueryOptimization : IQueryOptimization
     }
 
     #endregion
-
-    private IPipeEnumerator CreatePipeEnumerator(Query query, BsonDocument queryParameters)
-    {
-        var pipe = _factory.CreatePipelineBuilder(_collection.Name, queryParameters);
-
-        pipe.AddIndex(_indexExpression!, _indexOrder);
-
-        pipe.AddLookup(_documentLookup!);
-
-        foreach(var include in _includesBefore)
-            pipe.AddInclude(include);
-
-        if (_filter.IsEmpty == false)
-            pipe.AddFilter(_filter);
-
-        if (_orderBy.IsEmpty == false)
-            pipe.AddOrderBy(_orderBy);
-
-        if (query.Offset > 0)
-            pipe.AddOffset(query.Offset);
-
-        if (query.Limit != int.MaxValue)
-            pipe.AddLimit(query.Limit);
-
-        if (_orderByLookup is not null)
-            pipe.AddLookup(_orderByLookup);
-
-        foreach (var include in _includesAfter)
-            pipe.AddInclude(include);
-
-        if (query.Select.IsEmpty == false)
-            pipe.AddTransform(query.Select);
-
-        return pipe.GetPipeEnumerator();
-    }
 }

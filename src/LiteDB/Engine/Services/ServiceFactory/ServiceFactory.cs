@@ -117,9 +117,9 @@ internal partial class ServicesFactory : IServicesFactory
             collectionName,
             queryParameters);
 
-    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, IQuery query) =>
+    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, Query query) =>
         query is Query ? new QueryOptimization(this, collection) :
-        query is AggregateQuery ? new AggregateQueryOptimization(this, collection) :
+        query is AggregateQuery ? new AggregateOptimization(this, collection) :
         throw new NotSupportedException();
 
     public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(
