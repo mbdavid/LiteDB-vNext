@@ -30,7 +30,7 @@ var db = new LiteEngine(settings);
 await db.OpenAsync();
 await db.InsertAsync("col1", insert1, BsonAutoId.Int32);
 await db.InsertAsync("col2", GetCountries(), BsonAutoId.Int32);
-//await db.EnsureIndexAsync("col1", "idx_name", "name", false);
+await db.EnsureIndexAsync("col1", "idx_name", "name", false);
 await db.ConsumeAsync("col1", query1, 1_000, 20);
 
 

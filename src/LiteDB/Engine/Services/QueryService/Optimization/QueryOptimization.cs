@@ -46,7 +46,7 @@ internal class QueryOptimization : IQueryOptimization
         this.SplitWhereInTerms(plainQuery.Where);
 
         // get lower cost index or pk index
-        this.DefineIndex(plainQuery.OrderBy);
+        this.DefineIndexAndFilter(plainQuery.OrderBy);
 
         // define _orderBy field (or use index order)
         this.DefineOrderBy(plainQuery.OrderBy);
@@ -96,14 +96,15 @@ internal class QueryOptimization : IQueryOptimization
 
     #region Index Selector
 
-    private void DefineIndex(OrderBy orderBy)
+    private void DefineIndexAndFilter(OrderBy orderBy)
     {
-        // from term predicate list, get lower index cost
-        var (cost, lower) = this.GetLowerCostIndex();
+        // from term predicate list, get lower term that can be use as best index option
+        // 
+        var (cost, lowerExpr, lowerIndex) = this.GetLowerCostIndex();
 
         _indexCost = cost;
 
-        if (lower is null)
+        if (lowerExpr is null)
         {
             // if there is no index, let's from order by (if exists) or get PK
             var allIndexes = _collection.Indexes;
@@ -116,23 +117,28 @@ internal class QueryOptimization : IQueryOptimization
         }
         else
         {
-            // create filter removing lower cost index predicate
-            if (_terms.Count > 1)
-            {
-                _filter = BsonExpression.And(_terms.Where(x => x != lower));
-            }
+            _indexExpression = lowerExpr;
 
-            _indexExpression = lower;
+            _terms.RemoveAt(lowerIndex);
+        }
+
+        // after define index, create filter with terms
+        if (_terms.Count > 0)
+        {
+            _filter = BsonExpression.And(_terms);
         }
     }
 
-    private (int, BinaryBsonExpression?) GetLowerCostIndex()
+    private (int cost, BinaryBsonExpression? expr, int index) GetLowerCostIndex()
     {
         var lowerCost = int.MaxValue;
+        var lowerIndex = -1;
         BinaryBsonExpression? lowerExpr = null;
 
-        foreach (var term in _terms) 
+        for(var i = 0; i < _terms.Count; i++)
         {
+            var term = _terms[i];
+
             var indexDocument =
                 _collection.Indexes.FirstOrDefault(x => x.Expression == term.Left) ??
                 _collection.Indexes.FirstOrDefault(x => x.Expression == term.Right);
@@ -158,11 +164,12 @@ internal class QueryOptimization : IQueryOptimization
                 {
                     lowerCost = cost;
                     lowerExpr = term;
+                    lowerIndex = i;
                 }
             }
         }
 
-        return (lowerCost, lowerExpr);
+        return (lowerCost, lowerExpr, lowerIndex);
     }
 
     #endregion
