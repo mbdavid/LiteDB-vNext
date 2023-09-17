@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+
+namespace LiteDB.Engine;
 
 internal class AggregateOptimization : QueryOptimization
 {
@@ -25,7 +27,7 @@ internal class AggregateOptimization : QueryOptimization
         this.DefineIndexAggregate(aggregateQuery.Key, aggregateQuery.OrderBy);
 
         // define _orderBy field (or use index order)
-        this.DefineOrderBy(aggregateQuery.OrderBy);
+        // this.DefineOrderBy(aggregateQuery.OrderBy);
 
         // define lookup for index/order by
         this.DefineLookups(aggregateQuery);
@@ -47,7 +49,7 @@ internal class AggregateOptimization : QueryOptimization
 
         // if has not direct index to use in query, create an order by to get keys in order
         if (_aggregateOrderBy.IsEmpty == false)
-            pipe.AddOrderBy(_orderBy);
+            pipe.AddOrderBy(_aggregateOrderBy);
 
         if (_aggregateLookup is not null)
             pipe.AddLookup(_aggregateLookup);
@@ -132,33 +134,65 @@ internal class AggregateOptimization : QueryOptimization
         // without OrderBy
         if (_orderBy.IsEmpty)
         {
-            // if query run order by before aggregate
-            if (_aggregateOrderBy.IsEmpty == false)
+            // if this query requires no sort keys (will use existing index)
+            if (_aggregateOrderBy.IsEmpty)
             {
+                // get all root fiels using in this query (empty means need load full document)
+                var fields = this.GetFields(query, where: true, select: true, aggregate: true);
 
+                // if contains a single field and are index expression
+                if (fields.Length == 1 && fields[0] == _indexExpression.ToString()![2..])
+                {
+                    // use index based document lookup
+                    _documentLookup = new IndexLookup(fields[0]);
+                }
+                else
+                {
+                    _documentLookup = new DataLookup(fields);
+                }
             }
-
-
-
-
-            // get all root fiels using in this query (empty means need load full document)
-            var fields = this.GetFields(query, where: true, select: true, orderBy: true);
-
-            // if contains a single field and are index expression
-            if (fields.Length == 1 && fields[0] == _indexExpression.ToString()![2..])
-            {
-                // use index based document lookup
-                _documentLookup = new IndexLookup(fields[0]);
-            }
+            // in this case, we need run an orderBy before run aggregate
             else
             {
-                _documentLookup = new DataLookup(fields);
+                // get all root fiels using in this query (empty means need load full document)
+                var fields = this.GetFields(query, where: true, aggregate: true);
+
+                // if contains a single field and are index expression
+                if (fields.Length == 1 && fields[0] == _indexExpression.ToString()![2..])
+                {
+                    // use index based document lookup
+                    _documentLookup = new IndexLookup(fields[0]);
+                }
+                else
+                {
+                    _documentLookup = new DataLookup(fields);
+                }
+
+                // now defile aggregateLookup
+                var aggrFields = this.GetFields(query, select: true);
+
+                // if contains a single field and are index expression
+                if (aggrFields.Length == 1 && aggrFields[0] == _indexExpression.ToString()![2..])
+                {
+                    // use index based document lookup
+                    _aggregateLookup = new IndexLookup(fields[0]);
+                }
+                else
+                {
+                    _aggregateLookup = new DataLookup(fields);
+                }
+
             }
+
+
+
         }
 
         // with OrderBy
         else
         {
+            throw new NotImplementedException();
+
             // get all fields used before order by
             var docFields = this.GetFields(query, where: true, orderBy: true);
 
@@ -204,12 +238,14 @@ internal class AggregateOptimization : QueryOptimization
     {
         var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-
-        if (add(aggregate, query.Key, fields)) return Array.Empty<string>();
-
-        foreach(var fun in query.Functions)
+        if (aggregate)
         {
-            //if (add(true, fun., fields)) return Array.Empty<string>();
+            if (add(true, query.Key, fields)) return Array.Empty<string>();
+
+            foreach (var fun in query.Functions)
+            {
+                if (add(true, fun.Expression, fields)) return Array.Empty<string>();
+            }
         }
 
         if (add(where, query.Where, fields)) return Array.Empty<string>();

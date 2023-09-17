@@ -1,6 +1,6 @@
 ﻿// SETUP //////////////////
 const string VER = "v6-pointer";
-var INSERT_1 = new Range(1, 500_000);
+var INSERT_1 = new Range(1, 100_000);
 var DELETE_1 = new Range(1, 40_000);
 var INSERT_2 = new Range(1, 30_000);
 ////////////////////////
@@ -11,13 +11,21 @@ var insert2 = GetData(INSERT_2, 5, 10).ToArray();
 
 var delete1 = Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(x => new BsonInt32(x)).ToArray();
 //var query1 = new Query { Where = "name like 'fernand%'" };
-var query1 = new Query 
-{
-    Where = "age between 20 and 30 AND name like 'r%'",
+//var query1 = new Query 
+//{
+//    Where = "age between 20 and 30 AND name like 'r%'",
 //    Includes = new BsonExpression[] { "country" },
 //    Limit = 15,
 //    Select = "$",
-    OrderBy = new OrderBy("name", 1) 
+//    OrderBy = new OrderBy("name", 1) 
+//};
+var query1 = new AggregateQuery("age")
+{
+    Functions = new[]
+    {
+        new CountFunc("contador", "1"),
+        new CountFunc("contador_name", "name")
+    }
 };
 
 // INITIALIZE
@@ -36,28 +44,30 @@ var db = new LiteEngine(settings);
 
 await Run("Create new database", () => db.OpenAsync());
 
-//await Run($"Insert {INSERT_1}", () => db.InsertAsync("col1", insert1));
-await Run($"Insert {INSERT_1}", async () =>
-{
-    var lotes = new List<(string, BsonDocument[])>();
+await Run($"Insert {INSERT_1}", () => db.InsertAsync("col1", insert1));
 
-    lotes.Add(("col1", insert1[0..125_000]));
-    lotes.Add(("col2", insert1[125_001..250_000]));
-    lotes.Add(("col3", insert1[250_001..375_000]));
-    lotes.Add(("col4", insert1[375_001..500_000]));
+//await Run($"Insert {INSERT_1}", async () =>
+//{
+//    var lotes = new List<(string, BsonDocument[])>();
+//    lotes.Add(("col1", insert1[0..125_000]));
+//    lotes.Add(("col2", insert1[125_001..250_000]));
+//    lotes.Add(("col3", insert1[250_001..375_000]));
+//    lotes.Add(("col4", insert1[375_001..500_000]));
+//    //await Parallel.ForEachAsync(lotes, async (lote, ct) =>
+//    foreach (var lote in lotes)
+//    {
+//        await db.InsertAsync(lote.Item1, lote.Item2);
+//    }
+//});
 
-    //await Parallel.ForEachAsync(lotes, async (lote, ct) =>
-    foreach (var lote in lotes)
-    {
-        await db.InsertAsync(lote.Item1, lote.Item2);
-    }
+//await Run($"EnsureIndex (age)", () => db.EnsureIndexAsync("col1", "idx_AGE", "age", false));
 
-});
+await db.ConsumeAsync("col1", query1, 1_000, 100);
 
-await db.ConsumeAsync("col1", query1, 1_000, 10);
-await db.ConsumeAsync("col2", query1, 1_000, 10);
-await db.ConsumeAsync("col3", query1, 1_000, 10);
-await db.ConsumeAsync("col4", query1, 1_000, 10);
+//await db.ConsumeAsync("col1", query1, 1_000, 10);
+//await db.ConsumeAsync("col2", query1, 1_000, 10);
+//await db.ConsumeAsync("col3", query1, 1_000, 10);
+//await db.ConsumeAsync("col4", query1, 1_000, 10);
 
 
 //await Run($"EnsureIndex (name)", () => db.EnsureIndexAsync("col1", "idx_name", "name", false));

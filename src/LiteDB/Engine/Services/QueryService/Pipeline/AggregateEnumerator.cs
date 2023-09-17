@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System;
+
+namespace LiteDB.Engine;
 
 internal class AggregateEnumerator : IPipeEnumerator
 {
@@ -79,7 +81,10 @@ internal class AggregateEnumerator : IPipeEnumerator
     /// </summary>
     private PipeValue GetResults()
     {
-        var doc = new BsonDocument();
+        var doc = new BsonDocument
+        {
+            ["key"] = _currentKey,
+        };
 
         foreach (var func in _funcs)
         {
@@ -92,9 +97,10 @@ internal class AggregateEnumerator : IPipeEnumerator
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)
     {
-        foreach(var func in _funcs)
+        builder.Add($"AGGREGATE {_keyExpr}", deep);
+        foreach (var func in _funcs)
         {
-            builder.Add($"{func.Name} = {func}", deep);
+            builder.Add($"{func.Name} = {func}", deep - 1);
         }
 
         _enumerator.GetPlan(builder, ++deep);

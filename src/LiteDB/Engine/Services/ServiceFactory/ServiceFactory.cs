@@ -118,8 +118,8 @@ internal partial class ServicesFactory : IServicesFactory
             queryParameters);
 
     public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, Query query) =>
-        query is Query ? new QueryOptimization(this, collection) :
         query is AggregateQuery ? new AggregateOptimization(this, collection) :
+        query is Query ? new QueryOptimization(this, collection) :
         throw new NotSupportedException();
 
     public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(
