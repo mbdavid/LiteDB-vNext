@@ -27,7 +27,39 @@
 
 
 // SETUP //////////////////
-const string VER = "v6-pointer";
+
+using LiteDB;
+using LiteDB.Document.Bson;
+
+var doc = new BsonDocument()
+{
+    ["_id"] = 16,
+    ["_doc"] = new  BsonDocument()
+    {
+        ["_id"] = 10,
+        ["_name"] = "antonio"
+    }
+    //["_name"] = "antonio"
+};
+
+var bw = new BsonDocumentWriter(doc);
+
+var byteArr = new byte[32];
+
+var span = new Span<byte>(byteArr);
+
+//bw.WriteSegment(span);
+bw.WriteSegment(span[0..4]);
+bw.WriteSegment(span[4..8]);
+bw.WriteSegment(span[8..12]);
+bw.WriteSegment(span[12..16]);
+bw.WriteSegment(span[16..20]);
+bw.WriteSegment(span[20..24]);
+bw.WriteSegment(span[24..32]);
+
+Console.WriteLine('a');
+
+/*const string VER = "v6-pointer";
 //var INSERT_1 = new Range(1, 300_000);
 //var DELETE_1 = new Range(5, 60_000);
 //var INSERT_2 = new Range(6, 30_000);
@@ -86,5 +118,5 @@ Console.WriteLine($"# DEBUG - {VER}");
 Console.WriteLine($"# RELEASE - {VER}");
 #endif
 
-
+*/
 //Console.ReadKey();
