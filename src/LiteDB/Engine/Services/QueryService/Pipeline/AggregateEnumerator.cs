@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class AggregateEnumerator : IPipeEnumerator
 {
@@ -98,6 +96,7 @@ internal class AggregateEnumerator : IPipeEnumerator
     public void GetPlan(ExplainPlainBuilder builder, int deep)
     {
         builder.Add($"AGGREGATE {_keyExpr}", deep);
+
         foreach (var func in _funcs)
         {
             builder.Add($"{func.Name} = {func}", deep - 1);

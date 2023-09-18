@@ -181,11 +181,7 @@ internal class AggregateOptimization : QueryOptimization
                 {
                     _aggregateLookup = new DataLookup(fields);
                 }
-
-            }
-
-
-
+           }
         }
 
         // with OrderBy
