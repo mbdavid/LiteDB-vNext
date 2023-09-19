@@ -45,15 +45,6 @@ public partial class LiteEngine : ILiteEngine
             autoIdService.Initialize(collection.ColID, collection.PK.TailIndexNodeID, indexService);
         }
 
-        // getting headerNodeResult (node+page) for all indexes
-        var headResults = new IndexNodeResult[collection.Indexes.Count];
-
-        for(var i = 0; i < collection.Indexes.Count; i++)
-        {
-            var index = collection.Indexes[i];
-            headResults[i] = indexService.GetNode(index.HeadIndexNodeID);
-        }
-
         //for (var i = 0; i < documents.Length; i++)
         foreach (var doc in documents)
         {
@@ -66,7 +57,7 @@ public partial class LiteEngine : ILiteEngine
             var dataBlockID = dataService.InsertDocument(collection.ColID, doc);
 
             // insert _id as PK and get node to be used 
-            var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, headResults[0], IndexNodeResult.Empty, out _);
+            var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, IndexNodeResult.Empty, out _);
 
             if (collection.Indexes.Count > 1)
             {
@@ -79,7 +70,7 @@ public partial class LiteEngine : ILiteEngine
 
                     foreach (var key in keys)
                     {
-                        var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, headResults[i], last, out _);
+                        var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, last, out _);
 
                         last = node;
                     }
@@ -90,14 +81,6 @@ public partial class LiteEngine : ILiteEngine
             if (monitorService.Safepoint(transaction))
             {
                 await transaction.SafepointAsync();
-
-                // after safepoint, reload headResult (can change page)
-                for (var i = 0; i < collection.Indexes.Count; i++)
-                {
-                    var index = collection.Indexes[i];
-
-                    headResults[i] = indexService.GetNode(index.HeadIndexNodeID);
-                }
             }
         }
 

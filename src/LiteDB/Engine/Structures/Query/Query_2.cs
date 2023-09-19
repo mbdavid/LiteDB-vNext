@@ -17,7 +17,7 @@ internal class Query_2
     #endregion
 
     public required IDocumentStore Source { get; init; }
-    public List<(string key, ISelectField field)> Select { get; } = new();
+    public List<(string key, BsonExpression expr)> Select { get; } = new();
     public bool Distinct { get; init; }
     public (IDocumentStore store, BsonAutoId autoId)? Into { get; init; } = default;
     public BsonExpression[] Includes { get; init; } = Array.Empty<BsonExpression>();
@@ -33,7 +33,7 @@ internal class Query_2
     /// <summary>
     /// Get if this query will use Aggregate functions
     /// </summary>
-    public bool IsAggregate => this.GroupBy.IsEmpty == false || this.Select.Any(f => f.field is AggregateSelectField);
+    public bool IsAggregate => this.GroupBy.IsEmpty != false || this.Select.Any(f => f.expr.IsAggregateCall);
 
     #endregion
 

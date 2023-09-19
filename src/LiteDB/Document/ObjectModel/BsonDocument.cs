@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a document (list of key-values of BsonValue) in Bson object model
 /// </summary>
-public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
+public class BsonDocument : BsonValue, IDictionary<string, BsonValue>, IIsEmpty
 {
     /// <summary>
     /// Singleton Empty document (readonly)
@@ -15,6 +15,8 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     private readonly bool _readonly = false;
 
     public IReadOnlyDictionary<string, BsonValue> Value => _value;
+
+    public bool IsEmpty => _value.Count == 0;
 
     public BsonDocument() : this(0)
     {

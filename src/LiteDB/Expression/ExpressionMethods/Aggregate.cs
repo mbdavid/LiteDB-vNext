@@ -4,6 +4,7 @@ internal partial class BsonExpressionMethods
 {
     /// <summary>
     /// </summary>
+    [Aggregate(typeof(CountFunc))]
     public static BsonValue COUNT(BsonValue values)
     {
         if (values is BsonArray array) return array.Count;

@@ -99,12 +99,19 @@ public abstract partial class BsonExpression
 
     public static BsonExpression Create(string expr)
     {
-        return _cache.GetOrAdd(expr, e => Create(new Tokenizer(e)));
+        return _cache.GetOrAdd(expr, e => Create(new Tokenizer(e), false));
     }
 
-    internal static BsonExpression Create(Tokenizer tokenizer)
+    internal static BsonExpression Create(Tokenizer tokenizer, bool firstExpressionOnly)
     {
-        return BsonExpressionParser.ParseFullExpression(tokenizer, true);
+        if (firstExpressionOnly)
+        {
+            return BsonExpressionParser.ParseSingleExpression(tokenizer, true);
+        }
+        else
+        {
+            return BsonExpressionParser.ParseFullExpression(tokenizer, true);
+        }
     }
 
     #region MethodCall quick access

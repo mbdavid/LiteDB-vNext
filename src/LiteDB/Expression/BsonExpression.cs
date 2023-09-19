@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using System.ComponentModel;
+
+namespace LiteDB;
 
 public abstract partial class BsonExpression : IEquatable<BsonExpression>, IIsEmpty
 {
@@ -99,6 +101,13 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>, IIsEm
         this.Type == BsonExpressionType.In;
 
     public bool IsEmpty => this.Type == BsonExpressionType.Empty;
+
+    /// <summary>
+    /// Indicate this expression are an aggregate method call, like COUNT(_id), SUM(value),
+    /// </summary>
+    public bool IsAggregateCall => 
+        this.Type == BsonExpressionType.Call &&
+        (((CallBsonExpression)this).Method.GetCustomAttribute<AggregateAttribute>() is not null);
 
     internal BsonExpressionInfo GetInfo()
     {
