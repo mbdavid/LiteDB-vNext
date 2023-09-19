@@ -67,7 +67,7 @@ internal class InsertSingleStatement : IEngineStatement
     }
 
     public static void InsertInternal(
-        CollectionDocument collection, 
+        ISourceStore collection, 
         BsonDocument doc, 
         BsonAutoId autoId, 
         IAutoIdService autoIdService, 
