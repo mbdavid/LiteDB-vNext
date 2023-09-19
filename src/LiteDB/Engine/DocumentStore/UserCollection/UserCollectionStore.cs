@@ -1,8 +1,10 @@
 ﻿namespace LiteDB.Engine;
 
-internal class UserCollectionStore : ISourceStore
+internal class UserCollectionStore : IDocumentStore
 {
     public string Name { get; }
+    public byte ColID { get; }
+    public IReadOnlyList<IndexDocument> Indexes { get; }
 
     private CollectionDocument? _collection;
 
@@ -26,5 +28,15 @@ internal class UserCollectionStore : ISourceStore
     public IPipeEnumerator GetPipeEnumerator(BsonExpression expression)
     {
         throw new NotImplementedException();
+    }
+
+    public IReadOnlyList<IndexDocument> GetIndexes() => 
+        _collection!.Indexes;
+
+    public (IDataService dataService, IIndexService indexService) GetServices(IServicesFactory factory, ITransaction transaction) =>
+        (factory.CreateDataService(transaction), factory.CreateIndexService(transaction));
+
+    public void Dispose()
+    {
     }
 }

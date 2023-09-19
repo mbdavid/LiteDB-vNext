@@ -11,22 +11,24 @@ var insert2 = GetData(INSERT_2, 5, 10).ToArray();
 
 var delete1 = Enumerable.Range(DELETE_1.Start.Value, DELETE_1.End.Value).Select(x => new BsonInt32(x)).ToArray();
 //var query1 = new Query { Where = "name like 'fernand%'" };
-//var query1 = new Query 
-//{
-//    Where = "age between 20 and 30 AND name like 'r%'",
-//    Includes = new BsonExpression[] { "country" },
-//    Limit = 15,
-//    Select = "$",
-//    OrderBy = new OrderBy("name", 1) 
-//};
-var query1 = new AggregateQuery("age")
+var query1 = new Query 
 {
-    Functions = new[]
-    {
-        new CountFunc("contador", "1"),
-        new CountFunc("contador_name", "name")
-    }
+    Where = "age between 20 and 30 AND name like 'r%'",
+    Includes = new BsonExpression[] { "country" },
+    Limit = 15,
+    Select = BsonExpression.Root(),
+    OrderBy = new OrderBy("name", 1),
+    
+
 };
+//var query1 = new AggregateQuery("age")
+//{
+//    Functions = new[]
+//    {
+//        new CountFunc("contador", "1"),
+//        new CountFunc("contador_name", "name")
+//    }
+//};
 
 // INITIALIZE
 var filename = @$"C:\LiteDB\temp\{VER}\test-{DateTime.Now.Ticks}.db";
@@ -60,7 +62,8 @@ await Run($"Insert {INSERT_1}", () => db.InsertAsync("col1", insert1));
 //    }
 //});
 
-//await Run($"EnsureIndex (age)", () => db.EnsureIndexAsync("col1", "idx_AGE", "age", false));
+await Run($"EnsureIndex (age)", () => db.EnsureIndexAsync("col1", "idx_AGE", "age", false));
+await Run($"EnsureIndex (name)", () => db.EnsureIndexAsync("col1", "idx_NAME", "name", false));
 
 await db.ConsumeAsync("col1", query1, 1_000, 100);
 

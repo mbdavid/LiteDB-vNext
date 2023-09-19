@@ -2,13 +2,13 @@
 
 internal class InsertSingleStatement : IEngineStatement
 {
-    private readonly ITargetStore _collection;
+    private readonly IDocumentStore _store;
     private readonly BsonDocument _document;
     private readonly BsonAutoId _autoId;
 
-    public InsertSingleStatement(ITargetStore collection, BsonDocument document, BsonAutoId autoId)
+    public InsertSingleStatement(IDocumentStore store, BsonDocument document, BsonAutoId autoId)
     {
-        _collection = collection;
+        _store = store;
         _document = document;
         _autoId = autoId;
     }
@@ -26,80 +26,96 @@ internal class InsertSingleStatement : IEngineStatement
         var collation = factory.FileHeader.Collation;
 
         // create a new transaction locking colID
-        var transaction = await monitorService.CreateTransactionAsync(new byte[] { _collection.ColID });
+        var transaction = await monitorService.CreateTransactionAsync(new byte[] { _store.ColID });
 
-        var dataService = factory.CreateDataService(transaction);
-        var indexService = factory.CreateIndexService(transaction);
+        // get data/index services from store
+        var (dataService, indexService) = _store.GetServices(factory, transaction);
+
+        // get all indexes this store contains
+        var indexes = _store.GetIndexes();
 
         try
         {
             // initialize autoId if needed
-            if (autoIdService.NeedInitialize(_collection.ColID, _autoId))
+            if (autoIdService.NeedInitialize(_store.ColID, _autoId))
             {
-                autoIdService.Initialize(_collection.ColID, _collection.PK.TailIndexNodeID, indexService);
+                if (indexes.Count > 0)
+                {
+                    autoIdService.Initialize(_store.ColID, indexes[0].TailIndexNodeID, indexService);
+                }
+                else
+                {
+                    autoIdService.Initialize(_store.ColID);
+                }
             }
 
+            // insert document and all indexes for this document (based on collection indexes)
             InsertInternal(
-                _collection,
+                _store.ColID,
                 _document,
                 _autoId,
-                autoIdService,
+                indexes,
                 dataService,
                 indexService,
+                autoIdService,
                 collation);
 
             // write all dirty pages into disk
             await transaction.CommitAsync();
+
+            monitorService.ReleaseTransaction(transaction);
 
         }
         catch (Exception ex)
         {
             transaction.Abort();
 
-        }
-        finally
-        {
             monitorService.ReleaseTransaction(transaction);
-        }
 
+            ErrorHandler.Handle(ex, factory, true);
+        }
 
         return 1;
     }
 
+    /// <summary>
+    /// A static function to insert a document and all indexes using only interface services. Will be use in InsertSingle, InsertMany, InsertBulk
+    /// </summary>
     public static void InsertInternal(
-        ISourceStore collection, 
+        byte colID,
         BsonDocument doc, 
-        BsonAutoId autoId, 
-        IAutoIdService autoIdService, 
-        IDataService dataService, 
+        BsonAutoId autoId,
+        IReadOnlyList<IndexDocument> indexes,
+        IDataService dataService,
         IIndexService indexService,
+        IAutoIdService autoIdService, 
         Collation collation)
     {
-        using var _p2 = PERF_COUNTER(10, "InsertSingle", nameof(LiteEngine));
+        using var _pc = PERF_COUNTER(10, nameof(InsertInternal), nameof(InsertSingleStatement));
 
         // get/set _id
-        var id = autoIdService.SetDocumentID(collection.ColID, doc, autoId);
+        var id = autoIdService.SetDocumentID(colID, doc, autoId);
 
         // insert document and get position address
-        var dataBlockID = dataService.InsertDocument(collection.ColID, doc);
+        var dataBlockID = dataService.InsertDocument(colID, doc);
 
         // insert _id as PK and get node to be used 
-        var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, IndexNodeResult.Empty, out _);
+        //**var last = indexService.AddNode(collection.ColID, collection.PK, id, dataBlockID, IndexNodeResult.Empty, out _);
 
-        if (collection.Indexes.Count > 1)
+        if (indexes.Count > 1)
         {
-            for (var i = 1; i < collection.Indexes.Count; i++)
+            for (var i = 1; i < indexes.Count; i++)
             {
-                var index = collection.Indexes[i];
+                var index = indexes[i];
 
                 // get a single or multiple (distinct) values
                 var keys = index.Expression.GetIndexKeys(doc, collation);
 
                 foreach (var key in keys)
                 {
-                    var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, last, out _);
+                    //**var node = indexService.AddNode(collection.ColID, index, key, dataBlockID, last, out _);
 
-                    last = node;
+                    //**last = node;
                 }
             }
         }

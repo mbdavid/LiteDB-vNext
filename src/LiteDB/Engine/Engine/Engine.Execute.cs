@@ -2,7 +2,7 @@
 
 public partial class LiteEngine : ILiteEngine
 {
-    public ValueTask<EngineResult> ExecuteAsync(IEngineStatement statement, BsonDocument parameters)
+    internal ValueTask<EngineResult> ExecuteAsync(IEngineStatement statement, BsonDocument parameters)
     {
         throw new NotImplementedException();
     }

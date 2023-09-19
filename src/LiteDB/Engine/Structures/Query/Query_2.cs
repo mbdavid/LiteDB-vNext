@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-public class Query_2
+internal class Query_2
 {
     #region Constants
 
@@ -16,10 +16,10 @@ public class Query_2
 
     #endregion
 
-    public required ISourceStore Source { get; init; }
+    public required IDocumentStore Source { get; init; }
     public List<(string key, ISelectField field)> Select { get; } = new();
     public bool Distinct { get; init; }
-    public ITargetStore? Into { get; init; } = default;
+    public (IDocumentStore store, BsonAutoId autoId)? Into { get; init; } = default;
     public BsonExpression[] Includes { get; init; } = Array.Empty<BsonExpression>();
     public BsonExpression Where { get; init; } = BsonExpression.Empty;
     public BsonExpression GroupBy { get; set; } = BsonExpression.Empty;
