@@ -98,7 +98,7 @@ unsafe internal class IndexService : IIndexService
         }
 
         // now, let's link my index node on right place
-        var leftNode = head;
+        var leftNode = this.GetNode(index.HeadIndexNodeID);
 
         // for: scan from top to bottom
         for (int currentLevel = INDEX_MAX_LEVELS - 1; currentLevel >= 0; currentLevel--)
