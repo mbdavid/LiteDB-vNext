@@ -99,18 +99,18 @@ public abstract partial class BsonExpression
 
     public static BsonExpression Create(string expr)
     {
-        return _cache.GetOrAdd(expr, e => Create(new Tokenizer(e), false));
+        return _cache.GetOrAdd(expr, e => Create(new Tokenizer(e), true));
     }
 
-    internal static BsonExpression Create(Tokenizer tokenizer, bool firstExpressionOnly)
+    internal static BsonExpression Create(Tokenizer tokenizer, bool fullExpression)
     {
-        if (firstExpressionOnly)
+        if (fullExpression)
         {
-            return BsonExpressionParser.ParseSingleExpression(tokenizer, true);
+            return BsonExpressionParser.ParseFullExpression(tokenizer, true);
         }
         else
         {
-            return BsonExpressionParser.ParseFullExpression(tokenizer, true);
+            return BsonExpressionParser.ParseSingleExpression(tokenizer, true);
         }
     }
 

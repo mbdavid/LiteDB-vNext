@@ -28,13 +28,4 @@ internal class Query_2
     public int Offset { get; init; } = 0;
     public int Limit { get; init; } = int.MaxValue;
 
-    #region Helper computed properties
-
-    /// <summary>
-    /// Get if this query will use Aggregate functions
-    /// </summary>
-    public bool IsAggregate => this.GroupBy.IsEmpty != false || this.Select.Any(f => f.expr.IsAggregateCall);
-
-    #endregion
-
 }

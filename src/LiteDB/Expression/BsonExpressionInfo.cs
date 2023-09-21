@@ -17,6 +17,11 @@ internal readonly struct BsonExpressionInfo
     /// </summary>
     public bool IsVolatile { get; }
 
+    public bool HasAggregateCall { get; }
+
+    public bool UseDocument { get; }
+    public bool UseSource { get; }
+
     /// <summary>
     /// Get some expression infos reading full expression tree
     /// </summary>
