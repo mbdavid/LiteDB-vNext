@@ -34,19 +34,22 @@ using LiteDB.Document.Bson;
 var doc = new BsonDocument()
 {
     ["_id"] = 16,
-    ["_doc"] = new  BsonDocument()
+    ["name"] = "antonio",
+    ["age"] = 12
+    /*["_doc"] = new  BsonDocument()
     {
         ["_id"] = 10,
-        ["_name"] = "antonio"
-    }
-    //["_name"] = "antonio"
+        ["_name"] = "antonio",
+        ["_ic"] = 10
+    }*/
 };
 
 var bw = new BsonDocumentWriter(doc);
 
-var byteArr = new byte[32];
+var byteArr = new byte[64];
 
 var span = new Span<byte>(byteArr);
+
 
 //bw.WriteSegment(span);
 bw.WriteSegment(span[0..4]);
@@ -55,7 +58,13 @@ bw.WriteSegment(span[8..12]);
 bw.WriteSegment(span[12..16]);
 bw.WriteSegment(span[16..20]);
 bw.WriteSegment(span[20..24]);
-bw.WriteSegment(span[24..32]);
+bw.WriteSegment(span[24..]);
+
+Console.WriteLine('a');
+
+var reader = new BsonReader();
+
+var newdoc = reader.ReadDocument(span, new string[0], false,  out var len);
 
 Console.WriteLine('a');
 
