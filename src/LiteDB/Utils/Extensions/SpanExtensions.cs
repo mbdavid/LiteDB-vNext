@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using System;
+
+namespace LiteDB;
 
 internal static class SpanExtensions
 {
@@ -140,11 +142,7 @@ internal static class SpanExtensions
 
     public static void WriteDecimal(this Span<byte> buffer, Decimal value)
     {
-        var bits = Decimal.GetBits(value);
-        buffer.WriteInt32(bits[0]);
-        buffer[4..].WriteInt32(bits[1]);
-        buffer[8..].WriteInt32(bits[2]);
-        buffer[12..].WriteInt32(bits[3]);
+        decimal.GetBits(value, MemoryMarshal.Cast<byte, int>(buffer));
     }
 
     public static void WriteDateTime(this Span<byte> buffer, DateTime value)

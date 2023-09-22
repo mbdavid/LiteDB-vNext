@@ -35,30 +35,37 @@ var doc = new BsonDocument()
 {
     ["_id"] = 16,
     ["name"] = "antonio",
-    ["age"] = 12
-    /*["_doc"] = new  BsonDocument()
+    ["age"] = 12,
+    ["_doc"] = new BsonDocument()
     {
         ["_id"] = 10,
-        ["_name"] = "antonio",
-        ["_ic"] = 10
-    }*/
+        ["name2"] = "antonio",
+        ["ic2"] = 10
+    },
+    ["page"] = 12
 };
 
 var bw = new BsonDocumentWriter(doc);
 
-var byteArr = new byte[64];
+var byteArr = new byte[128];
 
 var span = new Span<byte>(byteArr);
 
 
 //bw.WriteSegment(span);
-bw.WriteSegment(span[0..4]);
-bw.WriteSegment(span[4..8]);
-bw.WriteSegment(span[8..12]);
-bw.WriteSegment(span[12..16]);
-bw.WriteSegment(span[16..20]);
-bw.WriteSegment(span[20..24]);
-bw.WriteSegment(span[24..]);
+//bw.WriteSegment(span);
+bw.WriteSegment(span[0..8]);
+bw.WriteSegment(span[8..16]);
+bw.WriteSegment(span[16..24]);
+bw.WriteSegment(span[24..32]);
+bw.WriteSegment(span[32..40]);
+bw.WriteSegment(span[40..48]);
+bw.WriteSegment(span[48..56]);
+bw.WriteSegment(span[56..64]);
+bw.WriteSegment(span[64..72]);
+bw.WriteSegment(span[72..80]);
+bw.WriteSegment(span[80..88]);
+bw.WriteSegment(span[88..]);
 
 Console.WriteLine('a');
 

@@ -12,28 +12,62 @@ namespace LiteDB.Document.Bson
         private int _remaining;
         private BsonDocument _doc;
 
-        private int _currentIndex = 0;
+        private Stack<int> _currentIndex = new Stack<int>();
 
         private bool _unfinishedValue = false;
         public byte[] _currentValue;
         private int _currentValueIndex = 0;
         private int _currentValueEnd = 0;
 
-        private IEnumerable<KeyValuePair<string, BsonValue>> _elements;
+        private bool _subDoc = false;
+
+        private Stack<IEnumerable<KeyValuePair<string, BsonValue>>> _elements = new Stack<IEnumerable<KeyValuePair<string, BsonValue>>>();
 
 
         public BsonDocumentWriter(BsonDocument doc)
         {
             _remaining = doc.GetBytesCount();
             _doc = doc;
-            _currentIndex = 0;
-            _elements = _doc.GetElements();
+            _currentIndex.Push(-1);
+            _elements.Push(doc.GetElements());
         }
 
-        public void WriteSegment(Span<byte> span)
+        public bool WriteSegment(Span<byte> span)
         {
+            var elements = _elements.Peek();
+            var currentIndex = _currentIndex.Peek();
             bool isFull;
             var offSet = 0;
+
+            if(currentIndex == -1)
+            {
+                if(_unfinishedValue)
+                {
+                    WriteUnfinishedValue(span, out var writenDL);
+                    span = span[writenDL..];
+                    ArrayPool<byte>.Shared.Return(_currentValue);
+                    _remaining -= 4;
+                    currentIndex = 0;
+                }
+                else
+                {
+                    if (span.Length >= 4)
+                    {
+                        span.WriteInt32(_doc.GetBytesCount());
+                        _remaining -= 4;
+                        span = span[4..];
+                        currentIndex = 0;
+                    }
+                    else
+                    {
+                        _currentValue = ArrayPool<byte>.Shared.Rent(4);
+                        GetBytes(_doc.GetBytesCount(), _currentValue.AsSpan()[..4]);
+                        _currentValueEnd = 4;
+                        _unfinishedValue = true;
+                    }
+                }
+                
+            }
 
             if (_unfinishedValue)
             {
@@ -42,28 +76,43 @@ namespace LiteDB.Document.Bson
                 if (_unfinishedValue)
                 {
                     _remaining -= writenUV;
-                    return;
+                    _currentIndex.Pop();
+                    _currentIndex.Push(currentIndex);
+                    return false;
                 }
                 ArrayPool<byte>.Shared.Return(_currentValue);
-                _currentIndex++;
+                currentIndex++;
+                if(_subDoc)
+                {
+                    _currentIndex.Pop();
+                    _currentIndex.Push(currentIndex);
+                    _elements.Push(_doc.GetElements());
+                    _currentIndex.Push(-1);
+                    _subDoc = false;
+                    if (!WriteSegment(span))
+                    {
+                        return false;
+                    }
+                    span = span[_doc.GetBytesCount()..];
+                }
             }
-
-            //_currentIndex = 0;//------------
-            for (; _currentIndex < _elements.Count(); _currentIndex++)
+            var cont = 0;
+            for (; currentIndex < ( cont = elements.Count()); currentIndex++)
             {
 
-                var el = _elements.ElementAt(_currentIndex);
+                var el = elements.ElementAt(currentIndex);
 
                 var keyLen = Encoding.UTF8.GetByteCount(el.Key) + 1;
 
                 var isVariant = el.Value.Type == BsonType.String || el.Value.Type == BsonType.Array || el.Value.Type == BsonType.Binary;
                 var valueLen = isVariant  ? el.Value.GetBytesCount() + 5 : el.Value.GetBytesCount() + 1;
 
-                if(span.Length >= keyLen + valueLen)
+                if(span.Length-offSet >= keyLen + valueLen)
                 {
-                    span.WriteCString(el.Key, out _);
-                    WriteValue(span[keyLen..], el.Value);
-                    offSet += keyLen + valueLen;
+                    span[offSet..].WriteCString(el.Key, out _);
+                    offSet += keyLen;
+                    WriteValue(span[offSet..], el.Value);
+                    offSet += valueLen;
                     continue;
                 }
                 else if(span.Length >= keyLen)
@@ -71,14 +120,19 @@ namespace LiteDB.Document.Bson
                     span.WriteCString(el.Key, out _);
                     _currentValue = ArrayPool<byte>.Shared.Rent(valueLen);
 
-                    _currentValue.AsSpan<byte>()[0] = (byte) el.Value.Type;
-                    GetBytes(el.Value, _currentValue.AsSpan<byte>()[1..]);
+                    _currentValue.AsSpan()[0] = (byte) el.Value.Type;
+                    GetBytes(el.Value, _currentValue.AsSpan()[1..]);
 
                     _currentValueEnd = valueLen;
                     offSet += keyLen;
                 }
                 else
                 {
+                    if (el.Value.Type == BsonType.Document)
+                    {
+                        valueLen = 1;
+                    };
+
                     _currentValue = ArrayPool<byte>.Shared.Rent(keyLen + valueLen);
                     Encoding.UTF8.GetBytes(el.Key, _currentValue.AsSpan());
                     _currentValue[keyLen - 1] = 0;
@@ -91,12 +145,17 @@ namespace LiteDB.Document.Bson
 
                 WriteUnfinishedValue(span[offSet..], out var writen);
                 offSet += writen;
-                break;
+                _remaining -= offSet;
+                _currentIndex.Pop();
+                _currentIndex.Push(currentIndex);
+                return false;
 
             }
-
+            _elements.Pop();
+            _currentIndex.Pop();
             _remaining -= offSet;
-            return;
+            if (_currentIndex.Count > 0) WriteSegment(span[offSet..]);
+            return true;
         }
 
        
@@ -110,16 +169,19 @@ namespace LiteDB.Document.Bson
                     break;
                 case BsonType.String:
                     span[0] = (byte)value.Type;
-                    Encoding.UTF8.GetBytes(value.AsString.AsSpan(), span[1..]);
+                    span[1..].WriteInt32(value.GetBytesCount());
+                    Encoding.UTF8.GetBytes(value.AsString.AsSpan(), span[5..]);
                     break;
                 case BsonType.Guid:
                     span[0] = (byte)value.Type;
                     span[1..].WriteGuid(value);
                     break;
                 case BsonType.Document:
-                    /*span[0] = (byte)value.Type;
-                    _subDocWriter = new BsonDocumentWriter(value.AsDocument);
-                    var remaining = _subDocWriter.WriteSegment(span[1..]);*/
+                    span[0] = (byte)value.Type;
+                    _elements.Push(value.AsDocument.GetElements());
+                    _currentIndex.Push(-1);
+                    _doc = value.AsDocument;
+                    WriteSegment(span[1..]);
                     break;
             }
         }
@@ -150,7 +212,6 @@ namespace LiteDB.Document.Bson
                 _currentValueIndex += capacity;
                 _unfinishedValue = true;
             }
-            
         }
 
         private void GetBytes(BsonValue value, Span<byte> span)
@@ -167,45 +228,37 @@ namespace LiteDB.Document.Bson
                     BinaryPrimitives.WriteDoubleLittleEndian(span, value.AsDouble);
                     break;
                 case BsonType.Decimal:
-                    //BinaryPrimitives.(span, value.AsDecimal);
+                    span.WriteDecimal(value.AsDecimal);
+                    //decimal.GetBits(value.AsDecimal, MemoryMarshal.Cast<byte, int>(span));
                     break;
                 case BsonType.String:
-                    BinaryPrimitives.WriteInt32LittleEndian(span, value.GetBytesCount());
-                    Encoding.UTF8.GetBytes(value.AsString.AsSpan(), span[4..]);
+                    span.WriteVString(value.AsString, out _);
+                    /*span.WriteInt32(value.GetBytesCount());
+                    Encoding.UTF8.GetBytes(value.AsString.AsSpan(), span[4..]);*/
                     break;
                 case BsonType.Document:
-                    //BinaryPrimitives.WriteInt32LittleEndian(span, value.AsDocument);
+                    _doc = value.AsDocument;
+                    _subDoc = true;
                     break;
                 case BsonType.Array:
                     //BinaryPrimitives.WriteInt32LittleEndian(span, value.AsArray);
                     break;
                 case BsonType.Binary:
-                    //BinaryPrimitives.WriteInt32LittleEndian(span, value.AsBinary);
+                    value.AsBinary.AsSpan().CopyTo(span);
                     break;
                 case BsonType.ObjectId:
-                    //BinaryPrimitives.WriteInt32LittleEndian(span, value.AsObjectId);
+                    span.WriteObjectId(value.AsObjectId);
                     break;
                 case BsonType.Guid:
-                    //BinaryPrimitives.WriteIntLittleEndian(span, value.AsGuid);
+                    span.WriteGuid(value.AsGuid);
                     break;
                 case BsonType.DateTime:
-                    //BinaryPrimitives.WriteInt32LittleEndian(span, value.AsDateTime);
+                    span.WriteDateTime(value.AsDateTime);
                     break;
                 case BsonType.Boolean:
-                    //Binar(span, value.AsBoolean);
+                    span[0] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
                     break;
             }
-        }
-
-        private void GetIntBytes(int value, out byte[] buffer)
-        {
-            var len = 4 ;
-            var ptr = Marshal.AllocHGlobal(len);
-            buffer = new byte[len];
-
-            Marshal.StructureToPtr(value, ptr, true);
-            Marshal.Copy(ptr, buffer, 0, len);
-            Marshal.FreeHGlobal(ptr);
         }
     }
 }
