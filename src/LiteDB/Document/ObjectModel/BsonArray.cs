@@ -8,26 +8,27 @@ public class BsonArray : BsonValue, IList<BsonValue>
     /// <summary>
     /// Singleton Empty BsonArray (readonly)
     /// </summary>
-    public static readonly BsonArray Empty = new(true);
+    public static readonly BsonArray Empty = FromArray(Array.Empty<BsonArray>());
 
-    private readonly List<BsonValue> _value;
+    private readonly IList<BsonValue>? _list;
+    private readonly IReadOnlyList<BsonValue>? _array; // readonly list (when came from an array)
+
     private int _length = -1;
-    private bool _readonly = false;
 
-    public IReadOnlyList<BsonValue> Value => _value;
+    /// <summary>
+    /// Get internal list of items (can be from an IList or IReadOnlyList)
+    /// </summary>
+    public IReadOnlyList<BsonValue> Value =>
+        _list is not null ? (IReadOnlyList<BsonValue>)_list : _array!;
 
     public BsonArray() : this(0)
     {
     }
 
-    private BsonArray(bool readOnly) : this(0)
-    {
-        _readonly = readOnly;
-    }
-
     public BsonArray(int capacity)
     {
-        _value = new(capacity);
+        _list = new List<BsonValue>(capacity);
+        _array = null;
     }
 
     public BsonArray(IEnumerable<BsonValue> values)
@@ -36,41 +37,57 @@ public class BsonArray : BsonValue, IList<BsonValue>
         this.AddRange(values);
     }
 
-    /// <summary>
-    /// Create a new BsonArray using a deep clone from another array
-    /// </summary>
-    public BsonArray(BsonArray clone, bool readOnly)
-        : this(clone.Count)
+    public BsonArray(IReadOnlyList<BsonValue> array)
+        : this(0)
     {
-        foreach (var value in clone._value)
-        {
-            if (value is BsonDocument doc)
-            {
-                _value.Add(new BsonDocument(doc, readOnly));
-            }
-            else if (value is BsonArray arr)
-            {
-                _value.Add(new BsonArray(arr, readOnly));
-            }
-            else
-            {
-                _value.Add(value);
-            }
-        }
-
-        _length = clone._length;
-        _readonly = readOnly;
+        _list = null;
+        _array = array;
     }
+
+    #region Static constructors
+
+    public BsonArray(IList<BsonValue>? list, IReadOnlyList<BsonValue>? array)
+    {
+        _list = list;
+        _array = array;
+    }
+
+    /// <summary>
+    /// Create a new instance of BsonArray using an already instance of IList (make BsonArray read/write)
+    /// </summary>
+    public static BsonArray FromList(IList<BsonValue> list)
+        => new(list, null);
+
+    /// <summary>
+    /// Create a new instance of BsonArray using an already instance of IReadOnlyList (make BsonArray as readonly)
+    /// </summary>
+    public static BsonArray FromArray(IReadOnlyList<BsonValue> array)
+        => new(null, array);
+
+    /// <summary>
+    /// Create a new instance of BsonArray using an already instance of IReadOnlyList of BsonDocuments (make BsonArray as readonly)
+    /// </summary>
+    public static BsonArray FromArray(IReadOnlyList<BsonDocument> array)
+        => new(null, array);
+
+    //public BsonArray(IEnumerable<BsonValue> values)
+    //    : this(0)
+    //{
+    //    this.AddRange(values);
+    //}
+
+    #endregion
 
     public override BsonType Type => BsonType.Array;
 
     public override int GetBytesCount()
     {
         var length = sizeof(int); // for int32 length
+        var count = this.Value.Count;
 
-        for (var i = 0; i < _value.Count; i++)
+        for (var i = 0; i < count; i++)
         {
-            length += GetBytesCountElement(_value[i]);
+            length += GetBytesCountElement(this.Value[i]);
         }
 
         _length = length; // update local cache after loop
@@ -90,7 +107,6 @@ public class BsonArray : BsonValue, IList<BsonValue>
     public void AddRange(IEnumerable<BsonValue> items)
     {
         if (items == null) throw new ArgumentNullException(nameof(items));
-        if (_readonly) throw ERR_READONLY_OBJECT();
 
         foreach (var item in items)
         {
@@ -136,65 +152,93 @@ public class BsonArray : BsonValue, IList<BsonValue>
 
     public override BsonValue this[int index]
     {
-        get => _value[index];
+        get => this.Value[index];
         set
         {
-            if (_readonly) throw ERR_READONLY_OBJECT();
+            if (_list is null) throw ERR_READONLY_OBJECT();
 
-            _value[index] = value;
+            _list[index] = value;
         }
     }
 
     public void Add(BsonValue item)
     {
-        if (_readonly) throw ERR_READONLY_OBJECT();
+        if (_list is null) throw ERR_READONLY_OBJECT();
 
-        _value.Add(item ?? BsonValue.Null);
+        _list.Add(item ?? BsonValue.Null);
     }
 
     public void Clear()
     {
-        if (_readonly) throw ERR_READONLY_OBJECT();
+        if (_list is null) throw ERR_READONLY_OBJECT();
 
-        _value.Clear();
+        _list.Clear();
     }
 
     public bool Remove(BsonValue item)
     {
-        if (_readonly) throw ERR_READONLY_OBJECT();
+        if (_list is null) throw ERR_READONLY_OBJECT();
 
-        return _value.Remove(item ?? BsonValue.Null);
+        return _list.Remove(item ?? BsonValue.Null);
     }
 
     public void RemoveAt(int index)
     {
-        if (_readonly) throw ERR_READONLY_OBJECT();
+        if (_list is null) throw ERR_READONLY_OBJECT();
 
-        _value.RemoveAt(index);
+        _list.RemoveAt(index);
     }
 
     public void Insert(int index, BsonValue item)
     {
-        if (_readonly) throw ERR_READONLY_OBJECT();
+        if (_list is null) throw ERR_READONLY_OBJECT();
 
-        _value.Insert(index, item ?? BsonValue.Null);
+        _list.Insert(index, item ?? BsonValue.Null);
     }
 
-    public int Count => _value.Count;
+    public int Count => this.Value.Count;
 
-    public bool IsReadOnly => _readonly;
+    public bool IsReadOnly => _list is null;
 
-    public int IndexOf(BsonValue item) => _value.IndexOf(item);
+    public int IndexOf(BsonValue item)
+    {
+        if (_list is not null) return _list.IndexOf(item);
 
-    public bool Contains(BsonValue item) => _value.Contains(item ?? BsonValue.Null);
+        throw new NotImplementedException();
+    }
 
-    public bool Contains(BsonValue item, Collation collection) => _value.Any(x => collection.Compare(x, item ?? BsonValue.Null) == 0);
+    public bool Contains(BsonValue item)
+    {
+        if (_list is not null) return _list.Contains(item);
 
-    public void CopyTo(BsonValue[] array, int arrayIndex) => _value.CopyTo(array, arrayIndex);
+        throw new NotImplementedException();
+    }
 
-    public IEnumerator<BsonValue> GetEnumerator() => _value.GetEnumerator();
+    public bool Contains(BsonValue item, Collation collation)
+    {
+        if (_list is not null)
+        {
+            return _list.Any(x => collation.Compare(x, item ?? BsonValue.Null) == 0);
+        }
 
-    IEnumerator IEnumerable.GetEnumerator() => _value.GetEnumerator();
+        throw new NotImplementedException();
+    }
+
+    public void CopyTo(BsonValue[] array, int arrayIndex)
+    {
+        if (_list is not null)
+        {
+            _list.CopyTo(array, arrayIndex);
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public IEnumerator<BsonValue> GetEnumerator() => this.Value.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => this.Value.GetEnumerator();
 
     #endregion
 

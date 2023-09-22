@@ -8,9 +8,23 @@ internal partial class SqlParser
     private Tokenizer _tokenizer;
     private Collation _collation;
 
+    public SqlParser(Tokenizer tokenizer, Collation collation)
+    {
+        _tokenizer = tokenizer;
+        _collation = collation;
+    }
+
     public IScalarStatement ParseStatement()
     {
         var ahead = _tokenizer.LookAhead().Expect(TokenType.Word);
+
+        if (ahead.Value.Eq("SELECT") || ahead.Value.Eq("EXPLAIN"))
+            return this.ParseInsert();
+
+
+        if (ahead.Value.Eq("INSERT")) return this.ParseInsert();
+
+        throw ERR_UNEXPECTED_TOKEN(ahead);
 
         switch (ahead.Value.ToUpper())
         {

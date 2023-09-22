@@ -37,32 +37,6 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>, IIsEmpty
         _value = value ?? throw new ArgumentNullException(nameof(value));
     }
 
-    /// <summary>
-    /// Create a new BsonDocument using a deep clone from another document
-    /// </summary>
-    public BsonDocument(BsonDocument clone, bool readOnly)
-        : this(clone.Count)
-    {
-        foreach(var entity in clone._value)
-        {
-            if (entity.Value is BsonDocument doc)
-            {
-                _value.Add(entity.Key, new BsonDocument(doc, readOnly));
-            }
-            else if (entity.Value is BsonArray arr)
-            {
-                _value.Add(entity.Key, new BsonArray(arr, readOnly));
-            }
-            else
-            {
-                _value.Add(entity.Key, entity.Value);
-            }
-        }
-
-        _length = clone._length;
-        _readonly = readOnly;
-    }
-
     public override BsonType Type => BsonType.Document;
 
     public override int GetBytesCount()

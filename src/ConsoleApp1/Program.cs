@@ -46,7 +46,7 @@ var db = new LiteEngine(settings);
 
 await Run("Create new database", () => db.OpenAsync());
 
-await Run($"Insert {INSERT_1}", () => db.InsertAsync("col1", insert1));
+//await Run($"Insert {INSERT_1}", () => db.InsertAsync("col1", insert1));
 
 //await Run($"Insert {INSERT_1}", async () =>
 //{
@@ -61,6 +61,16 @@ await Run($"Insert {INSERT_1}", () => db.InsertAsync("col1", insert1));
 //        await db.InsertAsync(lote.Item1, lote.Item2);
 //    }
 //});
+
+var list = BsonArray.FromArray(insert1);
+
+await Run($"Create Collection 'col1'", () => db.CreateCollectionAsync("col1"));
+
+
+await db.ExecuteScalarAsync("insert into col1 values @0", new BsonDocument() { ["0"] = list });
+
+
+
 
 await Run($"EnsureIndex (age)", () => db.EnsureIndexAsync("col1", "idx_AGE", "age", false));
 await Run($"EnsureIndex (name)", () => db.EnsureIndexAsync("col1", "idx_NAME", "name", false));

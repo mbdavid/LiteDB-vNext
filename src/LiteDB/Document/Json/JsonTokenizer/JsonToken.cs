@@ -1,4 +1,5 @@
 ﻿namespace LiteDB;
+
 /// <summary>
 /// Represent a single string token
 /// </summary>

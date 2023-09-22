@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿namespace LiteDB;
 
 /// <summary>
 /// Represent a single string token
@@ -9,25 +9,42 @@ internal struct Token : IIsEmpty
 
     private readonly TokenType _type;
     private readonly ReadOnlyMemory<char> _value;
-    private readonly int _position;
+    private readonly int _start;
+    private readonly int _length;
 
     public bool IsEmpty => _type == TokenType.Empty;
 
-    public Token(TokenType tokenType, int position)
-        : this (tokenType, Array.Empty<char>(), position)
+    public Token(TokenType tokenType, int start, int length = 0)
+        : this (tokenType, Array.Empty<char>(), start, length)
     {
     }
 
-    public Token(TokenType tokenType, ReadOnlyMemory<char> value, int position)
+    public Token(TokenType tokenType, ReadOnlyMemory<char> value, int start, int length = 0)
     {
         _type = tokenType;
         _value = value;
-        _position = position;
+        _start = start;
+
+        _length = tokenType switch
+        {
+            TokenType.Word => value.Length,
+            TokenType.String => value.Length,
+            TokenType.Int => value.Length,
+            TokenType.Double => value.Length,
+            TokenType.Whitespace => length,
+
+            TokenType.NotEquals => 2, // !=
+            TokenType.GreaterOrEquals => 2, // >=
+            TokenType.LessOrEquals => 2, // <=
+            TokenType.EOF => 0, 
+            TokenType.Empty => 0,
+            _ => 1 // all other contains only 1 char
+        };
     }
 
     public TokenType Type => _type;
 
-    public int Position => _position;
+    public int Position => _start;
 
 
     //public ReadOnlySpan<char> Value => _value.Span;
@@ -99,7 +116,7 @@ internal struct Token : IIsEmpty
     /// <summary> { </summary>
     public bool IsOpenBrace => this.Type == TokenType.OpenBrace;
     /// <summary> } </summary>
-    public bool CloseBrace => this.Type == TokenType.CloseBrace;
+    public bool IsCloseBrace => this.Type == TokenType.CloseBrace;
     /// <summary> [ </summary>
     public bool IsOpenBracket => this.Type == TokenType.OpenBracket;
     /// <summary> ] </summary>
@@ -171,6 +188,6 @@ internal struct Token : IIsEmpty
 
     public override string ToString()
     {
-        return Dump.Object(new { _type, _value = _value.ToString() });
+        return Dump.Object(new { Type = _type, Start = _start, Length = _length, Value = _value.ToString() });
     }
 }

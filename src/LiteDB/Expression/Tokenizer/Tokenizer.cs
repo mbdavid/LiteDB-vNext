@@ -6,7 +6,8 @@
 /// </summary>
 internal class Tokenizer
 {
-    private ReadOnlyMemory<char> _source;
+    private readonly ReadOnlyMemory<char> _source;
+
     private int _position = 0;
     private char _char = '\0';
 
@@ -60,6 +61,7 @@ internal class Tokenizer
         if (_position >= _source.Length)
         {
             _eof = true;
+            _position++;
             return _char = '\0';
         }
 
@@ -67,55 +69,25 @@ internal class Tokenizer
 
         _position++;
 
-        if (_char == -1)
-        {
-            _eof = true;
-        }
-
         return _char;
     }
 
     /// <summary>
     /// Look for next token but keeps in buffer when run "ReadToken()" again.
     /// </summary>
-    public Token LookAhead(bool eatWhitespace = true, int tokensCount = 1)
+    public Token LookAhead(bool eatWhitespace = true)
     {
-        if (tokensCount <= 0) return _current;
-
-        if (tokensCount == 1)
+        if (_ahead.IsEmpty == false)
         {
-            if (_ahead.IsEmpty == false)
+            if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
             {
-                if (eatWhitespace && _ahead.Type == TokenType.Whitespace)
-                {
-                    _ahead = this.ReadNext(eatWhitespace);
-                }
-
-                return _ahead;
+                _ahead = this.ReadNext(eatWhitespace);
             }
 
-            return _ahead = this.ReadNext(eatWhitespace);
+            return _ahead;
         }
-        else
-        {
-            var keepCurent = _current;
-            var keepAhead = this.ReadNext(eatWhitespace);
-            var keepPos = _position - 1;
 
-            for (int i = 1; i < tokensCount - 1; i++)
-            {
-                this.ReadNext(eatWhitespace);
-            }
-
-            var tok = this.ReadNext(eatWhitespace);
-            _position = keepPos;
-            _eof = false;
-            this.ReadChar();
-            _ahead = keepAhead;
-            _current = keepCurent;
-
-            return tok;
-        }
+        return _ahead = this.ReadNext(eatWhitespace);
     }
 
     /// <summary>
@@ -135,6 +107,7 @@ internal class Tokenizer
 
         _current = _ahead;
         _ahead = Token.Empty;
+
         return _current;
     }
 
@@ -230,7 +203,7 @@ internal class Tokenizer
                 this.ReadChar();
                 if (IsWordChar(_char, true))
                 {
-                    token = new Token(TokenType.Word, this.ReadWord(-1), start);
+                    token = new Token(TokenType.Word, this.ReadWord(-2), start);
                 }
                 else
                 {
@@ -294,7 +267,7 @@ internal class Tokenizer
                 this.ReadChar();
                 if (_char == '-')
                 {
-                    this.ReadLine(); // comment
+                    this.ReadLine(); // comment (discard token)
                     token = this.ReadNext(eatWhitespace);
                 }
                 else
@@ -355,14 +328,14 @@ internal class Tokenizer
                 {
                     this.ReadChar();
                 }
-                token = new Token(TokenType.Whitespace, start);
+                token = new Token(TokenType.Whitespace, start, _position - start);
                 break;
 
             default:
                 // test if first char is an word 
                 if (IsWordChar(_char, true))
                 {
-                    token = new Token(TokenType.Word, this.ReadWord(0), start);
+                    token = new Token(TokenType.Word, this.ReadWord(-1), start);
                 }
                 else
                 {
@@ -391,7 +364,6 @@ internal class Tokenizer
     private ReadOnlyMemory<char> ReadWord(int offset)
     {
         var start = _position + offset;
-        var end = start;
 
         this.ReadChar();
 
@@ -400,7 +372,7 @@ internal class Tokenizer
             this.ReadChar();
         }
 
-        return _source[start.._position];
+        return _source[start..(_position - 1)];
     }
 
     /// <summary>
@@ -440,7 +412,7 @@ internal class Tokenizer
             this.ReadChar();
         }
 
-        return _source[start.._position];
+        return _source[start..(_position - 1)];
     }
         
     /// <summary>
@@ -457,12 +429,14 @@ internal class Tokenizer
 
         if (index <= -1) throw ERR_UNEXPECTED_TOKEN(_current, quote.ToString());
 
-        // no escape, use direct slice
-        var escape = span[0..index].IndexOf('\\') == -1;
+        // test if contains any escape, use direct slice
+        var escape = span[0..index].IndexOf('\\') >= 0;
 
         if (escape == false)
         {
-            _position += (index + 1); // +1 for closing quote
+            _position += index + 1;
+
+            this.ReadChar();
 
             return _source.Slice(start, index);
         }
@@ -548,6 +522,7 @@ internal class Tokenizer
 
     public override string ToString()
     {
-        return Dump.Object(new { _current, _ahead, _position });
+        return Dump.Object(new { Current = _current, Ahead = _ahead, Position = _position, EOF, @Char = $"`{_char}`", EndContent = $"`{_source[_position..]}`" });
     }
+
 }

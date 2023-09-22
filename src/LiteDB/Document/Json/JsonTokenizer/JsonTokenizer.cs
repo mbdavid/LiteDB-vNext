@@ -19,7 +19,6 @@ internal class JsonTokenizer
     public JsonTokenizer(TextReader reader)
     {
         _reader = reader;
-
         _position = 0;
         this.ReadChar();
     }
