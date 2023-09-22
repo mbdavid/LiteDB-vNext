@@ -70,9 +70,9 @@ internal static class SpanExtensions
         return utc ? utcDate : utcDate.ToLocalTime();
     }
 
-    public static RowID ReadPageAddress(this Span<byte> span)
+    public static RowID ReadRowID(this Span<byte> span)
     {
-        return new RowID(span.ReadUInt32(), span[4]);
+        return new RowID(span.ReadUInt32(), span[4..].ReadUInt16());
     }
 
     public static string ReadFixedString(this Span<byte> span)
@@ -104,6 +104,19 @@ internal static class SpanExtensions
         length = indexOf + 1;
 
         return Encoding.UTF8.GetString(span.Slice(0, indexOf));
+    }
+
+
+    /// <summary>
+    /// Read a BsonValue from Span using singleton instance of IBsonReader. Used for SortItem
+    /// </summary>
+    public static BsonValue ReadBsonValue(this Span<byte> span, out int length)
+    {
+        var result = _reader.ReadValue(span, false, out length)!; // skip = false - always returns a BsonValue
+
+        if (result.Fail) throw result.Exception;
+
+        return result.Value;
     }
 
     #endregion
@@ -150,11 +163,11 @@ internal static class SpanExtensions
         buffer.WriteInt64(value.ToUniversalTime().Ticks);
     }
 
-    public static void WritePageAddress(this Span<byte> span, RowID value)
+    public static void WriteRowID(this Span<byte> span, RowID value)
     {
         span.WriteUInt32(value.PageID);
-        span.WriteUInt16(value.Index);
-        span.WriteUInt16(0);
+        span[4..].WriteUInt16(value.Index);
+        span[6..].WriteUInt16(0);
     }
 
     public static void WriteGuid(this Span<byte> span, Guid value)
@@ -203,6 +216,14 @@ internal static class SpanExtensions
         span[strLength] = 0;
 
         length = strLength + 1; // for \0
+    }
+
+    /// <summary>
+    /// Write BsonValue direct into a byte[]. Used for SortItems
+    /// </summary>
+    public static void WriteBsonValue(this Span<byte> span, BsonValue value, out int length)
+    {
+        _writer.WriteValue(span, value, out length);
     }
 
     #endregion

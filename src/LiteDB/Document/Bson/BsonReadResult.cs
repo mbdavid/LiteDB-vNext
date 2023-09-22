@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-public readonly struct BsonReadResult
+public readonly struct BsonReadResult : IIsEmpty
 {
     public static readonly BsonReadResult Empty = new();
 

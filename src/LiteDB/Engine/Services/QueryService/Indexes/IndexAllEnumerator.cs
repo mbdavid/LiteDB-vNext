@@ -25,41 +25,41 @@ internal class IndexAllEnumerator : IPipeEnumerator
         if (_eof) return PipeValue.Empty;
 
         var indexService = context.IndexService;
-        var start = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
-        var end = _order == Query.Ascending ? _indexDocument.TailIndexNodeID : _indexDocument.HeadIndexNodeID;
+
+        var head = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
+        var tail = _order == Query.Ascending ? _indexDocument.TailIndexNodeID : _indexDocument.HeadIndexNodeID;
 
         // in first run, gets head node
-        if (!_init)
+        if (_init == false)
         {
             _init = true;
 
-            var node = indexService.GetNode(start);
+            var first = indexService.GetNode(head);
 
             // get pointer to first element 
-            _next = node[0]->GetNextPrev(_order);
+            _next = first[0]->GetNext(_order);
 
             // check if not empty
-            if (_next == end)
+            if (_next == tail)
             {
                 _eof = true;
-
                 return PipeValue.Empty;
             }
         }
 
         // go forward
-        if (_next != end || _next.IsEmpty)
-        {
-            var node = indexService.GetNode(_next);
+        var node = indexService.GetNode(_next);
 
-            _next = node[0]->GetNextPrev(_order);
+        _next = node[0]->GetNext(_order);
 
-            return new PipeValue(node.DataBlockID);
-        }
+        if (_next == tail) _eof = true;
 
-        _eof = true;
+        return new PipeValue(node.DataBlockID);
+    }
 
-        return PipeValue.Empty;
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"INDEX FULL SCAN \"{_indexDocument.Name}\" {(_order > 0 ? "ASC" : "DESC")}", deep);
     }
 
     public void Dispose()

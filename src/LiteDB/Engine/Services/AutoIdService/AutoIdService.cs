@@ -99,6 +99,15 @@ unsafe internal class AutoIdService : IAutoIdService
         }
     }
 
+    /// <summary>
+    /// Initialize sequence 0 based.
+    /// </summary>
+    public void Initialize(byte colID)
+    {
+        _sequences[colID].LastInt = 0;
+        _sequences[colID].LastLong = 0;
+    }
+
     public override string ToString()
     {
         return Dump.Object(new

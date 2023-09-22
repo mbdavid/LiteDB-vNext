@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct RowID : IEquatable<RowID>
+internal struct RowID : IEquatable<RowID>, IIsEmpty
 {
     public uint PageID;     // 4
     public ushort Index;    // 2

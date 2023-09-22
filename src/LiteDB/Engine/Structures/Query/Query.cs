@@ -2,7 +2,7 @@
 
 /// <summary>
 /// </summary>
-public class Query : IQuery
+public class Query
 {
     #region Constants
 

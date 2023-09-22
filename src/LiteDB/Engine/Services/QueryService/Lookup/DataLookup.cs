@@ -17,4 +17,9 @@ internal class DataLookup : IDocumentLookup
 
         return result.Value.AsDocument;
     }
+
+    public override string ToString()
+    {
+        return $"DATABLOCK {(_fields.Length == 0 ? "FULL DOCUMENT" : "FIELDS " + string.Join(", ", _fields))}";
+    }
 }

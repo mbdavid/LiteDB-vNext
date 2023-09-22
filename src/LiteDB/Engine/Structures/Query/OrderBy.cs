@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent an OrderBy definition
 /// </summary>
-public struct OrderBy
+public struct OrderBy : IIsEmpty
 {
     public static OrderBy Empty = new(BsonExpression.Empty, 0);
 
@@ -19,5 +19,6 @@ public struct OrderBy
         this.Order = order;
     }
 
-    public override string ToString() => Dump.Object(this);
+    public override string ToString() => IsEmpty ? "<EMPTY>" :
+        $"{Expression} {(Order > 0 ? "ASC" : "DESC")}";
 }

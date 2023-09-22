@@ -62,9 +62,6 @@ public partial class LiteEngine : ILiteEngine
         // get index nodes created
         var counter = 0;
 
-        // getting headerNodeResult (node+page) for new index
-        var headResult = indexService.GetNode(indexDocument.HeadIndexNodeID);
-
         // read all documents based on a full PK scan
         using (var enumerator = new IndexNodeEnumerator(indexService, collection.PK))
         {
@@ -87,7 +84,7 @@ public partial class LiteEngine : ILiteEngine
 
                 foreach (var key in keys)
                 {
-                    var node = indexService.AddNode(collection.ColID, indexDocument, key, dataBlockID, headResult, last, out defrag);
+                    var node = indexService.AddNode(collection.ColID, indexDocument, key, dataBlockID, last, out defrag);
 
                     // ensure execute reload on indexNode after any defrag
                     if (defrag && pkIndexNode.IndexNodeID.PageID == node.IndexNodeID.PageID)
@@ -116,9 +113,6 @@ public partial class LiteEngine : ILiteEngine
                 if (monitorService.Safepoint(transaction))
                 {
                     await transaction.SafepointAsync();
-                    
-                    // after safepoint, reload headResult (page pointer changes)
-                    headResult = indexService.GetNode(indexDocument.HeadIndexNodeID);
                 }
             }
         }

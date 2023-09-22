@@ -1,10 +1,10 @@
 ﻿namespace LiteDB.Engine;
 
-internal class Cursor : IDisposable
+internal class Cursor : IDisposable, IIsEmpty
 {
-    public Guid CursorID { get; } = Guid.NewGuid();
+    public Guid CursorID { get; private init; } = Guid.NewGuid();
 
-    public IQuery Query { get; }
+    public Query Query { get; }
     public BsonDocument Parameters { get; }
     public int ReadVersion { get; }
     public IPipeEnumerator Enumerator { get; }
@@ -18,7 +18,19 @@ internal class Cursor : IDisposable
 
     public BsonDocument? NextDocument { get; set; }
 
-    public Cursor(IQuery query, BsonDocument parameters, int readVersion, IPipeEnumerator enumerator)
+    public bool IsEmpty => this.CursorID == Guid.Empty;
+
+    public static Cursor Empty = new Cursor();
+
+    public Cursor()
+    {
+        this.CursorID = Guid.Empty;
+        this.Parameters = BsonDocument.Empty;
+        this.ReadVersion = 0;
+        this.Enumerator = null;
+    }
+
+    public Cursor(Query query, BsonDocument parameters, int readVersion, IPipeEnumerator enumerator)
     {
         this.Query = query;
         this.Parameters = parameters;

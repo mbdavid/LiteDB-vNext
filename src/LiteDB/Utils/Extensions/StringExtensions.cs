@@ -18,6 +18,14 @@ internal static class StringExtensions
     }
 
     /// <summary>
+    /// Equals with igore case
+    /// </summary>
+    public static bool Eq(this string str, string other)
+    {
+        return String.Equals(str, other, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Implement SqlLike in C# string - based on
     /// https://stackoverflow.com/a/8583383/3286260
     /// I removed support for [ and ] to avoid missing close brackets

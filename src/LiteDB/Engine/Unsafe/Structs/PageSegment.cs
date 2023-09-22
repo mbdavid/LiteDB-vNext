@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a single page segment with Location (position) and Length
 /// </summary>
-unsafe internal struct PageSegment
+unsafe internal struct PageSegment : IIsEmpty
 {
     public ushort Location;  // 2
     public ushort Length;    // 2

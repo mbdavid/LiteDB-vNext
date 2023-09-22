@@ -117,9 +117,9 @@ internal partial class ServicesFactory : IServicesFactory
             collectionName,
             queryParameters);
 
-    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, IQuery query) =>
+    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, Query query) =>
+        query is AggregateQuery ? new AggregateOptimization(this, collection) :
         query is Query ? new QueryOptimization(this, collection) :
-        query is AggregateQuery ? new AggregateQueryOptimization(this, collection) :
         throw new NotSupportedException();
 
     public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(
@@ -129,7 +129,6 @@ internal partial class ServicesFactory : IServicesFactory
         orderBy);
 
     public ISortContainer CreateSortContainer(int containerID, int order, Stream stream) => new SortContainer(
-        this.MemoryFactory,
         this.FileHeader.Collation,
         containerID,
         order,

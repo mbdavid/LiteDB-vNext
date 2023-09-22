@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct Sequence
+internal struct Sequence : IIsEmpty
 {
     public int LastInt;
     public long LastLong;

@@ -15,4 +15,9 @@ internal class IndexLookup : IDocumentLookup
 
         return doc;
     }
+
+    public override string ToString()
+    {
+        return $"INDEX FIELD {_field}";
+    }
 }

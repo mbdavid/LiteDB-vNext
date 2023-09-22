@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-unsafe internal struct DataBlockResult
+unsafe internal struct DataBlockResult : IIsEmpty
 {
     public RowID DataBlockID;
 

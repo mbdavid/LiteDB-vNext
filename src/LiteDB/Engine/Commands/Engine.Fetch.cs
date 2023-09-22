@@ -2,7 +2,7 @@
 
 public partial class LiteEngine : ILiteEngine
 {
-    public async Task<FetchResult> FetchAsync(Guid cursorID, int fetchSize)
+    public async Task<FetchResult> FetchAsync(Guid cursorID, int fetchSize = 1000)
     {
         var monitorService = _factory.MonitorService;
         var queryService = _factory.QueryService;

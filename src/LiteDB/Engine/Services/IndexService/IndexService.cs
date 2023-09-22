@@ -55,7 +55,7 @@ unsafe internal class IndexService : IIndexService
     /// <summary>
     /// Insert a new node index inside an collection index. Flip coin to know level
     /// </summary>
-    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, IndexNodeResult head, IndexNodeResult last, out bool defrag)
+    public IndexNodeResult AddNode(byte colID, IndexDocument index, BsonValue key, RowID dataBlockID, IndexNodeResult last, out bool defrag)
     {
         using var _pc = PERF_COUNTER(60, nameof(AddNode), nameof(IndexService));
 
@@ -63,7 +63,7 @@ unsafe internal class IndexService : IIndexService
         var levels = this.Flip();
 
         // call AddNode with key value
-        return this.AddNodeInternal(colID, index, key, dataBlockID, levels, head, last, out defrag);
+        return this.AddNodeInternal(colID, index, key, dataBlockID, levels, last, out defrag);
     }
 
     /// <summary>
@@ -75,7 +75,6 @@ unsafe internal class IndexService : IIndexService
         BsonValue key, 
         RowID dataBlockID, 
         int insertLevels, 
-        IndexNodeResult head, 
         IndexNodeResult last, 
         out bool defrag)
     {
@@ -98,7 +97,7 @@ unsafe internal class IndexService : IIndexService
         }
 
         // now, let's link my index node on right place
-        var leftNode = head;
+        var leftNode = this.GetNode(index.HeadIndexNodeID);
 
         // for: scan from top to bottom
         for (int currentLevel = INDEX_MAX_LEVELS - 1; currentLevel >= 0; currentLevel--)
@@ -225,7 +224,7 @@ unsafe internal class IndexService : IIndexService
         for (var level = INDEX_MAX_LEVELS - 1; level >= 0; level--)
         {
             //***var right = leftNode.Node.GetNextPrev(level, order);
-            var right = leftNode[level]->GetNextPrev(order);
+            var right = leftNode[level]->GetNext(order);
 
             while (right.IsEmpty == false)
             {
@@ -251,7 +250,7 @@ unsafe internal class IndexService : IIndexService
 
                 leftNode = rightNode;
                 //***right = rightNode.Node.GetNextPrev(level, order);
-                right = rightNode[level]->GetNextPrev(order);
+                right = rightNode[level]->GetNext(order);
             }
         }
 

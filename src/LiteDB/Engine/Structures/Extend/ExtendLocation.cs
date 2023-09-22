@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct ExtendLocation
+internal struct ExtendLocation : IIsEmpty
 {
     public readonly int AllocationMapID; // 4
     public readonly int ExtendIndex;     // 4

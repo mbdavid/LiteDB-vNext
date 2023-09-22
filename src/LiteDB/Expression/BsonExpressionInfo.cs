@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-internal class BsonExpressionInfo
+internal readonly struct BsonExpressionInfo
 {
     /// <summary>
     /// Indicate that expression contains a root $ but without any path navigation (should load full document)
@@ -16,6 +16,11 @@ internal class BsonExpressionInfo
     /// Indicate that this expression can result a diferent result for a same input arguments
     /// </summary>
     public bool IsVolatile { get; }
+
+    public bool HasAggregateCall { get; }
+
+    public bool UseDocument { get; }
+    public bool UseSource { get; }
 
     /// <summary>
     /// Get some expression infos reading full expression tree

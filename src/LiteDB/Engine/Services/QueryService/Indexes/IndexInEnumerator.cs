@@ -30,7 +30,7 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
         if (_eof) return PipeValue.Empty;
 
         // in first run, gets head node
-        if (!_init)
+        if (_init == false)
         {
             _init = true;
 
@@ -63,6 +63,11 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
 
             return pipeValue;
         }
+    }
+
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        builder.Add($"INDEX SEEK \"{_indexDocument.Name}\" IN ({string.Join(", ", _values.Select(x => x.ToString()))})", deep);
     }
 
     public void Dispose()

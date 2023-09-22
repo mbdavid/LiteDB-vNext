@@ -210,7 +210,7 @@ internal class BsonExpressionParser
     /// </summary>
     private static BsonExpression? TryParseBool(Tokenizer tokenizer)
     {
-        if (tokenizer.Current.Type == TokenType.Word && (tokenizer.Current.Is("true") || tokenizer.Current.Is("false")))
+        if (tokenizer.Current.Type == TokenType.Word && (tokenizer.Current.Match("true") || tokenizer.Current.Match("false")))
         {
             var boolean = Convert.ToBoolean(tokenizer.Current.Value);
 
@@ -225,7 +225,7 @@ internal class BsonExpressionParser
     /// </summary>
     private static BsonExpression? TryParseNull(Tokenizer tokenizer)
     {
-        if (tokenizer.Current.Type == TokenType.Word && tokenizer.Current.Is("null"))
+        if (tokenizer.Current.Type == TokenType.Word && tokenizer.Current.Match("null"))
         {
             return BsonExpression.Constant(BsonValue.Null);
         }
@@ -412,7 +412,7 @@ internal class BsonExpressionParser
         var method = BsonExpression.GetMethod(token.Value, parameters.Count);
 
         return method is null
-            ? throw ERR_UNEXPECTED_TOKEN($"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters", token)
+            ? throw ERR_UNEXPECTED_TOKEN(token, $"Method '{token.Value.ToUpper()}' does not exist or contains invalid parameters")
             : BsonExpression.Call(method, parameters.ToArray());
     }
 

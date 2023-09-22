@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Xml.Linq;
+
+namespace LiteDB.Engine;
 
 unsafe internal class IndexRangeEnumerator : IPipeEnumerator
 {
@@ -14,7 +16,7 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
     private bool _init = false;
     private bool _eof = false;
 
-    private RowID _prev = RowID.Empty; // all nodes from left of first node found
+    private RowID _prev = RowID.Empty; // use a stack to keep order output
     private RowID _next = RowID.Empty; // all nodes from right of first node found
 
     public IndexRangeEnumerator(
@@ -45,8 +47,11 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
 
         var indexService = context.IndexService;
 
+        var head = _order == Query.Ascending ? _indexDocument.HeadIndexNodeID : _indexDocument.TailIndexNodeID;
+        var tail = _order == Query.Ascending ? _indexDocument.TailIndexNodeID : _indexDocument.HeadIndexNodeID;
+
         // in first run, look for index node
-        if (!_init)
+        if (_init == false)
         {
             _init = true;
 
@@ -57,20 +62,20 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
                 indexService.Find(_indexDocument, _start, true, _order);
 
             // get pointer to next/prev at level 0
-            _prev = first[0]->PrevID;
-            _next = first[0]->NextID;
+            _prev = first[0]->GetPrev(_order);
+            _next = first[0]->GetNext(_order);
 
             if (_startEquals && !first.IsEmpty)
             {
                 if (!first.Key->IsMinValue && !first.Key->IsMaxValue)
-                { 
+                {
                     return new PipeValue(first.DataBlockID);
                 }
             }
         }
 
         // first go forward
-        if (!_prev.IsEmpty)
+        if (_prev.IsEmpty == false)
         {
             var node = indexService.GetNode(_prev);
 
@@ -81,12 +86,11 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
             }
             else
             {
-                //***var diff = _collation.Compare(_start, node.Key);
                 var diff = IndexKey.Compare(_start, node.Key, _collation);
 
-                if (diff == (_order /* 1 */) || (diff == 0 && _startEquals))
+                if (diff == (_order * -1 /* -1 */) || (diff == 0 && _startEquals))
                 {
-                    _prev = node[0]->PrevID;
+                    _prev = node[0]->GetPrev(_order);
 
                     return new PipeValue(node.DataBlockID);
                 }
@@ -98,24 +102,18 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
         }
 
         // and than, go backward
-        if (!_next.IsEmpty)
+        if (_next.IsEmpty == false)
         {
             var node = indexService.GetNode(_next);
 
             // check for Min/Max bson values index node key
-            if (node.Key->IsMaxValue || node.Key->IsMinValue)
-            {
-                _eof = true;
+            if (node.Key->IsMaxValue || node.Key->IsMinValue) return this.Finish();
 
-                return PipeValue.Empty;
-            }
-
-            //***var diff = _collation.Compare(_end, node.Key);
             var diff = IndexKey.Compare(_end, node.Key, _collation);
 
-            if (diff == (_order * -1 /* -1 */) || (diff == 0 && _endEquals))
+            if (diff == (_order /* 1 */) || (diff == 0 && _endEquals))
             {
-                _next = node[0]->NextID;
+                _next = node[0]->GetNext(_order);
 
                 return new PipeValue(node.DataBlockID);
             }
@@ -127,6 +125,30 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
         }
 
         return PipeValue.Empty;
+
+    }
+
+    private PipeValue Finish()
+    {
+        _eof = true;
+        return PipeValue.Empty;
+    }
+
+    public void GetPlan(ExplainPlainBuilder builder, int deep)
+    {
+        var info =
+            (_start.IsMinValue, _startEquals, _end.IsMaxValue, _endEquals) switch
+            {
+                (true, _, false, false) => $"INDEX SCAN ({_indexDocument.Name} < {_end})",
+                (true, _, false, true) => $"INDEX SCAN ({_indexDocument.Name} <= {_end})",
+                (false, false, true, _) => $"INDEX SCAN ({_indexDocument.Name} > {_start})",
+                (false, true, true, _) => $"INDEX SCAN ({_indexDocument.Name} >= {_start})",
+                _ => $"INDEX RANGE SCAN \"{_indexDocument.Name}\" ({_indexDocument.Expression} BETWEEN {_start} AND {_end})",
+            } +
+            (_order > 0 ? " ASC" : " DESC") +
+            (_indexDocument.Unique ? " UNIQUE" : "");
+
+        builder.Add(info, deep);
     }
 
     public void Dispose()

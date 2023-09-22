@@ -28,21 +28,29 @@ public partial class LiteException
 
     internal static LiteException ERR_UNEXPECTED_TOKEN(Token token, string? expected = null)
     {
-        var position = (token?.Position - (token?.Value?.Length ?? 0)) ?? 0;
-        var str = token?.Type == TokenType.EOF ? "[EOF]" : token?.Value ?? "";
-        var exp = expected == null ? "" : $" Expected `{expected}`.";
+        var position = token.Position;
 
-        return new (20, $"Unexpected token `{str}` in position {position}.{exp}")
+        var sb = StringBuilderCache.Acquire();
+
+        sb.Append("Unexpected token `");
+
+        if (token.Type == TokenType.EOF)
         {
-            Position = position
-        };
-    }
+            sb.Append("[EOF]");
+        }
+        else
+        {
+            sb.Append(token.Value);
+        }
 
-    internal static LiteException ERR_UNEXPECTED_TOKEN(string message, Token token)
-    {
-        var position = (token?.Position - (token?.Value?.Length ?? 0)) ?? 0;
+        sb.Append($"` at position {token.Position}.`");
 
-        return new (20, message)
+        if (expected is not null)
+        {
+            sb.AppendFormat(" Expected `{0}`.", expected);
+        }
+
+        return new (20, StringBuilderCache.Release(sb))
         {
             Position = position
         };
