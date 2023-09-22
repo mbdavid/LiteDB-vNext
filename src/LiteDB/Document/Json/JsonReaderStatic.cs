@@ -17,6 +17,13 @@ internal class JsonReaderStatic
     {
         tokenizer.ReadToken().Expect(TokenType.OpenBrace); // read "{"
 
+        if (tokenizer.LookAhead().IsCloseBrace)
+        {
+            tokenizer.ReadToken(); // read "}"
+
+            return BsonDocument.Empty;
+        }
+
         var doc = new BsonDocument();
 
         var token = tokenizer.ReadToken(); // read "<key>" or "}"
@@ -43,10 +50,10 @@ internal class JsonReaderStatic
 
             var value = ReadValue(tokenizer); // read "<value>"
 
-            token = tokenizer.ReadToken(); // read <next-key>, "," or "}"
-
             // add (or override) key-value to document
             doc[key] = value;
+
+            token = tokenizer.ReadToken(); // read "," or "}"
 
             if (token.Type == TokenType.Comma)
             {
@@ -64,9 +71,15 @@ internal class JsonReaderStatic
     {
         tokenizer.ReadToken().Expect(TokenType.OpenBracket); // read "["
 
-        var arr = new BsonArray();
+        if (tokenizer.LookAhead().IsCloseBracket)
+        {
+            tokenizer.ReadToken(); // read "]"
 
-        var token = tokenizer.ReadToken(); // first value
+            return BsonArray.Empty;
+        }
+
+        var arr = new BsonArray();
+        var token = Token.Empty;
 
         while (token.Type != TokenType.CloseBracket)
         {
@@ -74,12 +87,8 @@ internal class JsonReaderStatic
 
             arr.Add(value);
 
-            token = tokenizer.ReadToken(); // read <next>, "," or "]"
-
-            if (token.Type == TokenType.Comma)
-            {
-                token = tokenizer.ReadToken();
-            }
+            token = tokenizer.ReadToken()  // read "," or "]"
+                .Expect(TokenType.Comma, TokenType.CloseBracket);
         }
 
         return arr;
@@ -95,7 +104,7 @@ internal class JsonReaderStatic
 
         switch(ahead.Type)
         {
-            case TokenType.OpenBrace: return ReadDocument(tokenizer);
+            case TokenType.OpenBrace: return ReadDocumentInternal(tokenizer);
             case TokenType.OpenBracket: return ReadArray(tokenizer);
         }
 

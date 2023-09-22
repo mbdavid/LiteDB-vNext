@@ -1,28 +1,34 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Xml.Linq;
+
+namespace LiteDB.Engine;
 
 internal class UserCollectionStore : IDocumentStore
 {
-    public string Name { get; }
-    public byte ColID { get; }
-    public IReadOnlyList<IndexDocument> Indexes { get; }
+    private readonly string _name;
+
+    public byte ColID => _collection?.ColID ?? 0;
+    public string Name => _name;
+    public IReadOnlyList<IndexDocument> Indexes => _collection?.Indexes ?? (IReadOnlyList<IndexDocument>)Array.Empty<IndexDocument>();
 
     private CollectionDocument? _collection;
 
     public UserCollectionStore(string name)
     {
-        this.Name = name;
+        _name = name;
     }
 
-    public void Load(IMasterService masterService)
+    public void Initialize(IMasterService masterService)
     {
         var master = masterService.GetMaster(false);
 
-        if (master.Collections.TryGetValue(this.Name, out var collection))
+        if (master.Collections.TryGetValue(_name, out var collection))
         {
             _collection = collection;
         }
-
-        throw ERR($"Collection {this.Name} do not exists");
+        else
+        {
+            throw ERR($"Collection {_name} do not exists");
+        }
     }
 
     public IPipeEnumerator GetPipeEnumerator(BsonExpression expression)

@@ -46,10 +46,10 @@ internal class MasterMapper : IMasterMapper
                 {
                     ["slot"] = (int)i.Slot,
                     ["name"] = i.Name,
-                    ["expr"] = i.Expression.ToString(),
+                    ["expr"] = i.Expression.ToString()!,
                     ["unique"] = i.Unique,
-                    ["head"] = new BsonArray(new BsonValue[] { i.HeadIndexNodeID.PageID, i.HeadIndexNodeID.Index }),
-                    ["tail"] = new BsonArray(new BsonValue[] { i.TailIndexNodeID.PageID, i.TailIndexNodeID.Index }),
+                    ["head"] = BsonArray.FromArray(new BsonValue[] { i.HeadIndexNodeID.PageID, i.HeadIndexNodeID.Index }),
+                    ["tail"] = BsonArray.FromArray(new BsonValue[] { i.TailIndexNodeID.PageID, i.TailIndexNodeID.Index }),
                 }))
             })),
             ["pragmas"] = new BsonDocument

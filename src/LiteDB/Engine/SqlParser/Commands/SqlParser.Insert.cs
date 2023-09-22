@@ -58,7 +58,7 @@ internal partial class SqlParser
 
         if (ahead.Type == TokenType.Word) // user_collection
         {
-            var token = _tokenizer.ReadToken().Expect(TokenType.Word); // read "collection-name";
+            var token = _tokenizer.ReadToken(); // read "collection_name";
 
             store = new UserCollectionStore(token.Value);
 

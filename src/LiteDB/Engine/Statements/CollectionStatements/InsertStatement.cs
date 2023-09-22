@@ -53,6 +53,9 @@ internal class InsertStatement : IScalarStatement
         var monitorService = factory.MonitorService;
         var collation = factory.FileHeader.Collation;
 
+        // initialize document store before
+        _store.Initialize(masterService);
+
         // create a new transaction locking colID
         var transaction = await monitorService.CreateTransactionAsync(new byte[] { _store.ColID });
 
@@ -155,7 +158,6 @@ internal class InsertStatement : IScalarStatement
                 }
             }
         }
-
     }
 
     /// <summary>
