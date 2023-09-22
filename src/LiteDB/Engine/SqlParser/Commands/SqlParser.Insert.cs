@@ -12,7 +12,7 @@ internal partial class SqlParser
         _tokenizer.ReadToken().Expect("INSERT");
         _tokenizer.ReadToken().Expect("INTO");
 
-        if (!this.TryParseDocumentStore(out var store)) throw ERR_UNEXPECTED_TOKEN("Collection name expected", _tokenizer.Current);
+        if (!this.TryParseDocumentStore(out var store)) throw ERR_UNEXPECTED_TOKEN(_tokenizer.Current, "<document_store>");
 
         TryParseWithAutoId(out var autoId);
 
