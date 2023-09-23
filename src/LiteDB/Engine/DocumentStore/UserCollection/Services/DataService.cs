@@ -1,6 +1,5 @@
 ﻿namespace LiteDB.Engine;
 
-[AutoInterface]
 unsafe internal class DataService : IDataService
 {
     // dependency injection

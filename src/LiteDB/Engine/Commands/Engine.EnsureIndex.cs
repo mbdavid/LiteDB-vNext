@@ -1,8 +1,4 @@
-﻿using System;
-using System.Reflection;
-using System.Xml.Linq;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 public partial class LiteEngine : ILiteEngine
 {

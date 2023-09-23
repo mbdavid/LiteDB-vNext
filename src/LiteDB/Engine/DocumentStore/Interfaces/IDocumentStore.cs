@@ -1,10 +1,13 @@
 ﻿namespace LiteDB.Engine;
 
-internal interface IDocumentStore
+internal interface IDocumentStore : IDisposable
 {
     byte ColID { get; }
     string Name { get; }
 
+    /// <summary>
+    /// Should be call this method just after enter in execution on statement. Will load internal collection
+    /// </summary>
     void Initialize(IMasterService masterService);
 
     IReadOnlyList<IndexDocument> GetIndexes();
@@ -13,5 +16,5 @@ internal interface IDocumentStore
 
     IPipeEnumerator GetPipeEnumerator(BsonExpression expression);
 
-
+    // Dipose will be run in statement dispose
 }

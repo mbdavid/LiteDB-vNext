@@ -45,8 +45,6 @@ internal class InsertStatement : IScalarStatement
     {
         using var _pc = PERF_COUNTER(31, nameof(InsertStatement), nameof(LiteEngine));
 
-        if (factory.State != EngineState.Open) throw ERR("must be open");
-
         // dependency injection
         var autoIdService = factory.AutoIdService;
         var masterService = factory.MasterService;

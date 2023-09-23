@@ -1,16 +1,14 @@
-﻿using System.Xml.Linq;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class UserCollectionStore : IDocumentStore
 {
     private readonly string _name;
+    private CollectionDocument? _collection; // will load on Initialize()
 
     public byte ColID => _collection?.ColID ?? 0;
     public string Name => _name;
     public IReadOnlyList<IndexDocument> Indexes => _collection?.Indexes ?? (IReadOnlyList<IndexDocument>)Array.Empty<IndexDocument>();
 
-    private CollectionDocument? _collection;
 
     public UserCollectionStore(string name)
     {
@@ -27,13 +25,8 @@ internal class UserCollectionStore : IDocumentStore
         }
         else
         {
-            throw ERR($"Collection {_name} do not exists");
+            throw ERR($"Collection {_name} does not exist");
         }
-    }
-
-    public IPipeEnumerator GetPipeEnumerator(BsonExpression expression)
-    {
-        throw new NotImplementedException();
     }
 
     public IReadOnlyList<IndexDocument> GetIndexes() => 
@@ -42,7 +35,14 @@ internal class UserCollectionStore : IDocumentStore
     public (IDataService dataService, IIndexService indexService) GetServices(IServicesFactory factory, ITransaction transaction) =>
         (factory.CreateDataService(transaction), factory.CreateIndexService(transaction));
 
+    public IPipeEnumerator GetPipeEnumerator(BsonExpression expression)
+    {
+        throw new NotImplementedException();
+    }
+
     public void Dispose()
     {
+        // in user collection, there is nothing to dispose
+        _collection = null;
     }
 }
