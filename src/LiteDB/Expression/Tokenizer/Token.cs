@@ -48,8 +48,51 @@ internal struct Token : IIsEmpty
 
 
     //public ReadOnlySpan<char> Value => _value.Span;
-    public string Value => _value.Span.ToString();
+    public string Value =>
+        this.Type switch
+        {
+            // fixed token value
+            TokenType.CloseBrace => "}",
+            TokenType.OpenBracket => "[",
+            TokenType.CloseBracket => "]",
+            TokenType.OpenParenthesis => "(",
+            TokenType.CloseParenthesis => ")",
+            TokenType.Comma => ",",
+            TokenType.Colon => ":",
+            TokenType.SemiColon => ";",
+            TokenType.Arrow => "=",
+            TokenType.At => "@",
+            TokenType.Hashtag => "#",
+            TokenType.Til => "~",
+            TokenType.Period => ".",
+            TokenType.Ampersand => "&",
+            TokenType.Dollar => "$",
+            TokenType.Exclamation => "!",
+            TokenType.NotEquals => "!=",
+            TokenType.Equals => "=",
+            TokenType.Greater => ">",
+            TokenType.GreaterOrEquals => ">=",
+            TokenType.Less => "<",
+            TokenType.LessOrEquals => "<=",
+            TokenType.Minus => "-",
+            TokenType.Plus => "+",
+            TokenType.Asterisk => "*",
+            TokenType.Slash => "/",
+            TokenType.Backslash => "\\",
+            TokenType.Percent => "%",
+            TokenType.String => "\"",
 
+            // convert to space
+            TokenType.Whitespace => "".PadLeft(_length, ' '),
+
+            // instanced value based 
+            TokenType.Word or
+            TokenType.String or
+            TokenType.Int or
+            TokenType.Double => _value.Span.ToString(),
+
+            _ => throw new NotSupportedException($"Invalid token type {_type}")
+        };
 
     #region Expects
 
