@@ -3,11 +3,28 @@
 internal static class StringExtensions
 {
     /// <summary>
-    /// Test if string is simple word pattern ([a-Z$_])
+    /// Test if string is simple word pattern ([a-Z$_]+)
     /// </summary>
     public static bool IsWord(this string str)
     {
         if (string.IsNullOrWhiteSpace(str)) return false;
+
+        for (var i = 0; i < str.Length; i++)
+        {
+            if (!Tokenizer.IsWordChar(str[i], i == 0)) return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Same pattern from WORD but with no $ at begin ([a-Z_][a-Z$_]*)
+    /// </summary>
+    public static bool IsIdentifier(this string str, int maxLength = 0)
+    {
+        if (string.IsNullOrWhiteSpace(str)) return false;
+
+        if (maxLength > 0 && str.Length > maxLength) return false;
 
         for (var i = 0; i < str.Length; i++)
         {
