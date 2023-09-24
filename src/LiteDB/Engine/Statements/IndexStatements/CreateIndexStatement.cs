@@ -1,8 +1,4 @@
-﻿using System.Collections;
-using System.Linq.Expressions;
-using System.Xml;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class CreateIndexStatement : IScalarStatement
 {

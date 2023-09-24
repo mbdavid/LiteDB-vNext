@@ -257,6 +257,14 @@ unsafe internal class IndexService : IIndexService
     #endregion
 
     /// <summary>
+    /// Deletes all indexes nodes from pk RowID
+    /// </summary>
+    public void DeleteAll(RowID indexNodeID)
+    {
+         this.GetNode(indexNodeID);
+    }
+
+    /// <summary>
     /// Deletes all indexes nodes from pkNode
     /// </summary>
     public void DeleteAll(IndexNodeResult nodeResult)
