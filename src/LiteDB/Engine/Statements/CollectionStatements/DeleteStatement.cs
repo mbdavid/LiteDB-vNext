@@ -74,19 +74,17 @@ internal class DeleteStatement : IScalarStatement
 
         var bin = (BinaryBsonExpression)_whereExpr;
 
-        if (_whereExpr.IsPredicate)
+        var left = bin.Left;
+        var right = bin.Right;
+
+        if (left == BsonExpression.Id)
         {
-            var left = bin.Left;
-            var right = bin.Right;
-
-            if (left == BsonExpression.Id)
-            {
-
-            }
-
-
 
         }
+        //////////
+
+        var q = new Query { Select = BsonExpression.Id, Where = _whereExpr };
+
 
 
 
