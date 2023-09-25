@@ -16,7 +16,7 @@ var query1 = new Query
     Where = "age between 20 and 30 AND name like 'r%'",
     Includes = new BsonExpression[] { "country" },
     Limit = 15,
-    Select = BsonExpression.Root(),
+    Select = BsonExpression.Root,
     OrderBy = new OrderBy("name", 1),
     
 

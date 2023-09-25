@@ -284,7 +284,7 @@ internal class BsonExpressionParser
                 }
                 else
                 {
-                    value = BsonExpression.Path(root ? BsonExpression.Root() : BsonExpression.Current(), key);
+                    value = BsonExpression.Path(root ? BsonExpression.Root : BsonExpression.Current, key);
                 }
 
                 values.Add(key, value);
@@ -440,7 +440,7 @@ internal class BsonExpressionParser
         }
 
         // get root/current expression
-        var scope = defaultScope == TokenType.Dollar ? BsonExpression.Root() : BsonExpression.Current();
+        var scope = defaultScope == TokenType.Dollar ? BsonExpression.Root : BsonExpression.Current;
 
         // read field name (or "" if root)
         var field = ReadField(tokenizer);
