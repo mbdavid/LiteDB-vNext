@@ -1,6 +1,4 @@
-﻿using System.Collections;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class CreateCollectionStatement : IScalarStatement
 {
