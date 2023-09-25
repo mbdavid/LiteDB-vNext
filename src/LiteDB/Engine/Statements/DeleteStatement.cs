@@ -70,24 +70,16 @@ internal class DeleteStatement : IScalarStatement
         var (dataService, indexService) = _store.GetServices(factory, transaction);
         var context = new PipeContext(dataService, indexService, parameters);
 
-        var indexes = _store.GetIndexes();
-
-        var bin = (BinaryBsonExpression)_whereExpr;
-
-        var left = bin.Left;
-        var right = bin.Right;
-
-        if (left == BsonExpression.Id)
+        var q = new Query_2
         {
+            Source = _store,
+            Select = SelectFields.Id,
+            Where = _whereExpr
+        };
 
-        }
-        //////////
-
-        var q = new Query { Select = BsonExpression.Id, Where = _whereExpr };
-
-
-
-
+        //var qo = factory.CreateQueryOptimization(null, q);
+        //
+        //var enumerator = qo.ProcessQuery(q, parameters);
 
         throw new NotSupportedException();
     }

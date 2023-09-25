@@ -2,8 +2,17 @@
 
 internal struct SelectFields
 {
-    public static readonly SelectFields Default = new (BsonExpression.Root);
+    /// <summary>
+    /// SELECT *
+    /// </summary>
+    public static readonly SelectFields Root = new (BsonExpression.Root);
 
+    /// <summary>
+    /// SELECT $._id
+    /// </summary>
+    public static readonly SelectFields Id = new(new SelectField[] { new SelectField("_id", BsonExpression.Id) });
+
+    // fields
     private readonly BsonExpression _docExpr;
     private readonly IReadOnlyList<SelectField> _fields;
 
