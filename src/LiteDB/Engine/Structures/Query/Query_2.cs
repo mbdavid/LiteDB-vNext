@@ -17,9 +17,9 @@ internal class Query_2
     #endregion
 
     public required IDocumentStore Source { get; init; }
-    public List<(string key, BsonExpression expr)> Select { get; } = new();
-    public bool Distinct { get; init; }
-    public (IDocumentStore store, BsonAutoId autoId)? Into { get; init; } = default;
+    public SelectFields Select { get; init; } = SelectFields.Default;
+    public bool Distinct { get; init; } = false;
+    public Into Into { get; init; } = Into.Empty;
     public BsonExpression[] Includes { get; init; } = Array.Empty<BsonExpression>();
     public BsonExpression Where { get; init; } = BsonExpression.Empty;
     public BsonExpression GroupBy { get; set; } = BsonExpression.Empty;

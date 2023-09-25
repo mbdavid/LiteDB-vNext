@@ -9,11 +9,11 @@ internal readonly struct PipeEmit
     public readonly bool DataBlockID;
     public readonly bool Document;
 
-    public PipeEmit(bool indexNodeID, bool dataBlockID, bool value)
+    public PipeEmit(bool indexNodeID, bool dataBlockID, bool document)
     {
         this.IndexNodeID = indexNodeID;
         this.DataBlockID = dataBlockID;
-        this.Document = value;
+        this.Document = document;
     }
 
     public override string ToString() => Dump.Object(this);

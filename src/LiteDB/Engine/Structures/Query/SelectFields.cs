@@ -15,6 +15,7 @@ internal struct SelectFields
 
     public SelectFields(IReadOnlyList<SelectField> fields)
     {
-        _docExpr = docExpr;
+        _docExpr = BsonExpression.Empty;
+        _fields = fields;
     }
 }

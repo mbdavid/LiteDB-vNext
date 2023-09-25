@@ -18,7 +18,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
         _order = order;
     }
 
-    public PipeEmit Emit => new(true, true, false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -54,7 +54,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
         if (_next == tail) _eof = true;
 
-        return new PipeValue(node.DataBlockID);
+        return new PipeValue(node.IndexNodeID, node.DataBlockID);
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)

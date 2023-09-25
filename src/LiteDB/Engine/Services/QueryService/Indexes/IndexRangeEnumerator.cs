@@ -37,7 +37,7 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
         _collation = collation;
     }
 
-    public PipeEmit Emit => new(true, true, false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -67,7 +67,7 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
             {
                 if (!first.Key->IsMinValue && !first.Key->IsMaxValue)
                 {
-                    return new PipeValue(first.DataBlockID);
+                    return new PipeValue(first.IndexNodeID, first.DataBlockID);
                 }
             }
         }
@@ -90,7 +90,7 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
                 {
                     _prev = node[0]->GetPrev(_order);
 
-                    return new PipeValue(node.DataBlockID);
+                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
                 }
                 else
                 {
@@ -113,7 +113,7 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
             {
                 _next = node[0]->GetNext(_order);
 
-                return new PipeValue(node.DataBlockID);
+                return new PipeValue(node.IndexNodeID, node.DataBlockID);
             }
             else
             {

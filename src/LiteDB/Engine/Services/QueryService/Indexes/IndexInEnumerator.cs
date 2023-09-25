@@ -23,7 +23,7 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
         _collation = collation;
     }
 
-    public PipeEmit Emit => new(true, true, false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {

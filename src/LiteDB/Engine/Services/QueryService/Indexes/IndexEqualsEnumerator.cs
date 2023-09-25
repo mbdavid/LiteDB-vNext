@@ -23,7 +23,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
         _collation = collation;
     }
 
-    public PipeEmit Emit => new(true, true, false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -66,7 +66,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
             }
 
             // current node to return
-            return new PipeValue(node.DataBlockID);
+            return new PipeValue(node.IndexNodeID, node.DataBlockID);
         }
 
         // first, go backward
@@ -83,7 +83,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
 
                 if (_prev == head) _prev = RowID.Empty; 
 
-                return new PipeValue(node.DataBlockID);
+                return new PipeValue(node.IndexNodeID, node.DataBlockID);
             }
             else
             {
@@ -105,7 +105,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
 
                 if (_next == tail) _eof = true;
 
-                return new PipeValue(node.DataBlockID);
+                return new PipeValue(node.IndexNodeID, node.DataBlockID);
             }
             else
             {
