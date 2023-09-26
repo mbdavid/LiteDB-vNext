@@ -21,7 +21,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
         _order = order;
     }
 
-    public PipeEmit Emit => new(true, true, false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -65,7 +65,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
             if (_func(key))
             {
-                return new PipeValue(node.DataBlockID);
+                return new PipeValue(node.IndexNodeID, node.DataBlockID);
             }
         } 
     }

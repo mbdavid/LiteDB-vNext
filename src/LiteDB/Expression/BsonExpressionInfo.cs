@@ -17,9 +17,30 @@ internal readonly struct BsonExpressionInfo
     /// </summary>
     public bool IsVolatile { get; }
 
+    /// <summary>
+    /// Check if this expression can be used in index expression (contains no paramter or volatile method calls)
+    /// </summary>
+    public bool IsIndexable { get; }
+
+    /// <summary>
+    /// Returns if this expression (or any child) has use of any aggregate call (COUNT, MIN, MAX, ...)
+    /// </summary>
     public bool HasAggregateCall { get; }
 
-    public bool UseDocument { get; }
+    /// <summary>
+    /// Return if this expression contains @ parameters
+    /// </summary>
+    public bool HasParameter { get; }
+
+    /// <summary>
+    /// Return  is this expression (or any children) access the root document
+    /// </summary>
+    public bool HasDocumentAccess { get; }
+
+    /// <summary>
+    /// Returns if this expression (or any children) contains expression using source *
+    /// Like `COUNT(*)`, `MAX(*._id)`
+    /// </summary>
     public bool UseSource { get; }
 
     /// <summary>

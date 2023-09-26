@@ -1,12 +1,9 @@
-﻿using System.Net;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// Implement a Index service - Add/Remove index nodes on SkipList
 /// Based on: http://igoro.com/archive/skip-lists-are-fascinating/
 /// </summary>
-[AutoInterface]
 unsafe internal class IndexService : IIndexService
 {
     // dependency injection
@@ -258,6 +255,14 @@ unsafe internal class IndexService : IIndexService
     }
 
     #endregion
+
+    /// <summary>
+    /// Deletes all indexes nodes from pk RowID
+    /// </summary>
+    public void DeleteAll(RowID indexNodeID)
+    {
+         this.GetNode(indexNodeID);
+    }
 
     /// <summary>
     /// Deletes all indexes nodes from pkNode

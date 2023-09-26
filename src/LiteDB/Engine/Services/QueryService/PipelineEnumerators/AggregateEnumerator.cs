@@ -28,7 +28,8 @@ internal class AggregateEnumerator : IPipeEnumerator
         if (_enumerator.Emit.Document == false) throw ERR($"Aggregate pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(false, false, true);
+    public static PipeEmit Require = new(indexNodeID: false, dataBlockID: true, document: true);
+    public PipeEmit Emit => new(indexNodeID: false, dataBlockID: false, document: true);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -90,7 +91,7 @@ internal class AggregateEnumerator : IPipeEnumerator
             func.Reset();
         }
 
-        return new PipeValue(RowID.Empty, doc);
+        return new PipeValue(doc);
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)

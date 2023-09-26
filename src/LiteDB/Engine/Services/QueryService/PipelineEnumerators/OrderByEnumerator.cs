@@ -23,7 +23,8 @@ internal class OrderByEnumerator : IPipeEnumerator
         _sorter = sortService.CreateSort(orderBy);
     }
 
-    public PipeEmit Emit => new(true, true, false);
+    public static PipeEmit Require = new(indexNodeID: false, dataBlockID: true, document: true);
+    public PipeEmit Emit => new(indexNodeID: false, dataBlockID: true, document: false);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -37,7 +38,7 @@ internal class OrderByEnumerator : IPipeEnumerator
         // get next sorted item (returns Empty when EOF)
         var item = _sorter.MoveNext();
 
-        return new PipeValue(item.DataBlockID);
+        return new PipeValue(RowID.Empty, item.DataBlockID);
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)

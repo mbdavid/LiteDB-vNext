@@ -45,8 +45,6 @@ internal class InsertStatement : IScalarStatement
     {
         using var _pc = PERF_COUNTER(31, nameof(InsertStatement), nameof(LiteEngine));
 
-        if (factory.State != EngineState.Open) throw ERR("must be open");
-
         // dependency injection
         var autoIdService = factory.AutoIdService;
         var masterService = factory.MasterService;
@@ -143,17 +141,17 @@ internal class InsertStatement : IScalarStatement
         {
             var result = _documentExpr.Execute(null, parameters, collation);
 
-            if (result is BsonDocument doc1)
+            if (result is BsonDocument docResult)
             {
-                yield return doc1;
+                yield return docResult;
             }
-            else if (result is BsonArray arr)
+            else if (result is BsonArray arrResult)
             {
-                foreach (var item in arr)
+                foreach (var item in arrResult)
                 {
-                    if (item is BsonDocument doc2)
+                    if (item is BsonDocument doc)
                     {
-                        yield return doc2;
+                        yield return doc;
                     }
                 }
             }

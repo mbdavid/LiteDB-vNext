@@ -4,18 +4,29 @@ public abstract partial class BsonExpression
 {
     private static readonly ConcurrentDictionary<string, BsonExpression> _cache = new(StringComparer.OrdinalIgnoreCase);
 
-    private static readonly BsonExpression _root = new ScopeBsonExpression(true);
-    private static readonly BsonExpression _current = new ScopeBsonExpression(false);
+    /// <summary>
+    /// Static expression `empty` cached
+    /// </summary>
+    public static readonly BsonExpression Empty = new EmptyBsonExpression();
 
-    public static BsonExpression Empty = new EmptyBsonExpression();
+    /// <summary>
+    /// Static root document `$` cached
+    /// </summary>
+    public static readonly BsonExpression Root = new ScopeBsonExpression(true);
+
+    /// <summary>
+    /// Static current document `@` cached
+    /// </summary>
+    public static readonly BsonExpression Current = new ScopeBsonExpression(false);
+
+    /// <summary>
+    /// Static expression `$._id` cached
+    /// </summary>
+    public static readonly BsonExpression Id = new PathBsonExpression(Root, "_id");
 
     public static BsonExpression Constant(BsonValue value) => new ConstantBsonExpression(value);
 
     public static BsonExpression Parameter(string name) => new ParameterBsonExpression(name);
-
-    public static BsonExpression Root() => _root;
-
-    public static BsonExpression Current() => _current;
 
     public static BsonExpression Path(BsonExpression source, string field) => new PathBsonExpression(source, field);
 

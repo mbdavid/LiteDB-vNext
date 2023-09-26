@@ -1,17 +1,28 @@
 ﻿namespace LiteDB.Engine;
 
-public partial class LiteEngine : ILiteEngine
+internal class CreateCollectionStatement : IScalarStatement
 {
-    public async Task<bool> CreateCollectionAsync(string collectionName)
-    {
-        if (_factory.State != EngineState.Open) throw ERR("must be open");
+    private readonly string _name;
 
+    public CreateCollectionStatement(string name)
+    {
+        if (!name.IsWord()) throw ERR("Invalid collection name");
+        if (name.StartsWith("$")) throw ERR("Invalid collection name");
+
+        _name = name;
+    }
+
+    public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
+    {
         // dependency inejctions
-        var masterService = _factory.MasterService;
-        var monitorService = _factory.MonitorService;
+        var masterService = factory.MasterService;
+        var monitorService = factory.MonitorService;
 
         // get exclusive $master
         var master = masterService.GetMaster(true);
+
+        // test if already exists
+        if (master.Collections.ContainsKey(_name)) throw ERR($"coleção {_name} já existe");
 
         // get a new colID
         var colID = (byte)Enumerable.Range(1, MASTER_COL_LIMIT + 1)
@@ -24,16 +35,16 @@ public partial class LiteEngine : ILiteEngine
         var transaction = await monitorService.CreateTransactionAsync(new byte[] { MASTER_COL_ID, colID });
 
         // get index service
-        var indexer = _factory.CreateIndexService(transaction);
+        var indexer = factory.CreateIndexService(transaction);
 
         // insert head/tail nodes
         var (head, tail) = indexer.CreateHeadTailNodes(colID);
 
         // create new collection in $master and returns a new master document
-        master.Collections.Add(collectionName, new CollectionDocument()
+        master.Collections.Add(_name, new CollectionDocument()
         {
             ColID = colID,
-            Name = collectionName,
+            Name = _name,
             Indexes = new List<IndexDocument>
             {
                 new IndexDocument
@@ -60,6 +71,6 @@ public partial class LiteEngine : ILiteEngine
         // release transaction
         monitorService.ReleaseTransaction(transaction);
 
-        return true;
+        return 1;
     }
 }

@@ -17,7 +17,8 @@ internal class TransformEnumerator : IPipeEnumerator
         if (_enumerator.Emit.Document == false) throw ERR($"Transform pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new (_enumerator.Emit.IndexNodeID, _enumerator.Emit.DataBlockID, true);
+    public static PipeEmit Require = new(indexNodeID: false, dataBlockID: false, document: true);
+    public PipeEmit Emit => new(indexNodeID: _enumerator.Emit.IndexNodeID, dataBlockID: _enumerator.Emit.DataBlockID, document: true);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -33,7 +34,7 @@ internal class TransformEnumerator : IPipeEnumerator
 
         var result = _expr.Execute(item.Document, context.QueryParameters, _collation);
 
-        return new PipeValue(item.DataBlockID, result.AsDocument);
+        return new PipeValue(item.IndexNodeID, item.DataBlockID, result.AsDocument);
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)
@@ -41,15 +42,6 @@ internal class TransformEnumerator : IPipeEnumerator
         builder.Add($"TRANSFORM {_expr}", deep);
 
         _enumerator.GetPlan(builder, ++deep);
-    }
-
-    public BsonDocument GetPlan()
-    {
-
-        return new BsonDocument
-        {
-            ["select"] = _expr.ToString() ?? BsonValue.Null
-        };
     }
 
     public void Dispose()

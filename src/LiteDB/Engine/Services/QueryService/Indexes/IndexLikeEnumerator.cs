@@ -29,7 +29,7 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
         _order = order;
     }
 
-    public PipeEmit Emit => new(true, true, false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -86,7 +86,7 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
         // pop all prev values in order
         if (_prev.TryPop(out var nodePop))
         {
-            return new PipeValue(nodePop.dataBlockID);
+            return new PipeValue(nodePop.indexNodeID, nodePop.dataBlockID);
         }
 
         while (!_eof)
@@ -115,7 +115,7 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
             if (_hasMore == false || keyNext.SqlLike(_value, _collation))
             {
                 // return current node
-                return new PipeValue(nodeNext.DataBlockID);
+                return new PipeValue(nodeNext.IndexNodeID, nodeNext.DataBlockID);
             }
         }
 
@@ -167,7 +167,7 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
 
                 if (key.SqlLike(_value, _collation))
                 {
-                    return new PipeValue(node.DataBlockID);
+                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
                 }
             }
         }

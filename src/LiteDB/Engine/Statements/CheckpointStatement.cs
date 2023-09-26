@@ -1,13 +1,15 @@
 ﻿namespace LiteDB.Engine;
 
-public partial class LiteEngine : ILiteEngine
+internal class CheckpointStatement : IScalarStatement
 {
-    public async Task<int> CheckpointAsync()
+    public CheckpointStatement()
     {
-        if (_factory.State != EngineState.Open) throw ERR("must be opened");
+    }
 
-        var lockService = _factory.LockService;
-        var logService = _factory.LogService;
+    public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
+    {
+        var lockService = factory.LockService;
+        var logService = factory.LogService;
 
         // checkpoint require exclusive lock (no readers/writers)
         await lockService.EnterExclusiveAsync();

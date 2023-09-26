@@ -1,32 +1,43 @@
-﻿using System;
-using System.Reflection;
-using System.Xml.Linq;
+﻿namespace LiteDB.Engine;
 
-namespace LiteDB.Engine;
-
-public partial class LiteEngine : ILiteEngine
+internal class CreateIndexStatement : IScalarStatement
 {
-    public async Task<int> EnsureIndexAsync(string collectionName, string indexName, BsonExpression expression, bool unique)
-    {
-        if (_factory.State != EngineState.Open) throw new Exception("must be open");
+    private readonly string _collectionName;
+    private readonly string _indexName;
+    private readonly BsonExpression _expression;
+    private readonly bool _unique;
 
+    public CreateIndexStatement(string collectionName, string indexName, BsonExpression expression, bool unique)
+    {
+        if (!collectionName.IsIdentifier()) throw ERR("Invalid collection name");
+        if (!indexName.IsIdentifier(INDEX_MAX_NAME_LENGTH)) throw ERR("Invalid index name");
+        if (!expression.GetInfo().IsIndexable) throw ERR("expression must be indexable");
+
+        _collectionName = collectionName;
+        _indexName = indexName;
+        _expression = expression;
+        _unique = unique;
+    }
+
+    public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
+    {
         // dependency injection
-        var autoIdService = _factory.AutoIdService;
-        var masterService = _factory.MasterService;
-        var monitorService = _factory.MonitorService;
-        var collation = _factory.FileHeader.Collation;
+        var autoIdService = factory.AutoIdService;
+        var masterService = factory.MasterService;
+        var monitorService = factory.MonitorService;
+        var collation = factory.FileHeader.Collation;
 
         // get current $master
         var master = masterService.GetMaster(false);
 
         // if collection do not exists, retruns 0
-        if (!master.Collections.TryGetValue(collectionName, out var collection)) return 0;
+        if (!master.Collections.TryGetValue(_collectionName, out var collection)) throw ERR($"colecao {_collectionName} nao encontrada");
 
         // create a new transaction locking colID
         var transaction = await monitorService.CreateTransactionAsync(new byte[] { MASTER_COL_ID, collection.ColID });
 
-        var dataService = _factory.CreateDataService(transaction);
-        var indexService = _factory.CreateIndexService(transaction);
+        var dataService = factory.CreateDataService(transaction);
+        var indexService = factory.CreateIndexService(transaction);
 
         // create new index (head/tail)
         var (head, tail) = indexService.CreateHeadTailNodes(collection.ColID);
@@ -40,23 +51,23 @@ public partial class LiteEngine : ILiteEngine
         var indexDocument = new IndexDocument()
         {
             Slot = freeIndexSlot,
-            Name = indexName,
-            Expression = expression,
-            Unique = unique,
+            Name = _indexName,
+            Expression = _expression,
+            Unique = _unique,
             HeadIndexNodeID = head,
             TailIndexNodeID = tail
         };
-        
+
         // add new index into master model
         collection.Indexes.Add(indexDocument);
-        
+
         // write master collection into pages inside transaction
         masterService.WriteCollection(master, transaction);
 
         // create pipe context
         var pipeContext = new PipeContext(dataService, indexService, BsonDocument.Empty);
 
-        var exprInfo = expression.GetInfo();
+        var exprInfo = _expression.GetInfo();
         var fields = exprInfo.RootFields;
 
         // get index nodes created
@@ -65,7 +76,7 @@ public partial class LiteEngine : ILiteEngine
         // read all documents based on a full PK scan
         using (var enumerator = new IndexNodeEnumerator(indexService, collection.PK))
         {
-            while(enumerator.MoveNext())
+            while (enumerator.MoveNext())
             {
                 var pkIndexNode = enumerator.Current;
                 var dataBlockID = pkIndexNode.DataBlockID;
@@ -77,7 +88,7 @@ public partial class LiteEngine : ILiteEngine
                 if (docResult.Fail) throw docResult.Exception;
 
                 // get all keys for this index
-                var keys = expression.GetIndexKeys(docResult.Value.AsDocument, collation);
+                var keys = _expression.GetIndexKeys(docResult.Value.AsDocument, collation);
 
                 var first = IndexNodeResult.Empty;
                 var last = IndexNodeResult.Empty;
@@ -125,5 +136,6 @@ public partial class LiteEngine : ILiteEngine
 
         // TODO: retornar em formato de array? quem sabe a entrada pode ser um BsonValue (array/document) e o retorno o mesmo
         return counter;
+
     }
 }
