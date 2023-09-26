@@ -43,7 +43,7 @@ internal class InsertStatement : IScalarStatement
 
     public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
     {
-        using var _pc = PERF_COUNTER(31, nameof(InsertStatement), nameof(LiteEngine));
+        using var _pc = PERF_COUNTER(31, nameof(ExecuteScalarAsync), nameof(InsertStatement));
 
         // dependency injection
         var autoIdService = factory.AutoIdService;

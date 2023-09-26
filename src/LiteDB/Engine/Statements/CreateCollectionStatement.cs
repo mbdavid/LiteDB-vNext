@@ -14,6 +14,8 @@ internal class CreateCollectionStatement : IScalarStatement
 
     public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
     {
+        using var _pc = PERF_COUNTER(34, nameof(ExecuteScalarAsync), nameof(CreateCollectionStatement));
+
         // dependency inejctions
         var masterService = factory.MasterService;
         var monitorService = factory.MonitorService;

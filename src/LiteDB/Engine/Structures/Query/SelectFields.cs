@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct SelectFields
+internal readonly struct SelectFields
 {
     /// <summary>
     /// SELECT *

@@ -21,6 +21,8 @@ internal class CreateIndexStatement : IScalarStatement
 
     public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
     {
+        using var _pc = PERF_COUNTER(33, nameof(ExecuteScalarAsync), nameof(CreateIndexStatement));
+
         // dependency injection
         var autoIdService = factory.AutoIdService;
         var masterService = factory.MasterService;

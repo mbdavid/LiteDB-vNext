@@ -8,6 +8,8 @@ internal class CheckpointStatement : IScalarStatement
 
     public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
     {
+        using var _pc = PERF_COUNTER(37, nameof(ExecuteScalarAsync), nameof(CheckpointStatement));
+
         var lockService = factory.LockService;
         var logService = factory.LogService;
 

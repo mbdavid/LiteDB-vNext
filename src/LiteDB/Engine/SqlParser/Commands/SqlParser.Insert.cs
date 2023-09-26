@@ -1,6 +1,4 @@
-﻿using static System.Formats.Asn1.AsnWriter;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 /// <summary>
 /// Internal class to parse and execute sql-like commands
@@ -12,7 +10,7 @@ internal partial class SqlParser
         _tokenizer.ReadToken().Expect("INSERT");
         _tokenizer.ReadToken().Expect("INTO");
 
-        if (!this.TryParseDocumentStore(out var store)) throw ERR_UNEXPECTED_TOKEN(_tokenizer.Current, "<document_store>");
+        if (!this.TryParseDocumentStore(out var store)) throw ERR_UNEXPECTED_TOKEN(_tokenizer.Current, "{document_store}");
 
         TryParseWithAutoId(out var autoId);
 
@@ -51,110 +49,4 @@ internal partial class SqlParser
 
         throw new NotImplementedException();
     }
-
-    private bool TryParseDocumentStore(out IDocumentStore store)
-    {
-        var ahead = _tokenizer.LookAhead();
-
-        if (ahead.Type == TokenType.Word) // user_collection
-        {
-            var token = _tokenizer.ReadToken(); // read "collection_name";
-
-            store = new UserCollectionStore(token.Value);
-
-            return true;
-        }
-        else if (ahead.Type != TokenType.Dollar)
-        {
-            _tokenizer.ReadToken(); // read "$";
-
-            var token = _tokenizer.ReadToken().Expect(TokenType.Word); // read "collection-name"
-
-            if (token.Type == TokenType.String)
-            {
-                if (TryParseParameters(out _))
-                {
-                    //TODO: verificar metodos
-                }
-
-            }
-
-            throw new NotImplementedException();
-
-            //return true;
-        }
-
-        store = default;
-        return false;
-
-    }
-
-    /// <summary>
-    /// Try read a list of bson-value parameters. Must starts with "("
-    /// </summary>
-    private bool TryParseParameters(out IReadOnlyList<BsonValue> parameters)
-    {
-        var ahead = _tokenizer.LookAhead();
-
-        if (ahead.Type != TokenType.OpenParenthesis)
-        {
-            parameters = Array.Empty<BsonValue>();
-            return false;
-        }
-
-        var token = _tokenizer.ReadToken(); // read "("
-
-        var result = new List<BsonValue>();
-
-        while (token.Type != TokenType.CloseParenthesis)
-        {
-            var value = JsonReaderStatic.ReadValue(_tokenizer);
-
-            result.Add(value);
-
-            token = _tokenizer.ReadToken(); // read <next>, "," or ")"
-
-            if (token.Type == TokenType.Comma)
-            {
-                token = _tokenizer.ReadToken();
-            }
-        }
-
-        parameters = result;
-        return true;
-    }
-
-
-    /// <summary>
-    /// Parse :[type] for AutoId (just after collection name)
-    /// </summary>
-    private bool TryParseWithAutoId(out BsonAutoId autoId)
-    {
-        var with = _tokenizer.LookAhead();
-
-        if (with.Type == TokenType.Colon)
-        {
-            _tokenizer.ReadToken();
-
-            var type = _tokenizer.ReadToken().Expect(TokenType.Word);
-
-            if (type.Value.Eq("GUID"))
-                autoId = BsonAutoId.Guid;
-            else if (type.Value.Eq("INT"))
-                autoId = BsonAutoId.Int32;
-            else if (type.Value.Eq("LONG"))
-                autoId = BsonAutoId.Int64;
-            else if (type.Value.Eq("OBJECTID"))
-                autoId = BsonAutoId.ObjectId;
-            else
-                throw ERR_UNEXPECTED_TOKEN(type, "GUID, INT, LONG, OBJECTID");
-
-            return true;
-        }
-
-        autoId = BsonAutoId.Int32;
-
-        return false;
-    }
-
 }

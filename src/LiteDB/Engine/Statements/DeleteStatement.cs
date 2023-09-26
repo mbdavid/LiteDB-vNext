@@ -1,6 +1,4 @@
-﻿using System.Transactions;
-
-namespace LiteDB.Engine;
+﻿namespace LiteDB.Engine;
 
 internal class DeleteStatement : IScalarStatement
 {
@@ -15,7 +13,7 @@ internal class DeleteStatement : IScalarStatement
 
     public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
     {
-        using var _pc = PERF_COUNTER(31, nameof(InsertStatement), nameof(LiteEngine));
+        using var _pc = PERF_COUNTER(71, nameof(ExecuteScalarAsync), nameof(DeleteStatement));
 
         // dependency injection
         var masterService = factory.MasterService;

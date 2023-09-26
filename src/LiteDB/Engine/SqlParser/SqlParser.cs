@@ -18,37 +18,25 @@ internal partial class SqlParser
     {
         var ahead = _tokenizer.LookAhead().Expect(TokenType.Word);
 
-        if (ahead.Value.Eq("SELECT") || ahead.Value.Eq("EXPLAIN"))
-            return this.ParseInsert();
-
+        //if (ahead.Value.Eq("SELECT") || ahead.Value.Eq("EXPLAIN")) return this.ParseSelect();
 
         if (ahead.Value.Eq("INSERT")) return this.ParseInsert();
 
+        //if (ahead.Value.Eq("DELETE")) return this.ParseDelete();
+        //if (ahead.Value.Eq("UPDATE")) return this.ParseUpdate();
+        //if (ahead.Value.Eq("DROP")) return this.ParseDrop();
+        //if (ahead.Value.Eq("RENAME")) return this.ParseRename();
+        //if (ahead.Value.Eq("CREATE")) return this.ParseCreate();
+        //
+        //if (ahead.Value.Eq("CHECKPOINT")) return this.ParseCheckpoint();
+        //if (ahead.Value.Eq("REBUILD")) return this.ParseRebuild();
+        //
+        //if (ahead.Value.Eq("BEGIN")) return this.ParseBegin();
+        //if (ahead.Value.Eq("ROLLBACK")) return this.ParseRollback();
+        //if (ahead.Value.Eq("COMMIT")) return this.ParseCommit();
+        //
+        //if (ahead.Value.Eq("PRAGMA")) return this.ParsePragma();
+
         throw ERR_UNEXPECTED_TOKEN(ahead);
-
-        switch (ahead.Value.ToUpper())
-        {
-            //case "SELECT":
-            //case "EXPLAIN":
-            //    return this.ParseSelect();
-            case "INSERT": return this.ParseInsert();
-            //case "DELETE": return this.ParseDelete();
-            //case "UPDATE": return this.ParseUpdate();
-            //case "DROP": return this.ParseDrop();
-            //case "RENAME": return this.ParseRename();
-            //case "CREATE": return this.ParseCreate();
-            //
-            //case "CHECKPOINT": return this.ParseCheckpoint();
-            //case "REBUILD": return this.ParseRebuild();
-            //
-            //case "BEGIN": return this.ParseBegin();
-            //case "ROLLBACK": return this.ParseRollback();
-            //case "COMMIT": return this.ParseCommit();
-            //
-            //case "PRAGMA": return this.ParsePragma();
-
-            default: throw ERR_UNEXPECTED_TOKEN(ahead);
-        }
-
     }
 }
