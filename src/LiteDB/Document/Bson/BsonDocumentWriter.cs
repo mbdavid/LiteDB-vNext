@@ -154,7 +154,7 @@ namespace LiteDB.Document.Bson
             _elements.Pop();
             _currentIndex.Pop();
             _remaining -= offSet;
-            if (_currentIndex.Count > 0) WriteSegment(span[offSet..]);
+            if (_currentIndex.Count > 0) return WriteSegment(span[offSet..]);
             return true;
         }
 

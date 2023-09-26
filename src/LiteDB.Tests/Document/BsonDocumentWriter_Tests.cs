@@ -36,22 +36,48 @@ namespace LiteDB.Tests.Document
         public void WriteSegment_SegmentedSpan_ShouldNotChange(params object[] documentObj)
         {
             #region Arrange
-            var document = documentObj.As<BsonDocument>();
-            var documentSize = document.GetBytesCount();
+            var document = documentObj[0].As<BsonDocument>();
+            var documentSize = document.GetBytesCount() + 4;
 
             var bw = new BsonDocumentWriter(document);
             var span = new Span<byte>(new byte[documentSize]);
             #endregion
 
             #region Act
-            for (int i = 8; bw.WriteSegment(span[(i-8)..i]); i += 8);
+            for (int i = 8; i<documentSize; i += 8)
+            {
+                bw.WriteSegment(span[(i - 8)..i]);
+            }
             #endregion
 
             #region Assert
             var reader = new BsonReader();
-            var readDocument = reader.ReadDocument(span, new string[0], false, out var len);
+            var readDocument = reader.ReadDocument(span, Array.Empty<string>(), false, out var len);
             readDocument.Should().Be(document);
             #endregion
         }
+
+        //[Theory]
+        //[MemberData(nameof(Get_Documents))]
+        //public void WriteSegment_FullSpan_ShouldNotChange(params object[] documentObj)
+        //{
+        //    #region Arrange
+        //    var document = documentObj.As<BsonDocument>();
+        //    var documentSize = document.GetBytesCount();
+
+        //    var bw = new BsonDocumentWriter(document);
+        //    var span = new Span<byte>(new byte[documentSize]);
+        //    #endregion
+
+        //    #region Act
+        //    bw.WriteSegment(span);
+        //    #endregion
+
+        //    #region Assert
+        //    var reader = new BsonReader();
+        //    var readDocument = reader.ReadDocument(span, new string[0], false, out var len);
+        //    readDocument.Should().Be(document);
+        //    #endregion
+        //}
     }
 }
