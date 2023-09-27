@@ -1,11 +1,11 @@
 ﻿namespace LiteDB.Engine;
 
-internal static class ErrorHandler
+internal static class ExceptionExtensions
 {
     /// <summary>
     /// Handle critial LiteDB exceptions to avoid
     /// </summary>
-    public static void HandleException(this Exception exception, IServicesFactory factory)
+    public static void HandleError(this Exception exception, IServicesFactory factory)
     {
         // any .net exception is critical (except "ArgumentException")
         // or LiteException with code >= 900

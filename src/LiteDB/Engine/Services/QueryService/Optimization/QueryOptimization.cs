@@ -137,16 +137,18 @@ internal class QueryOptimization : IQueryOptimization
         // from term predicate list, get lower term that can be use as best index option
         var (lowerCost, lowerExpr, lowerIndex) = this.GetLowerCostIndex();
 
+        var allIndexes = _store!.GetIndexes();
+
         _indexCost = lowerCost;
 
         if (lowerExpr is null)
         {
             // if there is no index, let's from order by (if exists) or get PK
-            var allIndexes = _collection.Indexes;
+            var pk = allIndexes[0];
 
             var selectedIndex = 
                 (orderBy.IsEmpty ? null : allIndexes.FirstOrDefault(x => x.Expression == orderBy.Expression)) ??
-                _collection.PK;
+                allIndexes[0];
 
             _indexExpression = selectedIndex.Expression;
         }
@@ -168,6 +170,7 @@ internal class QueryOptimization : IQueryOptimization
     {
         var lowerCost = int.MaxValue;
         var lowerIndex = -1;
+        var indexes = _store!.GetIndexes();
         BinaryBsonExpression? lowerExpr = null;
 
         for(var i = 0; i < _terms.Count; i++)
@@ -175,8 +178,8 @@ internal class QueryOptimization : IQueryOptimization
             var term = _terms[i];
 
             var indexDocument =
-                _collection.Indexes.FirstOrDefault(x => x.Expression == term.Left) ??
-                _collection.Indexes.FirstOrDefault(x => x.Expression == term.Right);
+                indexes.FirstOrDefault(x => x.Expression == term.Left) ??
+                indexes.FirstOrDefault(x => x.Expression == term.Right);
 
             if (indexDocument is not null)
             {
@@ -341,15 +344,29 @@ internal class QueryOptimization : IQueryOptimization
     {
         var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        if (add(where, query.Where, fields)) return Array.Empty<string>();
-        if (add(select, query.Select, fields)) return Array.Empty<string>();
-        if (add(orderBy, query.OrderBy.Expression, fields)) return Array.Empty<string>();
+        if (where && add(query.Where, fields)) return Array.Empty<string>();
+        if (orderBy && add(query.OrderBy.Expression, fields)) return Array.Empty<string>();
+
+        if (select)
+        {
+            if (query.Select.IsSingleExpression)
+            {
+                if (add(query.Select.SingleExpression, fields)) return Array.Empty<string>();
+            }
+            else
+            {
+                foreach(var field in query.Select.Fields)
+                {
+                    if (add(field.Expression, fields)) return Array.Empty<string>();
+                }
+            }
+        }
 
         if (before)
         {
             foreach (var expr in _includesBefore)
             {
-                if (add(true, expr, fields)) return Array.Empty<string>();
+                if (add(expr, fields)) return Array.Empty<string>();
             }
         }
 
@@ -357,16 +374,14 @@ internal class QueryOptimization : IQueryOptimization
         {
             foreach (var expr in _includesAfter)
             {
-                if (add(true, expr, fields)) return Array.Empty<string>();
+                if (add(expr, fields)) return Array.Empty<string>();
             }
         }
 
         return fields.ToArray();
 
-        static bool add(bool conditional, BsonExpression expr, HashSet<string> fields)
+        static bool add(BsonExpression expr, HashSet<string> fields)
         {
-            if (!conditional) return false;
-
             var info = expr.GetInfo();
 
             if (info.FullRoot) return true;

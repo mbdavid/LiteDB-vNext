@@ -1,5 +1,7 @@
 ﻿global using static StaticUtils;
 
+using System.Numerics;
+
 public static class StaticUtils
 {
     public static IEnumerable<BsonDocument> GetData(Range range, int lorem = 5, int loremEnd = -1)
@@ -43,40 +45,48 @@ public static class StaticUtils
         new() { ["_id"] = 10, ["name"] = "Argentina", ["code"] = "AR" },
     };
 
-    public static async Task Run(string message, Func<Task> asyncFunc)
+    public static Task RunAsync(this ILiteEngine db, string message, string sql, BsonValue args0)
+        => RunAsync(db, sql, new BsonDocument { ["0"] = args0 });
+
+    public static async Task RunAsync(this ILiteEngine engine, string message, string sql, BsonDocument? parameters = null)
     {
         var sw = Stopwatch.StartNew();
 
         Console.Write((" > " + message + "... ").PadRight(40, ' ') + ": ");
 
-        await asyncFunc();
+        var result = await engine.ExecuteAsync(sql, parameters ?? BsonDocument.Empty);
 
         Console.WriteLine($"{sw.Elapsed.TotalMilliseconds:n0} ms");
 
         Profiler.AddResult(message, true);
-
-        Console.ForegroundColor = ConsoleColor.Green;
-        //db.DumpState();
-        Console.ForegroundColor = ConsoleColor.Gray;
     }
 
-    public static async Task ConsumeAsync(this LiteDB.Engine.ILiteEngine db, string collection, Query query, int fetchSize, int printTop = 0)
+    public static Task RunQueryAsync(this ILiteEngine db, string message, string sql, BsonValue args0, int printTop = 0)
+        => RunQueryAsync(db, sql, new BsonDocument { ["0"] = args0 }, printTop);
+
+    public static async Task RunQueryAsync(this ILiteEngine db, string message, string sql, BsonDocument parameters, int printTop = 0)
     {
+        Console.Write((" > " + message + "... ").PadRight(40, ' ') + ": ");
+
         if (printTop > 0) Console.WriteLine("...");
 
-        var index = 1;
-
-        var cursorID = db.Query(collection, query, null, out var plan);
-
-        var result = await db.FetchAsync(cursorID, fetchSize);
+        var reader = await db.ExecuteReaderAsync(sql, parameters);
 
         if (printTop > 0)
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(plan);
+            //Console.WriteLine(reader.); GetPlan()
             Console.ForegroundColor = ConsoleColor.Gray;
+        }
 
-            foreach (var item in result.Results)
+        var index = 1;
+        var total = 0;
+
+        while (await reader.ReadAsync())
+        {
+            var item = reader.Current;
+
+            if (printTop > 0)
             {
                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                 Console.Write($"[{(index++):000}] ");
@@ -86,29 +96,8 @@ public static class StaticUtils
                 printTop--;
                 if (printTop == 0) break;
             }
-        }
 
-        var total = result.FetchCount;
-
-        while (result.HasMore)
-        {
-            result = await db.FetchAsync(cursorID, fetchSize);
-
-            if (printTop > 0)
-            {
-                foreach (var item in result.Results)
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkCyan;
-                    Console.Write($"[{(index++):000}] ");
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine(item.ToString().MaxLength(80) + $" ({item.GetBytesCount():n0} bytes)");
-                    Console.ForegroundColor = ConsoleColor.Gray;
-                    printTop--;
-                    if (printTop == 0) break;
-                }
-            }
-
-            total += result.FetchCount;
+            total++;
         }
 
         Console.ForegroundColor = ConsoleColor.DarkBlue;

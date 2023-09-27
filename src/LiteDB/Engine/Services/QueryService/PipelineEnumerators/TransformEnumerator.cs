@@ -31,14 +31,23 @@ internal class TransformEnumerator : IPipeEnumerator
             return PipeValue.Empty;
         }
 
-        var result = _expr.Execute(item.Document, context.QueryParameters, _collation);
+        var doc = new BsonDocument();
 
-        return new PipeValue(item.IndexNodeID, item.DataBlockID, result.AsDocument);
+        foreach(var field in _fields.Fields)
+        {
+            // get field expression value
+            var value = field.Expression.Execute(item.Document, context.QueryParameters, _collation);
+
+            // and add to final document
+            doc.Add(field.Name, value);
+        }
+
+        return new PipeValue(item.IndexNodeID, item.DataBlockID, doc);
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)
     {
-        builder.Add($"TRANSFORM {_expr}", deep);
+        builder.Add($"TRANSFORM {_fields}", deep);
 
         _enumerator.GetPlan(builder, ++deep);
     }

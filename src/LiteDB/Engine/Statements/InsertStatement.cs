@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.ComponentModel.Design;
+
+namespace LiteDB.Engine;
 
 internal class InsertStatement : IEngineStatement
 {
@@ -114,7 +116,9 @@ internal class InsertStatement : IEngineStatement
 
             monitorService.ReleaseTransaction(transaction);
 
-            ErrorHandler.Handle(ex, factory, true);
+            ex.HandleError(factory);
+
+            throw;
         }
 
         return 1;

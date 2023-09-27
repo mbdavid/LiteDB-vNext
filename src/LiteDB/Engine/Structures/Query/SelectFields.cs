@@ -38,4 +38,11 @@ public readonly struct SelectFields
         this.SingleExpression = BsonExpression.Empty;
         this.Fields = fields;
     }
+
+    public override string ToString()
+    {
+        return IsSingleExpression ? 
+            SingleExpression.ToString()! : 
+            string.Join(", ", Fields.Select(x => x.Name));
+    }
 }

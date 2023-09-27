@@ -87,7 +87,9 @@ public class BsonDataReader : IDataReader
         _current = _resultset.DocumentCount == 0 ? int.MaxValue : 0;
     }
 
-    public BsonValue this[string field] => _resultset.Results[_current].AsDocument[field];
+    public BsonValue this[string field] => _current == -1 || _current == int.MaxValue ? 
+        BsonValue.Null :
+        _resultset.Results[_current].AsDocument[field];
 
     public void Dispose()
     {

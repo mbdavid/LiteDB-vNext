@@ -213,11 +213,11 @@ internal class PipelineBuilder
     /// <summary>
     /// Add multiple aggregate functions into pipeline. Aggregate functions are caculated according orderer input 
     /// </summary>
-    public PipelineBuilder AddAggregate(BsonExpression keyExpr, IAggregateFunc[] funcs)
+    public PipelineBuilder AddAggregate(BsonExpression keyExpr, SelectFields fields)
     {
         if (_enumerator is null) throw ERR("Start pipeline using AddIndex");
 
-        _enumerator = new AggregateEnumerator(keyExpr, funcs, _enumerator, _collation);
+        _enumerator = new AggregateEnumerator(keyExpr, fields, _enumerator, _collation);
 
         return this;
     }

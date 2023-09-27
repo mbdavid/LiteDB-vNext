@@ -59,7 +59,7 @@ public partial class LiteEngine : ILiteEngine
         }
         catch (Exception ex)
         {
-            ex.HandleException(_factory);
+            ex.HandleError(_factory);
             throw;
         }
     }

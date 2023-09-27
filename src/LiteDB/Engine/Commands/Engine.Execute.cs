@@ -2,6 +2,15 @@
 
 public partial class LiteEngine : ILiteEngine
 {
+    public ValueTask<int> ExecuteAsync(string sql)
+        => this.ExecuteAsync(sql, BsonDocument.Empty);
+
+    public ValueTask<int> ExecuteAsync(string sql, BsonValue args0)
+        => this.ExecuteAsync(sql, new BsonDocument { ["0"] = args0 });
+
+    public ValueTask<int> ExecuteAsync(string sql, BsonValue args0, BsonValue args1)
+        => this.ExecuteAsync(sql, new BsonDocument { ["0"] = args0, ["1"] = args1 });
+
     /// <summary>
     /// Parse and execute an ah-hoc sql statement
     /// </summary>
@@ -22,7 +31,7 @@ public partial class LiteEngine : ILiteEngine
         }
         catch (Exception ex)
         {
-            ex.HandleException(_factory);
+            ex.HandleError(_factory);
             throw;
         }
     }

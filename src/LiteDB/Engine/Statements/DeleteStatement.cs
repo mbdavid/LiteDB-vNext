@@ -70,12 +70,6 @@ internal class DeleteStatement : IEngineStatement
         var (dataService, indexService) = _store.GetServices(factory, transaction);
         var context = new PipeContext(dataService, indexService, parameters);
 
-        var q = new Query_2
-        {
-            Source = _store,
-            Select = SelectFields.Id,
-            Where = _whereExpr
-        };
 
         //var qo = factory.CreateQueryOptimization(null, q);
         //

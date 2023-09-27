@@ -1,6 +1,4 @@
-﻿using System.Data.SqlTypes;
-
-namespace LiteDB;
+﻿namespace LiteDB;
 
 public interface IDataReader : IDisposable
 {
