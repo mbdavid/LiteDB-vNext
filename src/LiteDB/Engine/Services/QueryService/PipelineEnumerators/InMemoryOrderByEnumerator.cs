@@ -22,7 +22,6 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
         if (_enumerator.Emit.Document == false) throw ERR($"InMemoryOrderBy pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Require = new(indexNodeID: false, dataBlockID: true, document: true);
     public PipeEmit Emit => new(indexNodeID: false, dataBlockID: true, document: true);
 
     public PipeValue MoveNext(PipeContext context)

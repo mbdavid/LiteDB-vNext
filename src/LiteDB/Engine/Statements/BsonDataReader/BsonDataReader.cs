@@ -1,129 +1,95 @@
-﻿//using LiteDB.Engine;
-//using System;
-//using System.Collections;
-//using System.Collections.Generic;
-//using System.Linq;
-//using static LiteDB.Constants;
+﻿namespace LiteDB;
 
-//namespace LiteDB
-//{
-//    /// <summary>
-//    /// Class to read void, one or a collection of BsonValues. Used in SQL execution commands and query returns. Use local data source (IEnumerable[BsonDocument])
-//    /// </summary>
-//    public class BsonDataReader : IBsonDataReader
-//    {
-//        private readonly IEnumerator<BsonValue> _source = null;
-//        private readonly string _collection = null;
-//        private readonly bool _hasValues;
+/// <summary>
+/// Class to read void, one or a collection of BsonValues. Used in SQL execution commands and query returns. Use local data source (IEnumerable[BsonDocument])
+/// </summary>
+public class BsonDataReader : IDataReader
+{
+    private readonly IServicesFactory _factory;
 
-//        private BsonValue _current = null;
-//        private bool _isFirst;
-//        private bool _disposed = false;
+    private readonly Cursor _cursor;
+    private readonly int _fetchSize;
 
-//        /// <summary>
-//        /// Initialize with no value
-//        /// </summary>
-//        internal BsonDataReader()
-//        {
-//            _hasValues = false;
-//        }
+    private int _current = -1;
+    private Resultset _resultset;
 
-//        /// <summary>
-//        /// Initialize with a single value
-//        /// </summary>
-//        internal BsonDataReader(BsonValue value, string collection = null)
-//        {
-//            _current = value;
-//            _isFirst = _hasValues = true;
-//            _collection = collection;
-//        }
+    /// <summary>
+    /// Initialize data reader with created cursor
+    /// </summary>
+    internal BsonDataReader(Cursor cursor, int fetchSize, IServicesFactory factory)
+    {
+        _cursor = cursor;
+        _resultset = new Resultset(fetchSize);
+        _fetchSize = fetchSize;
+        _factory = factory;
+    }
 
-//        /// <summary>
-//        /// Initialize with an IEnumerable data source
-//        /// </summary>
-//        internal BsonDataReader(IEnumerable<BsonValue> values, string collection)
-//        {
-//            _source = values.GetEnumerator();
-//            _collection = collection;
+    /// <summary>
+    /// Return current value
+    /// </summary>
+    public BsonValue Current => _current;
 
-//            if (_source.MoveNext())
-//            {
-//                _hasValues = _isFirst = true;
-//                _current = _source.Current;
-//            }
-//        }
+    /// <summary>
+    /// Return collection name
+    /// </summary>
+    public string Collection => _cursor.Query.Collection;
 
-//        /// <summary>
-//        /// Return if has any value in result
-//        /// </summary>
-//        public bool HasValues => _hasValues;
+    /// <summary>
+    /// Move cursor to next result. Returns true if read was possible
+    /// </summary>
+    public async ValueTask<bool> ReadAsync()
+    {
+        if (_current == int.MaxValue) return false; // eof
 
-//        /// <summary>
-//        /// Return current value
-//        /// </summary>
-//        public BsonValue Current => _current;
+        if (_current == -1) // need to be initialize
+        {
+            await this.FetchAsync();
 
-//        /// <summary>
-//        /// Return collection name
-//        /// </summary>
-//        public string Collection => _collection;
+            return _current != int.MaxValue;
+        }
+        else
+        {
+            // move no next in same _result
+            _current++;
 
-//        /// <summary>
-//        /// Move cursor to next result. Returns true if read was possible
-//        /// </summary>
-//        public async ValueTask<bool> ReadAsync()
-//        {
-//            if (!_hasValues) return false;
+            // if exceed, get next resultset
+            if (_current == _resultset.DocumentCount)
+            {
+                await this.FetchAsync();
 
-//            if (_isFirst)
-//            {
-//                _isFirst = false;
-//                return true;
-//            }
-//            else
-//            {
-//                if (_source != null)
-//                {
-//                    var read = _source.MoveNext();
-//                    _current = _source.Current;
-//                    return read;
-//                }
-//                else
-//                {
-//                    return false;
-//                }
-//            }
-//        }
-        
-//        public BsonValue this[string field]
-//        {
-//            get
-//            {
-//                return _current.AsDocument[field] ?? BsonValue.Null;
-//            }
-//        }
+                return _current != int.MaxValue;
+            }
+            else
+            {
+                return true;
+            }
+        }
+    }
 
-//        public void Dispose()
-//        {
-//            this.Dispose(true);
-//            GC.SuppressFinalize(this);
-//        }
+    private async ValueTask FetchAsync()
+    {
+        var monitorService = _factory.MonitorService;
+        var queryService = _factory.QueryService;
+        var storeFactory = _factory.StoreFactory;
 
-//        ~BsonDataReader()
-//        {
-//            this.Dispose(false);
-//        }
+        if (_factory.State != EngineState.Open) throw ERR("must be opened");
 
-//        protected virtual void Dispose(bool disposing)
-//        {
-//            if (_disposed) return;
+        // create a new transaction but use an "old" readVersion
+        var transaction = await monitorService.CreateTransactionAsync(_cursor.ReadVersion);
 
-//            _disposed = true;
+        var store = storeFactory.GetUserCollection(_cursor.Query.Collection);
+        var (dataService, indexService) = store.GetServices(_factory, transaction);
+        var context = new PipeContext(dataService, indexService, _cursor.Parameters);
 
-//            if (disposing)
-//            {
-//                _source?.Dispose();
-//            }
-//        }
-//    }
-//}
+        /*await*/ queryService.FetchAsync(_cursor, _fetchSize, context, ref _resultset);
+
+        // start current index in 0
+        _current = _resultset.DocumentCount == 0 ? int.MaxValue : 0;
+    }
+
+    public BsonValue this[string field] => _resultset.Results[_current].AsDocument[field];
+
+    public void Dispose()
+    {
+    }
+}

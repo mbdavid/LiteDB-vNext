@@ -2,7 +2,7 @@
 
 internal class Cursor : IDisposable, IIsEmpty
 {
-    public Guid CursorID { get; private init; } = Guid.NewGuid();
+    public int CursorID { get; }
 
     public Query Query { get; }
     public BsonDocument Parameters { get; }
@@ -18,13 +18,13 @@ internal class Cursor : IDisposable, IIsEmpty
 
     public BsonDocument? NextDocument { get; set; }
 
-    public bool IsEmpty => this.CursorID == Guid.Empty;
+    public bool IsEmpty => this.CursorID == 0;
 
     public static Cursor Empty = new Cursor();
 
     public Cursor()
     {
-        this.CursorID = Guid.Empty;
+        this.CursorID = 0;
         this.Parameters = BsonDocument.Empty;
         this.ReadVersion = 0;
         this.Enumerator = null;
@@ -32,6 +32,7 @@ internal class Cursor : IDisposable, IIsEmpty
 
     public Cursor(Query query, BsonDocument parameters, int readVersion, IPipeEnumerator enumerator)
     {
+        this.CursorID = Randomizer.Next(1000, int.MaxValue); // create a random cursorID
         this.Query = query;
         this.Parameters = parameters;
         this.ReadVersion = readVersion;

@@ -1,9 +1,11 @@
 ﻿namespace LiteDB.Engine;
 
-internal class DeleteStatement : IScalarStatement
+internal class DeleteStatement : IEngineStatement
 {
     private readonly IDocumentStore _store;
     private readonly BsonExpression _whereExpr;
+
+    public EngineStatementType StatementType => EngineStatementType.Delete;
 
     public DeleteStatement(IDocumentStore store, BsonExpression whereExpr)
     {
@@ -11,9 +13,9 @@ internal class DeleteStatement : IScalarStatement
         _whereExpr = whereExpr;
     }
 
-    public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
+    public async ValueTask<int> ExecuteAsync(IServicesFactory factory, BsonDocument parameters)
     {
-        using var _pc = PERF_COUNTER(71, nameof(ExecuteScalarAsync), nameof(DeleteStatement));
+        using var _pc = PERF_COUNTER(71, nameof(ExecuteAsync), nameof(DeleteStatement));
 
         // dependency injection
         var masterService = factory.MasterService;
@@ -81,4 +83,6 @@ internal class DeleteStatement : IScalarStatement
 
         throw new NotSupportedException();
     }
+
+    public ValueTask<IDataReader> ExecuteReaderAsync(IServicesFactory factory, BsonDocument parameters) => throw new NotSupportedException();
 }

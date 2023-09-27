@@ -1,21 +1,16 @@
 ﻿namespace LiteDB.Engine;
 
-/// <summary>
-/// </summary>
 public class CountFunc : IAggregateFunc
 {
-    private readonly string _name;
     private readonly BsonExpression _expr;
 
     private int _count;
 
-    public CountFunc(string name, BsonExpression expr)
+    public CountFunc(BsonExpression expr)
     {
-        _name = name;
         _expr = expr;
     }
 
-    public string Name => _name;
     public BsonExpression Expression => _expr;
 
     public void Iterate(BsonValue key, BsonDocument document, Collation collation)

@@ -30,7 +30,7 @@ unsafe internal class DiskStream : IDiskStream
             FileOptions.RandomAccess);
 
         // reading file header
-        using var buffer = SharedBuffer.Rent(FILE_HEADER_SIZE);
+        using var buffer = SharedArray<byte>.Rent(FILE_HEADER_SIZE);
 
         _stream.Position = 0;
 

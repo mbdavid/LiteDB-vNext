@@ -5,7 +5,7 @@
 /// </summary>
 internal partial class SqlParser
 {
-    private IScalarStatement ParseInsert()
+    private IEngineStatement ParseInsert()
     {
         _tokenizer.ReadToken().Expect("INSERT");
         _tokenizer.ReadToken().Expect("INTO");

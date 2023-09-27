@@ -1,9 +1,9 @@
 ﻿namespace LiteDB.Engine;
 
-internal readonly struct SelectField
+public readonly struct SelectField
 {
-    public string Name { get; }
-    public BsonExpression Expression { get; }
+    public readonly string Name;
+    public readonly BsonExpression Expression;
 
     public SelectField(string name, BsonExpression expression)
     {

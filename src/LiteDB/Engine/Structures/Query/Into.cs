@@ -1,21 +1,18 @@
 ﻿namespace LiteDB.Engine;
 
-internal struct Into : IIsEmpty
+public struct Into : IIsEmpty
 {
-    public readonly static Into Empty = new();
+    public readonly static Into Empty = new ("", BsonAutoId.ObjectId);
 
-    private readonly IDocumentStore? _store = default;
-    private readonly BsonAutoId _autoId = BsonAutoId.Int32;
+    public readonly string Collection;
+    public readonly BsonAutoId AutoId;
 
-    public Into(IDocumentStore store, BsonAutoId autoId)
+    public Into(string store, BsonAutoId autoId)
     {
-        _store = store;
-        _autoId = autoId;
+        this.Collection = store;
+        this.AutoId = autoId;
     }
 
-    public bool IsEmpty => _store is null;
-
-    public IDocumentStore Store => _store!;
-    public BsonAutoId AutoId => _autoId;
+    public bool IsEmpty => string.IsNullOrEmpty(Collection);
 
 }

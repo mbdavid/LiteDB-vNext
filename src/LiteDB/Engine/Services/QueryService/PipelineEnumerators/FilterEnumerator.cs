@@ -19,7 +19,6 @@ internal class FilterEnumerator : IPipeEnumerator
         if (_enumerator.Emit.Document == false) throw ERR($"Filter pipe enumerator requires document from last pipe");
     }
 
-    public static PipeEmit Require = new (indexNodeID: false, dataBlockID: false, document: true);
     public PipeEmit Emit => _enumerator.Emit;
 
     public PipeValue MoveNext(PipeContext context)

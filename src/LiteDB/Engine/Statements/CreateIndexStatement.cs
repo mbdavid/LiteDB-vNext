@@ -1,11 +1,13 @@
 ﻿namespace LiteDB.Engine;
 
-internal class CreateIndexStatement : IScalarStatement
+internal class CreateIndexStatement : IEngineStatement
 {
     private readonly string _collectionName;
     private readonly string _indexName;
     private readonly BsonExpression _expression;
     private readonly bool _unique;
+
+    public EngineStatementType StatementType => EngineStatementType.CreateIndex;
 
     public CreateIndexStatement(string collectionName, string indexName, BsonExpression expression, bool unique)
     {
@@ -19,9 +21,9 @@ internal class CreateIndexStatement : IScalarStatement
         _unique = unique;
     }
 
-    public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
+    public async ValueTask<int> ExecuteAsync(IServicesFactory factory, BsonDocument parameters)
     {
-        using var _pc = PERF_COUNTER(33, nameof(ExecuteScalarAsync), nameof(CreateIndexStatement));
+        using var _pc = PERF_COUNTER(33, nameof(ExecuteAsync), nameof(CreateIndexStatement));
 
         // dependency injection
         var autoIdService = factory.AutoIdService;
@@ -140,4 +142,6 @@ internal class CreateIndexStatement : IScalarStatement
         return counter;
 
     }
+
+    public ValueTask<IDataReader> ExecuteReaderAsync(IServicesFactory factory, BsonDocument parameters) => throw new NotSupportedException();
 }

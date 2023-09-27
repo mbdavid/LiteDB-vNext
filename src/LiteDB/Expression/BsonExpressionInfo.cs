@@ -23,11 +23,6 @@ internal readonly struct BsonExpressionInfo
     public bool IsIndexable { get; }
 
     /// <summary>
-    /// Returns if this expression (or any child) has use of any aggregate call (COUNT, MIN, MAX, ...)
-    /// </summary>
-    public bool HasAggregateCall { get; }
-
-    /// <summary>
     /// Return if this expression contains @ parameters
     /// </summary>
     public bool HasParameter { get; }

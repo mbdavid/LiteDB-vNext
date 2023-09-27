@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Net.Sockets;
+
+namespace LiteDB.Engine;
 
 internal class PipelineBuilder
 {
@@ -7,7 +9,8 @@ internal class PipelineBuilder
     private ISortService _sortService;
     private Collation _collation;
 
-    private CollectionDocument _collection;
+    private IDocumentStore _store;
+
     private BsonDocument _queryParameters;
     private IPipeEnumerator? _enumerator;
 
@@ -15,20 +18,14 @@ internal class PipelineBuilder
         IMasterService masterService,
         ISortService sortService,
         Collation collation,
-        string collectionName, 
+        IDocumentStore store, 
         BsonDocument queryParameters)
     {
         _masterService = masterService;
         _sortService = sortService;
         _collation = collation;
+        _store = store;
         _queryParameters = queryParameters;
-
-        var master = _masterService.GetMaster(false);
-
-        if (!master.Collections.TryGetValue(collectionName, out _collection))
-        {
-            throw ERR($"Collection {collectionName} doesn't exist");
-        }
     }
 
     public IPipeEnumerator GetPipeEnumerator() => _enumerator ?? throw ERR("No pipe to be executed");
@@ -59,7 +56,7 @@ internal class PipelineBuilder
         else
         {
             // full index scan eg: "$._id"
-            var indexDocument = _collection.Indexes.FirstOrDefault(x => x.Expression == expr) ??
+            var indexDocument = _store.GetIndexes().FirstOrDefault(x => x.Expression == expr) ??
                 throw ERR($"No index found for this expression: {expr}");
 
             _enumerator = new IndexAllEnumerator(indexDocument, order);
@@ -74,7 +71,8 @@ internal class PipelineBuilder
     private void AddIndexPredicate(BinaryBsonExpression predicate, int order)
     {
         // try get index from left
-        var indexDocument = _collection.Indexes.FirstOrDefault(x => x.Expression == predicate.Left);
+        var indexes = _store.GetIndexes();
+        var indexDocument = indexes.FirstOrDefault(x => x.Expression == predicate.Left);
 
         if (indexDocument is not null)
         {
@@ -85,7 +83,7 @@ internal class PipelineBuilder
         else
         {
             // try get index from right
-            indexDocument = _collection.Indexes.FirstOrDefault(x => x.Expression == predicate.Right) ??
+            indexDocument = indexes.FirstOrDefault(x => x.Expression == predicate.Right) ??
                 throw ERR($"No index found for this expression: {predicate}");
 
             // invert expression
@@ -227,11 +225,11 @@ internal class PipelineBuilder
     /// <summary>
     /// Add document transform create a new document ouput
     /// </summary>
-    public PipelineBuilder AddTransform(BsonExpression select)
+    public PipelineBuilder AddTransform(SelectFields fields)
     {
         if (_enumerator is null) throw ERR("Start pipeline using AddIndex");
 
-        _enumerator = new TransformEnumerator(select, _collation, _enumerator);
+        _enumerator = new TransformEnumerator(fields, _collation, _enumerator);
 
         return this;
     }

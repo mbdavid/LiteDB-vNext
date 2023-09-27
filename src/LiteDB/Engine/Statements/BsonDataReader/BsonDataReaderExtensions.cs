@@ -5,7 +5,7 @@
 /// </summary>
 public static class BsonDataReaderExtensions
 {
-    public static async IAsyncEnumerable<BsonValue> ToEnumerableAsync(this IBsonDataReader reader)
+    public static async IAsyncEnumerable<BsonValue> ToEnumerableAsync(this IDataReader reader)
     {
         try
         {

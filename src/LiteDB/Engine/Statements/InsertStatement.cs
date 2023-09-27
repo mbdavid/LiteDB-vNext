@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal class InsertStatement : IScalarStatement
+internal class InsertStatement : IEngineStatement
 {
     private readonly IDocumentStore _store;
 
@@ -9,6 +9,8 @@ internal class InsertStatement : IScalarStatement
     private readonly BsonExpression _documentExpr;
 
     private readonly BsonAutoId _autoId;
+
+    public EngineStatementType StatementType => EngineStatementType.Insert;
 
     #region Ctor
 
@@ -41,9 +43,9 @@ internal class InsertStatement : IScalarStatement
 
     #endregion
 
-    public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
+    public async ValueTask<int> ExecuteAsync(IServicesFactory factory, BsonDocument parameters)
     {
-        using var _pc = PERF_COUNTER(31, nameof(ExecuteScalarAsync), nameof(InsertStatement));
+        using var _pc = PERF_COUNTER(31, nameof(ExecuteAsync), nameof(InsertStatement));
 
         // dependency injection
         var autoIdService = factory.AutoIdService;
@@ -201,4 +203,6 @@ internal class InsertStatement : IScalarStatement
             }
         }
     }
+
+    public ValueTask<IDataReader> ExecuteReaderAsync(IServicesFactory factory, BsonDocument parameters) => throw new NotSupportedException();
 }

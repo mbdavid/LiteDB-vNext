@@ -7,8 +7,8 @@ internal class AggregateEnumerator : IPipeEnumerator
     private readonly BsonExpression _keyExpr;
 
     // fields
-    private readonly IAggregateFunc[] _funcs;
     private readonly IPipeEnumerator _enumerator;
+    private readonly List<(string key, IAggregateFunc func)> _fields = new();
 
     private BsonValue _currentKey = BsonValue.MinValue;
 
@@ -18,17 +18,36 @@ internal class AggregateEnumerator : IPipeEnumerator
     /// <summary>
     /// Aggregate values according aggregate functions (reduce functions). Require "ProvideDocument" from IPipeEnumerator
     /// </summary>
-    public AggregateEnumerator(BsonExpression keyExpr, IAggregateFunc[] funcs, IPipeEnumerator enumerator, Collation collation)
+    public AggregateEnumerator(BsonExpression keyExpr, SelectFields fields, IPipeEnumerator enumerator, Collation collation)
     {
         _keyExpr = keyExpr;
-        _funcs = funcs;
         _enumerator = enumerator;
         _collation = collation;
+
+        // aggregate requires key/value fields to compute (does not support single root)
+        if (fields.IsSingleExpression) throw new ArgumentException($"AggregateEnumerator has no support for single expression");
+
+        // getting aggregate expressions call
+        foreach (var field in fields.Fields)
+        {
+            // expression must be a CALL with AggregateAttribute
+            if (field.Expression is not CallBsonExpression call) continue;
+
+            var aggrAttr = call.Method.GetCustomAttribute<AggregateAttribute>();
+
+            if (aggrAttr is null) continue;
+
+            // creating computed aggregate function based on BsonExpression aggregate function
+            var func = Activator.CreateInstance(aggrAttr.AggregateType) as IAggregateFunc;
+
+            if (func is null) continue;
+
+            _fields.Add((field.Name, func));
+        }
 
         if (_enumerator.Emit.Document == false) throw ERR($"Aggregate pipe enumerator requires document from last pipe");
     }
 
-    public static PipeEmit Require = new(indexNodeID: false, dataBlockID: true, document: true);
     public PipeEmit Emit => new(indexNodeID: false, dataBlockID: false, document: true);
 
     public PipeValue MoveNext(PipeContext context)
@@ -57,9 +76,9 @@ internal class AggregateEnumerator : IPipeEnumerator
                 // keep running with same value
                 if (_currentKey == key)
                 {
-                    foreach (var func in _funcs)
+                    foreach (var field in _fields)
                     {
-                        func.Iterate(_currentKey, item.Document!, _collation);
+                        field.func.Iterate(_currentKey, item.Document!, _collation);
                     }
                 }
                 // if key changes, return results in a new document
@@ -85,10 +104,10 @@ internal class AggregateEnumerator : IPipeEnumerator
             ["key"] = _currentKey,
         };
 
-        foreach (var func in _funcs)
+        foreach (var field in _fields)
         {
-            doc[func.Name] = func.GetResult();
-            func.Reset();
+            doc[field.key] = field.func.GetResult();
+            field.func.Reset();
         }
 
         return new PipeValue(doc);
@@ -98,9 +117,9 @@ internal class AggregateEnumerator : IPipeEnumerator
     {
         builder.Add($"AGGREGATE {_keyExpr}", deep);
 
-        foreach (var func in _funcs)
+        foreach (var field in _fields)
         {
-            builder.Add($"{func.Name} = {func}", deep - 1);
+            builder.Add($"{field.key} = {field.func}", deep - 1);
         }
 
         _enumerator.GetPlan(builder, ++deep);

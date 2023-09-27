@@ -23,7 +23,6 @@ internal class OrderByEnumerator : IPipeEnumerator
         _sorter = sortService.CreateSort(orderBy);
     }
 
-    public static PipeEmit Require = new(indexNodeID: false, dataBlockID: true, document: true);
     public PipeEmit Emit => new(indexNodeID: false, dataBlockID: true, document: false);
 
     public PipeValue MoveNext(PipeContext context)

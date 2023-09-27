@@ -1,8 +1,10 @@
 ﻿namespace LiteDB.Engine;
 
-internal class CreateCollectionStatement : IScalarStatement
+internal class CreateCollectionStatement : IEngineStatement
 {
     private readonly string _name;
+
+    public EngineStatementType StatementType => EngineStatementType.CreateCollection;
 
     public CreateCollectionStatement(string name)
     {
@@ -12,9 +14,9 @@ internal class CreateCollectionStatement : IScalarStatement
         _name = name;
     }
 
-    public async ValueTask<int> ExecuteScalarAsync(IServicesFactory factory, BsonDocument parameters)
+    public async ValueTask<int> ExecuteAsync(IServicesFactory factory, BsonDocument parameters)
     {
-        using var _pc = PERF_COUNTER(34, nameof(ExecuteScalarAsync), nameof(CreateCollectionStatement));
+        using var _pc = PERF_COUNTER(34, nameof(ExecuteAsync), nameof(CreateCollectionStatement));
 
         // dependency inejctions
         var masterService = factory.MasterService;
@@ -75,4 +77,6 @@ internal class CreateCollectionStatement : IScalarStatement
 
         return 1;
     }
+
+    public ValueTask<IDataReader> ExecuteReaderAsync(IServicesFactory factory, BsonDocument parameters) => throw new NotSupportedException();
 }

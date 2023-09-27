@@ -29,7 +29,7 @@ unsafe internal class DataService : IDataService
         //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
         // rent an array to fit all document serialized
-        using var bufferDoc = SharedBuffer.Rent(docLength);
+        using var bufferDoc = SharedArray.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
@@ -106,7 +106,7 @@ unsafe internal class DataService : IDataService
         //if (bytesLeft > MAX_DOCUMENT_SIZE) throw new LiteException(0, "Document size exceed {0} limit", MAX_DOCUMENT_SIZE);
 
         // rent an array to fit all document serialized
-        using var bufferDoc = SharedBuffer.Rent(docLength);
+        using var bufferDoc = SharedArray.Rent(docLength);
 
         // write all document into buffer doc before copy to pages
         _bsonWriter.WriteDocument(bufferDoc.AsSpan(), doc, out _);
@@ -146,7 +146,7 @@ unsafe internal class DataService : IDataService
         else
         {
             // get a full array to read all document chuncks
-            using var docBuffer = SharedBuffer.Rent(dataBlock.DocumentLength);
+            using var docBuffer = SharedArray<byte>.Rent(dataBlock.DocumentLength);
 
             // copy datablock content to new in memory buffer
             dataBlock.AsSpan().CopyTo(docBuffer.AsSpan());

@@ -19,6 +19,7 @@ internal partial class ServicesFactory : IServicesFactory
     public IMemoryFactory MemoryFactory { get; }
     public IStreamFactory StreamFactory { get; }
     public IStreamFactory SortStreamFactory { get; }
+    public IDocumentStoreFactory StoreFactory { get; }
 
 
     public IMemoryCache MemoryCache { get; }
@@ -55,6 +56,7 @@ internal partial class ServicesFactory : IServicesFactory
         this.BsonWriter = new BsonWriter();
         this.WalIndexService = new WalIndexService();
         this.MemoryFactory = new MemoryFactory();
+        this.StoreFactory = new DocumentStoreFactory();
         this.MasterMapper = new MasterMapper();
         this.AutoIdService = new AutoIdService();
 
@@ -85,6 +87,12 @@ internal partial class ServicesFactory : IServicesFactory
     public IDiskStream CreateDiskStream()
         => new DiskStream(this.Settings, this.StreamFactory);
 
+    public IQueryOptimization CreateQueryOptimization()
+        => new QueryOptimization(this);
+
+    public IDataReader CreateDataReader(Cursor cursor, int fetchSize, IServicesFactory factory)
+        => new BsonDataReader(cursor, fetchSize, factory);
+
     public NewDatafile CreateNewDatafile() => new NewDatafile(
         this.MemoryFactory,
         this.MasterMapper,
@@ -110,17 +118,12 @@ internal partial class ServicesFactory : IServicesFactory
         this.FileHeader.Collation,
         transaction);
 
-    public PipelineBuilder CreatePipelineBuilder(string collectionName, BsonDocument queryParameters) => new PipelineBuilder(
+    public PipelineBuilder CreatePipelineBuilder(IDocumentStore store, BsonDocument queryParameters) => new PipelineBuilder(
             this.MasterService,
             this.SortService,
             this.FileHeader.Collation,
-            collectionName,
+            store,
             queryParameters);
-
-    public IQueryOptimization CreateQueryOptimization(CollectionDocument collection, Query query) =>
-        query is AggregateQuery ? new AggregateOptimization(this, collection) :
-        query is Query ? new QueryOptimization(this, collection) :
-        throw new NotSupportedException();
 
     public ISortOperation CreateSortOperation(OrderBy orderBy) => new SortOperation(
         this.SortService,

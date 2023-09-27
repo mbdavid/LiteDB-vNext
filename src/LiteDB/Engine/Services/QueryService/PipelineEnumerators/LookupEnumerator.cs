@@ -15,7 +15,6 @@ internal class LookupEnumerator : IPipeEnumerator
         if (_enumerator.Emit.DataBlockID == false) throw ERR($"Lookup pipe enumerator requires DataBlockID from last pipe");
     }
 
-    public PipeEmit Require = new(indexNodeID: false, dataBlockID: true, document: false);
     public PipeEmit Emit => new(indexNodeID: _enumerator.Emit.IndexNodeID, dataBlockID: true, document: true);
 
     public PipeValue MoveNext(PipeContext context)

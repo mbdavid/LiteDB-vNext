@@ -55,7 +55,7 @@ internal class NewDatafile : INewDatafile
             // create new/empty $master document
             var master = new MasterDocument();
             var masterDoc = _masterMapper.MapToDocument(master);
-            using var masterBuffer = SharedBuffer.Rent(masterDoc.GetBytesCount());
+            using var masterBuffer = SharedArray<byte>.Rent(masterDoc.GetBytesCount());
 
             // serialize $master document 
             _bsonWriter.WriteDocument(masterBuffer.AsSpan(), masterDoc, out _);

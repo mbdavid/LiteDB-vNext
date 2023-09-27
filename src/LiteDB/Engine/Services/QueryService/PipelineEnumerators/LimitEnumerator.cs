@@ -15,7 +15,6 @@ internal class LimitEnumerator : IPipeEnumerator
         _enumerator = enumerator;
     }
 
-    public PipeEmit Require = new(indexNodeID: false, dataBlockID: false, document: false);
     public PipeEmit Emit => _enumerator.Emit;
 
     public PipeValue MoveNext(PipeContext context)

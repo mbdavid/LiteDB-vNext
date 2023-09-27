@@ -59,7 +59,8 @@ public partial class LiteEngine : ILiteEngine
         }
         catch (Exception ex)
         {
-            ex.Handle(_factory, true);
+            ex.HandleException(_factory);
+            throw;
         }
     }
 }

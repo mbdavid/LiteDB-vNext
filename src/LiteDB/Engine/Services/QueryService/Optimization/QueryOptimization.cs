@@ -6,10 +6,8 @@ internal class QueryOptimization : IQueryOptimization
     // dependency injections
     protected readonly IServicesFactory _factory;
 
-    // ctor 
-    protected readonly CollectionDocument _collection;
-
     // fields filled by all query optimization proccess
+    protected IDocumentStore? _store;
 
     // SlitWhere
     protected List<BinaryBsonExpression> _terms = new();
@@ -33,40 +31,40 @@ internal class QueryOptimization : IQueryOptimization
     protected IDocumentLookup? _documentLookup;
     protected IDocumentLookup? _orderByLookup;
 
-    public QueryOptimization(
-        IServicesFactory factory,
-        CollectionDocument collection)
+    public QueryOptimization(IServicesFactory factory)
     {
         _factory = factory;
-        _collection = collection;
     }
 
     public virtual IPipeEnumerator ProcessQuery(Query query, BsonDocument queryParameters)
     {
-        var plainQuery = (Query)query;
+        // get document store and initialize
+        _store = _factory.StoreFactory.GetUserCollection(query.Collection);
+
+        _store.Initialize(_factory.MasterService);
 
         // split where expressions into TERMs (splited by AND operator)
-        this.SplitWhereInTerms(plainQuery.Where);
+        this.SplitWhereInTerms(query.Where);
 
         // get lower cost index or pk index
-        this.DefineIndexAndFilter(plainQuery.OrderBy);
+        this.DefineIndexAndFilter(query.OrderBy);
 
         // define _orderBy field (or use index order)
-        this.DefineOrderBy(plainQuery.OrderBy);
+        this.DefineOrderBy(query.OrderBy);
 
         // define where includes must be called (before/after) orderby/filter
-        this.DefineIncludes(plainQuery);
+        this.DefineIncludes(query);
 
         // define lookup for index/order by
-        this.DefineLookups(plainQuery);
+        this.DefineLookups(query);
 
         // create pipe enumerator based on query optimization
-        return this.CreatePipeEnumerator(plainQuery, queryParameters);
+        return this.CreatePipeEnumerator(query, queryParameters);
     }
 
     private IPipeEnumerator CreatePipeEnumerator(Query query, BsonDocument queryParameters)
     {
-        var pipe = _factory.CreatePipelineBuilder(_collection.Name, queryParameters);
+        var pipe = _factory.CreatePipelineBuilder(_store!, queryParameters);
 
         pipe.AddIndex(_indexExpression!, _indexOrder);
 
@@ -93,7 +91,7 @@ internal class QueryOptimization : IQueryOptimization
         foreach (var include in _includesAfter)
             pipe.AddInclude(include);
 
-        if (query.Select.IsEmpty == false && query.Select.Type != BsonExpressionType.Root)
+        if (!query.Select.IsRoot)
             pipe.AddTransform(query.Select);
 
         return pipe.GetPipeEnumerator();

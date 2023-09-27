@@ -7,7 +7,7 @@ internal class QueryService : IQueryService
     private readonly IWalIndexService _walIndexService;
     private readonly IServicesFactory _factory;
 
-    private readonly ConcurrentDictionary<Guid, Cursor> _openCursors = new();
+    private readonly ConcurrentDictionary<int, Cursor> _openCursors = new();
 
     public QueryService(
         IWalIndexService walIndexService,
@@ -17,9 +17,9 @@ internal class QueryService : IQueryService
         _factory = factory;
     }
 
-    public Cursor CreateCursor(CollectionDocument collection, int readVersion, Query query, BsonDocument parameters)
+    public Cursor CreateCursor(Query query, BsonDocument parameters, int readVersion)
     {
-        var queryOptimization = _factory.CreateQueryOptimization(collection, query);
+        var queryOptimization = _factory.CreateQueryOptimization();
 
         var enumerator = queryOptimization.ProcessQuery(query, parameters);
 
@@ -30,9 +30,9 @@ internal class QueryService : IQueryService
         return cursor;
     }
 
-    public bool TryGetCursor(Guid cursorID, out Cursor cursor) => _openCursors.TryGetValue(cursorID, out cursor);
+    public bool TryGetCursor(int cursorID, out Cursor cursor) => _openCursors.TryGetValue(cursorID, out cursor);
 
-    public FetchResult FetchAsync(Cursor cursor, int fetchSize, PipeContext context)
+    public void FetchAsync(Cursor cursor, int fetchSize, PipeContext context, ref Resultset result)
     {
         var count = 0;
         var eof = false;
@@ -95,20 +95,14 @@ internal class QueryService : IQueryService
             _openCursors.TryRemove(cursor.CursorID, out _);
         }
 
-        // return all fetch results (or less if is finished)
-        var from = cursor.Offset;
-        var to = cursor.Offset += count; // increment Offset also
         cursor.FetchCount += count; // increment fetch count on cursor
         cursor.IsRunning = false;
 
-        return new FetchResult
-        {
-            From = from,
-            To = to,
-            FetchCount = count,
-            HasMore = !eof,
-            Results = list
-        };
+        // update resultset
+        result.From = cursor.Offset;
+        result.To = cursor.Offset += count;
+        result.DocumentCount = count;
+        result.HasMore = !eof;
     }
 
     public override string ToString()

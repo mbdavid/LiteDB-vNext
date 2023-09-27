@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-internal readonly struct SelectFields
+public readonly struct SelectFields
 {
     /// <summary>
     /// SELECT *
@@ -13,18 +13,29 @@ internal readonly struct SelectFields
     public static readonly SelectFields Id = new(new SelectField[] { new SelectField("_id", BsonExpression.Id) });
 
     // fields
-    private readonly BsonExpression _docExpr;
-    private readonly IReadOnlyList<SelectField> _fields;
+    public readonly BsonExpression SingleExpression;
+    public readonly IReadOnlyList<SelectField> Fields;
+
+    // properties
+    /// <summary>
+    /// Indicate this query will return root/full document. Means "SELECT *"
+    /// </summary>
+    public bool IsRoot => this.SingleExpression == BsonExpression.Root;
+
+    /// <summary>
+    /// Indicate this SELECT fields contains a single result (single expression document)
+    /// </summary>
+    public bool IsSingleExpression => Fields.Count == 0;
 
     public SelectFields(BsonExpression docExpr)
     {
-        _docExpr = docExpr;
-        _fields = Array.Empty<SelectField>();
+        this.SingleExpression = docExpr;
+        this.Fields = Array.Empty<SelectField>();
     }
 
     public SelectFields(IReadOnlyList<SelectField> fields)
     {
-        _docExpr = BsonExpression.Empty;
-        _fields = fields;
+        this.SingleExpression = BsonExpression.Empty;
+        this.Fields = fields;
     }
 }

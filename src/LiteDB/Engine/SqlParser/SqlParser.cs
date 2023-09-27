@@ -14,9 +14,21 @@ internal partial class SqlParser
         _collation = collation;
     }
 
-    public IScalarStatement ParseStatement()
+    public IEngineStatement ParseStatement()
     {
         var ahead = _tokenizer.LookAhead().Expect(TokenType.Word);
+
+        if (ahead.Value.Eq("CREATE"))
+        {
+            _tokenizer.ReadToken(); // read CREATE
+            ahead = _tokenizer.ReadToken();
+
+            //if (ahead.Value.Eq("COLLECTION")) return this.ParseCreateCollection();
+            //if (ahead.Value.Eq("INDEX")) return this.ParseCreateIndex();
+
+            throw ERR_UNEXPECTED_TOKEN(ahead);
+        }
+
 
         //if (ahead.Value.Eq("SELECT") || ahead.Value.Eq("EXPLAIN")) return this.ParseSelect();
 

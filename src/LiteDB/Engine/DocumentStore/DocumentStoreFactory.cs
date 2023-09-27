@@ -6,13 +6,10 @@
 [AutoInterface]
 internal class DocumentStoreFactory : IDocumentStoreFactory
 {
-    private ConcurrentDictionary<string, IDocumentStore> _cache = new(StringComparer.OrdinalIgnoreCase);
-
     public IDocumentStore GetUserCollection(string name)
     {
-        var store = _cache.GetOrAdd(name, (n) => new UserCollectionStore(n));
-
-        return store;
+        //TODO: como reaproveitar? cache direto pode não ser uma boa
+        return new UserCollectionStore(name);
     }
 
     public IDocumentStore GetVirtualCollection(string name, BsonDocument parameters)
