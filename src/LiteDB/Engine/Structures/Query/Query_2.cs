@@ -17,7 +17,7 @@ internal class Query_2
     #endregion
 
     public required IDocumentStore Source { get; init; }
-    public SelectFields Select { get; init; } = SelectFields.Default;
+    public SelectFields Select { get; init; } = SelectFields.Root;
     public bool Distinct { get; init; } = false;
     public Into Into { get; init; } = Into.Empty;
     public BsonExpression[] Includes { get; init; } = Array.Empty<BsonExpression>();

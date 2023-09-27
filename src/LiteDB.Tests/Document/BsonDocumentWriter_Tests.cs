@@ -28,6 +28,23 @@ namespace LiteDB.Tests.Document
                         ["page"] = 12
                 }
             };
+
+            yield return new object[] {
+                new BsonDocument()
+                {
+                        ["_id"] = 16,
+                        ["name"] = "antonio",
+                        ["age"] = 12,
+                        ["_doc"] = new BsonDocument()
+                        {
+                            ["_id"] = 10,
+                            ["name2"] = "antonio",
+                            ["ic2"] = 10
+                        },
+                        ["page"] = 12,
+                        ["serial"] = 32
+                }
+            };
             #endregion
         }
 
@@ -57,27 +74,27 @@ namespace LiteDB.Tests.Document
             #endregion
         }
 
-        //[Theory]
-        //[MemberData(nameof(Get_Documents))]
-        //public void WriteSegment_FullSpan_ShouldNotChange(params object[] documentObj)
-        //{
-        //    #region Arrange
-        //    var document = documentObj.As<BsonDocument>();
-        //    var documentSize = document.GetBytesCount();
+        [Theory]
+        [MemberData(nameof(Get_Documents))]
+        public void WriteSegment_FullSpan_ShouldNotChange(params object[] documentObj)
+        {
+            #region Arrange
+            var document = documentObj[0].As<BsonDocument>();
+            var documentSize = document.GetBytesCount();
 
-        //    var bw = new BsonDocumentWriter(document);
-        //    var span = new Span<byte>(new byte[documentSize]);
-        //    #endregion
+            var bw = new BsonDocumentWriter(document);
+            var span = new Span<byte>(new byte[documentSize]);
+            #endregion
 
-        //    #region Act
-        //    bw.WriteSegment(span);
-        //    #endregion
+            #region Act
+            bw.WriteSegment(span);
+            #endregion
 
-        //    #region Assert
-        //    var reader = new BsonReader();
-        //    var readDocument = reader.ReadDocument(span, new string[0], false, out var len);
-        //    readDocument.Should().Be(document);
-        //    #endregion
-        //}
+            #region Assert
+            var reader = new BsonReader();
+            var readDocument = reader.ReadDocument(span, new string[0], false, out var len);
+            readDocument.Should().Be(document);
+            #endregion
+        }
     }
 }
