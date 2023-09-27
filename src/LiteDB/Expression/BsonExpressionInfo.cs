@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-internal class BsonExpressionInfo
+internal readonly struct BsonExpressionInfo
 {
     /// <summary>
     /// Indicate that expression contains a root $ but without any path navigation (should load full document)
@@ -16,6 +16,27 @@ internal class BsonExpressionInfo
     /// Indicate that this expression can result a diferent result for a same input arguments
     /// </summary>
     public bool IsVolatile { get; }
+
+    /// <summary>
+    /// Check if this expression can be used in index expression (contains no paramter or volatile method calls)
+    /// </summary>
+    public bool IsIndexable { get; }
+
+    /// <summary>
+    /// Return if this expression contains @ parameters
+    /// </summary>
+    public bool HasParameter { get; }
+
+    /// <summary>
+    /// Return  is this expression (or any children) access the root document
+    /// </summary>
+    public bool HasDocumentAccess { get; }
+
+    /// <summary>
+    /// Returns if this expression (or any children) contains expression using source *
+    /// Like `COUNT(*)`, `MAX(*._id)`
+    /// </summary>
+    public bool UseSource { get; }
 
     /// <summary>
     /// Get some expression infos reading full expression tree

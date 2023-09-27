@@ -27,6 +27,9 @@ internal class CodeWriter
     public void Write(string pattern, object args0, object args1, object? args2)
         => this.Write(string.Format(pattern, args0, args1, args2));
 
+    public void Write(string pattern, object args0, object args1, object? args2, object? args3)
+        => this.Write(string.Format(pattern, args0, args1, args2, args3));
+
     public void WriteLine(string value = "")
     {
         _output.AppendLine(this.Tabs + value);

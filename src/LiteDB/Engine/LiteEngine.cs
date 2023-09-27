@@ -49,7 +49,7 @@ public partial class LiteEngine : ILiteEngine
 
     #endregion
 
-    // to see all methods, look at /Commands files (partial class from ILiteEngine)
+    // to see all methods, look at /Commands files (partial class from I__LiteEngine)
 
     public void Dispose()
     {

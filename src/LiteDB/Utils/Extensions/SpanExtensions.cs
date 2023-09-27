@@ -68,56 +68,45 @@ internal static class SpanExtensions
         return utc ? utcDate : utcDate.ToLocalTime();
     }
 
-    public static PageAddress ReadPageAddress(this Span<byte> span)
+    public static RowID ReadRowID(this Span<byte> span)
     {
-        return new PageAddress(span.ReadInt32(), span[4]);
+        return new RowID(span.ReadUInt32(), span[4..].ReadUInt16());
     }
 
-    public static UInt32 ReadExtendValue(this Span<byte> span)
-    {
-        return BinaryPrimitives.ReadUInt32BigEndian(span);
-    }
-
-    public static string ReadString(this Span<byte> span)
+    public static string ReadFixedString(this Span<byte> span)
     {
         return Encoding.UTF8.GetString(span);
     }
 
+    /// <summary>
+    /// Read string utf8 inside span using int32 bytes length at start. Returns lengths for all string + 4
+    /// </summary>
     public static string ReadVString(this Span<byte> span, out int length)
     {
-        var strLength = ReadVariantLength(span, out var varLen);
+        var strLength = span.ReadInt32();
 
-        length = varLen + strLength;
+        length = strLength + sizeof(int);
 
-        return Encoding.UTF8.GetString(span[varLen..(varLen + strLength)]);
-    }
-
-    public static int ReadVariantLength(this Span<byte> span, out int varLen)
-    {
-        if ((span[0] & 0b10000000) == 0) // first bit is 0
-        {
-            varLen = 1;
-            return span[0];
-        }
-        else if ((span[0] & 0b11000000) == 128) // first bit is 1 but second is 0
-        {
-            varLen = 2;
-            var value = BinaryPrimitives.ReadUInt16BigEndian(span);
-            var number = value & 0b01111111_11111111;
-            return number;
-        }
-        else
-        {
-            varLen = 4;
-            var value = BinaryPrimitives.ReadUInt32BigEndian(span);
-            var number = value & 0b00111111_11111111_11111111_11111111;
-            return (int)number;
-        }
-
+        return Encoding.UTF8.GetString(span.Slice(sizeof(int), strLength));
     }
 
     /// <summary>
-    /// Read a BsonValue from Span using singleton instance of IBsonReader. Used for IndexKey node
+    /// Read a variable string byte to byte until find \0. Returns utf8 string and how many bytes (including \0) used on span
+    /// </summary>
+    public static string ReadCString(this Span<byte> span, out int length)
+    {
+        var indexOf = span.IndexOf((byte)0);
+
+        if (indexOf == -1) throw new ArgumentException("Not found \\0 in span finish read string");
+
+        length = indexOf + 1;
+
+        return Encoding.UTF8.GetString(span.Slice(0, indexOf));
+    }
+
+
+    /// <summary>
+    /// Read a BsonValue from Span using singleton instance of IBsonReader. Used for SortItem
     /// </summary>
     public static BsonValue ReadBsonValue(this Span<byte> span, out int length)
     {
@@ -176,15 +165,11 @@ internal static class SpanExtensions
         buffer.WriteInt64(value.ToUniversalTime().Ticks);
     }
 
-    public static void WritePageAddress(this Span<byte> span, PageAddress value)
+    public static void WriteRowID(this Span<byte> span, RowID value)
     {
-        span.WriteInt32(value.PageID);
-        span[4] = value.Index;
-    }
-
-    public static void WriteExtendValue(this Span<byte> span, UInt32 value)
-    {
-        BinaryPrimitives.WriteUInt32BigEndian(span, value);
+        span.WriteUInt32(value.PageID);
+        span[4..].WriteUInt16(value.Index);
+        span[6..].WriteUInt16(0);
     }
 
     public static void WriteGuid(this Span<byte> span, Guid value)
@@ -202,48 +187,41 @@ internal static class SpanExtensions
         value.CopyTo(span);
     }
 
-    public static void WriteString(this Span<byte> span, string value)
+    public static void WriteFixedString(this Span<byte> span, string value)
     {
         Encoding.UTF8.GetBytes(value.AsSpan(), span);
     }
 
+    /// <summary>
+    /// Write string value initialized with int32 size length. Returns used span length (includes int32 length)
+    /// </summary>
     public static void WriteVString(this Span<byte> span, string value, out int length)
     {
         var strLength = Encoding.UTF8.GetByteCount(value);
-        WriteVariantLength(span, strLength, out var varLen);
 
-        Encoding.UTF8.GetBytes(value.AsSpan(), span[varLen..(varLen + strLength)]);
+        span.WriteInt32(strLength);
 
-        length = varLen + strLength;
+        Encoding.UTF8.GetBytes(value.AsSpan(), span.Slice(sizeof(int), strLength));
+
+        length = sizeof(int) + strLength;
     }
 
     /// <summary>
-    /// Write dataLen using 1, 2 or 4 bytes to store length
+    /// Write full bytes string from utf8 and end's with \0 at end. Returns how many bytes (including this \0 at end) this string used in span
     /// </summary>
-    public static void WriteVariantLength(this Span<byte> span, int dataLength, out int varLen)
+    public static void WriteCString(this Span<byte> span, string value, out int length)
     {
-        varLen = BsonValue.GetVariantLengthFromData(dataLength);
+        var strLength = Encoding.UTF8.GetByteCount(value);
 
-        if (varLen == 1)
-        {
-            span[0] = (byte)dataLength;
-        }
-        else if (varLen == 2)
-        {
-            var op = 0b10000000_00000000;
-            var number = (ushort)(dataLength | op);
-            BinaryPrimitives.WriteUInt16BigEndian(span, number);
-        }
-        else
-        {
-            var op = 0b11000000_00000000_00000000_00000000;
-            var number = (((uint)dataLength) | op);
-            BinaryPrimitives.WriteUInt32BigEndian(span, number);
-        }
+        Encoding.UTF8.GetBytes(value.AsSpan(), span[..strLength]);
+
+        span[strLength] = 0;
+
+        length = strLength + 1; // for \0
     }
-    
+
     /// <summary>
-    /// Write BsonValue direct into a byte[]. Used for Index Key write. Use a Singleton instance of BsonWriter
+    /// Write BsonValue direct into a byte[]. Used for SortItems
     /// </summary>
     public static void WriteBsonValue(this Span<byte> span, BsonValue value, out int length)
     {

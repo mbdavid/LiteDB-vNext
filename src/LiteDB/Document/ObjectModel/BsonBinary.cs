@@ -22,7 +22,7 @@ public class BsonBinary : BsonValue
 
     public override int CompareTo(BsonValue other, Collation collation)
     {
-        if (other is BsonBinary otherBinary) return this.Value.BinaryCompareTo(otherBinary.Value);
+        if (other is BsonBinary otherBinary) return this.Value.AsSpan().SequenceCompareTo(otherBinary.Value);
 
         return this.CompareType(other);
     }

@@ -1,6 +1,6 @@
 ﻿namespace LiteDB;
 
-public abstract partial class BsonExpression : IEquatable<BsonExpression>
+public abstract partial class BsonExpression : IEquatable<BsonExpression>, IIsEmpty
 {
     public abstract BsonExpressionType Type { get; }
 
@@ -18,7 +18,7 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
     /// <summary>
     /// Implicit string converter
     /// </summary>
-    public static implicit operator string(BsonExpression expr) => expr.ToString();
+    public static implicit operator string(BsonExpression expr) => expr.ToString()!;
 
     /// <summary>
     /// Implicit string converter
@@ -62,8 +62,6 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
     /// </summary>
     internal IEnumerable<BsonValue> GetIndexKeys(BsonDocument root, Collation collation)
     {
-        using var _pc = PERF_COUNTER(31, nameof(GetIndexKeys), nameof(BsonExpression));
-
         var keys = this.Execute(root, null, collation);
 
         if (keys.IsArray)
@@ -100,7 +98,7 @@ public abstract partial class BsonExpression : IEquatable<BsonExpression>
         this.Type == BsonExpressionType.NotEqual ||
         this.Type == BsonExpressionType.In;
 
-    internal bool IsEmpty => this.Type == BsonExpressionType.Empty;
+    public bool IsEmpty => this.Type == BsonExpressionType.Empty;
 
     internal BsonExpressionInfo GetInfo()
     {

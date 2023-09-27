@@ -40,14 +40,9 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
         _compareInfo = this.Culture.CompareInfo;
     }
 
-    internal Collation(CollationInfo collationInfo)
-        : this(collationInfo.LCID, collationInfo.CompareOptions)
-    {
-    }
+    public static Collation Default = new (CultureInfo.CurrentCulture.LCID, CompareOptions.IgnoreCase);
 
-    public static Collation Default = new Collation(CultureInfo.CurrentCulture.LCID, CompareOptions.IgnoreCase);
-
-    public static Collation Binary = new Collation(CultureInfo.InvariantCulture.LCID, CompareOptions.None);
+    public static Collation Binary = new (CultureInfo.InvariantCulture.LCID, CompareOptions.None);
 
     /// <summary>
     /// Get database language culture
@@ -82,6 +77,11 @@ public class Collation : IComparer<BsonValue>, IComparer<string>, IEqualityCompa
         {
             return left == right;
         }
+    }
+
+    public bool StartsWith(string value, string target)
+    {
+        return value.StartsWith(target, this.CompareOptions.HasFlag(CompareOptions.IgnoreCase), this.Culture);
     }
 
     public int Compare(BsonValue left, BsonValue rigth)

@@ -44,11 +44,26 @@ internal class InterfaceGen
             inheritInterface = ": " + inheritInterface;
         }
 
+        var @unsafe = "";
+
+        //var sb = new StringBuilder();
+
+        foreach (var item in type.TypeSymbol.DeclaringSyntaxReferences)
+        {
+            var code = item.SyntaxTree.ToString().Substring(item.Span.Start, item.Span.End - item.Span.Start);
+
+            if (code.Contains("unsafe")) @unsafe = "unsafe ";
+
+            //sb.AppendLine("Código: `" + @unsafe + "`");
+        }
+        //sb.AppendLine("----------------");
+        //File.AppendAllText(@"C:\temp\gener.txt", sb.ToString());
+
         cw.WriteLine("namespace {0};", namespaceName);
         cw.WriteLine();
 
         cw.WriteSymbolDocsIfPresent(type.TypeSymbol);
-        cw.Write("{0} partial interface {1}{2}", visibilityModifier, interfaceName, inheritInterface);
+        cw.Write("{0}{1} partial interface {2}{3}", @unsafe, visibilityModifier, interfaceName, inheritInterface);
         cw.WriteTypeGenericsIfNeeded(type.TypeSymbol);
         cw.WriteLine();
         cw.WriteLine("{");

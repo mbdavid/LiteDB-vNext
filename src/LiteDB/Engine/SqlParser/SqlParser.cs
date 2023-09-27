@@ -3,64 +3,52 @@
 /// <summary>
 /// Internal class to parse and execute sql-like commands
 /// </summary>
-public partial class SqlParser
+internal partial class SqlParser
 {
-    public SqlParser(object engine)
+    private Tokenizer _tokenizer;
+    private Collation _collation;
+
+    public SqlParser(Tokenizer tokenizer, Collation collation)
     {
+        _tokenizer = tokenizer;
+        _collation = collation;
     }
 
-    public Func<BsonDocument, object> Compile(ReadOnlySpan<char> input)
+    public IEngineStatement ParseStatement()
     {
-        throw new NotImplementedException();
+        var ahead = _tokenizer.LookAhead().Expect(TokenType.Word);
+
+        if (ahead.Value.Eq("CREATE"))
+        {
+            _tokenizer.ReadToken(); // read CREATE
+            ahead = _tokenizer.ReadToken();
+
+            //if (ahead.Value.Eq("COLLECTION")) return this.ParseCreateCollection();
+            //if (ahead.Value.Eq("INDEX")) return this.ParseCreateIndex();
+
+            throw ERR_UNEXPECTED_TOKEN(ahead);
+        }
+
+
+        //if (ahead.Value.Eq("SELECT") || ahead.Value.Eq("EXPLAIN")) return this.ParseSelect();
+
+        if (ahead.Value.Eq("INSERT")) return this.ParseInsert();
+
+        //if (ahead.Value.Eq("DELETE")) return this.ParseDelete();
+        //if (ahead.Value.Eq("UPDATE")) return this.ParseUpdate();
+        //if (ahead.Value.Eq("DROP")) return this.ParseDrop();
+        //if (ahead.Value.Eq("RENAME")) return this.ParseRename();
+        //if (ahead.Value.Eq("CREATE")) return this.ParseCreate();
+        //
+        //if (ahead.Value.Eq("CHECKPOINT")) return this.ParseCheckpoint();
+        //if (ahead.Value.Eq("REBUILD")) return this.ParseRebuild();
+        //
+        //if (ahead.Value.Eq("BEGIN")) return this.ParseBegin();
+        //if (ahead.Value.Eq("ROLLBACK")) return this.ParseRollback();
+        //if (ahead.Value.Eq("COMMIT")) return this.ParseCommit();
+        //
+        //if (ahead.Value.Eq("PRAGMA")) return this.ParsePragma();
+
+        throw ERR_UNEXPECTED_TOKEN(ahead);
     }
-
-    public object Execute(ReadOnlySpan<char> input, BsonDocument parameters)
-    {
-        throw new NotImplementedException();
-        // possivel cache de input?
-    }
-
-    //private readonly ILiteEngine _engine;
-    //private readonly Tokenizer _tokenizer;
-    //private readonly BsonDocument _parameters;
-    //private readonly Lazy<Collation> _collation;
-
-    //public SqlParser(ILiteEngine engine, Tokenizer tokenizer, BsonDocument parameters)
-    //{
-    //    _engine = engine;
-    //    _tokenizer = tokenizer;
-    //    _parameters = parameters ?? new BsonDocument();
-    //    _collation = new Lazy<Collation>(() => new Collation(_engine.Pragma(Pragmas.COLLATION)));
-    //}
-
-    //public IBsonDataReader Execute()
-    //{
-    //    var ahead = _tokenizer.LookAhead().Expect(TokenType.Word);
-
-    //    LOG($"executing `{ahead.Value.ToUpper()}`", "SQL");
-
-    //    switch (ahead.Value.ToUpper())
-    //    {
-    //        case "SELECT": 
-    //        case "EXPLAIN":
-    //            return this.ParseSelect();
-    //        case "INSERT": return this.ParseInsert();
-    //        case "DELETE": return this.ParseDelete();
-    //        case "UPDATE": return this.ParseUpdate();
-    //        case "DROP": return this.ParseDrop();
-    //        case "RENAME": return this.ParseRename();
-    //        case "CREATE": return this.ParseCreate();
-
-    //        case "CHECKPOINT": return this.ParseCheckpoint();
-    //        case "REBUILD": return this.ParseRebuild();
-
-    //        case "BEGIN": return this.ParseBegin();
-    //        case "ROLLBACK": return this.ParseRollback();
-    //        case "COMMIT": return this.ParseCommit();
-
-    //        case "PRAGMA": return this.ParsePragma();
-
-    //        default:  throw LiteException.UnexpectedToken(ahead);
-    //    }
-    //}
 }

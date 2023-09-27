@@ -45,10 +45,10 @@ public partial class LiteEngine : ILiteEngine
             logService.Initialize();
 
             // initialize AM service
-            await allocationMapService.InitializeAsync();
+            allocationMapService.Initialize();
 
             // read $master
-            await masterService.InitializeAsync();
+            masterService.Initialize();
 
             // update header/state
             _factory.State = EngineState.Open;
@@ -59,7 +59,8 @@ public partial class LiteEngine : ILiteEngine
         }
         catch (Exception ex)
         {
-            ex.Handle(_factory, true);
+            ex.HandleError(_factory);
+            throw;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Engine;
 
-public readonly struct BsonReadResult
+public readonly struct BsonReadResult : IIsEmpty
 {
     public static readonly BsonReadResult Empty = new();
 
@@ -42,4 +42,9 @@ public readonly struct BsonReadResult
     public static implicit operator BsonReadResult(BsonValue value) => new (value);
 
     public static implicit operator BsonReadResult(Exception ex) => new (ex);
+
+    public override string ToString()
+    {
+        return IsEmpty ? "<EMPTY>" : Dump.Object(new { Ok, Value = Value.ToString() });
+    }
 }

@@ -28,21 +28,29 @@ public partial class LiteException
 
     internal static LiteException ERR_UNEXPECTED_TOKEN(Token token, string? expected = null)
     {
-        var position = (token?.Position - (token?.Value?.Length ?? 0)) ?? 0;
-        var str = token?.Type == TokenType.EOF ? "[EOF]" : token?.Value ?? "";
-        var exp = expected == null ? "" : $" Expected `{expected}`.";
+        var position = token.Position;
 
-        return new (20, $"Unexpected token `{str}` in position {position}.{exp}")
+        var sb = StringBuilderCache.Acquire();
+
+        sb.Append("Unexpected token `");
+
+        if (token.Type == TokenType.EOF)
         {
-            Position = position
-        };
-    }
+            sb.Append("[EOF]");
+        }
+        else
+        {
+            sb.Append(token.Value);
+        }
 
-    internal static LiteException ERR_UNEXPECTED_TOKEN(string message, Token token)
-    {
-        var position = (token?.Position - (token?.Value?.Length ?? 0)) ?? 0;
+        sb.Append($"` at position {token.Position}.`");
 
-        return new (20, message)
+        if (expected is not null)
+        {
+            sb.AppendFormat(" Expected `{0}`.", expected);
+        }
+
+        return new (20, StringBuilderCache.Release(sb))
         {
             Position = position
         };
@@ -58,8 +66,8 @@ public partial class LiteException
     internal static LiteException ERR_INVALID_FILE_VERSION() =>
         new(900, $"Invalid database file version.");
 
-    internal static LiteException ERR_INVALID_FREE_SPACE_PAGE(int pageID, int freeBytes, int length) =>
-        new(901, $"An operation that would corrupt page {pageID} was prevented. The operation required {length} free bytes, but the page had only {freeBytes} available.");
+    internal static LiteException ERR_INVALID_FREE_SPACE_PAGE(uint pageID, int freeBytes, int length) =>
+        new(901, $"An operation that would corrupt pageID #{pageID} was prevented. The operation required {length} free bytes, but the page had only {freeBytes} available.");
 
     internal static LiteException ERR_ENSURE(string? message) =>
         new(902, $"ENSURE: {message}.");

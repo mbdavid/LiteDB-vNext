@@ -19,16 +19,16 @@ public partial class LiteEngine : ILiteEngine
         _factory.State = EngineState.Shutdown;
 
         // do checkpoint
-        await logService.CheckpointAsync(true);
+        await logService.CheckpointAsync(true, false);
 
         // persist all dirty amp into disk
-        await allocationMapService.WriteAllChangesAsync();
+        allocationMapService.WriteAllChanges();
 
         // if file was changed, update file header check byte
         if (_factory.FileHeader.IsDirty)
         {
             stream.WriteFlag(FileHeader.P_IS_DIRTY, 0);
-
+        
             _factory.FileHeader.IsDirty = false;
         }
 

@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent a document (list of key-values of BsonValue) in Bson object model
 /// </summary>
-public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
+public class BsonDocument : BsonValue, IDictionary<string, BsonValue>, IIsEmpty
 {
     /// <summary>
     /// Singleton Empty document (readonly)
@@ -15,6 +15,8 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     private readonly bool _readonly = false;
 
     public IReadOnlyDictionary<string, BsonValue> Value => _value;
+
+    public bool IsEmpty => _value.Count == 0;
 
     public BsonDocument() : this(0)
     {
@@ -35,47 +37,18 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
         _value = value ?? throw new ArgumentNullException(nameof(value));
     }
 
-    /// <summary>
-    /// Create a new BsonDocument using a deep clone from another document
-    /// </summary>
-    public BsonDocument(BsonDocument clone, bool readOnly)
-        : this(clone.Count)
-    {
-        foreach(var entity in clone._value)
-        {
-            if (entity.Value is BsonDocument doc)
-            {
-                _value.Add(entity.Key, new BsonDocument(doc, readOnly));
-            }
-            else if (entity.Value is BsonArray arr)
-            {
-                _value.Add(entity.Key, new BsonArray(arr, readOnly));
-            }
-            else
-            {
-                _value.Add(entity.Key, entity.Value);
-            }
-        }
-
-        _length = clone._length;
-        _readonly = readOnly;
-    }
-
     public override BsonType Type => BsonType.Document;
 
     public override int GetBytesCount()
     {
-        var length = 0;
+        var length = sizeof(int); // for int32 length
 
         foreach (var element in _value)
         {
             length += GetBytesCountElement(element.Key, element.Value);
         }
 
-        // adding variant length of document (1, 2 ou 4 bytes)
-        length += GetVariantLengthFromData(length);
-
-        _length = length;
+        _length = length; // update local cache after loop
 
         return length;
     }
@@ -213,27 +186,33 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>
     #region Static Helpers
 
     /// <summary>
+    /// Create an BsonDocument for a extenal collection reference. Makes a document like { $id: value, $ref: 'collection' }
+    /// </summary>
+    public static BsonDocument DbRef(BsonValue idRef, string collectionRef)
+    {
+        return new() { ["$id"] = idRef, ["$ref"] = collectionRef };
+    }
+
+    /// <summary>
     /// Get how many bytes one single element will used in BSON format
     /// </summary>
     internal static int GetBytesCountElement(string key, BsonValue value)
     {
-        var keyLength = Encoding.UTF8.GetByteCount(key);
-
-        keyLength += GetVariantLengthFromData(keyLength);
+        var keyLength = Encoding.UTF8.GetByteCount(key) + 1; // + \n for CString
 
         // get data length
         var valueLength = value.GetBytesCountCached();
 
-        // if data type is variant length, add varLength to length
+        // if data type has a variant length, add int32 length (array and documents already contains your int32 in valueLength)
         if (value.Type == BsonType.String || 
             value.Type == BsonType.Binary)
         {
-            valueLength += GetVariantLengthFromData(valueLength);
+            valueLength += sizeof(int);
         }
 
         return
             keyLength + 
-            1 + // element value type
+            1 + // for valueType
             valueLength;
     }
 
