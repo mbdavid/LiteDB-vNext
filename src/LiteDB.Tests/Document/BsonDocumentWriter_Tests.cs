@@ -70,7 +70,7 @@ namespace LiteDB.Tests.Document
             #region Assert
             var reader = new BsonReader();
             var readDocument = reader.ReadDocument(span, Array.Empty<string>(), false, out var len);
-            readDocument.Should().Be(document);
+            readDocument.Value.Should().Be(document);
             #endregion
         }
 
@@ -93,7 +93,7 @@ namespace LiteDB.Tests.Document
             #region Assert
             var reader = new BsonReader();
             var readDocument = reader.ReadDocument(span, new string[0], false, out var len);
-            readDocument.Should().Be(document);
+            readDocument.Value.Should().Be(document);
             #endregion
         }
     }
