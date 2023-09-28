@@ -102,7 +102,6 @@ public static class StaticUtils
                 Console.WriteLine(item.ToString().MaxLength(80) + $" ({item.GetBytesCount():n0} bytes)");
                 Console.ForegroundColor = ConsoleColor.Gray;
                 printTop--;
-                if (printTop == 0) break;
             }
 
             total++;
@@ -111,6 +110,8 @@ public static class StaticUtils
         Console.ForegroundColor = ConsoleColor.DarkBlue;
         Console.Write($"[{total:n0}] ");
         Console.ForegroundColor = ConsoleColor.Gray;
+
+        Profiler.AddResult(message, true);
     }
 
     public static async Task<T> RunAsync<T>(string message, Func<Task<T>> asyncFunc)

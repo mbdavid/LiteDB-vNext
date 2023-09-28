@@ -9,15 +9,15 @@ internal class ExplainPlainBuilder
         _infos.Add((info, deep));
     }
 
-    public override string ToString()
+    public BsonArray ToBsonArray()
     {
         var deeps = _infos.Max(x => x.deep);
         var lines = _infos
             .OrderByDescending(x => x.deep)
-            .Select(x => "".PadRight(deeps - x.deep, ' ') + "> " + x.info);
+            .Select(x => "".PadRight(deeps - x.deep, ' ') + "> " + x.info)
+            .Select(x => new BsonString(x))
+            .ToArray();
 
-        var output = string.Join('\n', lines);
-
-        return output;
+        return BsonArray.FromArray(lines);
     }
 }

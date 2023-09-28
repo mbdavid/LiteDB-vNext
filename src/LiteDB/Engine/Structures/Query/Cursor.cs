@@ -39,15 +39,15 @@ internal class Cursor : IDisposable, IIsEmpty
         this.Enumerator = enumerator;
     }
 
-    public string GetPlan()
+    public BsonArray GetExplainPlan()
     {
-        if (this.Enumerator is null) return "";
+        if (this.Enumerator is null) return BsonArray.Empty;
 
         var explain = new ExplainPlainBuilder();
 
         this.Enumerator.GetPlan(explain, 0);
 
-        return explain.ToString();
+        return explain.ToBsonArray();
     }
 
     public void Dispose()

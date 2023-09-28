@@ -7,7 +7,7 @@ public class BsonScalarReader : IDataReader
 {
     private readonly string _collection;
     private readonly BsonValue _value;
-    private bool _init = false;
+    private int _current = -1;
 
     /// <summary>
     /// Initialize data reader with created cursor
@@ -21,7 +21,10 @@ public class BsonScalarReader : IDataReader
     /// <summary>
     /// Return current value
     /// </summary>
-    public BsonValue Current => _value;
+    public BsonValue Current => 
+        _value is BsonArray array ? 
+        (_current >= 0 ? array[_current] : BsonValue.Null) :
+        _value;
 
     /// <summary>
     /// Return collection name
@@ -33,14 +36,27 @@ public class BsonScalarReader : IDataReader
     /// </summary>
     public ValueTask<bool> ReadAsync()
     {
-        if (_init == false)
+        if (_current == -1)
         {
-            _init = true;
+            _current = 0;
 
             return new ValueTask<bool>(true);
         }
+        else if (_value is BsonArray array)
+        {
+            _current++;
 
-        return new ValueTask<bool>(false);
+            if (_current >= array.Count)
+            {
+                return new ValueTask<bool>(false);
+            }
+
+            return new ValueTask<bool>(true);
+        }
+        else
+        {
+            return new ValueTask<bool>(false);
+        }
     }
 
     public BsonValue this[string field] => _value.AsDocument[field];
