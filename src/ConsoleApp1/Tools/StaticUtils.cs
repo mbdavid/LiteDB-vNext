@@ -1,6 +1,7 @@
 ﻿global using static StaticUtils;
 
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 public static class StaticUtils
 {
@@ -45,8 +46,12 @@ public static class StaticUtils
         new() { ["_id"] = 10, ["name"] = "Argentina", ["code"] = "AR" },
     };
 
-    public static Task RunAsync(this ILiteEngine db, string message, string sql, BsonValue args0)
-        => RunAsync(db, sql, new BsonDocument { ["0"] = args0 });
+    public static Task RunAsync(this ILiteEngine db, string message, string sql, IReadOnlyList<BsonValue> args0)
+    {
+        var doc = new BsonDocument { ["0"] = BsonArray.FromArray(args0) };
+
+        return RunAsync(db, message, sql, doc);
+    }
 
     public static async Task RunAsync(this ILiteEngine engine, string message, string sql, BsonDocument? parameters = null)
     {

@@ -23,15 +23,13 @@ await db.OpenAsync();
 // RUN 
 
 await db.RunAsync($"Create Collection 'col1'", "CREATE COLLECTION col1");
-
-await db.RunAsync($"Insert col1 {insert1}", "INSERT INTO col1 VALUES @0", BsonArray.FromArray(insert1));
-
+await db.RunAsync($"Insert col1 {insert1.Length:n0}", "INSERT INTO col1 VALUES @0", insert1);
 
 await db.RunAsync($"EnsureIndex (age)", "CREATE INDEX idx_01 ON col1 ($.age)");
 await db.RunAsync($"EnsureIndex (name)", "CREATE INDEX idx_02 ON col1 (name)");
-
-
-await db.RunAsync($"Query1", "SELECT * FROM col1");
+//
+//
+//await db.RunAsync($"Query1", "SELECT * FROM col1");
 
 // SHUTDOWN
 await db.ShutdownAsync();

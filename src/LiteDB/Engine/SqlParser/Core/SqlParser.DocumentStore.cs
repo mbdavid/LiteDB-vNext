@@ -2,6 +2,17 @@
 
 internal partial class SqlParser
 {
+    /// <summary>
+    /// document_store::
+    ///   | user_collection
+    ///   | virtual_collection
+    ///
+    /// user_collection::
+    ///  char word
+    ///
+    /// virtual_collection::
+    ///  "$" word [ collection_parameters ] 
+    /// </summary>
     private bool TryParseDocumentStore(out IDocumentStore store)
     {
         var ahead = _tokenizer.LookAhead();
@@ -20,14 +31,11 @@ internal partial class SqlParser
 
             var token = _tokenizer.ReadToken().Expect(TokenType.Word); // read "collection-name"
 
-            if (token.Type == TokenType.String)
+            if (TryParseParameters(out var parameters))
             {
-                if (TryParseParameters(out _))
-                {
-                    //TODO: verificar metodos
-                }
-
+                //TODO: verificar metodos
             }
+
 
             throw new NotImplementedException();
 

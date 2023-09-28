@@ -80,7 +80,6 @@ internal struct Token : IIsEmpty
             TokenType.Slash => "/",
             TokenType.Backslash => "\\",
             TokenType.Percent => "%",
-            TokenType.String => "\"",
 
             // convert to space
             TokenType.Whitespace => "".PadLeft(_length, ' '),
@@ -231,6 +230,6 @@ internal struct Token : IIsEmpty
 
     public override string ToString()
     {
-        return Dump.Object(new { Type = _type, Start = _start, Length = _length, Value = _value.ToString() });
+        return Dump.Object(new { Value, Type = _type, Start = _start, Length = _length });
     }
 }
