@@ -27,7 +27,7 @@ public class BsonDataReader : IDataReader
     /// <summary>
     /// Return current value
     /// </summary>
-    public BsonValue Current => _current;
+    public BsonValue Current => _resultset.Results[_current];
 
     /// <summary>
     /// Return collection name
@@ -74,17 +74,34 @@ public class BsonDataReader : IDataReader
 
         if (_factory.State != EngineState.Open) throw ERR("must be opened");
 
-        // create a new transaction but use an "old" readVersion
-        var transaction = await monitorService.CreateTransactionAsync(_cursor.ReadVersion);
+        // create a new transaction for a specific read version
+        using var transaction = await monitorService.CreateTransactionAsync(_cursor.ReadVersion);
 
-        var store = storeFactory.GetUserCollection(_cursor.Query.Collection);
-        var (dataService, indexService) = store.GetServices(_factory, transaction);
-        var context = new PipeContext(dataService, indexService, _cursor.Parameters);
+        try
+        {
+            var store = storeFactory.GetUserCollection(_cursor.Query.Collection);
+            var (dataService, indexService) = store.GetServices(_factory, transaction);
+            var context = new PipeContext(dataService, indexService, _cursor.Parameters);
 
-        /*await*/ queryService.FetchAsync(_cursor, _fetchSize, context, ref _resultset);
+            /*await*/
+            queryService.FetchAsync(_cursor, _fetchSize, context, ref _resultset);
 
-        // start current index in 0
-        _current = _resultset.DocumentCount == 0 ? int.MaxValue : 0;
+            transaction.Abort();
+
+            monitorService.ReleaseTransaction(transaction);
+
+            // start current index in 0
+            _current = _resultset.DocumentCount == 0 ? int.MaxValue : 0;
+        }
+        catch (Exception ex)
+        {
+            transaction.Abort();
+            monitorService.ReleaseTransaction(transaction);
+
+            ex.HandleError(_factory);
+
+            throw;
+        }
     }
 
     public BsonValue this[string field] => _current == -1 || _current == int.MaxValue ? 

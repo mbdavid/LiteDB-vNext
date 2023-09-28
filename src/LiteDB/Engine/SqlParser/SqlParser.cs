@@ -7,6 +7,7 @@ internal partial class SqlParser
 {
     private Tokenizer _tokenizer;
     private Collation _collation;
+    private int _nameIndex = 0; // used for columns with no names will generate "expr1", "expr2"
 
     public SqlParser(Tokenizer tokenizer, Collation collation)
     {
@@ -30,7 +31,7 @@ internal partial class SqlParser
         }
 
 
-        //if (ahead.Value.Eq("SELECT") || ahead.Value.Eq("EXPLAIN")) return this.ParseSelect();
+        if (ahead.Value.Eq("SELECT") || ahead.Value.Eq("EXPLAIN")) return this.ParseSelect();
 
         if (ahead.Value.Eq("INSERT")) return this.ParseInsert();
 

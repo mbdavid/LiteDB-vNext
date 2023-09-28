@@ -240,7 +240,7 @@ internal class QueryOptimization : IQueryOptimization
     /// </summary>
     private void DefineIncludes(Query query)
     {
-        if (query.Includes is null || query.Includes.Length == 0) return;
+        if (query.Includes.Count == 0) return;
 
         var infoWhere = query.Where.GetInfo();
         var infoOrderBy = query.OrderBy.Expression.GetInfo();

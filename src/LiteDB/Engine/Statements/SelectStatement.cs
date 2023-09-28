@@ -3,15 +3,36 @@
 internal class SelectStatement : IEngineStatement
 {
     private readonly Query _query;
+    private readonly bool _explain;
     private readonly int _fetchSize;
 
     public EngineStatementType StatementType => EngineStatementType.Select;
 
-    public SelectStatement(Query query, int fetchSize)
+    #region Ctor
+
+    public SelectStatement(Query query) : 
+        this(query, 1000, false) 
+    { 
+    }
+
+    public SelectStatement(Query query, bool explain) : 
+        this(query, 1000, explain)
+    {
+    }
+
+    public SelectStatement(Query query, int fetchSize) : 
+        this (query, fetchSize, false) 
+    {
+    }
+
+    public SelectStatement(Query query, int fetchSize, bool explain)
     {
         _query = query;
         _fetchSize = fetchSize;
+        _explain = explain;
     }
+
+    #endregion
 
     public ValueTask<IDataReader> ExecuteReaderAsync(IServicesFactory factory, BsonDocument parameters)
     {
@@ -28,7 +49,9 @@ internal class SelectStatement : IEngineStatement
         var cursor = queryService.CreateCursor(_query, parameters, readVersion);
 
         // create concrete class to reader cursor
-        IDataReader reader = factory.CreateDataReader(cursor, _fetchSize, factory);
+        IDataReader reader = _explain ? 
+                new BsonScalarReader(cursor.Query.Collection, cursor.GetPlan()) : // for explain plain
+                factory.CreateDataReader(cursor, _fetchSize, factory);
 
         return ValueTask.FromResult(reader);
     }

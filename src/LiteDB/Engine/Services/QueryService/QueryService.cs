@@ -34,9 +34,8 @@ internal class QueryService : IQueryService
 
     public void FetchAsync(Cursor cursor, int fetchSize, PipeContext context, ref Resultset result)
     {
-        var count = 0;
+        var index = 0;
         var eof = false;
-        var list = new List<BsonDocument>();
         var start = Stopwatch.GetTimestamp();
         var enumerator = cursor.Enumerator;
 
@@ -57,12 +56,12 @@ internal class QueryService : IQueryService
 
         if (cursor.NextDocument is not null)
         {
-            list.Add(cursor.NextDocument);
+            result.Results[0] = cursor.NextDocument;
             cursor.NextDocument = null;
-            count++;
+            index++;
         }
 
-        while (count < fetchSizeNext)
+        while (index < fetchSizeNext)
         {
             var item = enumerator.MoveNext(context);
 
@@ -71,11 +70,11 @@ internal class QueryService : IQueryService
                 eof = true;
                 break;
             }
-            else if (count < fetchSize)
+            else if (index < fetchSize)
             {
-                list.Add(item.Document!);
+                result.Results[index] = item.Document!;
 
-                count++;
+                index++;
             }
             else
             {
@@ -95,13 +94,13 @@ internal class QueryService : IQueryService
             _openCursors.TryRemove(cursor.CursorID, out _);
         }
 
-        cursor.FetchCount += count; // increment fetch count on cursor
+        cursor.FetchCount += index; // increment fetch count on cursor
         cursor.IsRunning = false;
 
         // update resultset
         result.From = cursor.Offset;
-        result.To = cursor.Offset += count;
-        result.DocumentCount = count;
+        result.To = cursor.Offset += index;
+        result.DocumentCount = index;
         result.HasMore = !eof;
     }
 

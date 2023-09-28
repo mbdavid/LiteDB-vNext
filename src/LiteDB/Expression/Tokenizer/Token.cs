@@ -90,7 +90,11 @@ internal struct Token : IIsEmpty
             TokenType.Int or
             TokenType.Double => _value.Span.ToString(),
 
-            _ => throw new NotSupportedException($"Invalid token type {_type}")
+            TokenType.EOF => "<EOF>",
+            TokenType.Empty => "<EMPTY>",
+            TokenType.Unknown => "<UNKNOWN>",
+
+            _ => ""
         };
 
     #region Expects

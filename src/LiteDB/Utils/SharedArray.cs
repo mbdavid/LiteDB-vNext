@@ -14,7 +14,11 @@ public readonly struct SharedArray<T> : IDisposable
         _length = length;
     }
 
-    public T this[int index] => _array[index];
+    public T this[int index]
+    {
+        get => _array[index];
+        set => _array[index] = value;
+    }
 
     public readonly Span<T> AsSpan() => _array.AsSpan(0, _length);
 

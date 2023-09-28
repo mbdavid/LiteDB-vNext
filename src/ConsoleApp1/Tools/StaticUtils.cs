@@ -66,10 +66,13 @@ public static class StaticUtils
         Profiler.AddResult(message, true);
     }
 
-    public static Task RunQueryAsync(this ILiteEngine db, string message, string sql, BsonValue args0, int printTop = 0)
-        => RunQueryAsync(db, sql, new BsonDocument { ["0"] = args0 }, printTop);
+    public static Task RunQueryAsync(this ILiteEngine db, string message, string sql)
+        => RunQueryAsync(db, 0, message, sql, BsonDocument.Empty);
 
-    public static async Task RunQueryAsync(this ILiteEngine db, string message, string sql, BsonDocument parameters, int printTop = 0)
+    public static Task RunQueryAsync(this ILiteEngine db, int printTop, string message, string sql)
+        => RunQueryAsync(db, printTop, message, sql, BsonDocument.Empty);
+
+    public static async Task RunQueryAsync(this ILiteEngine db, int printTop, string message, string sql, BsonDocument parameters)
     {
         Console.Write((" > " + message + "... ").PadRight(40, ' ') + ": ");
 
