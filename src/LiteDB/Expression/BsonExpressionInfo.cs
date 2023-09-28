@@ -5,38 +5,32 @@ internal readonly struct BsonExpressionInfo
     /// <summary>
     /// Indicate that expression contains a root $ but without any path navigation (should load full document)
     /// </summary>
-    public bool FullRoot { get; }
+    public readonly bool FullRoot;
 
     /// <summary>
     /// Get root fields keys used in document (empty array if no fields found)
     /// </summary>
-    public string[] RootFields { get; }
+    public readonly string[] RootFields;
 
     /// <summary>
     /// Indicate that this expression can result a diferent result for a same input arguments
     /// </summary>
-    public bool IsVolatile { get; }
-
-    /// <summary>
-    /// Check if this expression can be used in index expression (contains no paramter or volatile method calls)
-    /// </summary>
-    public bool IsIndexable { get; }
+    public readonly bool IsVolatile;
 
     /// <summary>
     /// Return if this expression contains @ parameters
     /// </summary>
-    public bool HasParameter { get; }
+    public readonly bool HasParameters;
+
+    /// <summary>
+    /// Check if this expression can be used in index expression (contains no paramter or volatile method calls)
+    /// </summary>
+    public bool IsIndexable => this.HasDocumentAccess && !this.IsVolatile;
 
     /// <summary>
     /// Return  is this expression (or any children) access the root document
     /// </summary>
-    public bool HasDocumentAccess { get; }
-
-    /// <summary>
-    /// Returns if this expression (or any children) contains expression using source *
-    /// Like `COUNT(*)`, `MAX(*._id)`
-    /// </summary>
-    public bool UseSource { get; }
+    public bool HasDocumentAccess => this.FullRoot || this.RootFields.Length > 0;
 
     /// <summary>
     /// Get some expression infos reading full expression tree
@@ -44,26 +38,29 @@ internal readonly struct BsonExpressionInfo
     public BsonExpressionInfo(BsonExpression expr)
     {
         var rootFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var isVolatile = false;
-        var fullRoot = false;
 
-        this.GetInfo(expr, rootFields, ref isVolatile, ref fullRoot);
+        this.GetInfo(expr, rootFields, ref this.IsVolatile, ref this.FullRoot, ref this.HasParameters);
 
-        this.RootFields = rootFields.ToArray();
-        this.IsVolatile = isVolatile;
-        this.FullRoot = fullRoot;
+        this.RootFields = rootFields.Count == 0 ? 
+            Array.Empty<string>() :  // avoid new empty array
+            rootFields.ToArray();
     }
 
-    private void GetInfo(BsonExpression expr, HashSet<string> rootFields, ref bool isVolatile, ref bool fullRoot)
+    private void GetInfo(BsonExpression expr, HashSet<string> rootFields, ref bool isVolatile, ref bool fullRoot, ref bool hasParameters)
     {
         // get root fields from path
-        if (expr.Type == BsonExpressionType.Path)
+        if (expr is PathBsonExpression path)
         {
-            var path = (PathBsonExpression)expr;
-
             if (path.Source.Type == BsonExpressionType.Root)
             {
-                rootFields.Add(path.Field);
+                if (path.Field.Length > 0)
+                {
+                    rootFields.Add(path.Field);
+                }
+                else
+                {
+                    fullRoot = true;
+                }
 
                 // avoid enter on path children
                 return;
@@ -87,13 +84,19 @@ internal readonly struct BsonExpressionInfo
         // parameters are volatile
         else if (expr.Type == BsonExpressionType.Parameter)
         {
+            hasParameters = true;
             isVolatile = true;
         }
 
         // apply for all children recursive
         foreach(var child in expr.Children)
         {
-            this.GetInfo(child, rootFields, ref isVolatile, ref fullRoot);
+            this.GetInfo(child, rootFields, ref isVolatile, ref fullRoot, ref hasParameters);
         }
+    }
+
+    public override string ToString()
+    {
+        return Dump.Object(new { FullRoot, RootFields, IsVolatile, HasParameters, IsIndexable, HasDocumentAccess });
     }
 }

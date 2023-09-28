@@ -20,18 +20,10 @@ public partial class LiteEngine : ILiteEngine
         var tokenizer = new Tokenizer(sql);
         var parser = new SqlParser(tokenizer, collation);
 
-        try
-        {
-            var statement = parser.ParseStatement();
+        var statement = parser.ParseStatement();
 
-            var reader = statement.ExecuteReaderAsync(_factory, parameters);
+        var reader = statement.ExecuteReaderAsync(_factory, parameters);
 
-            return reader;
-
-        }
-        catch (Exception ex)
-        {
-            ex.HandleError(_factory); throw;
-        }
+        return reader;
     }
 }

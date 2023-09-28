@@ -7,7 +7,7 @@ internal class InsertStatement : IEngineStatement
     private readonly IDocumentStore _store;
 
     private readonly BsonDocument _document;
-    private readonly IReadOnlyList<BsonDocument> _documents;
+    private readonly BsonArray _documents;
     private readonly BsonExpression _documentExpr;
 
     private readonly BsonAutoId _autoId;
@@ -20,12 +20,12 @@ internal class InsertStatement : IEngineStatement
     {
         _store = store;
         _document = document;
-        _documents = Array.Empty<BsonDocument>();
+        _documents = BsonArray.Empty;
         _documentExpr = BsonExpression.Empty;
         _autoId = autoId;
     }
 
-    public InsertStatement(IDocumentStore store, IReadOnlyList<BsonDocument> documents, BsonAutoId autoId)
+    public InsertStatement(IDocumentStore store, BsonArray documents, BsonAutoId autoId)
     {
         _store = store;
         _document = BsonDocument.Empty;
@@ -38,7 +38,7 @@ internal class InsertStatement : IEngineStatement
     {
         _store = store;
         _document = BsonDocument.Empty;
-        _documents = Array.Empty<BsonDocument>();
+        _documents = BsonArray.Empty;
         _documentExpr = documentExpr;
         _autoId = autoId;
     }
@@ -137,9 +137,12 @@ internal class InsertStatement : IEngineStatement
         // list of document
         else if (_documents.Count > 0)
         {
-            foreach (var doc0 in _documents)
+            foreach (var item in _documents)
             {
-                yield return doc0;
+                if (item is BsonDocument doc)
+                {
+                    yield return doc;
+                }
             }
         }
         // expression document resolver

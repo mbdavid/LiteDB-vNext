@@ -430,19 +430,27 @@ internal class BsonExpressionParser
         {
             defaultScope = tokenizer.Current.Type;
 
-            var next = tokenizer.LookAhead(false);
+            var ahead = tokenizer.LookAhead(false);
 
-            if (next.Type == TokenType.Period)
+            if (ahead.Type == TokenType.Period)
             {
                 tokenizer.ReadToken(); // read .
                 tokenizer.ReadToken(); // read word or [
+            }
+            else
+            {
+                // test if is end of expression
+                if (ahead.Type == TokenType.EOF || ahead.Type == TokenType.SemiColon)
+                    tokenizer.ReadToken();
+
+                return BsonExpression.Root;
             }
         }
 
         // get root/current expression
         var scope = defaultScope == TokenType.Dollar ? BsonExpression.Root : BsonExpression.Current;
 
-        // read field name (or "" if root)
+        // read field name
         var field = ReadField(tokenizer);
 
         var expr = BsonExpression.Path(scope, field);

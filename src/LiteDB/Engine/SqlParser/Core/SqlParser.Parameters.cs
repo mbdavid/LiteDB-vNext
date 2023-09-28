@@ -3,7 +3,8 @@
 internal partial class SqlParser
 {
     /// <summary>
-    /// Try read a list of bson-value parameters. Must starts with "("
+    /// collection_parameters::
+    ///   "(" [ . json_value [ . "," . json_value ] ] . ")"
     /// </summary>
     private bool TryParseParameters(out IReadOnlyList<BsonValue> parameters)
     {

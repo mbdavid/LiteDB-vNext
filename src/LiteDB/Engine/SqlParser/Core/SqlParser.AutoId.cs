@@ -3,7 +3,11 @@
 internal partial class SqlParser
 {
     /// <summary>
-    /// Parse :[type] for AutoId (just after collection name)
+    /// auto_id::
+    ///  | "GUID" 
+    ///  | "INT" 
+    ///  | "LONG" 
+    ///  | "OBJECTID"
     /// </summary>
     private bool TryParseWithAutoId(out BsonAutoId autoId)
     {
