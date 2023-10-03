@@ -12,20 +12,35 @@ namespace LiteDB.Tests.Document
     {
         public static IEnumerable<object[]> Get_Documents()
         {
-            #region BasicTypes
+            /*//array
             yield return new object[] {
                 new BsonDocument()
                 {
                         ["_id"] = 16,
                         ["name"] = "antonio",
                         ["age"] = 12,
-                        ["_doc"] = new BsonDocument()
-                        {
-                            ["_id"] = 10,
-                            ["name2"] = "antonio",
-                            ["ic2"] = 10
-                        },
+                        ["arr"] = new BsonArray() { 10, 11, 12, 13, 14, 15, 16, 17, 18},
                         ["page"] = 12
+                }
+            };*/
+
+            yield return new object[] {
+                new BsonDocument()
+                {
+                        ["_id"] = 16,
+                        ["int32"] = 12,
+                        ["int64"] = 12L,
+                        ["double"] = 2.6d,
+                        //["decimal"] = new BsonDecimal(12),
+                        ["string"] = "antonio",
+                        ["int32"] = 12,
+                        ["doc"] = new BsonDocument()
+                        {
+                            ["name"] = "antonio",
+                            ["age"] = 18
+                        },
+                        //["binary"] = new BsonBinary(new byte[4] { 16, 16, 16, 16}),
+                        ["serial"] = 32
                 }
             };
 
@@ -35,17 +50,56 @@ namespace LiteDB.Tests.Document
                         ["_id"] = 16,
                         ["name"] = "antonio",
                         ["age"] = 12,
-                        ["_doc"] = new BsonDocument()
+                        ["doc"] = new BsonDocument()
                         {
-                            ["_id"] = 10,
                             ["name2"] = "antonio",
-                            ["ic2"] = 10
+                            ["ic"] = 10
                         },
                         ["page"] = 12,
                         ["serial"] = 32
                 }
             };
-            #endregion
+
+            //subdocument inside subdocument
+            yield return new object[] {
+                new BsonDocument()
+                {
+                        ["_id"] = 16,
+                        ["name"] = "antonio",
+                        ["age"] = 12,
+                        ["doc"] = new BsonDocument()
+                        {
+                            ["name2"] = "antonio",
+                            ["ic"] = 10,
+                            ["doc2"] = new BsonDocument()
+                            {
+                                ["name3"] = "antonio",
+                                ["ic1"] = 10
+                            }
+                        }
+                }
+            };
+
+            //subsequent subdocuments
+            yield return new object[] {
+                new BsonDocument()
+                {
+                        ["_id"] = 16,
+                        ["name"] = "antonio",
+                        ["age"] = 12,
+                        ["doc"] = new BsonDocument()
+                        {
+                            ["name1"] = "antonio",
+                            ["ic"] = 10
+                        },
+                        ["doc2"] = new BsonDocument()
+                        {
+                            ["name2"] = "antonio",
+                            ["ic"] = 10
+                        },
+                        ["page"] = 12
+                }
+            };
         }
 
         [Theory]
@@ -61,7 +115,7 @@ namespace LiteDB.Tests.Document
             #endregion
 
             #region Act
-            for (int i = 8; i<documentSize; i += 8)
+            for (int i = 8; i<=documentSize; i += 8)
             {
                 bw.WriteSegment(span[(i - 8)..i]);
             }
