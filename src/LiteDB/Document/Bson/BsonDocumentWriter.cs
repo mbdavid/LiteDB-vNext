@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,7 +20,8 @@ namespace LiteDB.Document.Bson
         private int _currentValueIndex = 0;
         private int _currentValueEnd = 0;
 
-        private bool _subDoc = false;
+        private bool _uninitializedSubDocument = false;
+        private bool _uninitializedArray = false;
         private bool _isArray = false;
         private bool _inLoop = false;
 
@@ -36,12 +38,10 @@ namespace LiteDB.Document.Bson
 
         public bool WriteSegment(Span<byte> span)
         {
-            var elements = _elements.Peek();
             var currentIndex = _currentIndex.Peek();
-            bool isFull;
-            var offSet = 0;
 
-            if(currentIndex == -1)
+            #region WriteStrucutreLength
+            if (currentIndex == -1)
             {
                 if(_unfinishedValue)
                 {
@@ -63,60 +63,94 @@ namespace LiteDB.Document.Bson
                     else
                     {
                         _currentValue = ArrayPool<byte>.Shared.Rent(4);
-                        GetBytes(_doc.GetBytesCount(), _currentValue.AsSpan()[..4]);
+                        _currentValue.AsSpan()[..4].WriteInt32(_doc.GetBytesCount());
                         _currentValueEnd = 4;
                         _unfinishedValue = true;
                     }
                 }
             }
+            #endregion
 
             if (_unfinishedValue)
             {
-                WriteUnfinishedValue(span[offSet..], out var writenUV);
+                WriteUnfinishedValue(span, out var writenUV);
                 span = span[writenUV..];
                 if (_unfinishedValue)
                 {   
                     _remaining -= writenUV;
-                    _currentIndex.Pop();
-                    _currentIndex.Push(currentIndex);
+                    Save(currentIndex);
                     return false;
                 }
                 ArrayPool<byte>.Shared.Return(_currentValue);
             }
-            if (_subDoc)
+            #region InitializeUninitializedStructures
+            if (_uninitializedArray)
             {
-                _currentIndex.Pop();
-                _currentIndex.Push(currentIndex);
+                Save(currentIndex);
+                _currentIndex.Push(-1);
+                _uninitializedArray = false;
+                _isArray = true;
+                if (!WriteSegment(span))
+                {
+                    return false;
+                }
+                span = span[_doc.GetBytesCount()..];
+                /*//var enume = new IEnumerable<KeyValuePair<string, BsonValue>>();
+                _elements.Push(_doc.AsArray.ToDictionary(x => ""));
+                _currentIndex.Push(-1);
+                _uninitializedArray = false;
+                if (!WriteSegment(span))
+                {
+                    return false;
+                }
+                span = span[_doc.GetBytesCount()..];*/
+            }
+            else if (_uninitializedSubDocument)
+            {
+                Save(currentIndex);
                 _elements.Push(_doc.AsDocument.GetElements());
                 _currentIndex.Push(-1);
-                _subDoc = false;
+                _uninitializedSubDocument = false;
                 if (!WriteSegment(span))
                 {
                     return false;
                 }
                 span = span[_doc.GetBytesCount()..];
             }
+            #endregion
+            if(_isArray && _doc.Type==BsonType.Array)
+            {
+                Save(currentIndex);
+                if (!WriteArr(span))
+                {
+                    return false;
+                }
+                span = span[_doc.GetBytesCount()..];
+            }
+
+            var elements = _elements.Peek();
+            var offSet = 0;
             var cont = 0;
             for (; currentIndex < ( cont = elements.Count()); currentIndex++)
             {
-
                 var el = elements.ElementAt(currentIndex);
-
                 var keyLen = Encoding.UTF8.GetByteCount(el.Key) + 1;
-
                 var valueLen = GetSerializedBytesCount(el.Value);
 
+                #region Fit
                 if (span.Length-offSet >= keyLen + valueLen)
                 {
                     span[offSet..].WriteCString(el.Key, out _);
                     offSet += keyLen;
-                    WriteValue(span[offSet..], el.Value);
+                    WriteValue(el.Value, span[offSet..]);
                     offSet += valueLen;
                     continue;
                 }
+                #endregion
+                #region DoesntFit
                 else
                 {
-                    if (el.Value.Type == BsonType.Document)
+                    if (el.Value.Type == BsonType.Document || el.Value.Type == BsonType.Array)
                     {
                         valueLen = 1;
                     };
@@ -125,8 +159,7 @@ namespace LiteDB.Document.Bson
                         span.WriteCString(el.Key, out _);
                         _currentValue = ArrayPool<byte>.Shared.Rent(valueLen);
 
-                        _currentValue.AsSpan()[0] = (byte)el.Value.Type;
-                        GetBytes(el.Value, _currentValue.AsSpan()[1..]);
+                        WriteValue(el.Value, _currentValue.AsSpan(), false);
 
                         _currentValueEnd = valueLen;
                         offSet += keyLen;
@@ -137,8 +170,7 @@ namespace LiteDB.Document.Bson
                         Encoding.UTF8.GetBytes(el.Key, _currentValue.AsSpan());
                         _currentValue[keyLen - 1] = 0;
 
-                        _currentValue.AsSpan<byte>()[keyLen] = (byte)el.Value.Type;
-                        GetBytes(el.Value, _currentValue.AsSpan()[(keyLen + 1)..]);
+                        WriteValue(el.Value, _currentValue.AsSpan()[keyLen..], false);
 
                         _currentValueEnd = keyLen + valueLen;
                     }
@@ -147,78 +179,32 @@ namespace LiteDB.Document.Bson
                 WriteUnfinishedValue(span[offSet..], out var writen);
                 offSet += writen;
                 _remaining -= offSet;
-                _currentIndex.Pop();
-                _currentIndex.Push(currentIndex+1);
+                Save(currentIndex+1);
                 if(offSet<span.Length)
                 {
                     WriteSegment(span[offSet..]);
                 }
                 return false;
-
+                #endregion
             }
+            #region FinishingWritingAStructure
             _elements.Pop();
             _currentIndex.Pop();
             _remaining -= offSet;
+            //If it is not the main document and it hasnt come from a loop
             if (_currentIndex.Count > 0 && !_inLoop)
             {
                 return WriteSegment(span[offSet..]);
             };
+            #endregion
             return true;
         }
- 
-        private void WriteValue(Span<byte> span, BsonValue value)
+
+        private void WriteValue(BsonValue value, Span<byte> span, bool directly = true)
         {
             span[0] = (byte)value.Type;
-            switch (value.Type)
-            {
-                case BsonType.Int32:
-                    span[1..].WriteInt32(value);
-                    break;
-                case BsonType.Int64:
-                    span[1..].WriteInt64(value);
-                    break;
-                case BsonType.Double:
-                    span[1..].WriteDouble(value);
-                    break;
-                case BsonType.Decimal:
-                    span[1..].WriteDecimal(value);
-                    break;
-                case BsonType.String:
-                    span[1..].WriteInt32(value.GetBytesCount());
-                    Encoding.UTF8.GetBytes(value.AsString.AsSpan(), span[5..]);
-                    break;
-                case BsonType.Document:
-                    _elements.Push(value.AsDocument.GetElements());
-                    _currentIndex.Push(-1);
-                    _doc = value.AsDocument;
-                    _inLoop = true;
-                    WriteSegment(span[1..]);
-                    break;
-                case BsonType.Array:
-                    span[1..].WriteInt32(value.GetBytesCount());
-                    writeFullArray(value.AsArray, span[5..]);
-                    break;
-                case BsonType.Binary:
-                    span[1..].WriteInt32(value.GetBytesCount());
-                    value.AsBinary.AsSpan().CopyTo(span[5..]);
-                    break;
-                case BsonType.ObjectId:
-                    span[1..].WriteObjectId(value);
-                    break;
-                case BsonType.Guid:
-                    span[1..].WriteGuid(value);
-                    break;
-                case BsonType.DateTime:
-                    span[1..].WriteDateTime(value);
-                    break;
-                case BsonType.Boolean:
-                    span[1] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
-                    break;
-            }
-        }
+            span = span[1..];
 
-        private void GetBytes(BsonValue value, Span<byte> span)
-        {
             switch (value.Type)
             {
                 case BsonType.Int32:
@@ -237,12 +223,31 @@ namespace LiteDB.Document.Bson
                     span.WriteVString(value.AsString, out _);
                     break;
                 case BsonType.Document:
-                    _doc = value.AsDocument;
-                    _subDoc = true;
+                    if (directly)
+                    {
+                        _elements.Push(value.AsDocument.GetElements());
+                        _currentIndex.Push(-1);
+                        _doc = value.AsDocument;
+                        _inLoop = true;
+                        WriteSegment(span);
+                    }
+                    else
+                    {
+                        _doc = value.AsDocument;
+                        _uninitializedSubDocument = true;
+                    }
                     break;
                 case BsonType.Array:
-                    _doc = value.AsArray;
-                    _isArray = true;
+                    if (directly)
+                    {
+                        span.WriteInt32(value.GetBytesCount());
+                        writeFullArray(value.AsArray, span[4..]);
+                    }
+                    else
+                    {
+                        _doc = value.AsArray;
+                        _uninitializedArray = true;
+                    }
                     break;
                 case BsonType.Binary:
                     span.WriteInt32(value.GetBytesCount());
@@ -258,62 +263,6 @@ namespace LiteDB.Document.Bson
                     span.WriteDateTime(value.AsDateTime);
                     break;
                 case BsonType.Boolean:
-                    span[0] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
-                    break;
-            }
-        }
-
-        private void WriteVal(BsonValue value, Span<byte> span, bool directly)
-        {
-            var type = (int)value.Type;
-            if (directly)
-            {
-                span[0] = (byte)value.Type;
-                span = span[1..];
-            }
-            else if(type == 7 || type == 8)
-            {
-                type += 25;
-            }
-            switch (type)
-            {
-                case 2://Int32
-                    span.WriteInt32(value);
-                    break;
-                case 3://Int64
-                    span.WriteInt64(value);
-                    break;
-                case 4://Double
-                    span.WriteDouble(value);
-                    break;
-                case 5://Decimal
-                    span.WriteDecimal(value);
-                    break;
-                case 6://String
-                    span.WriteVString(value.AsString, out _);
-                    break;
-                case 7://Document
-                    _doc = value.AsDocument;
-                    _subDoc = true;
-                    break;
-                case 8://Array
-                    _doc = value.AsArray;
-                    _isArray = true;
-                    break;
-                case 9://Binary
-                    span.WriteInt32(value.GetBytesCount());
-                    value.AsBinary.AsSpan().CopyTo(span[4..]);
-                    break;
-                case 10://ObjectId
-                    span.WriteObjectId(value.AsObjectId);
-                    break;
-                case 11://Guid
-                    span.WriteGuid(value.AsGuid);
-                    break;
-                case 12://DateTime
-                    span.WriteDateTime(value.AsDateTime);
-                    break;
-                case 13://Boolean
                     span[0] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
                     break;
             }
@@ -324,7 +273,7 @@ namespace LiteDB.Document.Bson
             int i = 0;
             foreach(var el in array)
             {
-                WriteValue(span[i..], el);
+                WriteValue(el, span[i..]);
                 i+=GetSerializedBytesCount(el);
             }
         }
@@ -373,13 +322,73 @@ namespace LiteDB.Document.Bson
             switch(value.Type)
             {
                 case BsonType.String:
-                //case BsonType.Array:
                 case BsonType.Binary:
-                //case BsonType.Decimal:
                     return value.GetBytesCount() + 5;
                 default:
                     return value.GetBytesCount() + 1;
             }
+        }
+
+        private void Save(int value)
+        {
+            _currentIndex.Pop();
+            _currentIndex.Push(value);
+        }
+
+        private bool WriteArr(Span<byte> span)
+        {
+            var currentIndex = _currentIndex.Peek();
+            var offSet = 0;
+            var elements = _doc.AsArray;
+
+            for (; currentIndex < elements.Count(); currentIndex++)
+            {
+                var el = elements.ElementAt(currentIndex);
+                var valueLen = GetSerializedBytesCount(el);
+
+                #region Fit
+                if (span.Length - offSet >= valueLen)
+                {
+                    WriteValue(el, span[offSet..]);
+                    offSet += valueLen;
+                    continue;
+                }
+                #endregion
+                #region DoesntFit
+                else
+                {
+                    if (el.Type == BsonType.Document)
+                    {
+                        valueLen = 1;
+                    };
+                    _currentValue = ArrayPool<byte>.Shared.Rent(valueLen);
+                    WriteValue(el, _currentValue.AsSpan(), false);
+                    _currentValueEnd = valueLen;
+                    _unfinishedValue = true;
+                }
+
+                WriteUnfinishedValue(span[offSet..], out var writen);
+                offSet += writen;
+                _remaining -= offSet;
+                Save(currentIndex + 1);
+                if (offSet < span.Length)
+                {
+                    WriteSegment(span[offSet..]);
+                }
+                return false;
+                #endregion
+            }
+            #region FinishingWritingAStructure
+            _currentIndex.Pop();
+            _remaining -= offSet;
+            _isArray = false;
+            //If it is not the main document and it hasnt come from a loop
+            if (_currentIndex.Count > 0 && !_inLoop)
+            {
+                return WriteSegment(span[offSet..]);
+            };
+            #endregion
+            return true;
         }
     }
 }
