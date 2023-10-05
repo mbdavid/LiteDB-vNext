@@ -31,7 +31,7 @@ namespace LiteDB.Tests.Document
                         ["int32"] = 12,
                         ["int64"] = 12L,
                         ["double"] = 2.6d,
-                        //["decimal"] = new BsonDecimal(12),
+                        ["decimal"] = new BsonDecimal(12),
                         ["string"] = "antonio",
                         ["int32"] = 12,
                         ["doc"] = new BsonDocument()
@@ -39,7 +39,8 @@ namespace LiteDB.Tests.Document
                             ["name"] = "antonio",
                             ["age"] = 18
                         },
-                        //["binary"] = new BsonBinary(new byte[4] { 16, 16, 16, 16}),
+                        ["number"] = 21,
+                        ["binary"] = new BsonBinary(new byte[4] { 16, 16, 16, 16}),
                         ["serial"] = 32
                 }
             };

@@ -149,6 +149,10 @@ namespace LiteDB.Document.Bson
                 _remaining -= offSet;
                 _currentIndex.Pop();
                 _currentIndex.Push(currentIndex+1);
+                if(offSet<span.Length)
+                {
+                    WriteSegment(span[offSet..]);
+                }
                 return false;
 
             }
@@ -164,31 +168,26 @@ namespace LiteDB.Document.Bson
  
         private void WriteValue(Span<byte> span, BsonValue value)
         {
+            span[0] = (byte)value.Type;
             switch (value.Type)
             {
                 case BsonType.Int32:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteInt32(value);
                     break;
                 case BsonType.Int64:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteInt64(value);
                     break;
                 case BsonType.Double:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteDouble(value);
                     break;
                 case BsonType.Decimal:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteDecimal(value);
                     break;
                 case BsonType.String:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteInt32(value.GetBytesCount());
                     Encoding.UTF8.GetBytes(value.AsString.AsSpan(), span[5..]);
                     break;
                 case BsonType.Document:
-                    span[0] = (byte)value.Type;
                     _elements.Push(value.AsDocument.GetElements());
                     _currentIndex.Push(-1);
                     _doc = value.AsDocument;
@@ -196,30 +195,126 @@ namespace LiteDB.Document.Bson
                     WriteSegment(span[1..]);
                     break;
                 case BsonType.Array:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteInt32(value.GetBytesCount());
                     writeFullArray(value.AsArray, span[5..]);
                     break;
                 case BsonType.Binary:
-                    span[0] = (byte)value.Type;
-                    value.AsBinary.CopyTo(span[1..]);
-                    //span[1..];
+                    span[1..].WriteInt32(value.GetBytesCount());
+                    value.AsBinary.AsSpan().CopyTo(span[5..]);
                     break;
                 case BsonType.ObjectId:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteObjectId(value);
                     break;
                 case BsonType.Guid:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteGuid(value);
                     break;
                 case BsonType.DateTime:
-                    span[0] = (byte)value.Type;
                     span[1..].WriteDateTime(value);
                     break;
                 case BsonType.Boolean:
-                    span[0] = (byte)value.Type;
                     span[1] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
+                    break;
+            }
+        }
+
+        private void GetBytes(BsonValue value, Span<byte> span)
+        {
+            switch (value.Type)
+            {
+                case BsonType.Int32:
+                    span.WriteInt32(value);
+                    break;
+                case BsonType.Int64:
+                    span.WriteInt64(value);
+                    break;
+                case BsonType.Double:
+                    span.WriteDouble(value);
+                    break;
+                case BsonType.Decimal:
+                    span.WriteDecimal(value);
+                    break;
+                case BsonType.String:
+                    span.WriteVString(value.AsString, out _);
+                    break;
+                case BsonType.Document:
+                    _doc = value.AsDocument;
+                    _subDoc = true;
+                    break;
+                case BsonType.Array:
+                    _doc = value.AsArray;
+                    _isArray = true;
+                    break;
+                case BsonType.Binary:
+                    span.WriteInt32(value.GetBytesCount());
+                    value.AsBinary.AsSpan().CopyTo(span[4..]);
+                    break;
+                case BsonType.ObjectId:
+                    span.WriteObjectId(value.AsObjectId);
+                    break;
+                case BsonType.Guid:
+                    span.WriteGuid(value.AsGuid);
+                    break;
+                case BsonType.DateTime:
+                    span.WriteDateTime(value.AsDateTime);
+                    break;
+                case BsonType.Boolean:
+                    span[0] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
+                    break;
+            }
+        }
+
+        private void WriteVal(BsonValue value, Span<byte> span, bool directly)
+        {
+            var type = (int)value.Type;
+            if (directly)
+            {
+                span[0] = (byte)value.Type;
+                span = span[1..];
+            }
+            else if(type == 7 || type == 8)
+            {
+                type += 25;
+            }
+            switch (type)
+            {
+                case 2://Int32
+                    span.WriteInt32(value);
+                    break;
+                case 3://Int64
+                    span.WriteInt64(value);
+                    break;
+                case 4://Double
+                    span.WriteDouble(value);
+                    break;
+                case 5://Decimal
+                    span.WriteDecimal(value);
+                    break;
+                case 6://String
+                    span.WriteVString(value.AsString, out _);
+                    break;
+                case 7://Document
+                    _doc = value.AsDocument;
+                    _subDoc = true;
+                    break;
+                case 8://Array
+                    _doc = value.AsArray;
+                    _isArray = true;
+                    break;
+                case 9://Binary
+                    span.WriteInt32(value.GetBytesCount());
+                    value.AsBinary.AsSpan().CopyTo(span[4..]);
+                    break;
+                case 10://ObjectId
+                    span.WriteObjectId(value.AsObjectId);
+                    break;
+                case 11://Guid
+                    span.WriteGuid(value.AsGuid);
+                    break;
+                case 12://DateTime
+                    span.WriteDateTime(value.AsDateTime);
+                    break;
+                case 13://Boolean
+                    span[0] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
                     break;
             }
         }
@@ -273,51 +368,6 @@ namespace LiteDB.Document.Bson
             }
         }
 
-        private void GetBytes(BsonValue value, Span<byte> span)
-        {
-            switch (value.Type)
-            {
-                case BsonType.Int32:
-                    BinaryPrimitives.WriteInt32LittleEndian(span, value.AsInt32);
-                    break;
-                case BsonType.Int64:
-                    BinaryPrimitives.WriteInt64LittleEndian(span, value.AsInt64);
-                    break;
-                case BsonType.Double:
-                    BinaryPrimitives.WriteDoubleLittleEndian(span, value.AsDouble);
-                    break;
-                case BsonType.Decimal:
-                    span.WriteDecimal(value.AsDecimal);
-                    break;
-                case BsonType.String:
-                    span.WriteVString(value.AsString, out _);
-                    break;
-                case BsonType.Document:
-                    _doc = value.AsDocument;
-                    _subDoc = true;
-                    break;
-                case BsonType.Array:
-                    _doc = value.AsArray;
-                    _isArray = true;
-                    break;
-                case BsonType.Binary:
-                    value.AsBinary.AsSpan().CopyTo(span);
-                    break;
-                case BsonType.ObjectId:
-                    span.WriteObjectId(value.AsObjectId);
-                    break;
-                case BsonType.Guid:
-                    span.WriteGuid(value.AsGuid);
-                    break;
-                case BsonType.DateTime:
-                    span.WriteDateTime(value.AsDateTime);
-                    break;
-                case BsonType.Boolean:
-                    span[0] = value.AsBoolean ? (byte)BsonTypeCode.True : (byte)BsonTypeCode.False;
-                    break;
-            }
-        }
-
         private int GetSerializedBytesCount(BsonValue value)
         {
             switch(value.Type)
@@ -325,7 +375,7 @@ namespace LiteDB.Document.Bson
                 case BsonType.String:
                 //case BsonType.Array:
                 case BsonType.Binary:
-                case BsonType.Decimal:
+                //case BsonType.Decimal:
                     return value.GetBytesCount() + 5;
                 default:
                     return value.GetBytesCount() + 1;
