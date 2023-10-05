@@ -22,6 +22,33 @@ namespace LiteDB.Tests.Document
                         ["arr"] = new BsonArray() {
                             10,
                             12L,
+                            new BsonArray() { 10, 11, 12, 13, 14, 15, 16, 17, 18},
+                            2.6d,
+                            new BsonDecimal(12),
+                            "antonio",
+                            12,
+                            new BsonDocument()
+                            {
+                                ["name"] = "antonio",
+                                ["age"] = 18
+                            },
+                            21,
+                            new BsonBinary(new byte[4] { 16, 16, 16, 16}),
+                        },
+                        ["page"] = 12
+                }
+            };
+
+            //array
+            yield return new object[] {
+                new BsonDocument()
+                {
+                        ["_id"] = 16,
+                        ["name"] = "antonio",
+                        ["age"] = 12,
+                        ["arr"] = new BsonArray() {
+                            10,
+                            12L,
                             2.6d,
                             new BsonDecimal(12),
                             "antonio",

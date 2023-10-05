@@ -25,7 +25,7 @@ namespace LiteDB.Document.Bson
         private bool _isArray = false;
         private bool _inLoop = false;
 
-        private Stack<IEnumerable<KeyValuePair<string, BsonValue>>> _elements = new Stack<IEnumerable<KeyValuePair<string, BsonValue>>>();
+        private Stack<(bool, IEnumerable)> _elements = new Stack<(bool, IEnumerable)>();
 
 
         public BsonDocumentWriter(BsonDocument doc)
@@ -33,11 +33,12 @@ namespace LiteDB.Document.Bson
             _remaining = doc.GetBytesCount();
             _doc = doc;
             _currentIndex.Push(-1);
-            _elements.Push(doc.GetElements());
+            _elements.Push((false, doc.GetElements()));
         }
 
         public bool WriteSegment(Span<byte> span)
         {
+            if (_elements.Count == 0) return true;
             var currentIndex = _currentIndex.Peek();
 
             #region WriteStrucutreLength
@@ -87,6 +88,7 @@ namespace LiteDB.Document.Bson
             if (_uninitializedArray)
             {
                 Save(currentIndex);
+                _elements.Push((true, _doc.AsArray));
                 _currentIndex.Push(-1);
                 _uninitializedArray = false;
                 _isArray = true;
@@ -108,7 +110,7 @@ namespace LiteDB.Document.Bson
             else if (_uninitializedSubDocument)
             {
                 Save(currentIndex);
-                _elements.Push(_doc.AsDocument.GetElements());
+                _elements.Push((false, _doc.AsDocument.GetElements()));
                 _currentIndex.Push(-1);
                 _uninitializedSubDocument = false;
                 if (!WriteSegment(span))
@@ -118,17 +120,17 @@ namespace LiteDB.Document.Bson
                 span = span[_doc.GetBytesCount()..];
             }
             #endregion
-            if(_isArray && _doc.Type==BsonType.Array)
+            if (_elements.Peek().Item1)
             {
                 Save(currentIndex);
-                if (!WriteArr(span))
+                if (!WriteArr(span, out var writen))
                 {
                     return false;
                 }
-                span = span[_doc.GetBytesCount()..];
+                span = span[writen..];
             }
 
-            var elements = _elements.Peek();
+            var elements = _elements.Peek().Item2.OfType<KeyValuePair<string, BsonValue>>();
             var offSet = 0;
             var cont = 0;
             for (; currentIndex < ( cont = elements.Count()); currentIndex++)
@@ -225,7 +227,7 @@ namespace LiteDB.Document.Bson
                 case BsonType.Document:
                     if (directly)
                     {
-                        _elements.Push(value.AsDocument.GetElements());
+                        _elements.Push((false, value.AsDocument.GetElements()));
                         _currentIndex.Push(-1);
                         _doc = value.AsDocument;
                         _inLoop = true;
@@ -335,11 +337,11 @@ namespace LiteDB.Document.Bson
             _currentIndex.Push(value);
         }
 
-        private bool WriteArr(Span<byte> span)
+        private bool WriteArr(Span<byte> span, out int offSet)
         {
             var currentIndex = _currentIndex.Peek();
-            var offSet = 0;
-            var elements = _doc.AsArray;
+            offSet = 0;
+            var elements = _elements.Peek().Item2.OfType<BsonValue>();
 
             for (; currentIndex < elements.Count(); currentIndex++)
             {
@@ -380,6 +382,7 @@ namespace LiteDB.Document.Bson
             }
             #region FinishingWritingAStructure
             _currentIndex.Pop();
+            _elements.Pop();
             _remaining -= offSet;
             _isArray = false;
             //If it is not the main document and it hasnt come from a loop
