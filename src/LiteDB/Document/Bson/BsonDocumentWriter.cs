@@ -113,7 +113,7 @@ namespace LiteDB.Document.Bson
             if (structure.isArray)
             {
                 Save(currentIndex);
-                if (!WriteArr(span, out var writen))
+                if (!WriteArray(span, out var writen))
                 {
                     return false;
                 }
@@ -122,8 +122,7 @@ namespace LiteDB.Document.Bson
 
             var elements = structure.elements.OfType<KeyValuePair<string, BsonValue>>();
             var offSet = 0;
-            var cont = 0;
-            for (; currentIndex < ( cont = elements.Count()); currentIndex++)
+            for (; currentIndex < elements.Count(); currentIndex++)
             {
                 var el = elements.ElementAt(currentIndex);
                 var keyLen = Encoding.UTF8.GetByteCount(el.Key) + 1;
@@ -316,7 +315,7 @@ namespace LiteDB.Document.Bson
             _currentIndex.Push(value);
         }
 
-        private bool WriteArr(Span<byte> span, out int offSet)
+        private bool WriteArray(Span<byte> span, out int offSet)
         {
             var structure = _structure.Peek();
             var currentIndex = _currentIndex.Peek();
