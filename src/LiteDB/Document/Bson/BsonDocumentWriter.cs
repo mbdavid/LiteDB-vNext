@@ -29,7 +29,7 @@ namespace LiteDB.Document.Bson
 
         public BsonDocumentWriter(BsonDocument doc)
         {
-            _remaining = doc.GetBytesCount();
+            _remaining = doc.GetBytesCountCached();
             _doc = doc;
             _currentIndex.Push(-1);
             _structure.Push((doc.GetElements(), false));
@@ -55,7 +55,7 @@ namespace LiteDB.Document.Bson
                 {
                     if (span.Length >= 4)
                     {
-                        span.WriteInt32(_doc.GetBytesCount());
+                        span.WriteInt32(_doc.GetBytesCountCached());
                         _remaining -= 4;
                         span = span[4..];
                         currentIndex = 0;
@@ -63,7 +63,7 @@ namespace LiteDB.Document.Bson
                     else
                     {
                         _currentValue = ArrayPool<byte>.Shared.Rent(4);
-                        _currentValue.AsSpan()[..4].WriteInt32(_doc.GetBytesCount());
+                        _currentValue.AsSpan()[..4].WriteInt32(_doc.GetBytesCountCached());
                         _currentValueEnd = 4;
                         _unfinishedValue = true;
                     }
@@ -94,7 +94,7 @@ namespace LiteDB.Document.Bson
                 {
                     return false;
                 }
-                span = span[_doc.GetBytesCount()..];
+                span = span[_doc.GetBytesCountCached()..];
             }
             else if (_uninitializedSubDocument)
             {
@@ -106,7 +106,7 @@ namespace LiteDB.Document.Bson
                 {
                     return false;
                 }
-                span = span[_doc.GetBytesCount()..];
+                span = span[_doc.GetBytesCountCached()..];
             }
             #endregion
             var structure = _structure.Peek();
@@ -231,7 +231,7 @@ namespace LiteDB.Document.Bson
                 case BsonType.Array:
                     if (directly)
                     {
-                        span.WriteInt32(value.GetBytesCount());
+                        span.WriteInt32(value.GetBytesCountCached());
                         writeFullArray(value.AsArray, span[4..]);
                     }
                     else
@@ -241,7 +241,7 @@ namespace LiteDB.Document.Bson
                     }
                     break;
                 case BsonType.Binary:
-                    span.WriteInt32(value.GetBytesCount());
+                    span.WriteInt32(value.GetBytesCountCached());
                     value.AsBinary.AsSpan().CopyTo(span[4..]);
                     break;
                 case BsonType.ObjectId:
@@ -303,9 +303,9 @@ namespace LiteDB.Document.Bson
             {
                 case BsonType.String:
                 case BsonType.Binary:
-                    return value.GetBytesCount() + 5;
+                    return value.GetBytesCountCached() + 5;
                 default:
-                    return value.GetBytesCount() + 1;
+                    return value.GetBytesCountCached() + 1;
             }
         }
 

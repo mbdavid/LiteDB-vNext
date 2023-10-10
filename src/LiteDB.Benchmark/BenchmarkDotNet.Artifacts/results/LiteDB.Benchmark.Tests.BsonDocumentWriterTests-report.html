@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>LiteDB.Benchmark.Tests.BsonDocumentWriterTests-20231005-141003</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet=v0.13.1, OS=Windows 10.0.19044.3086 (21H2)
+Intel Core i7-10700K CPU 3.80GHz, 1 CPU, 16 logical and 8 physical cores
+.NET SDK=7.0.203
+  [Host]     : .NET 6.0.16 (6.0.1623.17311), X64 RyuJIT
+  DefaultJob : .NET 6.0.16 (6.0.1623.17311), X64 RyuJIT
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>                     Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Gen 0</th><th>Gen 1</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>BsonDocumentWriter_SingleSpan</td><td>104.40 &mu;s</td><td>0.489 &mu;s</td><td>0.457 &mu;s</td><td>12.5732</td><td>0.2441</td><td>104 KB</td>
+</tr><tr><td>BsonWriter_SingleSpan</td><td>11.94 &mu;s</td><td>0.129 &mu;s</td><td>0.114 &mu;s</td><td>1.1444</td><td>-</td><td>9 KB</td>
+</tr><tr><td>BsonDocumentWriter_SegmentedSpans</td><td>62.85 &mu;s</td><td>0.474 &mu;s</td><td>0.443 &mu;s</td><td>8.0566</td><td>0.1221</td><td>66 KB</td>
+</tr><tr><td>BsonWriter_SegmentedSpans</td><td>13.06 &mu;s</td><td>0.160 &mu;s</td><td>0.142 &mu;s</td><td>2.8839</td><td>0.1068</td><td>24 KB</td>
+</tr></tbody></table>
+</body>
+</html>

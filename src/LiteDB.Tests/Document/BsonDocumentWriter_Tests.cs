@@ -162,7 +162,7 @@ namespace LiteDB.Tests.Document
         {
             #region Arrange
             var document = documentObj[0].As<BsonDocument>();
-            var documentSize = document.GetBytesCount() + 4;
+            var documentSize = document.GetBytesCountCached() + 4;
 
             var bw = new BsonDocumentWriter(document);
             var span = new Span<byte>(new byte[documentSize]);
@@ -188,7 +188,7 @@ namespace LiteDB.Tests.Document
         {
             #region Arrange
             var document = documentObj[0].As<BsonDocument>();
-            var documentSize = document.GetBytesCount();
+            var documentSize = document.GetBytesCountCached();
 
             var bw = new BsonDocumentWriter(document);
             var span = new Span<byte>(new byte[documentSize]);

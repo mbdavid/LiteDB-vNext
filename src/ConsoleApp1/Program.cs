@@ -1,20 +1,196 @@
 ﻿
+using Bogus.DataSets;
 using LiteDB.Document.Bson;
 using System.Reflection.Metadata;
 
-var doc = new BsonDocument()
+BsonDocument document = new BsonDocument()
 {
     ["_id"] = 16,
-    ["arr"] = new BsonArray() { 10, 11, 12, 13, 14, 15, 16, 17, 18}
+    ["int32"] = 12,
+    ["int64"] = 12L,
+    ["double"] = 2.6d,
+    ["decimal"] = new BsonDecimal(12),
+    ["string"] = "antonio",
+    ["int32"] = 12,
+    ["doc"] = new BsonDocument()
+    {
+        ["name"] = "antonio",
+        ["age"] = 18
+    },
+    ["number"] = 21,
+    ["arr0"] = new BsonArray() {
+        10,
+        12L,
+        new BsonArray() { 10, 11, 12, 13, 14, 15, 16, 17, 18 },
+        2.6d,
+        new BsonDecimal(12),
+        "antonio",
+        12,
+        new BsonDocument()
+        {
+            ["name"] = "antonio",
+            ["age"] = 18
+        },
+        21,
+        new BsonBinary(new byte[4] { 16, 16, 16, 16 }),
+    },
+    ["arr1"] = new BsonArray() {
+        10,
+        12L,
+        new BsonArray() { 10, 11, 12, 13, 14, 15, 16, 17, 18 },
+        2.6d,
+        new BsonDecimal(12),
+        "antonio",
+        12,
+        new BsonDocument()
+        {
+            ["name"] = "antonio",
+            ["age"] = 18
+        },
+        21,
+        new BsonBinary(new byte[4] { 16, 16, 16, 16 }),
+    },
+    ["arr2"] = new BsonArray() {
+        10,
+        12L,
+        new BsonArray() { 10, 11, 12, 13, 14, 15, 16, 17, 18 },
+        2.6d,
+        new BsonDecimal(12),
+        "antonio",
+        12,
+        new BsonDocument()
+        {
+            ["name"] = "antonio",
+            ["age"] = 18
+        },
+        21,
+        new BsonBinary(new byte[4] { 16, 16, 16, 16 }),
+    },
+    ["arr3"] = new BsonArray() {
+        10,
+        12L,
+        new BsonArray() { 10, 11, 12, 13, 14, 15, 16, 17, 18 },
+        2.6d,
+        new BsonDecimal(12),
+        "antonio",
+        12,
+        new BsonDocument()
+        {
+            ["name"] = "antonio",
+            ["age"] = 18
+        },
+        21,
+        new BsonBinary(new byte[4] { 16, 16, 16, 16 }),
+    },
+    ["ficha0"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha1"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha2"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha3"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha4"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha5"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha6"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha7"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha8"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["ficha9"] = new BsonDocument()
+    {
+        ["name"] = "Roberto",
+        ["age"] = 26,
+        ["CPF"] = 0123456789,
+        ["CEP"] = 9876543210,
+        ["filiacao"] = "Antonia Rocha",
+        ["bio"] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    ["binary"] = new BsonBinary(new byte[4] { 16, 16, 16, 16 }),
+    ["serial"] = 32
 };
 
-var bw = new BsonDocumentWriter(doc);
-var span = new Span<byte>(new byte[128]);
+var size = document.GetBytesCountCached();
 
-bw.WriteSegment(span);
+//var doc = new BsonDocument()
+//{
+//    ["_id"] = 16,
+//    ["arr"] = new BsonArray() { 10, 11, 12, 13, 14, 15, 16, 17, 18}
+//};
 
-var reader = new BsonReader();
-var readDocument = reader.ReadDocument(span, new string[0], false, out var len);
+//var bw = new BsonDocumentWriter(doc);
+//var span = new Span<byte>(new byte[128]);
+
+//bw.WriteSegment(span);
+
+//var reader = new BsonReader();
+//var readDocument = reader.ReadDocument(span, new string[0], false, out var len);
 
 Console.WriteLine("a");
 //// SETUP //////////////////
