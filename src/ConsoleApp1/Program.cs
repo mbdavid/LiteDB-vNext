@@ -19,7 +19,6 @@ var db = new LiteEngine(settings);
 // OPEN
 await db.OpenAsync();
 
-
 // RUN 
 
 await db.RunAsync($"Create Collection 'col1'", "CREATE COLLECTION col1");
@@ -28,7 +27,7 @@ await db.RunAsync($"Insert col1 {insert1.Length:n0}", "INSERT INTO col1 VALUES @
 //await db.RunAsync($"EnsureIndex (age)", "CREATE INDEX idx_01 ON col1 ($.age)");
 await db.RunAsync($"EnsureIndex (name)", "CREATE INDEX idx_02 ON col1 (name)");
 
-await db.RunQueryAsync(20, $"Query1", "explain SELECT * FROM col1 WHERE name like 'Marcel%'");
+await db.RunQueryAsync(20, $"Query1", "SELECT name, count(name) FROM col1 GROUP BY name");
 
 // SHUTDOWN
 await db.ShutdownAsync();

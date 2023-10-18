@@ -99,7 +99,16 @@ public static class StaticUtils
                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                 Console.Write($"[{(index++):000}] ");
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine(item.ToString().MaxLength(80) + $" ({item.GetBytesCount():n0} bytes)");
+
+                if (item is BsonString str)
+                {
+                    Console.WriteLine(str.Value.MaxLength(80));
+                }
+                else
+                {
+                    Console.WriteLine(item.ToString().MaxLength(80) + (item.GetBytesCount() > 80 ? $" ({item.GetBytesCount():n0} bytes)" : ""));
+                }
+
                 Console.ForegroundColor = ConsoleColor.Gray;
                 printTop--;
             }

@@ -25,5 +25,4 @@ global using LiteDB;
 global using LiteDB.Engine;
 global using static LiteDB.Constants;
 global using static LiteDB.LiteException;
-global using static LiteDB.EnsureCheck;
-global using LiteDB.Benchmark;
+

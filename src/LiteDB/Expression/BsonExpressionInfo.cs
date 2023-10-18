@@ -37,6 +37,13 @@ internal readonly struct BsonExpressionInfo
     /// </summary>
     public BsonExpressionInfo(BsonExpression expr)
     {
+        if (expr.IsEmpty)
+        {
+            this.RootFields = Array.Empty<string>();
+
+            return;
+        }
+
         var rootFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         this.GetInfo(expr, rootFields, ref this.IsVolatile, ref this.FullRoot, ref this.HasParameters);

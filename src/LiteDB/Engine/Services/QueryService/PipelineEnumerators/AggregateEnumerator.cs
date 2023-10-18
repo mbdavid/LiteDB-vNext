@@ -38,7 +38,7 @@ internal class AggregateEnumerator : IPipeEnumerator
             if (aggrAttr is null) continue;
 
             // creating computed aggregate function based on BsonExpression aggregate function
-            var func = Activator.CreateInstance(aggrAttr.AggregateType) as IAggregateFunc;
+            var func = Activator.CreateInstance(aggrAttr.AggregateType, new[] { field.Expression }) as IAggregateFunc;
 
             if (func is null) continue;
 

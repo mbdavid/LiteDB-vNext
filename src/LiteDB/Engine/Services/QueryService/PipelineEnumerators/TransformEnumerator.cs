@@ -31,18 +31,30 @@ internal class TransformEnumerator : IPipeEnumerator
             return PipeValue.Empty;
         }
 
-        var doc = new BsonDocument();
+        //TODO: otimizar essa criação de um novo documento, pois pode chegar o item.Document já pronto
+        // ou seja, pode ser que não seja necessario fazer nada aqui
 
-        foreach(var field in _fields.Fields)
+        if (_fields.IsSingleExpression)
         {
-            // get field expression value
-            var value = field.Expression.Execute(item.Document, context.QueryParameters, _collation);
+            var value = _fields.SingleExpression.Execute(item.Document, context.QueryParameters, _collation);
 
-            // and add to final document
-            doc.Add(field.Name, value);
+            return new PipeValue(item.IndexNodeID, item.DataBlockID, value.AsDocument);
         }
+        else
+        {
+            var doc = new BsonDocument();
 
-        return new PipeValue(item.IndexNodeID, item.DataBlockID, doc);
+            foreach (var field in _fields.Fields)
+            {
+                // get field expression value
+                var value = field.Expression.Execute(item.Document, context.QueryParameters, _collation);
+
+                // and add to final document
+                doc.Add(field.Name, value);
+            }
+
+            return new PipeValue(item.IndexNodeID, item.DataBlockID, doc);
+        }
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)

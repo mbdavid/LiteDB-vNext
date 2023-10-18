@@ -20,7 +20,8 @@ internal class QueryOptimization : IQueryOptimization
     // Define Filter
     protected BsonExpression _filter = BsonExpression.Empty;
 
-    // Define OrderBy
+    // Define GroupBy/OrderBy
+    protected OrderBy _sortGroupBy = OrderBy.Empty;
     protected OrderBy _orderBy = OrderBy.Empty;
 
     // Define Includes (Before/After)
@@ -29,6 +30,7 @@ internal class QueryOptimization : IQueryOptimization
 
     // Define lookups
     protected IDocumentLookup? _documentLookup;
+    protected IDocumentLookup? _sortGroupByLookup;
     protected IDocumentLookup? _orderByLookup;
 
     public QueryOptimization(IServicesFactory factory)
@@ -47,7 +49,10 @@ internal class QueryOptimization : IQueryOptimization
         this.SplitWhereInTerms(query.Where);
 
         // get lower cost index or pk index
-        this.DefineIndexAndFilter(query.OrderBy);
+        this.DefineIndexAndFilter(query.OrderBy, query.GroupBy);
+
+        // define groupBy operation
+        this.DefineSortGroupBy(query.GroupBy);
 
         // define _orderBy field (or use index order)
         this.DefineOrderBy(query.OrderBy);
@@ -75,6 +80,20 @@ internal class QueryOptimization : IQueryOptimization
 
         if (_filter.IsEmpty == false)
             pipe.AddFilter(_filter);
+
+        if (query.GroupBy.IsEmpty == false)
+        {
+            if (_sortGroupBy.IsEmpty == false)
+            {
+                pipe.AddOrderBy(_sortGroupBy);
+                pipe.AddLookup(_sortGroupByLookup!);
+            }
+
+            pipe.AddAggregate(query.GroupBy, query.Select);
+
+            if (query.Having.IsEmpty == false)
+                pipe.AddFilter(query.Having);
+        }
 
         if (_orderBy.IsEmpty == false)
             pipe.AddOrderBy(_orderBy);
@@ -132,7 +151,11 @@ internal class QueryOptimization : IQueryOptimization
 
     #region Index Selector
 
-    private void DefineIndexAndFilter(OrderBy orderBy)
+    /// <summary>
+    /// Define best index using query terms. If not found any index, try use groupBy index (if exists) or orderBy index (if exists). 
+    /// Otherwise, get PK index
+    /// </summary>
+    private void DefineIndexAndFilter(OrderBy orderBy, BsonExpression groupBy)
     {
         // from term predicate list, get lower term that can be use as best index option
         var (lowerCost, lowerExpr, lowerIndex) = this.GetLowerCostIndex();
@@ -143,10 +166,9 @@ internal class QueryOptimization : IQueryOptimization
 
         if (lowerExpr is null)
         {
-            // if there is no index, let's from order by (if exists) or get PK
-            var pk = allIndexes[0];
-
+            // if there is no index, let's from groupBy (if exists), order by (if exists) or get PK
             var selectedIndex = 
+                (groupBy.IsEmpty ? null : allIndexes.FirstOrDefault(x => x.Expression == groupBy)) ??
                 (orderBy.IsEmpty ? null : allIndexes.FirstOrDefault(x => x.Expression == orderBy.Expression)) ??
                 allIndexes[0];
 
@@ -166,6 +188,9 @@ internal class QueryOptimization : IQueryOptimization
         }
     }
 
+    /// <summary>
+    /// Get best index based on all _terms (lower cost). Can returns empty if no index found
+    /// </summary>
     private (int cost, BinaryBsonExpression? expr, int index) GetLowerCostIndex()
     {
         var lowerCost = int.MaxValue;
@@ -212,7 +237,22 @@ internal class QueryOptimization : IQueryOptimization
 
     #endregion
 
-    #region OrderBy
+    #region GroupBy / OrderBy
+
+    protected virtual void DefineSortGroupBy(BsonExpression groupBy)
+    {
+        if (groupBy.IsEmpty) return;
+
+        if (_indexExpression is BinaryBsonExpression bin && (bin.Left == groupBy || bin.Right == groupBy) ||
+            _indexExpression == groupBy)
+        {
+            _sortGroupBy = OrderBy.Empty;
+        }
+        else
+        {
+            _sortGroupBy = new OrderBy(groupBy, Query.Ascending);
+        }
+    }
 
     protected virtual void DefineOrderBy(OrderBy orderBy)
     {
@@ -220,8 +260,7 @@ internal class QueryOptimization : IQueryOptimization
         if (_indexExpression is null) return;
 
         // if query expression are same used in index, has no need use orderBy
-        // suport left only expression - right only value
-        if (_indexExpression is BinaryBsonExpression bin && orderBy.Expression == bin.Left)
+        if (_indexExpression is BinaryBsonExpression bin && (orderBy.Expression == bin.Left || orderBy.Expression == bin.Right))
         {
             _indexOrder = orderBy.Order;
         }
@@ -276,30 +315,47 @@ internal class QueryOptimization : IQueryOptimization
     #region Lookup
 
     /// <summary>
-    /// Define both lookups, for index and order by pipe enumerator
+    /// Define all 3 possible lookups: for first index load document, after sort groupBy, and order by pipe enumerator
     /// </summary>
     private void DefineLookups(Query query)
     {
-        // without OrderBy
-        if (_orderBy.IsEmpty)
+        // == with sort groupBy
+        if (!_sortGroupBy.IsEmpty)
         {
-            // get all root fiels using in this query (empty means need load full document)
-            var fields = this.GetFields(query, where: true, select: true, orderBy: true, before: true, after: true);
+            // get all fields used before sort to group by
+            var docFields = this.GetFields(query, groupBy: true, before: true, where: true);
 
             // if contains a single field and are index expression
-            if (fields.Length == 1 && fields[0] == _indexExpression.ToString()![2..])
+            if (docFields.Length == 1 && docFields[0] == _indexExpression.ToString()![2..])
             {
                 // use index based document lookup
-                _documentLookup = new IndexLookup(fields[0]);
+                _documentLookup = new IndexLookup(docFields[0]);
             }
             else
             {
-                _documentLookup = new DataLookup(fields);
+                _documentLookup = new DataLookup(docFields);
             }
+
+            // get all fields used before order by
+            var sortGroupByFields = this.GetFields(query, where: true, groupBy: true, before: true);
+
+            // if contains a single field and are index expression
+            if (sortGroupByFields.Length == 1 && sortGroupByFields[0] == _indexExpression.ToString()![2..])
+            {
+                // use index based document lookup
+                _sortGroupByLookup = new IndexLookup(sortGroupByFields[0]);
+            }
+            else
+            {
+                _sortGroupByLookup = new DataLookup(sortGroupByFields);
+            }
+
+            // if exists an ORDER BY with GROUP BY, use InMemoryOrderBy (no need lookup)
+            return;
         }
 
-        // with OrderBy
-        else
+        // == with orderBy
+        if (!_orderBy.IsEmpty)
         {
             // get all fields used before order by
             var docFields = this.GetFields(query, where: true, orderBy: true, before: true);
@@ -329,6 +385,23 @@ internal class QueryOptimization : IQueryOptimization
             }
         }
 
+        // == with no sort (groupBy/orderBy)
+        else
+        {
+            // get all root fiels using in this query (empty means need load full document)
+            var fields = this.GetFields(query, where: true, select: true, groupBy: true, orderBy: true, before: true, after: true);
+
+            // if contains a single field and are index expression
+            if (fields.Length == 1 && fields[0] == _indexExpression.ToString()![2..])
+            {
+                // use index based document lookup
+                _documentLookup = new IndexLookup(fields[0]);
+            }
+            else
+            {
+                _documentLookup = new DataLookup(fields);
+            }
+        }
     }
 
     /// <summary>
@@ -336,15 +409,19 @@ internal class QueryOptimization : IQueryOptimization
     /// </summary>
     private string[] GetFields(
         Query query,
-        bool where = false, 
-        bool select = false, 
-        bool orderBy = false, 
+        bool select = false,
+        bool where = false,
+        bool groupBy = false,
+        bool having = false,
+        bool orderBy = false,
         bool before = false, 
         bool after = false)
     {
         var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         if (where && add(query.Where, fields)) return Array.Empty<string>();
+        if (groupBy && add(query.GroupBy, fields)) return Array.Empty<string>();
+        if (having && add(query.Having, fields)) return Array.Empty<string>();
         if (orderBy && add(query.OrderBy.Expression, fields)) return Array.Empty<string>();
 
         if (select)
@@ -382,6 +459,8 @@ internal class QueryOptimization : IQueryOptimization
 
         static bool add(BsonExpression expr, HashSet<string> fields)
         {
+            if (expr.IsEmpty) return false;
+
             var info = expr.GetInfo();
 
             if (info.FullRoot) return true;

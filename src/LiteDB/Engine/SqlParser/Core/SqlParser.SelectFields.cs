@@ -44,13 +44,15 @@ internal partial class SqlParser
 
         var ahead = _tokenizer.LookAhead();
 
-        while(ahead.Type == TokenType.Colon)
+        while(ahead.Type == TokenType.Comma)
         {
             _tokenizer.ReadToken(); // read ","
 
             var next = this.ParseSelectNamedField(); // read next expression/name
 
             fields.Add(next);
+
+            ahead = _tokenizer.LookAhead();
         }
 
         return new SelectFields(fields);
@@ -78,7 +80,14 @@ internal partial class SqlParser
         }
         else
         {
-            name = "expr" + (++_nameIndex);
+            if (expr is PathBsonExpression path)
+            {
+                name = path.Field;
+            }
+            else
+            {
+                name = "expr" + (++_nameIndex);
+            }
         }
 
         return new SelectField(name, expr);
