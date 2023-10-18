@@ -70,9 +70,12 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>, IIsEmpty
             yield return new ("_id", id);
         }
 
-        foreach (var item in _value.Where(x => x.Key != "_id"))
+        foreach (var item in _value)
         {
-            yield return item;
+            if (item.Key != "_id")
+            {
+                yield return item;
+            }
         }
     }
 
