@@ -1,6 +1,8 @@
 ﻿
 using LiteDB.Document.Bson;
 using System.Reflection.Metadata;
+using System.Text;
+
 
 var bdr = new BsonDocumentReader();
 var bw = new BsonWriter();
@@ -22,15 +24,15 @@ var arr = new byte[1028]; //{ 36, 0, 0, 0 , 99, 99, 99, 0, 2, 16, 0, 0 ,0, 100, 
 
 
 bw.WriteDocument(arr.AsSpan<byte>(), document, out _);
-/*for(int i=8; i<=document.GetBytesCount()+4; i+=8)
+for(int i=8; i<=document.GetBytesCount()+4; i+=8)
 {
     bdr.ReadDocument(arr.AsSpan<byte>()[(i-8)..i], new string[] { }, false);
-}*/
+}
 //bdr.ReadDocument(arr.AsSpan<byte>()[0.. 8], new string[] { }, false);
 //bdr.ReadDocument(arr.AsSpan<byte>()[8..16], new string[] { }, false);
 //bdr.ReadDocument(arr.AsSpan<byte>()[16..24], new string[] { }, false);
 //bdr.ReadDocument(arr.AsSpan<byte>()[24..], new string[] { }, false);
-bdr.ReadDocument(arr.AsSpan<byte>(), new string[] { }, false);
+//bdr.ReadDocument(arr.AsSpan<byte>(), new string[] { }, false);
 
 var doc = bdr.Document;
 

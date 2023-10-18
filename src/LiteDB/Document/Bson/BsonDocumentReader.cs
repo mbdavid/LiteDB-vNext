@@ -29,11 +29,12 @@ public class BsonDocumentReader
     private bool _fieldSkip;
     private bool _isArray;
 
+    private StringBuilder _keyBuilder = new StringBuilder();
     private string _key = string.Empty;
     private BsonValue _value = BsonValue.Null;
 
     private HashSet<string>? _remaining;
-    private byte[] _residual = new byte[1028];//Implment arraypool
+    private byte[] _residual;//Implment arraypool
     private int _residualPC = 0;
     private bool _validLength = true;
 
@@ -60,14 +61,14 @@ public class BsonDocumentReader
             {
                 case READ_KEY:
                     if (_isArray) goto case READ_VALUE;
-                    _key += ReadKey(span[_offset..], out var keyLength, out var foundEndOfKey);
+                    _keyBuilder.Append(ReadKey(span[_offset..], out var keyLength, out var foundEndOfKey));
                     _offset += keyLength;
                     if (!foundEndOfKey)
                     {
                         break;
                         //goto case SPAN_ENDS_AT_KEY;
                     }
-
+                    _key = _keyBuilder.ToString();
                     _fieldSkip = _remaining != null && _remaining.Contains(_key) == false;
 
                     _state = READ_VALUE;
@@ -92,10 +93,10 @@ public class BsonDocumentReader
                     }
                     else
                     {
-                        var result = this.ReadValue(span[_offset..], _fieldSkip, valueLen);
+                        var result = this.ReadValue(span[_offset..], _fieldSkip, TrueLength(valueLen, span[_offset..]));
                         if (result.IsEmpty)
                         {
-                            span = span[_offset..];
+                            span = span[(_offset+5)..];
                             _offset = 0;
                             _state=READ_KEY;
                             break;
@@ -109,12 +110,13 @@ public class BsonDocumentReader
                 case SPAN_ENDS_AT_VALUE:
                     var residueLength = span[_offset..].Length;
 
-                    _residual = ArrayPool<byte>.Shared.Rent(residueLength);
+                    //_residual = ArrayPool<byte>.Shared.Rent(residueLength);
+                    this.RentTemp(residueLength);
 
                     span[_offset..].CopyTo(_residual.AsSpan<byte>()[_residualPC..]);
                     
                     _offset += residueLength;
-                    _residualPC = residueLength;
+                    _residualPC += residueLength;
 
                     _state = RESIDUAL_VALUE;
                     break;
@@ -125,10 +127,7 @@ public class BsonDocumentReader
 
                     var missing = residualValueLen - _residualPC;
 
-                    //_residual = ArrayPool<byte>.Shared.Rent(residualValueLen);
-                    //_residual = ArrayPool<byte>.Shared.Rent(missing);
-
-                    if (residualValueLen > span.Length - _offset)
+                    if (residualValueLen > (span.Length - _offset)+_residualPC)
                     {
                         goto case SPAN_ENDS_AT_VALUE;
                     }
@@ -136,28 +135,33 @@ public class BsonDocumentReader
                     {
                         span[_offset..(_offset + missing)].CopyTo(_residual.AsSpan<byte>()[_residualPC..]);
 
+                        
+                        var result  = ReadValue(_residual.AsSpan<byte>(), false, TrueLength(residualValueLen, _residual));
                         _offset += missing;
-                        _value = ReadValue(_residual.AsSpan<byte>(), false, residualValueLen).Value;
 
                         ArrayPool<byte>.Shared.Return(_residual);
                         _residualPC = 0;
+
+                        if (result.IsEmpty)
+                        {
+                            span = span[_offset..];
+                            _offset = 0;
+                            _state = READ_KEY;
+                            break;
+                        }
+                        _value = result.Value;
                     }
 
                     goto case ADD;
-
-                //case SPAN_ENDS_AT_KEY:
-                //    span[_offset..].CopyTo(_residual);
-                //    _state = READ_KEY;
-                //    break;
 
                 case ADD:
                     var structure = _bsonValues.Peek();
                     if (_isArray) structure.value.AsArray.Add(_value);
                     else structure.value.AsDocument.Add(_key, _value);
 
-                    _key = string.Empty;
+                    _keyBuilder.Clear();
                     _state = READ_KEY;
-                    if (_length - (_offset + 5 + structure.key.Length+1) == 0) goto case RETRACT;
+                    if (_length - (_offset + 5) == 0) goto case RETRACT;
                     break;
 
                 case RETRACT:
@@ -169,7 +173,7 @@ public class BsonDocumentReader
                         mstructure.value.AsDocument.Add(subStruct.key, subStruct.value);
                         _isArray = mstructure.value.Type == BsonType.Array;
 
-                        _length = _lengths.Peek() - _offset;
+                        _length = _lengths.Peek();
                         span = span[_offset..];
                         _offset = 0;
                         
@@ -178,42 +182,8 @@ public class BsonDocumentReader
             }
         }
         _length -= _offset;
-        _offset -=span.Length;
+        _offset = 0;
     }
-    //public void a()
-    //{
-    //    try
-    //    {
-    //        while (_offset < _length && (remaining == null || remaining?.Count > 0))
-    //        {
-    //            //var key = span[offset..].ReadCString(out var keyLength);
-
-    //            //offset += keyLength;
-
-    //            //var fieldSkip = remaining != null && remaining.Contains(key) == false;
-
-    //            var valueResult = this.ReadValue(span[offset..], fieldSkip, out var valueLength);
-
-    //            if (valueResult.Fail)
-    //            {
-    //                return new(doc, valueResult.Exception);
-    //            }
-
-    //            offset += valueLength;
-
-    //            if (fieldSkip == false)
-    //            {
-    //                doc.Add(key, valueResult.Value);
-    //            }
-    //        }
-
-    //        return doc;
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return new(doc, ex);
-    //    }
-    //}
 
     public BsonReadResult ReadValue(Span<byte> span, bool skip, int length)
     {
@@ -233,19 +203,15 @@ public class BsonDocumentReader
                     return skip ? BsonReadResult.Empty : new BsonString(span.Slice(1 + sizeof(int), strLength).ReadFixedString());
 
                 case BsonTypeCode.Document:
-                    _offset += 5;
-                    updateLengths(-_offset);
+                    updateLengths(-(_offset + length));
                     _bsonValues.Push((_key, new BsonDocument()));
-                    _key = string.Empty;
+                    _keyBuilder.Clear();
                     _lengths.Push(length);
                     _length = length;
                     return BsonReadResult.Empty;
 
                 case BsonTypeCode.Array:
-
-                    //var array = this.ReadArray(span[1..], skip, out var arrLength);
-                    _offset += 5;
-                    updateLengths(-_offset);
+                    updateLengths(-(_offset+length));
                     _bsonValues.Push((_key, new BsonArray()));
                     _lengths.Push(length);
                     _length = length;
@@ -318,9 +284,6 @@ public class BsonDocumentReader
             case BsonTypeCode.Double:
                 return 1 + 8;
             case BsonTypeCode.String:
-            case BsonTypeCode.Document:
-            case BsonTypeCode.Array:
-            case BsonTypeCode.Binary:
                 if (span.Length <5)
                 {
                     _validLength = false;
@@ -328,7 +291,15 @@ public class BsonDocumentReader
                 }
                 var length = span[1..].ReadInt32();
                 return 1 + sizeof(int) + length;
-
+            case BsonTypeCode.Document:
+            case BsonTypeCode.Array:
+            case BsonTypeCode.Binary:
+                if (span.Length < 5)
+                {
+                    _validLength = false;
+                    return 0;
+                }
+                return 5;
             case BsonTypeCode.Guid:
                 return 1 + 16;
 
@@ -384,5 +355,27 @@ public class BsonDocumentReader
     {
         _lengths.Pop();
         _lengths.Push(_length + increment);
+    }
+
+    private void RentTemp(int n)
+    {
+        if(_residualPC==0)
+        {
+            _residual = ArrayPool<byte>.Shared.Rent(n);
+        }
+        else
+        {
+            var temp = ArrayPool<byte>.Shared.Rent(_residualPC + n);
+            _residual.CopyTo(temp, 0);
+            _residual = temp;
+        }
+    }
+
+    private int TrueLength(int len, Span<byte> span)
+    {
+        var type = (BsonTypeCode)span[0];
+        if (type == BsonTypeCode.Array || type == BsonTypeCode.Document)
+            return span[1..].ReadInt32()+1;
+        return len;
     }
 }
