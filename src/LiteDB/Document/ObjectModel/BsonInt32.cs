@@ -36,6 +36,20 @@ public class BsonInt32 : BsonValue
 
     #endregion
 
+    #region Implicit Ctor
+
+    public static implicit operator int(BsonInt32 value) => value.AsInt32;
+
+    public static implicit operator BsonInt32(int value) => value switch
+    {
+        -1 => BsonInt32.MinusOne,
+        0 => BsonInt32.Zero,
+        1 => BsonInt32.One,
+        _ => new BsonInt32(value),
+    };
+
+    #endregion
+
     #region Convert Types
 
     public override bool ToBoolean() => this.Value != 0;
