@@ -214,7 +214,7 @@ unsafe internal class DataService : IDataService
         /// <summary>
         /// Update document using same page position as reference
         /// </summary>
-        public void Update(CollectionPage col, PageAddress blockAddress, BsonDocument doc)
+        public void Update(CollectionPage col, RowID blockAddress, BsonDocument doc)
         {
             var bytesLeft = doc.GetBytesCount(true);
 
@@ -275,7 +275,7 @@ unsafe internal class DataService : IDataService
                 {
                     var nextBlockAddress = lastBlock.NextBlock;
 
-                    lastBlock.SetNextBlock(PageAddress.Empty);
+                    lastBlock.SetNextBlock(RowID.Empty);
 
                     this.Delete(nextBlockAddress);
                 }

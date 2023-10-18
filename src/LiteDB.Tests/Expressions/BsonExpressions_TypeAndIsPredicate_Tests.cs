@@ -1,15 +1,10 @@
-﻿using Bogus.Bson;
-using Castle.Core.Configuration;
-using Newtonsoft.Json.Linq;
-using static LiteDB.BsonExpression;
+﻿using static LiteDB.BsonExpression;
 
 namespace LiteDB.Tests.Expressions;
-
 
 public class BsonExpressions_TypeAndIsPredicate_Tests
 {
     [Theory]
-    #region InlineData
     [InlineData("21", BsonExpressionType.Constant, false)]
     [InlineData("2.6", BsonExpressionType.Constant, false)]
     [InlineData("'string'", BsonExpressionType.Constant, false)]
@@ -32,11 +27,11 @@ public class BsonExpressions_TypeAndIsPredicate_Tests
     [InlineData("true AND true", BsonExpressionType.And, false)]
     [InlineData("true OR false", BsonExpressionType.Or, false)]
     [InlineData("arr=>@", BsonExpressionType.Map, false)]
-    #endregion
-    public void BsonExpressionTypeANDIsPredicate_Theory(string exp, BsonExpressionType type, bool isPredicate)
+   public void BsonExpressionTypeANDIsPredicate_Theory(string exp, BsonExpressionType type, bool isPredicate)
     {
         var expr = Create(exp);
         expr.Type.Should().Be(type);
         expr.IsPredicate.Should().Be(isPredicate);
     }
+
 }

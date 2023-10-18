@@ -59,8 +59,8 @@ public class Expressions_Tests
         yield return new object[] { Constant("string"), new BsonString("string") };
         yield return new object[] { Array(12, 13, 14), new BsonArray { 12, 13, 14} };
         yield return new object[] { MakeDocument(new Dictionary<string, BsonExpression> { ["name"] = Constant("Maria") }), new BsonDocument{ ["name"] = "Maria" } };
-        yield return new object[] { Root(), doc };
-        yield return new object[] { Path(Root(), "age"), new BsonInt32(26) };
+        yield return new object[] { Root, doc };
+        yield return new object[] { Path(Root, "age"), new BsonInt32(26) };
         #endregion
 
         #region InterTypesInteraction
@@ -74,11 +74,11 @@ public class Expressions_Tests
         #endregion
 
         #region DocumentRelated
-        yield return new object[] { Path(Path(Root(), "doc"), "arr"), new BsonArray { 10, 11, 12 } };
-        yield return new object[] { Path(Current(), "name"), new BsonString("Name Surname") };
-        yield return new object[] { Filter(Path(Root(), "clients"), GreaterThanOrEqual(Path(Current(), "age"), Constant(18))), new BsonArray { new BsonDocument { ["name"] = "Jhon", ["age"] = 42 }, new BsonDocument { ["name"] = "Maria", ["age"] = 21 } } };
-        yield return new object[] { Map(Path(Root(), "clients"), Path(Current(), "name")), new BsonArray { "Jhon", "Fred", "Maria" } };
-        yield return new object[] { ArrayIndex(Path(Root(), "arr"), Constant(1)), new BsonInt32(2) };
+        yield return new object[] { Path(Path(Root, "doc"), "arr"), new BsonArray { 10, 11, 12 } };
+        yield return new object[] { Path(Current, "name"), new BsonString("Name Surname") };
+        yield return new object[] { Filter(Path(Root, "clients"), GreaterThanOrEqual(Path(Current, "age"), Constant(18))), new BsonArray { new BsonDocument { ["name"] = "Jhon", ["age"] = 42 }, new BsonDocument { ["name"] = "Maria", ["age"] = 21 } } };
+        yield return new object[] { Map(Path(Root, "clients"), Path(Current, "name")), new BsonArray { "Jhon", "Fred", "Maria" } };
+        yield return new object[] { ArrayIndex(Path(Root, "arr"), Constant(1)), new BsonInt32(2) };
         #endregion
 
         #region CallMethods

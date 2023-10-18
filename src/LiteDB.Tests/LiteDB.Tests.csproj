@@ -32,4 +32,8 @@
     <ProjectReference Include="..\LiteDB\LiteDB.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Internals\Engine\Helpers\" />
+  </ItemGroup>
+
 </Project>

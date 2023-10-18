@@ -32,8 +32,8 @@ public class BsonExpressions_ToString_Tests
         yield return new object[] { Array(12, 13, 14), "[12,13,14]" };
         yield return new object[] { MakeDocument(new Dictionary<string, BsonExpression> { ["a"] = Constant(1) }), "{a:1}" };
         yield return new object[] { Parameter("LiteDB"), "@LiteDB" };
-        yield return new object[] { Root(), "$" };
-        yield return new object[] { Path(Root(), "field"), "$.field" };
+        yield return new object[] { Root, "$" };
+        yield return new object[] { Path(Root, "field"), "$.field" };
         #endregion
 
         #region InterTypesInteraction
@@ -47,12 +47,12 @@ public class BsonExpressions_ToString_Tests
         #endregion
 
         #region DocumentRelated
-        yield return new object[] { Path(Root(), "clients"), "$.clients" };
-        yield return new object[] { Path(Path(Root(), "doc"), "arr"), "$.doc.arr" };
-        yield return new object[] { Path(Current(), "name"), "@.name" };
-        yield return new object[] { Filter(Path(Root(), "clients"), GreaterThanOrEqual(Path(Current(), "age"), Constant(18))), "$.clients[@.age>=18]" };
-        yield return new object[] { Map(Path(Root(), "clients"), Path(Current(), "name")), "$.clients=>@.name" };
-        yield return new object[] { ArrayIndex(Path(Root(), "arr"), Constant(1)), "$.arr[1]" };
+        yield return new object[] { Path(Root, "clients"), "$.clients" };
+        yield return new object[] { Path(Path(Root, "doc"), "arr"), "$.doc.arr" };
+        yield return new object[] { Path(Current, "name"), "@.name" };
+        yield return new object[] { Filter(Path(Root, "clients"), GreaterThanOrEqual(Path(Current, "age"), Constant(18))), "$.clients[@.age>=18]" };
+        yield return new object[] { Map(Path(Root, "clients"), Path(Current, "name")), "$.clients=>@.name" };
+        yield return new object[] { ArrayIndex(Path(Root, "arr"), Constant(1)), "$.arr[1]" };
         #endregion
 
         #region BinaryExpressions
