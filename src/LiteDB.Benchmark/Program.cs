@@ -2,7 +2,8 @@
 
 using LiteDB.Benchmark.Tests;
 
-BenchmarkRunner.Run<BsonDocumentWriterTests>();
+//BenchmarkRunner.Run<BsonDocumentWriterTests>();
+BenchmarkRunner.Run<BsonDocumentReaderTests>();
 
 //var d = new BsonDocument();
 //var tt = 0;
