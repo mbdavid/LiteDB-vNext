@@ -31,7 +31,6 @@ internal class BsonDateTime : BsonValue
 
     #endregion
 
-
     #region Implicit Ctor
 
     public static implicit operator DateTime(BsonDateTime value) => value.AsDateTime;
