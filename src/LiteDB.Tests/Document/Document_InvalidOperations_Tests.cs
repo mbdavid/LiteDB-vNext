@@ -7,16 +7,9 @@ public class Document_InvalidOperations_Tests
     {
 
         //Arrange
-        var d = new BsonDocument()
-        {
-            ["_id"] = 10,
-            ["Name"]= "Antonio"
-        };
+        var d = BsonDocument.Empty;
 
-        //Act
-        d.MakeReadOnly();
-
-        //Assert
+        //Act + Assert
         Assert.Throws<NotSupportedException>(() => d["Name"] = "Rodolfo");                      //Try changing existing data
         Assert.Throws<NotSupportedException>(() => d["Age"] = 26);                              //Try creating data
         Assert.Throws<NotSupportedException>( () => d.Add("key", new BsonString("value")) );    //Try creating data
