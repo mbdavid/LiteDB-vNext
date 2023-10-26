@@ -10,9 +10,9 @@ public class Document_InvalidOperations_Tests
         var d = BsonDocument.Empty;
 
         //Act + Assert
-        Assert.Throws<NotSupportedException>(() => d["Name"] = "Rodolfo");                      //Try changing existing data
-        Assert.Throws<NotSupportedException>(() => d["Age"] = 26);                              //Try creating data
-        Assert.Throws<NotSupportedException>( () => d.Add("key", new BsonString("value")) );    //Try creating data
+        Assert.Throws<InvalidOperationException>(() => d["Name"] = "Rodolfo");                      //Try changing existing data
+        Assert.Throws<InvalidOperationException>(() => d["Age"] = 26);                              //Try creating data
+        Assert.Throws<InvalidOperationException>( () => d.Add("key", new BsonString("value")) );    //Try creating data
 
     }
 

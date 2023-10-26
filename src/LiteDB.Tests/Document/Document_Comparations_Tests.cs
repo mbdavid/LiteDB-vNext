@@ -63,7 +63,7 @@ public class Document_Comparations_Tests
         var arrLen2 = new BsonArray() { 11, "string" };
         var arrLen3 = new BsonArray() { 12, "string", 2.6 };
 
-        #region Same Type
+        #region Same Type By Length
 
         yield return new object[] { docLen1, docLen2, false, true , false, true , true , false };
         yield return new object[] { docLen2, docLen2, true , false, false, false, true , true  };
@@ -78,6 +78,14 @@ public class Document_Comparations_Tests
 
         yield return new object[] { docLen3, arrLen3, false, true, false, true, true, false };
         yield return new object[] { arrLen3, docLen3, false, false, true, true, false, true };
+
+        #endregion
+
+        #region Same Type By Value
+
+        yield return new object[] { new BsonArray() { 1, 2, 3 }, new BsonArray() { 1, 2, 2 }, false, true, false, true, true, false };
+        yield return new object[] { new BsonArray() { 1, 2, 2 }, new BsonArray() { 1, 2, 3 }, false, true, false, true, true, false };
+        yield return new object[] { new BsonArray() { 1, 2, 3 }, new BsonArray() { 1, 2, 2 }, false, true, false, true, true, false };
 
         #endregion
 

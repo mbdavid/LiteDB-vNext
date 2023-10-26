@@ -22,7 +22,11 @@ internal class MockEnumerator : IPipeEnumerator
 
     public PipeValue MoveNext(PipeContext context)
     {
-        throw new NotImplementedException();
+        if (_items.Count == 0) return PipeValue.Empty;
+
+        var item = _items.Dequeue();
+
+        return item;
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)

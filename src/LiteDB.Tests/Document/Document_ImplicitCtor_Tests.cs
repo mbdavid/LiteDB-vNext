@@ -16,7 +16,7 @@ public class Document_ImplicitCtor_Tests
     [Fact]
     public void BsonInt64_ImplicitCtor()
     {
-        ReturnType(2147483648l).Should().Be(BsonType.Int64);
+        ReturnType(2147483648L).Should().Be(BsonType.Int64);
     }
 
     [Fact]
@@ -35,6 +35,18 @@ public class Document_ImplicitCtor_Tests
     public void BsonString_ImplicitCtor()
     {
         ReturnType("LiteDB").Should().Be(BsonType.String);
+    }
+
+    [Fact]
+    public void BsonBinary_ImplicitCtor()
+    {
+        ReturnType(new byte[] { 255, 255, 255, 255 }).Should().Be(BsonType.Binary);
+    }
+
+    [Fact]
+    public void BsonObjectId_ImplicitCtor()
+    {
+        ReturnType(ObjectId.NewObjectId()).Should().Be(BsonType.ObjectId);
     }
 
     [Fact]
