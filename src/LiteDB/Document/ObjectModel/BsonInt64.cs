@@ -28,8 +28,8 @@ internal class BsonInt64 : BsonValue
     {
         if (other is BsonInt64 otherInt64) return this.Value.CompareTo(otherInt64.Value);
         if (other is BsonInt32 otherInt32) return this.Value.CompareTo(otherInt32.ToInt64());
-        if (other is BsonDouble otherDouble) return this.Value.CompareTo(otherDouble.Value);
-        if (other is BsonDecimal otherDecimal) return this.Value.CompareTo(otherDecimal.Value);
+        if (other is BsonDouble otherDouble) return this.ToDouble().CompareTo(otherDouble.Value);
+        if (other is BsonDecimal otherDecimal) return this.ToDecimal().CompareTo(otherDecimal.Value);
 
         return this.CompareType(other);
     }

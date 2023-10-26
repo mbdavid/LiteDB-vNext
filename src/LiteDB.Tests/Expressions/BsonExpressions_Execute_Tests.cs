@@ -1,13 +1,11 @@
-﻿using Bogus.Bson;
-using Castle.Core.Configuration;
-using Newtonsoft.Json.Linq;
-using static LiteDB.BsonExpression;
+﻿using static LiteDB.BsonExpression;
 
 namespace LiteDB.Tests.Expressions;
 
 
 public class Expressions_Tests
 {
+
     #region StaticAuxiliaryMethods
 
     private static BsonExpression Array(params BsonValue[] values)
@@ -56,6 +54,7 @@ public class Expressions_Tests
 
     public static IEnumerable<object[]> Get_Expressions()
     {
+
         #region BasicTypes
 
         yield return new object[] { Constant(12), new BsonInt32(12) };
@@ -259,6 +258,7 @@ public class Expressions_Tests
         yield return new object[] { And(Constant(true), Constant(false)), new BsonBoolean(false) };
 
         #endregion
+
     }
 
     [Theory]

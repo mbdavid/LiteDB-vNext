@@ -5,6 +5,7 @@ public class CheckpointAction_Tests
     [Fact]
     public void Checkpoint_OverrideDatafilePage_ClearLogPages()
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -73,11 +74,13 @@ public class CheckpointAction_Tests
         actions[3].MustClear.Should().BeTrue();
 
         #endregion
+
     }
 
     [Fact]
     public void Checkpoint_AfterLastPageID_MustClearFalse()
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -125,11 +128,13 @@ public class CheckpointAction_Tests
         actions[0].MustClear.Should().BeFalse();
 
         #endregion
+
     }
 
     [Fact]
     public void Checkpoint_BeforeLastPageID_MustClearTrue()
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -177,6 +182,7 @@ public class CheckpointAction_Tests
         actions[0].MustClear.Should().BeTrue();
 
         #endregion
+
     }
 
     [Theory]
@@ -186,6 +192,7 @@ public class CheckpointAction_Tests
     [InlineData(false, 21, 20)]
     public void Checkpoint_TransactionNotConfirmed_ClearPages(bool shouldClear, uint positionID, uint lastPageId)
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -239,11 +246,13 @@ public class CheckpointAction_Tests
         }
 
         #endregion
+
     }
 
     [Fact]
     public void Checkpoint_OverrideLogPage_ShouldCopyToTempfile()
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -310,6 +319,7 @@ public class CheckpointAction_Tests
     [Fact]
     public void Checkpoint_PreexistingTempInMiddleLog_ShouldDirectlyCopyToDatafile()
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -373,11 +383,13 @@ public class CheckpointAction_Tests
         actions[2].MustClear.Should().BeTrue();
 
         #endregion
+
     }
 
     [Fact]
     public void Checkpoint_PreexistingTempBeforeLog_ShouldDirectlyCopyToDatafile()
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -441,11 +453,13 @@ public class CheckpointAction_Tests
         actions[2].MustClear.Should().BeTrue();
 
         #endregion
+
     }
 
     [Fact]
     public void Checkpoint_PreexistingTempAfterLog_ShouldDirectlyCopyToDatafile()
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -509,11 +523,13 @@ public class CheckpointAction_Tests
         actions[2].MustClear.Should().BeFalse();
 
         #endregion
+
     }
 
     [Fact]
     public void Checkpoint_DuplicatePage_ShouldUseTempPage()
     {
+
         #region Arrange
 
         var sut = new CheckpointActions();
@@ -578,5 +594,6 @@ public class CheckpointAction_Tests
         actions[2].MustClear.Should().BeTrue();
 
         #endregion
+
     }
 }
