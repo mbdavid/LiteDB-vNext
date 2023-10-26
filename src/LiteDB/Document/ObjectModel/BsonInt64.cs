@@ -36,6 +36,20 @@ internal class BsonInt64 : BsonValue
 
     #endregion
 
+    #region Implicit Ctor
+
+    public static implicit operator long(BsonInt64 value) => value.AsInt64;
+
+    public static implicit operator BsonInt64(int value) => value switch
+    {
+        -1 => MinusOne,
+        0 => Zero,
+        1 => One,
+        _ => new BsonInt64(value),
+    };
+
+    #endregion
+
     #region Convert Types
 
     public override bool ToBoolean() => this.Value != 0;
