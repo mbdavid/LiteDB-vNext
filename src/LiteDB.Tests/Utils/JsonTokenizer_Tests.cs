@@ -6,12 +6,16 @@ public class JsonTokenizer_Tests
     public void ReadToken_IntObject_()
     {
         #region Arrange
+
         var textReader = new StringReader("{ texto : 20}");
         var sut = new JsonTokenizer(textReader);
+
         #endregion
 
         #region Act
+
         List<JsonToken> tokens = new List<JsonToken>();
+
         while(!sut.EOF)
         {
             tokens.Add(sut.ReadToken());
@@ -20,6 +24,7 @@ public class JsonTokenizer_Tests
         #endregion
 
         #region Asserts
+
         //Token #0
         tokens[0].Type.Should().Be(JsonTokenType.OpenBrace);
 
@@ -36,6 +41,7 @@ public class JsonTokenizer_Tests
 
         //Token #4
         tokens[4].Type.Should().Be(JsonTokenType.CloseBrace);
+
         #endregion
     }
 
@@ -43,19 +49,25 @@ public class JsonTokenizer_Tests
     public void ReadToken_DoubleObject_()
     {
         #region Arrange
+
         var textReader = new StringReader("{ texto : 20.6}");
         var sut = new JsonTokenizer(textReader);
+
         #endregion
 
         #region Act
+
         List<JsonToken> tokens = new List<JsonToken>();
+
         while (!sut.EOF)
         {
             tokens.Add(sut.ReadToken());
         }
+
         #endregion
 
         #region Asserts
+
         //Token #0
         tokens[0].Type.Should().Be(JsonTokenType.OpenBrace);
 
@@ -72,6 +84,7 @@ public class JsonTokenizer_Tests
 
         //Token #4
         tokens[4].Type.Should().Be(JsonTokenType.CloseBrace);
+
         #endregion
     }
 
@@ -79,19 +92,25 @@ public class JsonTokenizer_Tests
     public void ReadToken_IntArray_()
     {
         #region Arrange
+
         var textReader = new StringReader("{ array : [10, 12, 14, 16]}");
         var sut = new JsonTokenizer(textReader);
+
         #endregion
 
         #region Act
+
         List<JsonToken> tokens = new List<JsonToken>();
+
         while (!sut.EOF)
         {
             tokens.Add(sut.ReadToken());
         }
+
         #endregion
 
         #region Asserts
+
         //Token #0
         tokens[0].Type.Should().Be(JsonTokenType.OpenBrace);
 
@@ -135,6 +154,7 @@ public class JsonTokenizer_Tests
 
         //Token #12
         tokens[12].Type.Should().Be(JsonTokenType.CloseBrace);
+
         #endregion
     }
 
@@ -142,22 +162,29 @@ public class JsonTokenizer_Tests
     public void ReadToken_String_()
     {
         #region Arrange
+
         var textReader = new StringReader("\"String whith \\\" quotation\"");
         var sut = new JsonTokenizer(textReader);
+
         #endregion
 
         #region Act
+
         List<JsonToken> tokens = new List<JsonToken>();
+
         while (!sut.EOF)
         {
             tokens.Add(sut.ReadToken());
         }
+
         #endregion
 
         #region Asserts
+
         //Token #0
         tokens[0].Type.Should().Be(JsonTokenType.String);
         tokens[0].Value.Should().Be("String whith \" quotation");
+
         #endregion
     }
 
@@ -165,24 +192,34 @@ public class JsonTokenizer_Tests
     public void ReadToken_DotAfterSign_ShouldSeparateDotFromNumber()
     {
         #region Arrange
+
         var textReader = new StringReader("1-.5.5");
         var sut = new JsonTokenizer(textReader);
+
         #endregion
 
         #region Act
+
         List<JsonToken> tokens = new List<JsonToken>();
+
         while (!sut.EOF)
         {
             tokens.Add(sut.ReadToken());
         }
+
         #endregion
 
         #region Asserts
+
         //Token #0
         tokens[0].Type.Should().Be(JsonTokenType.Int);
+        //Token #1
         tokens[1].Type.Should().Be(JsonTokenType.Minus);
+        //Token #2
         tokens[2].Type.Should().Be(JsonTokenType.Period);
+        //Token #3
         tokens[3].Type.Should().Be(JsonTokenType.Double);
+        //Token #4
         tokens[3].Value.Should().Be("5.5");
 
         #endregion
@@ -194,19 +231,25 @@ public class JsonTokenizer_Tests
     public void ReadToken_EatWhitespaceTrue_ShouldIgnoreWhiteSpaces(bool eatWhitespaces)
     {
         #region Arrange
+
         var textReader = new StringReader("   'String'   ");
         var sut = new JsonTokenizer(textReader);
+
         #endregion
 
         #region Act
+
         List<JsonToken> tokens = new List<JsonToken>();
+
         while (!sut.EOF)
         {
             tokens.Add(sut.ReadToken(eatWhitespaces));
         }
+
         #endregion
 
         #region Asserts
+
         //Token #0
         if (eatWhitespaces)
         {
@@ -218,6 +261,7 @@ public class JsonTokenizer_Tests
             tokens[1].Type.Should().Be(JsonTokenType.String);
             tokens[2].Type.Should().Be(JsonTokenType.Whitespace);
         }
+
         #endregion
     }
 }
