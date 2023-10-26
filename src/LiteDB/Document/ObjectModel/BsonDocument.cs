@@ -12,7 +12,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>, IIsEmpty
 
     private readonly Dictionary<string, BsonValue> _value;
     private int _length = -1;
-    private readonly bool _readonly = false;
+    private bool _readonly = false;
 
     public IReadOnlyDictionary<string, BsonValue> Value => _value;
 
@@ -22,7 +22,7 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>, IIsEmpty
     {
     }
 
-    private BsonDocument(bool readOnly) : this(0)
+    public BsonDocument(bool readOnly) : this(0)
     {
         _readonly = readOnly;
     }
@@ -58,6 +58,11 @@ public class BsonDocument : BsonValue, IDictionary<string, BsonValue>, IIsEmpty
         if (_length >= 0) return _length;
 
         return this.GetBytesCount();
+    }
+
+    public void MakeReadOnly()
+    {
+        _readonly = true;
     }
 
     /// <summary>

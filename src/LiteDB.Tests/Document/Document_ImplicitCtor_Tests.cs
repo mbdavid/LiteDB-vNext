@@ -7,16 +7,6 @@ public class Document_ImplicitCtor_Tests
         return value.Type;
     }
 
-    public IEnumerable<object[]> GetValues()
-    {
-        yield return new object[] { null, BsonType.Null };
-        yield return new object[] { 10, BsonType.Int32 };
-        yield return new object[] { 2147483648, BsonType.Int64 };
-        yield return new object[] { 2.6, BsonType.Double };
-    }
-
-    #region Numeric
-
     [Fact]
     public void BsonInt32_ImplicitCtor()
     {
@@ -40,8 +30,6 @@ public class Document_ImplicitCtor_Tests
     {
         ReturnType(10m).Should().Be(BsonType.Decimal);
     }
-
-    #endregion
 
     [Fact]
     public void BsonString_ImplicitCtor()

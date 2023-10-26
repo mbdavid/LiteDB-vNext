@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Tests.Document;
 
-public class DocumentComparations_Tests
+public class Document_Comparations_Tests
 {
     public static IEnumerable<object[]> Get_NumericPairs()
     {
