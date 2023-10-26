@@ -1,6 +1,6 @@
 ﻿namespace LiteDB.Tests.Document;
 
-public class DocumentCtor_Tests
+public class Document_ExplicitCtor_Tests
 {
 
     [Fact]

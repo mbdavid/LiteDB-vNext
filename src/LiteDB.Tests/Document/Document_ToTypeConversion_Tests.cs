@@ -5,7 +5,7 @@ public class Document_ToTypeConversion_Tests
 
     public static IEnumerable<object[]> Get_BsonValues()
     {
-        yield return new object[] { new BsonInt32(10)};
+        yield return new object[] { new BsonInt32(10) };
         yield return new object[] { new BsonInt64(10) };
         yield return new object[] { new BsonDouble(10) };
         yield return new object[] { new BsonDecimal(10) };
