@@ -19,10 +19,10 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
         _enumerator = enumerator;
         _collation = collation;
 
-        if (_enumerator.Emit.Document == false) throw ERR($"InMemoryOrderBy pipe enumerator requires document from last pipe");
+        if (_enumerator.Emit.Value == false) throw ERR($"InMemoryOrderBy pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(indexNodeID: false, dataBlockID: true, document: true);
+    public PipeEmit Emit => new(indexNodeID: false, dataBlockID: true, value: true);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -37,7 +37,7 @@ internal class InMemoryOrderByEnumerator : IPipeEnumerator
                 if (item.IsEmpty) break;
 
                 // get sort key 
-                var key = _orderBy.Expression.Execute(item.Document, context.QueryParameters, _collation);
+                var key = _orderBy.Expression.Execute(item.Value, context.QueryParameters, _collation);
 
                 //list.Add(new (item.DataBlockID, key, item.Document!));
                 throw new NotImplementedException();

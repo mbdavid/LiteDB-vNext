@@ -4,38 +4,38 @@ internal readonly struct PipeValue : IIsEmpty
 {
     public readonly RowID IndexNodeID;
     public readonly RowID DataBlockID;
-    public readonly BsonDocument? Document;
+    public readonly BsonValue Value;
 
     public static readonly PipeValue Empty = new();
 
-    public readonly bool IsEmpty => this.IndexNodeID.IsEmpty && this.DataBlockID.IsEmpty && this.Document is null;
+    public readonly bool IsEmpty => this.IndexNodeID.IsEmpty && this.DataBlockID.IsEmpty && this.Value.IsNull;
 
     public PipeValue(RowID indexNodeID, RowID dataBlockID)
     {
         this.IndexNodeID = indexNodeID;
         this.DataBlockID = dataBlockID;
-        this.Document = null;
+        this.Value = BsonValue.Null;
     }
 
-    public PipeValue(RowID indexNodeID, RowID dataBlockID, BsonDocument value)
+    public PipeValue(RowID indexNodeID, RowID dataBlockID, BsonValue value)
     {
         this.IndexNodeID = indexNodeID;
         this.DataBlockID = dataBlockID;
-        this.Document = value;
+        this.Value = value;
     }
 
-    public PipeValue(BsonDocument value)
+    public PipeValue(BsonValue value)
     {
         this.IndexNodeID = RowID.Empty;
         this.DataBlockID = RowID.Empty;
-        this.Document = value;
+        this.Value = value;
     }
 
     public PipeValue()
     {
         this.IndexNodeID = RowID.Empty;
         this.DataBlockID = RowID.Empty;
-        this.Document = null;
+        this.Value = BsonValue.Null;
     }
 
     public override string ToString() => Dump.Object(this);

@@ -30,25 +30,17 @@ internal class AggregateEnumerator : IPipeEnumerator
         // getting aggregate expressions call
         foreach (var field in fields.Fields)
         {
-            // expression must be a CALL with AggregateAttribute
-            if (field.Expression is not CallBsonExpression call) continue;
+            if (!field.IsAggregate) continue;
 
-            var aggrAttr = call.Method.GetCustomAttribute<AggregateAttribute>();
-
-            if (aggrAttr is null) continue;
-
-            // creating computed aggregate function based on BsonExpression aggregate function
-            var func = Activator.CreateInstance(aggrAttr.AggregateType, new[] { field.Expression }) as IAggregateFunc;
-
-            if (func is null) continue;
+            var func = field.CreateAggregateFunc();
 
             _fields.Add((field.Name, func));
         }
 
-        if (_enumerator.Emit.Document == false) throw ERR($"Aggregate pipe enumerator requires document from last pipe");
+        if (_enumerator.Emit.Value == false) throw ERR($"Aggregate pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(indexNodeID: false, dataBlockID: false, document: true);
+    public PipeEmit Emit => new(indexNodeID: false, dataBlockID: false, value: true);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -64,7 +56,7 @@ internal class AggregateEnumerator : IPipeEnumerator
             }
             else
             {
-                var key = _keyExpr.Execute(item.Document, context.QueryParameters, _collation);
+                var key = _keyExpr.Execute(item.Value, context.QueryParameters, _collation);
 
                 // initialize current key with first key
                 if (_init == false)
@@ -78,15 +70,26 @@ internal class AggregateEnumerator : IPipeEnumerator
                 {
                     foreach (var field in _fields)
                     {
-                        field.func.Iterate(_currentKey, item.Document!, _collation);
+                        item.Value.AsDocument[GROUP_BY_KEY_NAME] = key;
+
+                        field.func.Iterate(_currentKey, item.Value.AsDocument, _collation);
                     }
                 }
                 // if key changes, return results in a new document
                 else
                 {
+                    var results = this.GetResults();
+
                     _currentKey = key;
 
-                    return this.GetResults();
+                    foreach (var field in _fields)
+                    {
+                        item.Value.AsDocument[GROUP_BY_KEY_NAME] = key;
+
+                        field.func.Iterate(_currentKey, item.Value.AsDocument, _collation);
+                    }
+
+                    return results;
                 }
             }
         }
@@ -99,9 +102,12 @@ internal class AggregateEnumerator : IPipeEnumerator
     /// </summary>
     private PipeValue GetResults()
     {
+        var keyName = _keyExpr is PathBsonExpression path ?
+            path.Field : GROUP_BY_KEY_NAME;
+
         var doc = new BsonDocument
         {
-            ["key"] = _currentKey,
+            [keyName] = _currentKey,
         };
 
         foreach (var field in _fields)

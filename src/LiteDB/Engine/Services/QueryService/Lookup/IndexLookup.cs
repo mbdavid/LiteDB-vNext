@@ -11,7 +11,7 @@ internal class IndexLookup : IDocumentLookup
 
     public BsonDocument Load(PipeValue key, PipeContext context)
     {
-        var doc = new BsonDocument { [_field] = key.Document! };
+        var doc = new BsonDocument { [_field] = key.Value! };
 
         return doc;
     }

@@ -4,6 +4,7 @@ internal class IndexAllEnumerator : IPipeEnumerator
 {
     private readonly IndexDocument _indexDocument;
     private readonly int _order;
+    private readonly bool _returnKey;
 
     private bool _init = false;
     private bool _eof = false;
@@ -12,13 +13,15 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
     public IndexAllEnumerator(
         IndexDocument indexDocument, 
-        int order)
+        int order,
+        bool returnKey)
     {
         _indexDocument = indexDocument;
         _order = order;
+        _returnKey = returnKey;
     }
 
-    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, value: _returnKey);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -54,7 +57,9 @@ internal class IndexAllEnumerator : IPipeEnumerator
 
         if (_next == tail) _eof = true;
 
-        return new PipeValue(node.IndexNodeID, node.DataBlockID);
+        var value = _returnKey ? IndexKey.ToBsonValue(node.Key) : BsonValue.Null;
+
+        return new PipeValue(node.IndexNodeID, node.DataBlockID, value);
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)

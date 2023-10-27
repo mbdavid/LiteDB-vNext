@@ -17,6 +17,7 @@ public readonly struct SelectFields
     public readonly IReadOnlyList<SelectField> Fields;
 
     // properties
+
     /// <summary>
     /// Indicate this query will return root/full document. Means "SELECT *"
     /// </summary>

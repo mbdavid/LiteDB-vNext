@@ -46,12 +46,12 @@ internal class PipelineBuilder
     /// Add index pipe based on predicate expression (BinaryBsonExpression) or index scan expression
     /// Delect indexDocument based on left/right side of predicate (should exist in collection)
     /// </summary>
-    public PipelineBuilder AddIndex(BsonExpression expr, int order)
+    public PipelineBuilder AddIndex(BsonExpression expr, int order, bool returnKey)
     {
         if (expr is BinaryBsonExpression predicate)
         {
             // predicate expression eg: "$._id = 123"
-            this.AddIndexPredicate(predicate, order);
+            this.AddIndexPredicate(predicate, order, returnKey);
         }
         else
         {
@@ -59,7 +59,7 @@ internal class PipelineBuilder
             var indexDocument = _store.GetIndexes().FirstOrDefault(x => x.Expression == expr) ??
                 throw ERR($"No index found for this expression: {expr}");
 
-            _enumerator = new IndexAllEnumerator(indexDocument, order);
+            _enumerator = new IndexAllEnumerator(indexDocument, order, returnKey);
         }
 
         return this;
@@ -68,7 +68,7 @@ internal class PipelineBuilder
     /// <summary>
     /// Add a predicate index based on left/right expression sides to look for this index expression on collection
     /// </summary>
-    private void AddIndexPredicate(BinaryBsonExpression predicate, int order)
+    private void AddIndexPredicate(BinaryBsonExpression predicate, int order, bool returnKey)
     {
         // try get index from left
         var indexes = _store.GetIndexes();
@@ -78,7 +78,7 @@ internal class PipelineBuilder
         {
             var value = predicate.Right.Execute(null, _queryParameters, _collation);
 
-            _enumerator = this.CreateIndex(indexDocument, value, predicate.Type, order);
+            _enumerator = this.CreateIndex(indexDocument, value, predicate.Type, order, returnKey);
         }
         else
         {
@@ -98,24 +98,24 @@ internal class PipelineBuilder
 
             var value = predicate.Left.Execute(null, _queryParameters, _collation);
 
-            _enumerator = this.CreateIndex(indexDocument, value, predicate.Type, order);
+            _enumerator = this.CreateIndex(indexDocument, value, predicate.Type, order, returnKey);
         }
     }
 
-    public IPipeEnumerator CreateIndex(IndexDocument indexDocument, BsonValue value, BsonExpressionType exprType, int order)
+    public IPipeEnumerator CreateIndex(IndexDocument indexDocument, BsonValue value, BsonExpressionType exprType, int order, bool returnKey)
     {
         return (exprType, value.Type) switch
         {
-            (BsonExpressionType.Equal, _) => new IndexEqualsEnumerator(value, indexDocument, _collation),
-            (BsonExpressionType.Between, _) => new IndexRangeEnumerator(value.AsArray[0], value.AsArray[1], true, true, order, indexDocument, _collation),
-            (BsonExpressionType.Like, _) => new IndexLikeEnumerator(value, indexDocument, _collation, order),
-            (BsonExpressionType.GreaterThan, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, false, false, order, indexDocument, _collation),
-            (BsonExpressionType.GreaterThanOrEqual, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, true, false, order, indexDocument, _collation),
-            (BsonExpressionType.LessThan, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, false, order, indexDocument, _collation),
-            (BsonExpressionType.LessThanOrEqual, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, true, order, indexDocument, _collation),
-            (BsonExpressionType.NotEqual, _) => new IndexScanEnumerator(indexDocument, x => x.CompareTo(value, _collation) != 0, order),
-            (BsonExpressionType.In, BsonType.Array) => new IndexInEnumerator(value.AsArray, indexDocument, _collation),
-            (BsonExpressionType.In, _) => new IndexEqualsEnumerator(value, indexDocument, _collation),
+            (BsonExpressionType.Equal, _) => new IndexEqualsEnumerator(value, indexDocument, _collation, returnKey),
+            (BsonExpressionType.Between, _) => new IndexRangeEnumerator(value.AsArray[0], value.AsArray[1], true, true, order, indexDocument, _collation, returnKey),
+            (BsonExpressionType.Like, _) => new IndexLikeEnumerator(value, indexDocument, _collation, order, returnKey),
+            (BsonExpressionType.GreaterThan, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, false, false, order, indexDocument, _collation, returnKey),
+            (BsonExpressionType.GreaterThanOrEqual, _) => new IndexRangeEnumerator(value, BsonValue.MaxValue, true, false, order, indexDocument, _collation, returnKey),
+            (BsonExpressionType.LessThan, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, false, order, indexDocument, _collation, returnKey),
+            (BsonExpressionType.LessThanOrEqual, _) => new IndexRangeEnumerator(BsonValue.MinValue, value, false, true, order, indexDocument, _collation, returnKey),
+            (BsonExpressionType.NotEqual, _) => new IndexScanEnumerator(indexDocument, x => x.CompareTo(value, _collation) != 0, order, returnKey),
+            (BsonExpressionType.In, BsonType.Array) => new IndexInEnumerator(value.AsArray, indexDocument, _collation, returnKey),
+            (BsonExpressionType.In, _) => new IndexEqualsEnumerator(value, indexDocument, _collation, returnKey),
             _ => throw ERR($"There is no index for {exprType} predicate")
         };
     }

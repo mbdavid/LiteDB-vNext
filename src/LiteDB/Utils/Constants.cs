@@ -166,6 +166,11 @@ internal class Constants
     /// </summary>
     public const int BUFFER_UNIQUE_ID = 100;
 
+    /// <summary>
+    /// Special field name created when query constains GroupBy. Key field will be created with this name when GroupBy expression isn't a PathExpression
+    /// </summary>
+    public const string GROUP_BY_KEY_NAME = "key";
+
 
     public static long TICK_FREQUENCY = (TimeSpan.TicksPerSecond / Stopwatch.Frequency);
 

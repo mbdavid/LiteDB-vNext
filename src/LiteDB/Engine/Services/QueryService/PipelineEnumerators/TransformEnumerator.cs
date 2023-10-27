@@ -14,10 +14,10 @@ internal class TransformEnumerator : IPipeEnumerator
         _enumerator = enumerator;
         _collation = collation;
 
-        if (_enumerator.Emit.Document == false) throw ERR($"Transform pipe enumerator requires document from last pipe");
+        if (_enumerator.Emit.Value == false) throw ERR($"Transform pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(indexNodeID: _enumerator.Emit.IndexNodeID, dataBlockID: _enumerator.Emit.DataBlockID, document: true);
+    public PipeEmit Emit => new(indexNodeID: _enumerator.Emit.IndexNodeID, dataBlockID: _enumerator.Emit.DataBlockID, value: true);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -36,7 +36,7 @@ internal class TransformEnumerator : IPipeEnumerator
 
         if (_fields.IsSingleExpression)
         {
-            var value = _fields.SingleExpression.Execute(item.Document, context.QueryParameters, _collation);
+            var value = _fields.SingleExpression.Execute(item.Value, context.QueryParameters, _collation);
 
             return new PipeValue(item.IndexNodeID, item.DataBlockID, value.AsDocument);
         }
@@ -46,11 +46,22 @@ internal class TransformEnumerator : IPipeEnumerator
 
             foreach (var field in _fields.Fields)
             {
-                // get field expression value
-                var value = field.Expression.Execute(item.Document, context.QueryParameters, _collation);
+                if (field.IsAggregate)
+                {
+                    // in aggregate, do not evaluate
+                    var value = item.Value[field.Name];
 
-                // and add to final document
-                doc.Add(field.Name, value);
+                    // and add to final document
+                    doc.Add(field.Name, value);
+                }
+                else
+                {
+                    // get field expression value
+                    var value = field.Expression.Execute(item.Value, context.QueryParameters, _collation);
+
+                    // and add to final document
+                    doc.Add(field.Name, value);
+                }
             }
 
             return new PipeValue(item.IndexNodeID, item.DataBlockID, doc);

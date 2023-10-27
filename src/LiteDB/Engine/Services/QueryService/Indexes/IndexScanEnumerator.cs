@@ -5,6 +5,7 @@ internal class IndexScanEnumerator : IPipeEnumerator
     private readonly IndexDocument _indexDocument;
     private readonly Func<BsonValue, bool> _func;
     private readonly int _order;
+    private readonly bool _returnKey;
 
     private bool _init = false;
     private bool _eof = false;
@@ -14,14 +15,16 @@ internal class IndexScanEnumerator : IPipeEnumerator
     public IndexScanEnumerator(
         IndexDocument indexDocument,
         Func<BsonValue, bool> func,
-        int order)
+        int order,
+        bool returnKey)
     {
         _indexDocument = indexDocument;
         _func = func;
         _order = order;
+        _returnKey = returnKey;
     }
 
-    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, value: _returnKey);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -65,7 +68,9 @@ internal class IndexScanEnumerator : IPipeEnumerator
 
             if (_func(key))
             {
-                return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                var value = _returnKey ? IndexKey.ToBsonValue(node.Key) : BsonValue.Null;
+
+                return new PipeValue(node.IndexNodeID, node.DataBlockID, value);
             }
         } 
     }

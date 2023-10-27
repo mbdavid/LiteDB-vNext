@@ -72,13 +72,13 @@ internal class QueryService : IQueryService
             }
             else if (index < fetchSize)
             {
-                result.Results[index] = item.Document!;
+                result.Results[index] = item.Value!;
 
                 index++;
             }
             else
             {
-                cursor.NextDocument = item.Document;
+                cursor.NextDocument = item.Value.AsDocument;
                 break;
             }
         }

@@ -6,6 +6,7 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
 
     private readonly IndexDocument _indexDocument;
     private readonly BsonValue _value;
+    private readonly bool _returnKey;
 
     private bool _init = false;
     private bool _eof = false;
@@ -16,14 +17,16 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
     public IndexEqualsEnumerator(
         BsonValue value, 
         IndexDocument indexDocument, 
-        Collation collation)
+        Collation collation, 
+        bool returnKey)
     {
         _value = value;
         _indexDocument = indexDocument;
         _collation = collation;
+        _returnKey = returnKey;
     }
 
-    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, value: _returnKey);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -65,8 +68,10 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
                 if (_next == head) _next = RowID.Empty;
             }
 
+            var value = _returnKey ? IndexKey.ToBsonValue(node.Key) : BsonValue.Null;
+
             // current node to return
-            return new PipeValue(node.IndexNodeID, node.DataBlockID);
+            return new PipeValue(node.IndexNodeID, node.DataBlockID, value);
         }
 
         // first, go backward
@@ -81,9 +86,11 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
             {
                 _prev = node[0]->PrevID;
 
-                if (_prev == head) _prev = RowID.Empty; 
+                if (_prev == head) _prev = RowID.Empty;
 
-                return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                var value = _returnKey ? IndexKey.ToBsonValue(node.Key) : BsonValue.Null;
+
+                return new PipeValue(node.IndexNodeID, node.DataBlockID, value);
             }
             else
             {
@@ -105,7 +112,9 @@ unsafe internal class IndexEqualsEnumerator : IPipeEnumerator
 
                 if (_next == tail) _eof = true;
 
-                return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                var value = _returnKey ? IndexKey.ToBsonValue(node.Key) : BsonValue.Null;
+
+                return new PipeValue(node.IndexNodeID, node.DataBlockID, value);
             }
             else
             {

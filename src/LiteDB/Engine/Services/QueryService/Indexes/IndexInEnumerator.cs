@@ -1,9 +1,12 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Xml.Linq;
+
+namespace LiteDB.Engine;
 
 unsafe internal class IndexInEnumerator : IPipeEnumerator
 {
     private readonly Collation _collation;
     private readonly IndexDocument _indexDocument;
+    private readonly bool _returnKey;
 
     private readonly BsonValue[] _values;
     private int _valueIndex = 0;
@@ -16,14 +19,16 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
     public IndexInEnumerator(
         IEnumerable<BsonValue> values,
         IndexDocument indexDocument,
-        Collation collation)
+        Collation collation,
+        bool returnKey)
     {
         _values = values.Distinct().ToArray();
         _indexDocument = indexDocument;
         _collation = collation;
+        _returnKey = returnKey;
     }
 
-    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, value: _returnKey);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -35,8 +40,8 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
             _init = true;
 
             var first = _values[_valueIndex];
-            
-            _currentIndex = new IndexEqualsEnumerator(first, _indexDocument, _collation);
+
+            _currentIndex = new IndexEqualsEnumerator(first, _indexDocument, _collation, _returnKey);
             
             return _currentIndex.MoveNext(context);
         }
@@ -56,7 +61,7 @@ unsafe internal class IndexInEnumerator : IPipeEnumerator
 
                 var value = _values[_valueIndex];
 
-                _currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation);
+                _currentIndex = new IndexEqualsEnumerator(value, _indexDocument, _collation, _returnKey);
 
                 return _currentIndex.MoveNext(context);
             }

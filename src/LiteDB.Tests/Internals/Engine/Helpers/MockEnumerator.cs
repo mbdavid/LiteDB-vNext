@@ -11,18 +11,13 @@ internal class MockEnumerator : IPipeEnumerator
 
     public PipeEmit Emit => new(true, true, true);
 
-    //ValueTask<PipeValue> IPipeEnumerator.MoveNextAsync(PipeContext context)
-    //{
-    //    if (_items.Count == 0) return ValueTask.FromResult(PipeValue.Empty);
-
-    //    var item = _items.Dequeue();
-
-    //    return ValueTask.FromResult(item);
-    //}
-
     public PipeValue MoveNext(PipeContext context)
     {
-        throw new NotImplementedException();
+        if (_items.Count == 0) return PipeValue.Empty;
+
+        var item = _items.Dequeue();
+
+        return item;
     }
 
     public void GetPlan(ExplainPlainBuilder builder, int deep)

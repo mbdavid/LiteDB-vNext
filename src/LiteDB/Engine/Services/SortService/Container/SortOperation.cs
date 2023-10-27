@@ -47,7 +47,7 @@ internal class SortOperation : ISortOperation
 
             if (current.IsEmpty) break;
 
-            var key = _orderBy.Expression.Execute(current.Document, context.QueryParameters, _collation);
+            var key = _orderBy.Expression.Execute(current.Value, context.QueryParameters, _collation);
 
             var item = new SortItem(current.DataBlockID, key);
 

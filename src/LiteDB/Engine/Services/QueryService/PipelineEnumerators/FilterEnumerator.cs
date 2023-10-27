@@ -16,7 +16,7 @@ internal class FilterEnumerator : IPipeEnumerator
         _enumerator = enumerator;
         _collation = collation;
 
-        if (_enumerator.Emit.Document == false) throw ERR($"Filter pipe enumerator requires document from last pipe");
+        if (_enumerator.Emit.Value == false) throw ERR($"Filter pipe enumerator requires document from last pipe");
     }
 
     public PipeEmit Emit => _enumerator.Emit;
@@ -33,7 +33,7 @@ internal class FilterEnumerator : IPipeEnumerator
             }
             else
             {
-                var result = _filter.Execute(item.Document, context.QueryParameters, _collation);
+                var result = _filter.Execute(item.Value, context.QueryParameters, _collation);
 
                 if (result.IsBoolean && result.AsBoolean)
                 {

@@ -17,13 +17,13 @@ internal class OrderByEnumerator : IPipeEnumerator
         _enumerator = enumerator;
 
         if (_enumerator.Emit.DataBlockID == false) throw ERR($"OrderBy pipe enumerator requires DataBlockID from last pipe");
-        if (_enumerator.Emit.Document == false) throw ERR($"OrderBy pipe enumerator requires Document from last pipe");
+        if (_enumerator.Emit.Value == false) throw ERR($"OrderBy pipe enumerator requires Document from last pipe");
 
         _orderBy = orderBy;
         _sorter = sortService.CreateSort(orderBy);
     }
 
-    public PipeEmit Emit => new(indexNodeID: false, dataBlockID: true, document: false);
+    public PipeEmit Emit => new(indexNodeID: false, dataBlockID: true, value: false);
 
     public PipeValue MoveNext(PipeContext context)
     {

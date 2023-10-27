@@ -1,4 +1,6 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Xml.Linq;
+
+namespace LiteDB.Engine;
 
 unsafe internal class IndexLikeEnumerator : IPipeEnumerator
 {
@@ -9,27 +11,30 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
     private readonly string _startsWith;
     private readonly bool _hasMore;
     private readonly int _order;
+    private readonly bool _returnKey;
 
     private bool _init = false;
     private bool _eof = false;
 
-    private Stack<(RowID indexNodeID, RowID dataBlockID)> _prev = new(); // use a stack to keep order output
+    private Stack<(RowID indexNodeID, RowID dataBlockID, BsonValue key)> _prev = new(); // use a stack to keep order output
     private RowID _next = RowID.Empty;
 
     public IndexLikeEnumerator(
         BsonValue value,
         IndexDocument indexDocument,
         Collation collation,
-        int order)
+        int order,
+        bool returnKey)
     {
         _startsWith = value.AsString.SqlLikeStartsWith(out _hasMore);
         _value = value;
         _indexDocument = indexDocument;
         _collation = collation;
         _order = order;
+        _returnKey = returnKey;
     }
 
-    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, value: _returnKey);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -75,8 +80,10 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
 
                 if (_hasMore == false || keyPrev.SqlLike(_value, _collation))
                 {
+                    var value = _returnKey ? IndexKey.ToBsonValue(nodePrev.Key) : BsonValue.Null;
+
                     // push current value
-                    _prev.Push(new(nodePrev.IndexNodeID, nodePrev.DataBlockID));
+                    _prev.Push(new(nodePrev.IndexNodeID, nodePrev.DataBlockID, value));
                 }
 
                 prevID = nodePrev[0]->GetPrev(_order);
@@ -86,7 +93,7 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
         // pop all prev values in order
         if (_prev.TryPop(out var nodePop))
         {
-            return new PipeValue(nodePop.indexNodeID, nodePop.dataBlockID);
+            return new PipeValue(nodePop.indexNodeID, nodePop.dataBlockID, nodePop.key);
         }
 
         while (!_eof)
@@ -114,8 +121,10 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
             // test if not match
             if (_hasMore == false || keyNext.SqlLike(_value, _collation))
             {
+                var value = _returnKey ? IndexKey.ToBsonValue(nodeNext.Key) : BsonValue.Null;
+
                 // return current node
-                return new PipeValue(nodeNext.IndexNodeID, nodeNext.DataBlockID);
+                return new PipeValue(nodeNext.IndexNodeID, nodeNext.DataBlockID, value);
             }
         }
 
@@ -167,7 +176,9 @@ unsafe internal class IndexLikeEnumerator : IPipeEnumerator
 
                 if (key.SqlLike(_value, _collation))
                 {
-                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                    var value = _returnKey ? IndexKey.ToBsonValue(node.Key) : BsonValue.Null;
+
+                    return new PipeValue(node.IndexNodeID, node.DataBlockID, value);
                 }
             }
         }

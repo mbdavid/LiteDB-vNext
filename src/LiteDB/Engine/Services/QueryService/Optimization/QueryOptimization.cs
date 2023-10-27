@@ -71,7 +71,7 @@ internal class QueryOptimization : IQueryOptimization
     {
         var pipe = _factory.CreatePipelineBuilder(_store!, queryParameters);
 
-        pipe.AddIndex(_indexExpression!, _indexOrder);
+        pipe.AddIndex(_indexExpression!, _indexOrder, _documentLookup is IndexLookup);
 
         pipe.AddLookup(_documentLookup!);
 

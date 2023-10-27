@@ -25,7 +25,7 @@ internal class IncludeEnumerator : IPipeEnumerator
         if (_enumerator.Emit.DataBlockID == false) throw ERR($"Include pipe enumerator requires document from last pipe");
     }
 
-    public PipeEmit Emit => new(indexNodeID: _enumerator.Emit.IndexNodeID, dataBlockID: _enumerator.Emit.DataBlockID, document: true);
+    public PipeEmit Emit => new(indexNodeID: _enumerator.Emit.IndexNodeID, dataBlockID: _enumerator.Emit.DataBlockID, value: true);
 
     public PipeValue MoveNext(PipeContext context)
     {
@@ -40,7 +40,7 @@ internal class IncludeEnumerator : IPipeEnumerator
             return PipeValue.Empty;
         }
 
-        var value = _pathExpr.Execute(item.Document, context.QueryParameters, _collation);
+        var value = _pathExpr.Execute(item.Value, context.QueryParameters, _collation);
 
         if (value.IsDocument)
         {

@@ -70,12 +70,6 @@ public class BsonArray : BsonValue, IList<BsonValue>
     public static BsonArray FromArray(IReadOnlyList<BsonDocument> array)
         => new(null, array);
 
-    //public BsonArray(IEnumerable<BsonValue> values)
-    //    : this(0)
-    //{
-    //    this.AddRange(values);
-    //}
-
     #endregion
 
     public override BsonType Type => BsonType.Array;

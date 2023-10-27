@@ -1,4 +1,7 @@
-﻿namespace LiteDB.Engine;
+﻿using System.Collections.Generic;
+using System.Xml.Linq;
+
+namespace LiteDB.Engine;
 
 unsafe internal class IndexRangeEnumerator : IPipeEnumerator
 {
@@ -11,6 +14,8 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
     private readonly bool _startEquals;
     private readonly bool _endEquals;
     private readonly int _order;
+    private readonly bool _returnKey;
+
     private bool _init = false;
     private bool _eof = false;
 
@@ -24,7 +29,8 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
         bool endEquals,
         int order,
         IndexDocument indexDocument,
-        Collation collation)
+        Collation collation,
+        bool returnKey)
     {
         // if order are desc, swap start/end values
         _start = order == Query.Ascending ? start : end;
@@ -35,9 +41,10 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
         _order = order;
         _indexDocument = indexDocument;
         _collation = collation;
+        _returnKey = returnKey;
     }
 
-    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, document: false);
+    public PipeEmit Emit => new(indexNodeID: true, dataBlockID: true, value: _returnKey);
 
     public unsafe PipeValue MoveNext(PipeContext context)
     {
@@ -67,7 +74,9 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
             {
                 if (!first.Key->IsMinValue && !first.Key->IsMaxValue)
                 {
-                    return new PipeValue(first.IndexNodeID, first.DataBlockID);
+                    var value = _returnKey ? IndexKey.ToBsonValue(first.Key) : BsonValue.Null;
+
+                    return new PipeValue(first.IndexNodeID, first.DataBlockID, value);
                 }
             }
         }
@@ -90,7 +99,9 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
                 {
                     _prev = node[0]->GetPrev(_order);
 
-                    return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                    var value = _returnKey ? IndexKey.ToBsonValue(node.Key) : BsonValue.Null;
+
+                    return new PipeValue(node.IndexNodeID, node.DataBlockID, value);
                 }
                 else
                 {
@@ -113,7 +124,9 @@ unsafe internal class IndexRangeEnumerator : IPipeEnumerator
             {
                 _next = node[0]->GetNext(_order);
 
-                return new PipeValue(node.IndexNodeID, node.DataBlockID);
+                var value = _returnKey ? IndexKey.ToBsonValue(node.Key) : BsonValue.Null;
+
+                return new PipeValue(node.IndexNodeID, node.DataBlockID, value);
             }
             else
             {
