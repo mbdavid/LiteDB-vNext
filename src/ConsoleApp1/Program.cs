@@ -1,6 +1,6 @@
 ﻿// SETUP //////////////////
 const string VER = "v6-pointer";
-var INSERT_1 = new Range(1, 10_000);
+var INSERT_1 = new Range(1, 100);
 var DELETE_1 = new Range(1, 40_000);
 var INSERT_2 = new Range(1, 30_000);
 ////////////////////////
@@ -40,7 +40,7 @@ await db.RunAsync($"EnsureIndex (age)", "CREATE INDEX idx_01 ON col1 ($.age)");
 //await db.RunAsync($"EnsureIndex (name)", "CREATE INDEX idx_02 ON col1 (name)");
 
 await db.RunQueryAsync(20, $"Query1",
-    @"SELECT COUNT(_id), sum(age) as sum, avg(age) as avg, max(name) as max
+    @"SELECT SUM((_id > 10) ? 1 : 0)
         FROM col1");
 
 

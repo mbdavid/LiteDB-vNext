@@ -80,7 +80,6 @@ internal struct Token : IIsEmpty
             TokenType.Slash => "/",
             TokenType.Backslash => "\\",
             TokenType.Percent => "%",
-            TokenType.Question => "?",
 
             // convert to space
             TokenType.Whitespace => "".PadLeft(_length, ' '),

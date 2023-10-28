@@ -35,6 +35,8 @@ internal enum TokenType
     Period,
     /// <summary> &amp; </summary>
     Ampersand,
+    /// <summary> ? </summary>
+    Question,
     /// <summary> $ </summary>
     Dollar,
     /// <summary> ! </summary>

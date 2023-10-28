@@ -199,11 +199,6 @@ internal class Tokenizer
                 this.ReadChar();
                 break;
 
-            case '?':
-                token = new Token(TokenType.Question, start);
-                this.ReadChar();
-                break;
-
             case '$':
                 this.ReadChar();
                 if (IsWordChar(_char, true))

@@ -28,9 +28,6 @@ internal class BsonExpressionParser
         ["IN"] = BsonExpression.In,
         ["CONTAINS"] = BsonExpression.Contains,
 
-        // conditional
-        ["?"] = BsonExpression.Conditional,
-
         [">"] = BsonExpression.GreaterThan,
         [">="] = BsonExpression.GreaterThanOrEqual,
         ["<"] = BsonExpression.LessThan,
@@ -71,16 +68,6 @@ internal class BsonExpressionParser
             if (op.EndsWith("BETWEEN", StringComparison.OrdinalIgnoreCase))
             {
                 tokenizer.ReadToken(true).Expect("AND");
-
-                var end = ParseSingleExpression(tokenizer, root);
-
-                // convert expr and expr2 into an array with 2 values
-                expr = BsonExpression.MakeArray(new[] { expr, end });
-            }
-            // special CONDITIONAL ifTest ? trueExpr : falseExpr
-            else if(op == "?")
-            {
-                tokenizer.ReadToken(true).Expect(TokenType.Colon);
 
                 var end = ParseSingleExpression(tokenizer, root);
 

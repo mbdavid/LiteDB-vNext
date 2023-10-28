@@ -34,14 +34,6 @@ public abstract partial class BsonExpression
 
     public static BsonExpression Filter(BsonExpression source, BsonExpression selector) => new FilterBsonExpression(source, selector);
 
-    public static BsonExpression Conditional(BsonExpression ifTest, BsonExpression trueExpr, BsonExpression falseExpr) => new ConditionalBsonExpression(ifTest, trueExpr, falseExpr);
-
-    public static BsonExpression Conditional(BsonExpression ifTest, BsonExpression values) => 
-        new ConditionalBsonExpression(
-            ifTest, 
-            ((MakeArrayBsonExpression)values).Children.First(),
-            ((MakeArrayBsonExpression)values).Children.Skip(1).First());
-
     public static BsonExpression ArrayIndex(BsonExpression array, BsonExpression index) => new ArrayIndexBsonExpression(array, index);
 
     public static BsonExpression MakeArray(IEnumerable<BsonExpression> items) => new MakeArrayBsonExpression(items);
@@ -145,30 +137,14 @@ public abstract partial class BsonExpression
     /// </summary>
     private static readonly Dictionary<string, MethodInfo> _methods =
         typeof(BsonExpressionMethods).GetMethods(BindingFlags.Public | BindingFlags.Static)
-        .ToDictionary(m => m.Name + "~" + m.GetParameters().Where(p => p.ParameterType != typeof(Collation)).Count(), StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// Add a new static method to be used on expression method call
-    /// </summary>
-    public static void AddMethod(MethodInfo method)
-    {
-        var pcount = method.GetParameters().Where(p => p.ParameterType != typeof(Collation)).Count();
-
-        _methods.Add(method.Name + "~" + pcount, method);
-    }
-
-    public static void AddMethod(Func<BsonValue> method) => AddMethod(method.Method); // 0
-    public static void AddMethod(Func<BsonValue, BsonValue> method) => AddMethod(method.Method); // 1
-    public static void AddMethod(Func<BsonValue, BsonValue, BsonValue> method) => AddMethod(method.Method); // 2
-    public static void AddMethod(Func<BsonValue, BsonValue, BsonValue, BsonValue> method) => AddMethod(method.Method); // 3
-    public static void AddMethod(Func<BsonValue, BsonValue, BsonValue, BsonValue, BsonValue> method) => AddMethod(method.Method); // 4
+        .ToDictionary(m => m.Name.ToUpper() + "~" + m.GetParameters().Where(p => p.ParameterType != typeof(Collation)).Count());
 
     /// <summary>
     /// Get expression method with same name and same parameter - return null if not found
     /// </summary>
     internal static MethodInfo? GetMethod(string name, int parameterCount)
     {
-        var key = name + "~" + parameterCount;
+        var key = name.ToUpper() + "~" + parameterCount;
 
         if (_methods.TryGetValue(key, out var method))
         {

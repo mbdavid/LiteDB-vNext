@@ -40,10 +40,10 @@ public enum BsonExpressionType : byte
 
     Inner = 32,
 
-    Map = 40,
-    Filter = 41,
-    Sort = 42,
-    // Source = 30
+    Conditional = 40,
+    Map = 41,
+    Filter = 42,
+    Sort = 43,
 
     Empty = 255
 }
