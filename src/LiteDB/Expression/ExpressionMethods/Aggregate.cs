@@ -56,7 +56,7 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue FIRST(BsonValue values)
     {
-        if (values is BsonArray array) return array.First();
+        if (values is BsonArray array) return array.FirstOrDefault() ?? BsonValue.Null;
 
         return values;
     }
@@ -65,7 +65,7 @@ internal partial class BsonExpressionMethods
     /// </summary>
     public static BsonValue LAST(BsonValue values)
     {
-        if (values is BsonArray array) return array.Last();
+        if (values is BsonArray array) return array.LastOrDefault() ?? BsonValue.Null;
 
         return values;
     }

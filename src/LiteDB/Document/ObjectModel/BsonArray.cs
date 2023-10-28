@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using System;
+
+namespace LiteDB;
 
 /// <summary>
 /// Represent a array of BsonValue in Bson object model
@@ -57,6 +59,12 @@ public class BsonArray : BsonValue, IList<BsonValue>
     /// </summary>
     public static BsonArray FromList(IList<BsonValue> list)
         => new(list, null);
+
+    /// <summary>
+    /// Create a new instance of BsonArray using a new instance of List (make BsonArray read/write)
+    /// </summary>
+    public static BsonArray FromList(ICollection<BsonValue> collection)
+        => new(new List<BsonValue>(collection), null);
 
     /// <summary>
     /// Create a new instance of BsonArray using an already instance of IReadOnlyList (make BsonArray as readonly)

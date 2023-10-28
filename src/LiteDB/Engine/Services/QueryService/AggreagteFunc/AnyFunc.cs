@@ -1,12 +1,12 @@
 ﻿namespace LiteDB.Engine;
 
-public class CountFunc : IAggregateFunc
+public class AnyFunc : IAggregateFunc
 {
     private readonly BsonExpression _expr;
 
-    private long _state = 0;
+    private BsonValue _state = false;
 
-    public CountFunc(BsonExpression expr)
+    public AnyFunc(BsonExpression expr)
     {
         _expr = expr;
     }
@@ -15,23 +15,24 @@ public class CountFunc : IAggregateFunc
 
     public void Iterate(BsonValue key, BsonDocument document, Collation collation)
     {
-        var result = _expr.Execute(document, null, collation);
-
-        if (!result.IsNull) _state++;
+        if (_state == false)
+        {
+            _state = true;
+        }
     }
 
     public BsonValue GetResult()
     {
-        return _state < int.MaxValue ? new BsonInt32((int)_state) : new BsonInt64(_state);
+        return _state;
     }
 
     public void Reset()
     {
-        _state = 0;
+        _state = false;
     }
 
     public override string ToString()
     {
-        return $"COUNT({_expr})";
+        return $"ANY({_expr})";
     }
 }

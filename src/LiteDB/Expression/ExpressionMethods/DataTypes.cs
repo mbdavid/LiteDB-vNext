@@ -435,6 +435,19 @@ internal partial class BsonExpressionMethods
 
     #endregion
 
+    #region ARRAY() DOCUMENT()
+
+    public static BsonValue ARRAY(BsonValue values)
+    {
+        if (values.IsArray) return values;
+
+        if (values is BsonDocument doc) return BsonArray.FromList(doc.Values);
+
+        return BsonArray.Empty;
+    }
+
+    #endregion
+
     #region ALIAS
 
     /// <summary>

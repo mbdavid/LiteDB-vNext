@@ -42,29 +42,36 @@ internal class TransformEnumerator : IPipeEnumerator
         }
         else
         {
-            var doc = new BsonDocument();
+            var output = new BsonDocument();
+            var hidden = new List<string>();
 
             foreach (var field in _fields.Fields)
             {
-                if (field.IsAggregate)
-                {
-                    // in aggregate, do not evaluate
-                    var value = item.Value[field.Name];
+                var root = item.Value.AsDocument;
 
-                    // and add to final document
-                    doc.Add(field.Name, value);
-                }
-                else
+                // add previous values in expression root
+                foreach (var key in output.Keys)
                 {
-                    // get field expression value
-                    var value = field.Expression.Execute(item.Value, context.QueryParameters, _collation);
-
-                    // and add to final document
-                    doc.Add(field.Name, value);
+                    root[key] = output[key];
                 }
+
+                var value = field.IsAggregate ? 
+                    item.Value[field.Name] :
+                    field.Expression.Execute(root, context.QueryParameters, _collation);
+
+                // and add to final document
+                output.Add(field.Name, value);
+
+                if (field.Hidden) hidden.Add(field.Name);
             }
 
-            return new PipeValue(item.IndexNodeID, item.DataBlockID, doc);
+            // remove hidden fields from output
+            foreach(var key in hidden)
+            {
+                output.Remove(key);
+            }
+
+            return new PipeValue(item.IndexNodeID, item.DataBlockID, output);
         }
     }
 

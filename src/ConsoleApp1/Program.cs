@@ -1,6 +1,6 @@
 ﻿// SETUP //////////////////
 const string VER = "v6-pointer";
-var INSERT_1 = new Range(1, 10_000);
+var INSERT_1 = new Range(1, 100);
 var DELETE_1 = new Range(1, 40_000);
 var INSERT_2 = new Range(1, 30_000);
 ////////////////////////
@@ -39,12 +39,21 @@ await db.RunAsync($"Insert col1 {insert1.Length:n0}", "INSERT INTO col1 VALUES @
 await db.RunAsync($"EnsureIndex (age)", "CREATE INDEX idx_01 ON col1 ($.age)");
 //await db.RunAsync($"EnsureIndex (name)", "CREATE INDEX idx_02 ON col1 (name)");
 
-await db.RunQueryAsync(20, $"Query1", 
-    @"SELECT key, 
-             COUNT(key) AS qtd 
-             --ARRAY(name) AS nomes 
+await db.RunQueryAsync(20, $"Query1",
+    @"SELECT age, 
+             COUNT(age) AS qtd,
+             --MIN(name) AS min_nome,
+             --MAX(name) AS max_name,
+             --FIRST(name) AS first_nome,
+             --LAST(name) AS last_name,
+             --AVG(DOUBLE(DAY(created))) AS avg_day,
+             --SUM(age) AS sum_age,
+             --ANY(age) AS any_age,
+             --ARRAY(name) as arr_nomes,
+             SUM(age) AS #sum_age,
+             sum_age + 100 AS sum_100
         FROM col1 
-       GROUP BY SUBSTRING(name, 0, INDEXOF(name, ' '))");
+       GROUP BY age");
 
 // SHUTDOWN
 await db.ShutdownAsync();

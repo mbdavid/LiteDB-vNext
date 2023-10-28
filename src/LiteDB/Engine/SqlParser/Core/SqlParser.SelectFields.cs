@@ -64,17 +64,25 @@ internal partial class SqlParser
     /// </summary>
     private SelectField ParseSelectNamedField()
     {
-        var expr = BsonExpression.Create(_tokenizer, false);
+        var expr = BsonExpression.Create(_tokenizer, true);
 
         var ahead = _tokenizer.LookAhead();
         string name;
+        var hidden = false;
 
         if (ahead.Value.Eq("AS"))
         {
-            _tokenizer.ReadToken();
+            _tokenizer.ReadToken(); // read AS
 
-            name = _tokenizer
-                .ReadToken()
+            var token = _tokenizer.ReadToken();
+
+            if (token.Type == TokenType.Hashtag) // check for # hidden column
+            {
+                token = _tokenizer.ReadToken(); 
+                hidden = true;
+            }
+
+            name = token
                 .Expect(TokenType.Word, TokenType.String)
                 .Value;
         }
@@ -90,6 +98,6 @@ internal partial class SqlParser
             }
         }
 
-        return new SelectField(name, expr);
+        return new SelectField(name, hidden, expr);
     }
 }

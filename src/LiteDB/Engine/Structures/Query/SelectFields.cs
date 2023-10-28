@@ -10,7 +10,7 @@ public readonly struct SelectFields
     /// <summary>
     /// SELECT $._id
     /// </summary>
-    public static readonly SelectFields Id = new(new SelectField[] { new SelectField("_id", BsonExpression.Id) });
+    public static readonly SelectFields Id = new(new SelectField[] { new SelectField("_id", false, BsonExpression.Id) });
 
     // fields
     public readonly BsonExpression SingleExpression;
