@@ -81,7 +81,7 @@ internal class QueryOptimization : IQueryOptimization
         if (_filter.IsEmpty == false)
             pipe.AddFilter(_filter);
 
-        if (query.GroupBy.IsEmpty == false)
+        if (query.GroupBy.IsEmpty == false || query.Select.HasAggregate)
         {
             if (_sortGroupBy.IsEmpty == false)
             {

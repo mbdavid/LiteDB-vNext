@@ -28,6 +28,11 @@ public readonly struct SelectFields
     /// </summary>
     public bool IsSingleExpression => Fields.Count == 0;
 
+    /// <summary>
+    /// Indicate this SELECT fields contains at least 1 aggregate expression
+    /// </summary>
+    public bool HasAggregate => this.Fields.Any(x => x.IsAggregate);
+
     public SelectFields(BsonExpression docExpr)
     {
         this.SingleExpression = docExpr;

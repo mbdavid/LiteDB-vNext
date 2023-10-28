@@ -56,7 +56,8 @@ internal class AggregateEnumerator : IPipeEnumerator
             }
             else
             {
-                var key = _keyExpr.Execute(item.Value, context.QueryParameters, _collation);
+                var key = _keyExpr.IsEmpty ? BsonValue.Null :
+                    _keyExpr.Execute(item.Value, context.QueryParameters, _collation);
 
                 // initialize current key with first key
                 if (_init == false)

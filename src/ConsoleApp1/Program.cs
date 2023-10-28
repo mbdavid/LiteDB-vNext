@@ -1,6 +1,6 @@
 ﻿// SETUP //////////////////
 const string VER = "v6-pointer";
-var INSERT_1 = new Range(1, 100);
+var INSERT_1 = new Range(1, 10_000);
 var DELETE_1 = new Range(1, 40_000);
 var INSERT_2 = new Range(1, 30_000);
 ////////////////////////
@@ -40,20 +40,25 @@ await db.RunAsync($"EnsureIndex (age)", "CREATE INDEX idx_01 ON col1 ($.age)");
 //await db.RunAsync($"EnsureIndex (name)", "CREATE INDEX idx_02 ON col1 (name)");
 
 await db.RunQueryAsync(20, $"Query1",
-    @"SELECT age, 
-             COUNT(age) AS qtd,
-             --MIN(name) AS min_nome,
-             --MAX(name) AS max_name,
-             --FIRST(name) AS first_nome,
-             --LAST(name) AS last_name,
-             --AVG(DOUBLE(DAY(created))) AS avg_day,
-             --SUM(age) AS sum_age,
-             --ANY(age) AS any_age,
-             --ARRAY(name) as arr_nomes,
-             SUM(age) AS #sum_age,
-             sum_age + 100 AS sum_100
-        FROM col1 
-       GROUP BY age");
+    @"SELECT COUNT(_id), sum(age) as sum, avg(age) as avg, max(name) as max
+        FROM col1");
+
+
+//await db.RunQueryAsync(20, $"Query1",
+//    @"SELECT age, 
+//             COUNT(age) AS qtd,
+//             --MIN(name) AS min_nome,
+//             --MAX(name) AS max_name,
+//             --FIRST(name) AS first_nome,
+//             --LAST(name) AS last_name,
+//             --AVG(DOUBLE(DAY(created))) AS avg_day,
+//             --SUM(age) AS sum_age,
+//             --ANY(age) AS any_age,
+//             --ARRAY(name) as arr_nomes,
+//             SUM(age) AS #sum_age,
+//             sum_age + 100 AS sum_100
+//        FROM col1 
+//       GROUP BY age");
 
 // SHUTDOWN
 await db.ShutdownAsync();
