@@ -36,12 +36,6 @@ public abstract partial class BsonExpression
 
     public static BsonExpression Conditional(BsonExpression ifTest, BsonExpression trueExpr, BsonExpression falseExpr) => new ConditionalBsonExpression(ifTest, trueExpr, falseExpr);
 
-    public static BsonExpression Conditional(BsonExpression ifTest, BsonExpression values) => 
-        new ConditionalBsonExpression(
-            ifTest, 
-            ((MakeArrayBsonExpression)values).Children.First(),
-            ((MakeArrayBsonExpression)values).Children.Skip(1).First());
-
     public static BsonExpression ArrayIndex(BsonExpression array, BsonExpression index) => new ArrayIndexBsonExpression(array, index);
 
     public static BsonExpression MakeArray(IEnumerable<BsonExpression> items) => new MakeArrayBsonExpression(items);

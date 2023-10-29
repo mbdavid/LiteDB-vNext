@@ -40,7 +40,7 @@ await db.RunAsync($"EnsureIndex (age)", "CREATE INDEX idx_01 ON col1 ($.age)");
 //await db.RunAsync($"EnsureIndex (name)", "CREATE INDEX idx_02 ON col1 (name)");
 
 await db.RunQueryAsync(20, $"Query1",
-    @"SELECT SUM((_id > 10) ? 1 : 0)
+    @"SELECT SUM(_id > 10 ? 1 : 0)
         FROM col1");
 
 

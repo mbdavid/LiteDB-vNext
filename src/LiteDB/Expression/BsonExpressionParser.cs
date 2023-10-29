@@ -1,4 +1,6 @@
-﻿namespace LiteDB;
+﻿using System.Drawing;
+
+namespace LiteDB;
 
 /// <summary>
 /// Compile and execute simple expressions using BsonDocuments. Used in indexes and updates operations. See https://github.com/mbdavid/LiteDB/wiki/Expressions
@@ -28,9 +30,6 @@ internal class BsonExpressionParser
         ["IN"] = BsonExpression.In,
         ["CONTAINS"] = BsonExpression.Contains,
 
-        // conditional
-        ["?"] = BsonExpression.Conditional,
-
         [">"] = BsonExpression.GreaterThan,
         [">="] = BsonExpression.GreaterThanOrEqual,
         ["<"] = BsonExpression.LessThan,
@@ -41,7 +40,7 @@ internal class BsonExpressionParser
 
         // logic
         ["AND"] = BsonExpression.And,
-        ["OR"] = BsonExpression.Or
+        ["OR"] = BsonExpression.Or,
     };
 
     #endregion
@@ -78,15 +77,15 @@ internal class BsonExpressionParser
                 expr = BsonExpression.MakeArray(new[] { expr, end });
             }
             // special CONDITIONAL ifTest ? trueExpr : falseExpr
-            else if(op == "?")
-            {
-                tokenizer.ReadToken(true).Expect(TokenType.Colon);
-
-                var end = ParseSingleExpression(tokenizer, root);
-
-                // convert expr and expr2 into an array with 2 values
-                expr = BsonExpression.MakeArray(new[] { expr, end });
-            }
+            //else if(op == "?")
+            //{
+            //    tokenizer.ReadToken(true).Expect(TokenType.Colon);
+            //
+            //    var end = ParseSingleExpression(tokenizer, root);
+            //
+            //    // convert expr and expr2 into an array with 2 values
+            //    expr = BsonExpression.MakeArray(new[] { expr, end });
+            //}
 
             values.Add(expr);
             ops.Add(op.ToUpper());
@@ -95,9 +94,13 @@ internal class BsonExpressionParser
         var order = 0;
 
         // now, process operator in correct order
-        while (values.Count >= 2)
+        while (values.Count >= 2 && order < _operators.Count)
         {
             var op = _operators.ElementAt(order);
+
+            // conditional requires 3 parameters
+            if (op.Key == "?") break;
+
             var n = ops.IndexOf(op.Key);
 
             if (n == -1)
@@ -121,8 +124,67 @@ internal class BsonExpressionParser
             }
         }
 
-        return values.Single();
+        if (values.Count == 1)
+        {
+            return values.Single();
+        }
+        else
+        {
+            return ResolveConditional(0, ops, values, out _);
+        }
     }
+
+    /// <summary>
+    /// Resolve expressions with ? and : conditional blocks. Support full expression in any parameter (ifTest, trueExpr, falseExpr)
+    /// </summary>
+    private static BsonExpression ResolveConditional(int questionIndex, List<string> ops, List<BsonExpression> values, out int colonIndex)
+    {
+        var ifTest = values[questionIndex];
+
+        var op = ops[questionIndex + 1]; // : or ?
+
+        if (op == ":")
+        {
+            colonIndex = questionIndex + 1;
+
+            var trueExpr = values[questionIndex + 1];
+
+            var next = questionIndex + 2 == ops.Count ? ":" : ops[questionIndex + 2]; // read next operator
+
+            if (next == ":")
+            {
+                var falseExpr = values[colonIndex + 1];
+
+                return BsonExpression.Conditional(ifTest, trueExpr, falseExpr);
+            }
+            else
+            {
+                var falseExpr = ResolveConditional(colonIndex + 1, ops, values, out colonIndex);
+
+                return BsonExpression.Conditional(ifTest, trueExpr, falseExpr);
+            }
+        }
+        else
+        {
+            var trueExpr = ResolveConditional(questionIndex + 1, ops, values, out colonIndex);
+
+            var next = ops[colonIndex + 1];
+
+            if (next == ":")
+            {
+                var falseExpr = values[colonIndex + 2];
+
+                return BsonExpression.Conditional(ifTest, trueExpr, falseExpr);
+            }
+            else
+            {
+                var falseExpr = ResolveConditional(colonIndex + 1, ops, values, out colonIndex);
+
+                return BsonExpression.Conditional(ifTest, trueExpr, falseExpr);
+            }
+        }
+    }
+
 
     /// <summary>
     /// Read
@@ -583,7 +645,9 @@ internal class BsonExpressionParser
     {
         var token = tokenizer.LookAhead(true);
 
-        if (_operators.Keys.Contains(token.Value))
+        var isCondition = token.Type == TokenType.Question || token.Type == TokenType.Colon;
+
+        if (isCondition || _operators.Keys.Contains(token.Value))
         {
             tokenizer.ReadToken(); // consume operant
 
