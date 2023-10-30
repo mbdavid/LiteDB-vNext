@@ -76,16 +76,6 @@ internal class BsonExpressionParser
                 // convert expr and expr2 into an array with 2 values
                 expr = BsonExpression.MakeArray(new[] { expr, end });
             }
-            // special CONDITIONAL ifTest ? trueExpr : falseExpr
-            //else if(op == "?")
-            //{
-            //    tokenizer.ReadToken(true).Expect(TokenType.Colon);
-            //
-            //    var end = ParseSingleExpression(tokenizer, root);
-            //
-            //    // convert expr and expr2 into an array with 2 values
-            //    expr = BsonExpression.MakeArray(new[] { expr, end });
-            //}
 
             values.Add(expr);
             ops.Add(op.ToUpper());
@@ -185,9 +175,8 @@ internal class BsonExpressionParser
         }
     }
 
-
     /// <summary>
-    /// Read
+    /// Read a single expression (with no operator). Usefull when parse inside a string
     /// </summary>
     public static BsonExpression ParseSingleExpression(Tokenizer tokenizer, bool root)
     {
