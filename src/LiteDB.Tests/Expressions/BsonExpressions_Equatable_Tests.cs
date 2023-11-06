@@ -19,7 +19,7 @@ public class BsonExpressions_Equatable_Tests
 
     [Theory]
     [MemberData(nameof(Get_Expressions))]
-    public void Execute_Theory(params object[] T)
+    public void Equals_Theory(params object[] T)
     {
         T[0].As<BsonExpression>().Equals(T[1].As<BsonExpression>()).Should().Be(T[2].As<bool>());
     }
